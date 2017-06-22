@@ -1,0 +1,162 @@
+== Developing For Ethereum
+
+=== Ethereum Clients
+
+An Ethereum client is a software application that implements the Ethereum specification and interoperates over the peer-to-peer network with other Ethereum clients.
+
+Ethereum is defined by a formal specification called the "Yellow Paper".
+////
+Compare to bitcoin and reference implementation
+////
+This formal specification, in addition to various Ethereum Improvement Proposals, define the standard behavior of an Ethereum client. As a result, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Because there is a formal specification, there are a number of clients that adhere to that specification. Ethereum has a greater diversity of implementations, both written and running on the network, than any other blockchain.
+
+Ethereum's various client implementations are open source, collaboratively developed and free to use, share and modify.
+
+The vast majority of the Ethereum network runs one of the two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
+
+Since you will be developing applications for Ethereum, it is recommended that you run an Ethereum client as a full node (more on this later), syncing the complete Ethereum blockchain. This will require more than 50GB of data to be downloaded and validated on your computer. More on this topic in <<requirements>>
+
+In this section, we will look at the two most common clients, Geth and Parity. We'll learn to set up a node using each of them and explore some of their command-line and application programming interfaces (APIs).
+
+
+[[requirements]]
+=== Hardware Requirements
+
+Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 35 to 40GB of disk space to run a full node with a full copy of the Ethereum blockchain. If you want to also run a full node on the Ethereum testnet, you will need a minimum of 15GB of disk space for that. Downloading 50GB of blockchain will also require a fast Internet connection, otherwise it can take a long time.
+
+Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best to have a Solid-State Drive (SSD). If you have a mechanical hard disk drive (HDD), you will need at least 8GB of RAM to use as cache, otherwise you may discover your system is too slow to keep up and sync fully.
+
+Minimum Requirements:
+- CPU with 2 or 4 cores preferred
+- Solid State Drive (SSD) with at least 50GB free space
+- 4GB RAM minimum, 8GB+ if you have an HDD and not SSD.
+- 8MBit/sec download Internet service
+
+These are the minimum requirements to sync the Ethereum blockchain. If you want to sync in a reasonable amount of time and store all the development tools, libraries, clients and blockchains we discuss in this book, you will need a faster and better equipped computer:
+
+Recommended:
+* Fast CPU with 4+ cores
+* 16GB+ RAM
+* Fast SSD with at least 250GB free space
+* 25+ MBit/sec donwload Internet service
+
+=== Go-Ethereum (geth)
+
+Geth is one of the three original implementations of the Ethereum client, which included an implementation in C++, Python and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator Vitalik Buterin.
+
+==== Getting Geth
+
+Geth's home is found at https://geth.ethereum.org/. On this site you will find instructions to download and install Geth for your operating system. Since this book is aimed at developers, we will be building Geth from the source code. This assumes you are using a Unix-like command-line environment, such as that provided by Linux, MacOS, or Windows operating systems, for example.
+
+You can also skip these instructions and install a pre-compiled binary for your platform of choice. But where's the fun and learning in that?
+
+===== Cloning the repository
+
+Before we get started, we may need to get some pre-requisites satisfied. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For this section, we will need to install +git+, the source-code management system, and +golang+, the Go programming language and standard libraries.
+
+Git can be installed by following the instructions here:
+https://git-scm.com/
+
+Go can be installed by following the instructions here:
+https://golang.org/
+
+[NOTE]
+====
+Geth requires Go version 1.7 or greater. The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org
+====
+
+Now, once you have +git+ and +golang+ installed, let's get to work!
+
+Our first step is to clone the git repository, so as to get a copy of the source code.
+
+The Geth source code repository is hosted on GitHub at:
+
+https://github.com/ethereum/go-ethereum
+
+To make a local clone of this repository, use the +git+ command as follows, in your home directory or under any directory you use for development:
+
+----
+$ git clone https://github.com/ethereum/go-ethereum.git
+----
+
+You should see a progress report as the repository is copied to your local system:
+
+----
+Cloning into 'go-ethereum'...
+remote: Counting objects: 62587, done.
+remote: Compressing objects: 100% (26/26), done.
+remote: Total 62587 (delta 10), reused 13 (delta 4), pack-reused 62557
+Receiving objects: 100% (62587/62587), 84.51 MiB | 1.40 MiB/s, done.
+Resolving deltas: 100% (41554/41554), done.
+Checking connectivity... done.
+----
+
+Great! Now we have a local copy of Geth, we can compile an executable for our platform.
+
+----
+$ cd go-ethereum
+$ make geth
+----
+
+If all goes well, you will see the go compiler building each component until it produces the +geth+ executable:
+
+----
+build/env.sh go run build/ci.go install ./cmd/geth
+>>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c -v ./cmd/geth
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto/sha3
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/common
+[...]
+github.com/ethereum/go-ethereum/cmd/utils
+github.com/ethereum/go-ethereum/cmd/geth
+Done building.
+Run "build/bin/geth" to launch geth.
+$
+----
+
+Let's run +geth+ to make sure it works:
+
+----
+$ ./build/bin/geth version
+
+Geth
+Version: 1.6.6-unstable
+Git Commit: 58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c
+Architecture: amd64
+Protocol Versions: [63 62]
+Network Id: 1
+Go Version: go1.8.3
+Operating System: linux
+GOPATH=/usr/local/src/gocode/
+GOROOT=/usr/local/go
+
+----
+
+Your +geth version+ command may show slightly different information, but you should see a version report much like the one above.
+
+As a last step, we may want to copy the +geth+ command to our operating systems application directory (or a directory on the command-line execution path). On Linux, we'd use the following command:
+
+----
+$ sudo cp ./build/bin/geth /usr/local/bin
+----
+
+Once that's done you can run it, simply by typing +geth+ on the command-line, without a path prefix. 
+
+==== Setting Up Geth
+==== Running Get For The First Time
+==== Using Geth Console
+
+
+
+=== Parity
+
+==== Setting Up Parity
+
+=== Frameworks
+
+=== Utilities
+
+=== Libraries
