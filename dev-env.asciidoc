@@ -84,7 +84,7 @@ For other operating systems, use the package manager of your OS or follow the Wi
 
 Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's get to work!
 
-=== Go-Ethereum (geth)
+=== Go-Ethereum (Geth)
 
 Geth is one of the three original implementations of the Ethereum client, which included an implementation in C++, Python and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator Vitalik Buterin.
 
@@ -174,30 +174,7 @@ As a last step, we may want to copy the +geth+ command to our operating systems 
 ----
 $ sudo cp ./build/bin/geth /usr/local/bin
 ----
-Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). The next section explains the challenge with the initial synchronization of Ethereum's blockchain.
-
-==== First Synchronization of the Ethereum Blockchain
-
-Normally, when syncing the Ethereum blockchain, your Ethereum client will download and validate every block and every transaction since the genesis block.
-
-While it is possible to fully sync the blockchain this way, it is not practical, as it will take a very long time and has higher computing resource requirements (much more RAM and faster storage).
-
-Doing a "normal" sync, your Ethereum client will make rapid progress until it reaches block 2,283,397. This block was mined on September 18th 2016 and marks the beginning of a series of Denial-of-Service attacks against Ethereum's blockchain. From this block and until block 2,700,031 (November 26th 2016) the validation of transactions becomes extremely slow, memory intensive, and I/O intensive resulting in block validation times exceeding 1 minute. The Ethereum system implemented a series of upgrades using hard forks, to address the underlying vulnerabilities that were exploited in the DoS and clean up the blockchain by removing some 20 million empty accounts created by spam transactions.
-
-If you are syncing with full validation, your client will slow down and may take several weeks or longer to validate the blocks in this range.
-
-Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. For Geth, the option to enable fast synchronization is +--fast+. For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
-
-[NOTE]
-====
-Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch to fast syncing. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful not to delete any wallets when deleting the blockchain data!
-====
-
-==== Setting Up Geth
-
-
-==== Using Geth Console
-
+Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
 
 
 === Parity
@@ -211,7 +188,7 @@ Disclosure: The author of this book, Gavin Wood, is the founder of Parity Tech a
 
 To install Parity, you can use the Rust package manager +cargo+ or download the source code from github. The package manager also downloads the source code, so there's not much difference between the two options. In the next section we will show you how to download and compile it yourself.
 
-==== Setting Up Parity
+==== Installing Parity
 
 The Parity Wiki offers instructions for building Parity in different environments and containers:
 
@@ -268,6 +245,24 @@ $
 ----
 
 Great! Now that parity is installed, we can sync the blockchain and get started with some basic command-line options.
+
+[[first_sync]]
+==== First Synchronization of the Ethereum Blockchain
+
+Normally, when syncing the Ethereum blockchain, your Ethereum client will download and validate every block and every transaction since the genesis block.
+
+While it is possible to fully sync the blockchain this way, it is not practical, as it will take a very long time and has higher computing resource requirements (much more RAM and faster storage).
+
+Doing a "normal" sync, your Ethereum client will make rapid progress until it reaches block 2,283,397. This block was mined on September 18th 2016 and marks the beginning of a series of Denial-of-Service attacks against Ethereum's blockchain. From this block and until block 2,700,031 (November 26th 2016) the validation of transactions becomes extremely slow, memory intensive, and I/O intensive resulting in block validation times exceeding 1 minute. The Ethereum system implemented a series of upgrades using hard forks, to address the underlying vulnerabilities that were exploited in the DoS and clean up the blockchain by removing some 20 million empty accounts created by spam transactions.
+
+If you are syncing with full validation, your client will slow down and may take several weeks or longer to validate the blocks in this range.
+
+Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. For Geth, the option to enable fast synchronization is +--fast+. For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
+
+[NOTE]
+====
+Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch to fast syncing. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful not to delete any wallets when deleting the blockchain data!
+====
 
 === Frameworks
 
