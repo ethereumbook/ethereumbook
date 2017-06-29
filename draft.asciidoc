@@ -4,13 +4,13 @@
 
 An Ethereum client is a software application that implements the Ethereum specification and interoperates over the peer-to-peer network with other Ethereum clients.
 
-Ethereum is defined by a formal specification called the "Yellow Paper".
-////
-Compare to bitcoin and reference implementation
-////
-This formal specification, in addition to various Ethereum Improvement Proposals, define the standard behavior of an Ethereum client. As a result, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Because there is a formal specification, there are a number of clients that adhere to that specification. Ethereum has a greater diversity of implementations, both written and running on the network, than any other blockchain.
+Ethereum is an _open source_ project and the source code is available under an open (LGPL v3.0) license, free to download and use for any purpose. Open source means more than simply free to use. It also means that Ethereum is developed by an open community of volunteers and can be modified by anyone.
 
-Ethereum's various client implementations are open source, collaboratively developed and free to use, share and modify.
+Ethereum is defined by a formal specification called the "Yellow Paper".
+This is in contrast to, for example, Bitcoin, which is not defined in any formal way. Where Bitcoin's "specification" is the reference implementation Bitcoin Core, Ethereum's specification is documented in a paper combining an English and a mathematical (formal) specification.
+This formal specification, in addition to various Ethereum Improvement Proposals, define the standard behavior of an Ethereum client.
+
+As a result of having a clear formal specification, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Ethereum has a greater diversity of implementations running on the network than any other blockchain.
 
 The vast majority of the Ethereum network runs one of the two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
 
@@ -42,19 +42,18 @@ Recommended:
 * Fast SSD with at least 250GB free space
 * 25+ MBit/sec donwload Internet service
 
-=== Go-Ethereum (geth)
+[[sw_reqs]]
+=== Software Requirements
 
-Geth is one of the three original implementations of the Ethereum client, which included an implementation in C++, Python and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator Vitalik Buterin.
+This section assumes you are using a Unix-like command-line environment, such as that provided by Linux, or MacOS operating systems, for example. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
 
-==== Getting Geth
+[TIP]
+====
+((("$ symbol")))((("shell commands")))((("terminal applications")))In many of the examples in this chapter we will be using the operating system's command-line interface (also known as a "shell"), accessed via a "terminal" application. The shell will display a prompt; you type a command; and the shell responds with some text and a new prompt for your next command. The prompt may look different on your system, but in the following examples it is denoted by a +$+ symbol. In the examples, when you see text after a +$+ symbol, don't type the +$+ symbol but type the command immediately following it, then press Enter to execute the command. In the examples, the lines below each command are the operating system's responses to that command. When you see the next +$+ prefix, you'll know it's a new command and you should repeat the process.
+====
 
-Geth's home is found at https://geth.ethereum.org/. On this site you will find instructions to download and install Geth for your operating system. Since this book is aimed at developers, we will be building Geth from the source code. This assumes you are using a Unix-like command-line environment, such as that provided by Linux, MacOS, or Windows operating systems, for example.
 
-You can also skip these instructions and install a pre-compiled binary for your platform of choice. But where's the fun and learning in that?
-
-===== Cloning the repository
-
-Before we get started, we may need to get some pre-requisites satisfied. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For this section, we will need to install +git+, the source-code management system, and +golang+, the Go programming language and standard libraries.
+Before we get started, we may need to get some pre-requisites satisfied. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For the examples that follow, you will need to install +git+, the source-code management system; +golang+, the Go programming language and standard libraries; and Rust, a systems programming language.
 
 Git can be installed by following the instructions here:
 https://git-scm.com/
@@ -64,10 +63,38 @@ https://golang.org/
 
 [NOTE]
 ====
-Geth requires Go version 1.7 or greater. The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org
+Geth requires Go version 1.7 or greater. The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org.
 ====
 
-Now, once you have +git+ and +golang+ installed, let's get to work!
+Rust can be installed by following the instructions here:
+https://www.rustup.rs/
+
+[NOTE]
+====
+Parity requires Rust version 1.18 or greater.
+====
+
+Parity also requires some software libraries, such as OpenSSL and libudev. To install these on a Linux (Debian) compatible system:
+
+----
+$ sudo apt-get install openssl libssl-dev libudev-dev
+----
+
+For other operating systems, use the package manager of your OS or follow the Wiki instructions (https://github.com/paritytech/parity/wiki/Setup) to install the required libraries.
+
+Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's get to work!
+
+=== Go-Ethereum (geth)
+
+Geth is one of the three original implementations of the Ethereum client, which included an implementation in C++, Python and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator Vitalik Buterin.
+
+==== Getting Geth
+
+Geth's home is found at https://geth.ethereum.org/. On this site you will find instructions to download and install Geth for your operating system. Since this book is aimed at developers, we will be building Geth from the source code.
+
+You can also skip these instructions and install a pre-compiled binary for your platform of choice. But where's the fun and learning in that?
+
+==== Cloning the repository
 
 Our first step is to clone the git repository, so as to get a copy of the source code.
 
@@ -95,6 +122,9 @@ Checking connectivity... done.
 
 Great! Now we have a local copy of Geth, we can compile an executable for our platform.
 
+==== Building Geth from Source Code
+
+To build Geth, change to the directory where the source code was downloaded and use the +make+ command:
 ----
 $ cd go-ethereum
 $ make geth
@@ -144,12 +174,9 @@ As a last step, we may want to copy the +geth+ command to our operating systems 
 ----
 $ sudo cp ./build/bin/geth /usr/local/bin
 ----
+Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). The next section explains the challenge with the initial synchronization of Ethereum's blockchain.
 
-Once that's done you can run it, simply by typing +geth+ on the command-line, without a path prefix.
-
-
-
-=== Fast Synchronization
+==== First Synchronization of the Ethereum Blockchain
 
 Normally, when syncing the Ethereum blockchain, your Ethereum client will download and validate every block and every transaction since the genesis block.
 
@@ -159,24 +186,88 @@ Doing a "normal" sync, your Ethereum client will make rapid progress until it re
 
 If you are syncing with full validation, your client will slow down and may take several weeks or longer to validate the blocks in this range.
 
-Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. For Geth, the option to enable fast synchronization is +--fast+. For Parity, the option is +--warp+.
+Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. For Geth, the option to enable fast synchronization is +--fast+. For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
 
 [NOTE]
 ====
 Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch to fast syncing. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful not to delete any wallets when deleting the blockchain data!
 ====
 
-
-
 ==== Setting Up Geth
-==== Running Get For The First Time
+
+
 ==== Using Geth Console
 
 
 
 === Parity
 
+Parity is an implementation of a full node Ethreum client and dapp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a highly modular, very secure and scalable Ethereum client. Parity is developed by Parity Tech, a UK company and is released under a GPLv3 open source license.
+
+[NOTE]
+====
+Disclosure: The author of this book, Gavin Wood, is the founder of Parity Tech and wrote most of the Parity client. However, the decision to write about Parity was made by the other author, Andreas M. Antonopoulos, because Parity represents 50% of the installed Ethereum client base.
+====
+
+To install Parity, you can use the Rust package manager +cargo+ or download the source code from github. The package manager also downloads the source code, so there's not much difference between the two options. In the next section we will show you how to download and compile it yourself.
+
 ==== Setting Up Parity
+
+The Parity Wiki offers instructions for building Parity in different environments and containers:
+
+https://github.com/paritytech/parity/wiki/Setup
+
+We'll build Parity from source. This assumes you have already installed Rust, using +rustup+ (See <<sw_reqs>>).
+
+First, let's get the source code from github:
+
+----
+$ git clone https://github.com/paritytech/parity
+----
+
+Now, let's change to the +parity+ directory and use +cargo+ to build the executable:
+
+----
+$ cd parity
+$ cargo build
+----
+
+If all goes well, you should see something like:
+
+----
+$ cargo build
+    Updating git repository `https://github.com/paritytech/js-precompiled.git`
+ Downloading log v0.3.7
+ Downloading isatty v0.1.1
+ Downloading regex v0.2.1
+
+ [...]
+
+Compiling parity-ipfs-api v1.7.0
+Compiling parity-rpc v1.7.0
+Compiling parity-rpc-client v1.4.0
+Compiling rpc-cli v1.4.0 (file:///home/aantonop/Dev/parity/rpc_cli)
+Finished dev [unoptimized + debuginfo] target(s) in 479.12 secs
+$
+----
+
+Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
+
+----
+$ parity --version
+Parity
+  version Parity/v1.7.0-unstable-02edc95-20170623/x86_64-linux-gnu/rustc1.18.0
+Copyright 2015, 2016, 2017 Parity Technologies (UK) Ltd
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+By Wood/Paronyan/Kotewicz/Drwięga/Volf
+   Habermeier/Czaban/Greeff/Gotchac/Redmann
+$
+----
+
+Great! Now that parity is installed, we can sync the blockchain and get started with some basic command-line options.
 
 === Frameworks
 
