@@ -3,7 +3,7 @@
 
 Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum Open Blockchain.
 
-This repository contains the draft of the book, currently in progress, scheduled for publication in Q1'2018 by O'Reilly Media.
+This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
 
 # Issues, Errors, Comments, Contributions
 
