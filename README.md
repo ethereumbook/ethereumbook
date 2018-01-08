@@ -8,7 +8,11 @@ This repository contains the draft of the book, currently in progress, scheduled
 
 # Issues, Errors, Comments, Contributions
 
-If you know how to make a pull request to contribute a fix, please write the correction and use a pull request to submit it for consideration. Otherwise, please submit an issue, explaining the error or comment. If you would like to contribute extensive changes or new material, please coordinate with the author first. Contact forms can be found on his website https://antonopoulos.com/
+For small errors or additions, please submit an `Issue`.
+
+For larger contributions, please submit a pull reuqest, adding an asciidoc file to the contrib directory. Chat with the authors and editor on [Gitter](https://gitter.im/ethereumbook/Lobby)
+
+See [Contributing Guide](Contribute.md) for detailed instructions
 
 # Source & License
 
