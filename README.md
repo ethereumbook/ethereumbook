@@ -1,9 +1,6 @@
 # Mastering Ethereum
 
-|Gitter|
-
-.. |Gitter| image:: https://raw.githubusercontent.com/ethereumbook/ethereumbook/develop/images/chat-on-gitter.svg
-   :target: https://gitter.im/ethereumbook/Lobby
+[Chat on Gitter](https://gitter.im/ethereumbook/Lobby)
 
 Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum Open Blockchain.
 
