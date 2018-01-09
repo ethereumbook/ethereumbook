@@ -1,18 +1,18 @@
 # Mastering Ethereum
 
-[Chat on Gitter](https://gitter.im/ethereumbook/Lobby)
-
-Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum Open Blockchain.
+Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
 
 This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
 
-# Issues, Errors, Comments, Contributions
+# Contributing, reviewing and commenting
 
-For small errors or additions, please submit an `Issue`.
+This book is developed collaboratively and openly, here on Github. We accept comments, contributions and corrections from all.
 
-For larger contributions, please submit a pull reuqest, adding an asciidoc file to the contrib directory. Chat with the authors and editor on [Gitter](https://gitter.im/ethereumbook/Lobby)
+To chat with the authors and editors:
 
-See [Contributing Guide](Contribute.md) for detailed instructions
+[Chat on Gitter](https://gitter.im/ethereumbook/Lobby)
+
+To contribute, see the detailed [Contributing Guide](Contribute.md)
 
 # Source & License
 
@@ -20,6 +20,6 @@ The book's source code, found in this repository, is kept synchronized with the 
 
 The [develop branch](https://github.com/ethereumbook/ethereumbook/tree/develop), containing the most recent changes you see here is the in-progress drafting of Mastering Ethereum.
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Mastering Ethereum</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://antonopoulos.com/" property="cc:attributionName" rel="cc:attributionURL">Andreas M. Antonopoulos LLC</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
+<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Mastering Ethereum</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://antonopoulos.com/" property="cc:attributionName" rel="cc:attributionURL">The Ethereum Book LLC and Gavin Wood</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
 
 It is expected that the book will be released under a more permissive CC-BY-SA license within a year of publication.
