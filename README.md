@@ -17,6 +17,10 @@ Here's what is available now (Note: the order or structure of these snippets is 
 * [Ethereum Clients](clients.asciidoc)
 * [Development Tools and Frameworks](dev-tools.asciidoc)
 * [Ethereum Testnets](ethereum-testnets.asciidoc)
+* [Transactions](transactions.asciidoc)
+* [Accounting & Gas](gas.asciidoc)
+* [EVM](evm.asciidoc)
+* [Tokens](tokens.asciidoc)
 
 Jump in! Review, comment, suggest and contribute...
 
