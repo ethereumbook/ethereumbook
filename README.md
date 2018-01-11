@@ -1,3 +1,8 @@
+<img src="images/cover.png" alt="Mastering Ethereum Cover" style="width: 150px;"/>
+<hr/>
+
+[![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
+
 # Mastering Ethereum
 
 Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
@@ -30,7 +35,8 @@ This book is developed collaboratively and openly, here on Github. We accept com
 
 To chat with the authors and editors:
 
-[Chat on Gitter](https://gitter.im/ethereumbook/Lobby)
+
+[![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
 To contribute, see the detailed [Contributing Guide](Contribute.md)
 
