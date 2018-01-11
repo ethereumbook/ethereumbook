@@ -4,6 +4,22 @@ Mastering Ethereum is a book for developers, offering a guide to the operation a
 
 This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
 
+# Contents
+
+The current status of the book is "outline". Chapters are not clearly defined or organized yet. Snippets and outlines of various topics are being developed and comments are very welcome!
+
+Here's what is available now (Note: the order or structure of these snippets is in constant flux):
+
+* [Preface](preface.asciidoc)
+* [Glossary](glossary.asciidoc) (_pending [PR](https://github.com/ethereumbook/ethereumbook/pull/2) from homestead-guide_)
+* [Introduction](intro.asciidoc)
+* [What is Ethereum](what-is.asciidoc)
+* [Ethereum Clients](clients.asciidoc)
+* [Development Tools and Frameworks](dev-tools.asciidoc)
+* [Ethereum Testnets](ethereum-testnets.asciidoc)
+
+Jump in! Review, comment, suggest and contribute...
+
 # Contributing, reviewing and commenting
 
 This book is developed collaboratively and openly, here on Github. We accept comments, contributions and corrections from all.
