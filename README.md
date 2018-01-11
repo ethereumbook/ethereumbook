@@ -1,7 +1,8 @@
-<img src="images/cover.png" alt="Mastering Ethereum Cover" style="width: 150px;"/>
-<hr/>
+![Mastering Ethereum Cover](images/cover_thumb.png)
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
+
+<hr/>
 
 # Mastering Ethereum
 
