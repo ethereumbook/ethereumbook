@@ -39,7 +39,7 @@ To chat with the authors and editors:
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
-To contribute, see the detailed [Contributing Guide](Contribute.md)
+To contribute, see the detailed [Contributing Guide](CONTRIBUTE.md)
 
 # Source & License
 
