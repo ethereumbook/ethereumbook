@@ -28,6 +28,7 @@ Here's what is available now (Note: the order or structure of these snippets is 
 * [Accounting & Gas](gas.asciidoc)
 * [EVM](evm.asciidoc)
 * [Tokens](tokens.asciidoc)
+* [Decentralized Applications (Dapps)](dapps.asciidoc)
 
 Jump in! Review, comment, suggest and contribute...
 
