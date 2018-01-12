@@ -18,8 +18,8 @@ Here's what is available now (Note: the order or structure of these snippets is 
 
 * [Preface](preface.asciidoc)
 * [Glossary](glossary.asciidoc) (_pending [PR](https://github.com/ethereumbook/ethereumbook/pull/2) from homestead-guide_)
-* [Introduction](intro.asciidoc)
 * [What is Ethereum](what-is.asciidoc)
+* [Introduction](intro.asciidoc)
 * [Ethereum Clients](clients.asciidoc)
 * [Ethereum Testnets](ethereum-testnets.asciidoc)
 * [Keys and Addresses](keys-addresses.asciidoc)
