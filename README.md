@@ -21,13 +21,14 @@ Here's what is available now (Note: the order or structure of these snippets is 
 * [Introduction](intro.asciidoc)
 * [What is Ethereum](what-is.asciidoc)
 * [Ethereum Clients](clients.asciidoc)
-* [Development Tools and Frameworks](dev-tools.asciidoc)
 * [Ethereum Testnets](ethereum-testnets.asciidoc)
 * [Keys and Addresses](keys-addresses.asciidoc)
 * [Transactions](transactions.asciidoc)
+* [Smart Contracts](smart-contracts.asciidoc)
+* [Tokens](tokens.asciidoc)
 * [Accounting & Gas](gas.asciidoc)
 * [EVM](evm.asciidoc)
-* [Tokens](tokens.asciidoc)
+* [Development Tools and Frameworks](dev-tools.asciidoc)
 * [Decentralized Applications (Dapps)](dapps.asciidoc)
 
 Jump in! Review, comment, suggest and contribute...
