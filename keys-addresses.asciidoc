@@ -56,18 +56,51 @@ When spending ether, the current owner presents her public key and a signature (
 ((("keys and addresses", "overview of", "key pairs")))In most wallet implementations, the private and public keys are stored together as a _key pair_ for convenience. However, the public key can be trivially calculated from the private key, so storing only the private key is also possible.
 ====
 
+.Why Use Asymmetric Cryptography (Public/Private Keys)?
+****
+((("cryptography", "asymmetric")))((("digital signatures", "asymmetric cryptography and")))((("asymmetric cryptography")))Why is asymmetric cryptography used in Ethereum? It's not used to "encrypt" (make secret) the transactions. Rather, the useful property of asymmetric cryptography is the ability to generate _digital signatures_. A private key can be applied to the digital fingerprint of a transaction to produce a numerical signature. This signature can only be produced by someone with knowledge of the private key. However, anyone with access to the public key and the transaction fingerprint can use them to _verify_ the signature. This useful property of asymmetric cryptography makes it possible for anyone to verify every signature on every transaction, while ensuring that only the owners of private keys can produce valid signatures.
+****
+
+[[private_keys]]
+==== Private Keys
+
+((("keys and addresses", "overview of", "private key generation")))((("warnings and cautions", "private key protection")))A private key is simply a number, picked at random. Ownership and control over the private key is the root of user control over all funds associated with the corresponding Ethereum address, as well as access to contracts that authorize that address. The private key is used to create signatures that are required to spend ether by proving ownership of funds used in a transaction. The private key must remain secret at all times, because revealing it to third parties is equivalent to giving them control over the ether and contracts secured by that key. The private key must also be backed up and protected from accidental loss, because if it's lost it cannot be recovered and the funds secured by it are forever lost, too.
+
+[TIP]
+====
+The Ethereum private key is just a number. You can pick your private keys randomly using just a coin, pencil, and paper: toss a coin 256 times and you have the binary digits of a random private key you can use in a Ethereum wallet. The public key and address can then be generated from the private key.
+====
+
+===== Generating a private key from a random number
+
+The first and most important step in generating keys is to find a secure source of entropy, or randomness. Creating a Ethereum private key is essentially the same as "Pick a number between 1 and 2^256^." The exact method you use to pick that number does not matter as long as it is not predictable or repeatable. Ethereum software uses the underlying operating system's random number generator to produce 256 bits of entropy (randomness). Usually, the OS random number generator is initialized by a human source of randomness, which is why you may be asked to wiggle your mouse around for a few seconds, or press random keys on your keyboard.
+
+More precisely, the range of possible private keys is slightly less than 2^256^. The private key can be any number between +1+ and +n - 1+, where n is a constant (n = 1.158 * 10^77^, slightly less than 2^256^) defined as the order of the elliptic curve used in Ethereum (see <<elliptic_curve>>). To create such a key, we randomly pick a 256-bit number and check that it is less than +n - 1+. In programming terms, this is usually achieved by feeding a larger string of random bits, collected from a cryptographically secure source of randomness, into a 256-bit hash algorithm such as Keccak-256 or SHA256 (see <<cryptographic_hash_algorithm), which will conveniently produce a 256-bit number. If the result is less than +n - 1+, we have a suitable private key. Otherwise, we simply try again with another random number.
+
+[WARNING]
+====
+((("random numbers", "random number generation")))((("entropy", "random number generation")))Do not write your own code to create a random number or use a "simple" random number generator offered by your programming language. Use a cryptographically secure pseudo-random number generator (CSPRNG) with a seed from a source of sufficient entropy. Study the documentation of the random number generator library you choose to make sure it is cryptographically secure. Correct implementation of the CSPRNG is critical to the security of the keys.
+====
+
+The following is a randomly generated private key (k) shown in hexadecimal format (256 bits shown as 64 hexadecimal digits, each 4 bits):
+
+----
+f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
 
 
+[TIP]
+====
+The size of Ethereum's private key space, (2^256^) is an unfathomably large number. It is approximately 10^77^ in decimal. For comparison, the visible universe is estimated to contain 10^80^ atoms.
+====
 
-==== One Way Functions
 
-==== Elliptic Curve
-
-==== Hash Algorithms
-
-=== Private Keys
 
 === Public Keys
+
+=== Cryptographic Hash Algorithms
+
+
 
 === Ethereum Addresses
 
