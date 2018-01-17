@@ -118,11 +118,141 @@ Elliptic curve multiplication is a type of function that cryptographers call a "
 
 Before we demonstrate how to generate a public key from a private key, let's look at elliptic curve cryptography in a bit more detail.
 
-[[ecc]]
-=== Elliptic Curve Cryptography
 
-[[public_key_calculation]]
-=== Calculating the Public Key
+[[elliptic_curve]]
+==== Elliptic Curve Cryptography Explained
+
+((("keys and addresses", "overview of", "elliptic curve cryptography")))((("elliptic curve cryptography", id="eliptic04")))((("cryptography", "elliptic curve cryptography", id="Celliptic04")))Elliptic curve cryptography is a type of asymmetric or public key cryptography based on the discrete logarithm problem as expressed by addition and multiplication on the points of an elliptic curve.
+
+<<ecc-curve>> is an example of an elliptic curve, similar to that used by Ethereum.
+
+[TIP]
+====
+Ethereum uses the exact same elliptic curve, called +secp256k1+, as bitcoin. That makes it possible to re-use many of the elliptic curve libraries and tools from bitcoin.
+====
+
+[[ecc-curve]]
+[role="smallerthirty"]
+.An elliptic curve
+image::images/simple_elliptic_curve.png["ecc-curve"]
+
+Ethereum uses a specific elliptic curve and set of mathematical constants, as defined in a standard called +secp256k1+, established by the National Institute of Standards and Technology (NIST). The +secp256k1+ curve is defined by the following function, which produces an elliptic curve:
+
+[latexmath]
+++++
+\begin{equation}
+{y^2 = (x^3 + 7)}~\text{over}~(\mathbb{F}_p)
+\end{equation}
+++++
+
+or
+
+[latexmath]
+++++
+\begin{equation}
+{y^2 \mod p = (x^3 + 7) \mod p}
+\end{equation}
+++++
+
+The _mod p_ (modulo prime number p) indicates that this curve is over a finite field of prime order _p_, also written as latexmath:[\( \mathbb{F}_p \)], where p = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, a very large prime number.
+
+Because this curve is defined over a finite field of prime order instead of over the real numbers, it looks like a pattern of dots scattered in two dimensions, which makes it difficult to visualize. However, the math is identical to that of an elliptic curve over real numbers. As an example, <<ecc-over-F17-math>> shows the same elliptic curve over a much smaller finite field of prime order 17, showing a pattern of dots on a grid. The +secp256k1+ Ethereum elliptic curve can be thought of as a much more complex pattern of dots on a unfathomably large grid.
+
+[[ecc-over-F17-math]]
+[role="smallersixty"]
+.Elliptic curve cryptography: visualizing an elliptic curve over F(p), with p=17
+image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
+
+So, for example, the following is a point Q with coordinates (x,y) that is a point on the +secp256k1+ curve:
+
+----
+Q = (49790390825249384486033144355916864607616083520101638681403973749255924539515, 59574132161899900045862086493921015780032175291755807399284007721050341297360)
+----
+
+<<example_1>> shows how you can check this yourself using Python. The variables x and y are the coordinates of the point Q as above. The variable p is the prime order of the elliptic curve (the prime that is used for all the modulo operations). The last line of Python is the elliptic curve equation (the % operator in Python is the modulo operator). If x and y are indeed points on the elliptic curve, then they satisfy the equation and the result is zero (+0L+ is a long integer with value zero). Try it yourself, by typing +python+ on a command line and copying each line (after the prompt +>>>+) from the listing:
+
+[[example_1]]
+.Using Python to confirm that this point is on the elliptic curve
+====
+[source, pycon]
+----
+Python 3.4.0 (default, Mar 30 2014, 19:23:13)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.38)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> p = 115792089237316195423570985008687907853269984665640564039457584007908834671663
+>>> x = 49790390825249384486033144355916864607616083520101638681403973749255924539515
+>>> y = 59574132161899900045862086493921015780032175291755807399284007721050341297360
+>>> (x ** 3 + 7 - y**2) % p
+0L
+----
+====
+
+[[ec_math]]
+==== Elliptic Curve Arithmetic Operations
+
+A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of adding numbers is adding points on the curve. Once we have the addition operator, we can also define multiplication of a point and an whole number, such that it is equivalent to repeated addition.
+
+Addition is defined such that given two points P~1~ and P~2~ on the elliptic curve, there is a third point P~3~ = P~1~ + P~2~, also on the elliptic curve.
+
+Geometrically, this third point P~3~ is calculated by drawing a line between P~1~ and P~2~. This line will intersect the elliptic curve in exactly one additional place. Call this point P~3~' = (x, y). Then reflect in the x-axis to get P~3~ = (x, –y).
+
+In elliptic curve math, there is a point called the "point at infinity," which roughly corresponds to the role of the number zero in addition. On computers, it's sometimes represented by x = y = 0 (which doesn't satisfy the elliptic curve equation, but it's an easy separate case that can be checked). There are a couple of special cases that explain the need for the "point at infinity."
+
+If P~1~ and P~2~ are the same point, the line "between" P~1~ and P~2~ should extend to be the tangent on the curve at this point P~1~. This tangent will intersect the curve in exactly one new point. You can use techniques from calculus to determine the slope of the tangent line. These techniques curiously work, even though we are restricting our interest to points on the curve with two integer coordinates!
+
+In some cases (i.e., if P~1~ and P~2~ have the same x values but different y values), the tangent line will be exactly vertical, in which case P3 = "point at infinity."
+
+If P~1~ is the "point at infinity," then P~1~ + P~2~ = P~2~. Similarly, if P~2~ is the point at infinity, then P~1~ + P~2~ = P~1~. This shows how the point at infinity plays the role that zero plays in "normal" arithmetic.
+
+It turns out that pass:[+] is associative, which means that (A pass:[+] B) pass:[+] C = A pass:[+] (B pass:[+] C). That means we can write A pass:[+] B pass:[+] C without parentheses and without ambiguity.
+
+Now that we have defined addition, we can define multiplication in the standard way that extends addition. For a point P on the elliptic curve, if k is a whole number, then k pass:[*] P = P + P + P + ... + P (k times). Note that k is sometimes confusingly called an "exponent" in this case
+
+[[public_key_derivation]]
+==== Generating a Public Key
+
+((("keys and addresses", "overview of", "public key generation")))((("generator point")))Starting with a private key in the form of a randomly generated number _k_, we multiply it by a predetermined point on the curve called the _generator point_ _G_ to produce another point somewhere else on the curve, which is the corresponding public key _K_. The generator point is specified as part of the +secp256k1+ standard and is always the same for all implementations of +secp256k1+ and all keys derived from that curve use the same point _G_:
+
+[latexmath]
+++++
+\begin{equation}
+{K = k * G}
+\end{equation}
+++++
+
+where _k_ is the private key, _G_ is the generator point, and _K_ is the resulting public key, a point on the curve. Because the generator point is always the same for all Ethereum users, a private key _k_ multiplied with _G_ will always result in the same public key _K_. The relationship between _k_ and _K_ is fixed, but can only be calculated in one direction, from _k_ to _K_. That's why a Ethereum address (derived from _K_) can be shared with anyone and does not reveal the user's private key (_k_).
+
+As we descirbed in <<ec_math>>, the multiplication of k * G is equivalent to repeated addition, so G + G + G + ... + G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
+
+[TIP]
+====
+A private key can be converted into a public key, but a public key cannot be converted back into a private key because the math only works one way.
+====
+
+Let's apply this calculation to find the public key for the specific private key we showed you in <<private_keys>>:
+
+----
+K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
+----
+
+A cryptographic library can help us calculate K, using elliptic curve multiplication. The resulting public key _K_ is defined as a point +K = (x,y)+:
+
+----
+K = (x, y)
+
+where,
+
+x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
+y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+==== Elliptic Curve libraries
+
+There are a couple of implementations of the secp256k1 elliptic curve that are used in crypto-currency related projects:
+
+((("OpenSSL cryptographic library")))OpenSSL:: The OpenSSL library offers a comprehensive set of cryptographic primitives, including a full implementation of the secp256k1. For example, to derive the public key, the function +EC_POINT_mul()+ can be used. Find it at https://www.openssl.org/
+
+((("libsecp256k1 cryptographic library")))libsecp256k1:: Bitcoin Core's libsecp256k1, is a C-language implementation of the secp256k1 elliptic curve and other cryptographic primitives. The libsecp256 of elliptic curve cryptography was written from scratch to replace OpenSSL in Bitcoin Core software, and is considered superior in both performance and security. Find it at: https://github.com/bitcoin-core/secp256k1
 
 === Cryptographic Hash Algorithms
 
