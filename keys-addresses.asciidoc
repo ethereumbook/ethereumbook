@@ -235,12 +235,17 @@ A private key can be converted into a public key, but a public key cannot be con
 
 Let's apply this calculation to find the public key for the specific private key we showed you in <<private_keys>>:
 
+
+[[example_privkey]]
+.Example private key to public key calculation
 ----
 K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
 ----
 
 A cryptographic library can help us calculate K, using elliptic curve multiplication. The resulting public key _K_ is defined as a point +K = (x,y)+:
 
+[[example_pubkey]]
+.Example public key calculated from the example private key
 ----
 K = (x, y)
 
@@ -248,6 +253,28 @@ where,
 
 x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
 y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+In Ethereum you may see public keys represented as a hexadecimal serialization of 66 hexadecimal characters (33 bytes). This is adopted from a standard serialization format proposed by the industry consortium Standards for Efficient Cryptography Group (SECG), documented in http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. The standard defines four possible prefixes that can be used to identify points on an elliptic curve:
+
+|===
+| Prefix | Meaning | Length (bytes counting prefix) |
+|0x00| Point at Infinity | 1 |
+|0x04| Uncompressed Point | 65 |
+|0x00| Compressed Point with even Y | 33 |
+|0x00| Compressed Point with odd Y | 33 |
+|===
+
+Ethereum only uses uncompressed public keys, therefore the only prefix that is relevant is (hex) +04+. The serialization concatenated the X and Y coordinates of the public key:
+
+----
+04 + X-coordinate (32 bytes/64 hex) + Y coordinate (32 bytes/64 hex)
+----
+
+Therefore, the public key we calculated in <<example_pubkey>> is serialized as:
+
+----
+046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
 ----
 
 ==== Elliptic Curve libraries
@@ -327,6 +354,32 @@ So, regardless of what the function is called, you can test it to see whether it
 Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys
 
 === Ethereum Addresses
+
+Ethereum addresses are _unique identifiers_ that are derived from public keys or contracts using a one-way hash function (specifically Keccak-256).
+
+In our previous examples, we started with a private key and used elliptic curve multiplication to derive a public key:
+
+Private Key:
+----
+k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+Public Key (X and Y coordinates concatenated and shown as hex):
+----
+K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+We use Keccak-256 to calculate the _hash_ of this public key:
+
+----
+Keccak-256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Then we keep only the last 20 bytes, which is our Ethereum address:
+
+----
+001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
 
 === Ethereum Address Formats
 
