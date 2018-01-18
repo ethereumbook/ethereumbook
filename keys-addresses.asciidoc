@@ -258,7 +258,73 @@ There are a couple of implementations of the secp256k1 elliptic curve that are u
 
 ((("libsecp256k1 cryptographic library")))libsecp256k1:: Bitcoin Core's libsecp256k1, is a C-language implementation of the secp256k1 elliptic curve and other cryptographic primitives. The libsecp256 of elliptic curve cryptography was written from scratch to replace OpenSSL in Bitcoin Core software, and is considered superior in both performance and security. Find it at: https://github.com/bitcoin-core/secp256k1
 
-=== Cryptographic Hash Algorithms
+[[hash_functions]]
+=== Cryptographic Hash Functions
+
+((("hash function")))Cryptographic hash functions are used throughout Ethereum. In fact, hash functions are used extensively in almost all cryptographic systems, a fact captured by cryptographer Bruce Schneier who said "Much more than encryption algorithms, one-way hash functions are the workhorses of modern cryptography."
+
+In this section we will discuss hash functions, understand their basic properties and how those properties makes them so useful in so many areas of modern cryptography. We address hash functions here, because they are part of the transformation of Ethereum public keys into addresses.
+
+In simple terms, "a hash function is any function that can be used to map data of arbitrary size to data of fixed size." https://en.wikipedia.org/wiki/Hash_function[Source: Wikipedia]. The input to a hash function is called a ((("pre image")))_pre-image_ or _message_. The output is called a _hash_, or _digest_. A special sub-category of hash functions is _cryptographic hash functions_, which have specific properties that are useful to cryptography.
+
+A cryptographic hash function is a _one way_ hash function that maps data of arbitrary size to a fixed-size bit string, where it is computationally infeasible to recreate the input if one knows the output. The only way to determine the input is to conduct a brute-force search of possible inputs, checking for a matching output.
+
+Cryptographic hash functions ave five main properties (https://en.wikipedia.org/wiki/Cryptographic_hash_function[Source: Wikipedia/Cryptographic Hash Function]):
+
+Determinism:: Any input message always produces the same hash digest.
+
+Verifiability:: Computing the hash of a message is efficient (linear performance).
+
+Irreversibiility:: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
+
+Uncorrelated:: A small change to the message (eg. one bit change) should change the hash output so extensively that it cannot be correlated to the hash of the original message.
+
+Collision Protection:: It should be infeasible to calculate two different messages that produce the same hash output.
+
+The combination of these properties make cryptographic hash functions useful for a broad range of security applications including:
+
+* Data fingerprinting
+* Message integrity (error detection)
+* Proof-of-Work
+* Authentication (password hashing and key stretching)
+* Pseudo-random number generators
+* Pre-image commitment
+* Unique identifiers
+
+We will find many of these in Ethereum, as we progress through the various layers of the system.
+
+==== Ethereum's Cryptographic Hash Function - Keccak-256
+
+((("SHA-3 Hash Function")))((("Keccak Hash Function")))((("Keccak-256")))Ethereum uses the _Keccak-256_ cryptographic hash function in many places. Keccak-256 was deisgned as a candidate for the SHA-3 Cryptographic Hash Function Competition held in 2007 by the ((("NIST")))National Institute of Science and Technology (NIST). Keccak was the winning algorithm that became standardized as ((("FIPS")))Federal Information Processing Standard (FIPS) ((("FIPS-202")))202 in 2015.
+
+However, during the period when Ethereum was developed, NIST standardization was being finalized. NIST adjusted some of the parameters of Keccak after the completion of the standards process, allegedly to improve its efficiency. This was occurring at the same time as heroic whistleblower ((("Edward Snowden")))Edward Snowden revealed documents that imply that NIST may have been improperly influenced by the National Security Agency to intentionally weaken the ((("Dual_EC_DRBG")))Dual_EC_DRBG random-number generator standard, effectively placing a backdoor in the standard random number generator. The result of this controversy was a backlash against the proposed changes and a significant delay in the standardization of SHA-3. At the time, the Ethereum Foundation decided to implement the original Keccak algorithm, as proposed by its inventors, rather than the SHA-3 standard as modified by NIST.
+
+[WARNING]
+====
+While you may see "SHA3" mentioned throughout Ethereum documents and code, many if not all of those instances actually refer to Keccak-256, not the finalized FIPS-202 SHA-3 standard. The implementation differences are slight, having to do with padding parameters, but they are significant in that Keccak-256 produces different hash output than FIPS-202 SHA-3 given the same input.
+====
+
+Due to confusion created by the difference between the hash function used in Ethereum (Keccak-256) and the finalized standard (FIP-202 SHA-3), there is an effort underway to rename all instances of +sha3+ in all code, opcodes and libraries to +keccak256+. See https://github.com/ethereum/EIPs/issues/59[ERC-59] for details.
+
+==== Which Hash Function Am I Using?
+
+How can you tell if the software library you are using is FIPS-202 SHA-3 or Keccak-256, if both might be called "SHA3"?
+
+An easy way to tell is to use a _test vector_, an expected output for a given input. The test most commonly used for a hash function is the _empty input_. If you run the hash function with an empty string as input you should see the following results:
+
+[[sha3_test_vectors]]
+.Testing whether the SHA3 library you are using is Keccak-256 of FIP-202 SHA-3
+----
+Keccak-256("") =
+c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+SHA-3("") =
+a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
+----
+
+So, regardless of what the function is called, you can test it to see whether it is the original Keccak-256, or the final NIST standard FIPS-202 SHA-3, by running the simple test above. Remember, Ethereum uses Keccak-256, even though it is often called SHA-3 in the code.
+
+Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys
 
 === Ethereum Addresses
 
