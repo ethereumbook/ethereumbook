@@ -224,7 +224,7 @@ Now that we have defined addition, we can define multiplication in the standard 
 \end{equation}
 ++++
 
-where _k_ is the private key, _G_ is the generator point, and _K_ is the resulting public key, a point on the curve. Because the generator point is always the same for all Ethereum users, a private key _k_ multiplied with _G_ will always result in the same public key _K_. The relationship between _k_ and _K_ is fixed, but can only be calculated in one direction, from _k_ to _K_. That's why a Ethereum address (derived from _K_) can be shared with anyone and does not reveal the user's private key (_k_).
+where _k_ is the private key, _G_ is the generator point, and _K_ is the resulting public key, a point on the curve. Because the generator point is always the same for all Ethereum users, a private key _k_ multiplied with _G_ will always result in the same public key _K_. The relationship between _k_ and _K_ is fixed, but canpubkey_hex[:64] only be calculated in one direction, from _k_ to _K_. That's why a Ethereum address (derived from _K_) can be shared with anyone and does not reveal the user's private key (_k_).
 
 As we descirbed in <<ec_math>>, the multiplication of k * G is equivalent to repeated addition, so G + G + G + ... + G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
 
@@ -381,20 +381,144 @@ Then we keep only the last 20 bytes, which is our Ethereum address:
 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
+Most often you will see Ethereum addresses with the prefix +0x" that indicates it is a hexadecimal encoding, like this:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
 === Ethereum Address Formats
 
-==== Hex Encoding without Checksum
+Ethereum addresses are hexadecimal numbers, identifiers derived from the last 20 bytes of the Keccak-256 hash of the public key.
 
-==== Hex Encoding with Checksum in Capitalization
+Unlike bitcoin addresses which are encoded in the user interface of all clients to include a built-in checksum to protect against mistyped addresses, Ethereum addresses are presented as raw hexadecimal without any checksum.
 
-==== ICAP (IBAN)
+The rationale behind that decision was that Ethereum addresses would eventually be hidden behind abstractions (such as name services) at higher layers of the system and that checksums should be added at higher layers if necessary.
 
-https://www.royalfork.org/2017/12/10/eth-graphical-address/
+In retrospect, this design choice lead to a number of problems, including the loss of funds due to mistyped addresses and input validation errors. Ethereum name services were developed slower than initially expected and alternative encodings such as ICAP were adopted very slowly by wallet developers.
 
-https://Ethereum.stackexchange.com/questions/3542/how-are-Ethereum-addresses-generated/3619
+==== Inter exchange Client Address Protocol (ICAP)
 
-https://Ethereum.stackexchange.com/questions/267/why-dont-Ethereum-addresses-have-checksums
+The _Inter exchange Client Address Protocol (ICAP)_ is an Ethereum Address encoding that is partly compatible with the International Bank Account Number (IBAN) encoding, offering a versatile, checksummed and interoperable encoding for Ethereum Addresses. ICAP addresses can encode Ethereum Addresses or common names registered with an Ethereum name registry.
+
+IBAN is an international standard for identifying bank account numbers, mostly used for wire transfers. It is broadly adopted in the European Single Euro Payments Area (SEPA) and beyond. IBAN is a centralized and heavily regulated service. ICAP is a decentralized but compatible implementation for Ethereum addresses.
+
+An IBAN consists of up to 34 alphanumeric characters (case insensitive) string containing a country code, checksum, and bank account identifier (which is country specific).
+
+ICAP uses the same structure by introducing a non-standard country code "XE" that stands for "Ethereum", followed by a two character checksum and 3 possible variations of an account identifier:
+
+Direct:: Up to 30 alphanumeric character big-endian base-36 integer representing the least significant bits of an Ethereum address. Because this encoding fits less than 155 bits, it only works for Ethereum addresses that start with one or more zero bytes. The advantage is that it is compatible with IBAN, in terms of the field length and checksum. Example: +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 characters long)
+
+Basic:: Same as the "Direct" encoding except that it is 31 characters long. This allows it to encode any Ethereum address, but makes it incompatible with IBAN field validation. Example: +XE18CHDJBPLTBCJ03FE9 O2NS0BPOJVQCU2P+ (35 characters long)
+
+Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. Uses 16 alphanumeric characters, composed of an _asset identifier_ (eg. ETH), a name service (eg. XREG) and a 9 character name (eg. KITTYCATS), which is a human readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
+
+We can use the +helpeth+ command-line tool to create ICAP addresses. Let's try with our example private key (prefixed with 0x and passed as a parameter to helpeth):
+
+----
+$ helpeth keyDetails -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+
+Address: 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+ICAP: XE60 HAMI CDXS V5QX VJA7 TJW4 7Q9C HWKJ D
+Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+The +helpeth+ command constructs a hexadecimal Ethereum address as well as an ICAP address for us. The ICAP address for our example key is:
+
+----
+XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
+----
+
+Because our example Ethereum address happens to start with a zero byte, it can be encoded using the "Direct" ICAP encoding method that is a valid in an IBAN format. You can tell because it is 33 characters long.
+
+If our address did not start with a zero, it would be encoded with the "Basic" encoding, which would be 35 characters long and invalid as an IBAN format.
+
+[TIP]
+====
+The chances of any Ethereum address starting with a zero byte are 1 in 256. To generate one like that, it will take on average 256 attempts with 256 different random private keys before we find one that works as an IBAN-compatible "Direct" encoded ICAP address.
+====
+
+At this time, ICAP is unfortunately only supported by a few wallets.
+
+==== Hex Encoding with Checksum in Capitalization (EIP-55)
+
+Due to the slow deployment of ICAP or name services, a new standard was proposed with Ethereum Improvement Proposal 55 (EIP-55). You can read the details at:
 
 https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
 
-====
+EIP-55 offers a backwards compatible checksum for Ethereum addresses by modifying the capitalization of the hexadecimal address. The idea is that Ethereum addresses are case-insensitive and all wallets are supposed to accept Ethereum addresses expressed in capital or lower-case characters, without any difference in interpretation.
+
+By modifying the capitalization of the alphabetic characters in the address, we can convey a checksum that can be used to protect the integrity of the address against typing or reading mistakes. Wallets that do not support EIP-55 checksums simply ignore the fact that the address contains mixed capitalization. But those that do support it, can validate it and detect errors with a 99.986% accuracy.
+
+The mixed-capitals encoding is subtle and you may not notice it at first. Our example address is:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+with an EIP-55 mixed-capitalization checksum it becomes:
+
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Can you tell the difference? Some of the alphabetic (A-F) characters from the hexadecimal encoding alphabet are now capital, while others are lower case. You might not even notice the difference, unless you looked carefully.
+
+EIP-55 is quite simple to implement. We take the Keccak-256 hash of the lower-case hexadecimal address. This hash acts as a digital fingerprint of the address, giving us a convenient checksum. Any small change in the input (the address) should cause a big change in the resulting hash (the checksum), allowing us to detect errors effectively. The hash of our address is then encoded in the capitalization of the address itself. Let's break it down, step-by-step:
+
+1. Hash the lower-case address, without the +0x+ prefix:
+
+----
+Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
+23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
+----
+
+2. Capitalize each alphabetic address character if the corresponding hex digit of the hash is greater than or equal to +0x8+. This is easier to show if we line up the address and the hash:
+
+----
+Address: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+Our address contains an alphabetic character +d+ in the fourth position. The fourth character of the hash is +6+, which is less than +8+. So, we leave the +d+ lower-case. The next alphabetic character in our address is +f+, in the sixth position. The sixth character of the hexadecimal hash is +c+, which is greater than +8+. Therefore, we capitalize the +F+ in the address, and so on. As you can see, we only use the first 20-bytes (40 hex characters) of the hash as a checksum, since we only have 20-bytes (40 hex characters) in the address to capitalize appropriately.
+
+Check the resulting mixed-capitals address yourself and see if you can tell which characters were capitalized and which characters they correspond to in the address hash:
+
+----
+Address: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+==== Detecting an error in an EIP-55 encoded address
+
+Now, let's look at how EIP-55 addresses will help us find an error. Let's assume we have printed out an Ethereum address, which is EIP-55 encoded:
+
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Now let's make a basic mistake in reading that address. The character before the last one is a capital "F". For this example let's assume we misread that as a capital "E". We type in the (incorrect address) into our wallet:
+
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+----
+
+Fortunately, our wallet is EIP-55 compliant! It notices the mixed capitalization and attempts to validate the address. It converts it to lower case, and calculates the checksum hash:
+
+----
+Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
+5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
+----
+
+As you can see, even though the address has only changed by one character (in fact, only one bit as "e" and "f" are 1-bit apart), the hash of the address has changed radically. That's the property of hash functions that makes them so useful for checksums!
+
+Now, let's line up the two and check the capitalization:
+
+----
+001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+5429b5d9460122fb4b11af9cb88b7bb76d892886...
+----
+
+It's all wrong! Several of the alphabetic characters are incorrectly capitalized. Now remember, the capitalization is the encoding of the _correct_ checksum.
+
+The capitalization of the address we input doesn't match the checksum just calculated, meaning something has changed in the address, some error has been introduced.
