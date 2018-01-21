@@ -14,22 +14,24 @@ This repository contains the draft of the book, currently in progress, scheduled
 
 The current status of the book is "outline". Chapters are not clearly defined or organized yet. Snippets and outlines of various topics are being developed and comments are very welcome!
 
-Here's what is available now (Note: the order or structure of these snippets is in constant flux):
+Note: the order or structure of these snippets is in constant flux.
 
-* [Preface](preface.asciidoc)
+Here's what is available now (# bars represent word count x 500):
+
+* [Preface](preface.asciidoc) ### <!--wordcount-->
 * [Glossary](glossary.asciidoc) (_pending [PR](https://github.com/ethereumbook/ethereumbook/pull/2) from homestead-guide_)
-* [What is Ethereum](what-is.asciidoc)
-* [Introduction](intro.asciidoc)
-* [Ethereum Clients](clients.asciidoc)
-* [Ethereum Testnets](ethereum-testnets.asciidoc)
-* [Keys and Addresses](keys-addresses.asciidoc)
-* [Transactions](transactions.asciidoc)
-* [Smart Contracts](smart-contracts.asciidoc)
-* [Tokens](tokens.asciidoc)
-* [Accounting & Gas](gas.asciidoc)
-* [EVM](evm.asciidoc)
-* [Development Tools and Frameworks](dev-tools.asciidoc)
-* [Decentralized Applications (Dapps)](dapps.asciidoc)
+* [What is Ethereum](what-is.asciidoc) ## <!--wordcount-->
+* [Introduction](intro.asciidoc) # <!--wordcount-->
+* [Ethereum Clients](clients.asciidoc) ###### <!--wordcount-->
+* [Ethereum Testnets](ethereum-testnets.asciidoc) # <!--wordcount-->
+* [Keys and Addresses](keys-addresses.asciidoc) ############# <!--wordcount-->
+* [Transactions](transactions.asciidoc) # <!--wordcount-->
+* [Smart Contracts](smart-contracts.asciidoc) # <!--wordcount-->
+* [Tokens](tokens.asciidoc) # <!--wordcount-->
+* [Accounting & Gas](gas.asciidoc) # <!--wordcount-->
+* [EVM](evm.asciidoc) # <!--wordcount-->
+* [Development Tools and Frameworks](dev-tools.asciidoc) # <!--wordcount-->
+* [Decentralized Applications (Dapps)](dapps.asciidoc) # <!--wordcount-->
 
 Jump in! Review, comment, suggest and contribute...
 
