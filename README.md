@@ -25,7 +25,7 @@ Here's what is available now (# bars represent word count x 500):
 * [Ethereum Clients](clients.asciidoc) ###### <!--wordcount-->
 * [Ethereum Testnets](ethereum-testnets.asciidoc) # <!--wordcount-->
 * [Keys and Addresses](keys-addresses.asciidoc) ############# <!--wordcount-->
-* [Wallets](wallets.asciidoc) # <!--wordcount-->
+* [Wallets](wallets.asciidoc) ####### <!--wordcount-->
 * [Transactions](transactions.asciidoc) # <!--wordcount-->
 * [Smart Contracts](smart-contracts.asciidoc) # <!--wordcount-->
 * [Tokens](tokens.asciidoc) # <!--wordcount-->
