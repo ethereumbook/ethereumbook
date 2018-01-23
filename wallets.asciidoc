@@ -274,3 +274,137 @@ However, it is important to note that the use of a passphrase also introduces th
 * Conversely, if the owner backs up the passphrase in the same place as the seed, it defeats the purpose of a second factor.
 
 While passphrases are very useful, they should only be used in combination with a carefully planned process for backup and recovery, considering the possibility of surviving the owner and allowing his or her family to recover the cryptocurrency estate.
+
+===== Working with mnemonic codes
+
+BIP-39 is implemented as a library in many different programming languages:
+
+https://github.com/trezor/python-mnemonic[python-mnemonic]:: The reference implementation of the standard by the SatoshiLabs team that proposed BIP-39, in Python
+
+https://github.com/ConsenSys/eth-lightwallet[Consensys/eth-lightwallet]:: Lightweight JS Ethereum Wallet for nodes and browser (with BIP-39)
+
+https://www.npmjs.com/package/bip39[npm/bip39]:: JavaScript implementation of Bitcoin BIP39: Mnemonic code for generating deterministic keys
+
+There is also a BIP-39 generator implemented in a standalone webpage, which is extremely useful for testing and experimentation. <<a_bip39_generator_as_a_standalone_web_page>> shows a standalone web page that generates mnemonics, seeds, and extended private keys.
+
+[[a_bip39_generator_as_a_standalone_web_page]]
+.A BIP-39 generator as a standalone web page
+image::images/bip39_web.png["BIP-39 generator web-page"]
+
+((("", startref="mnemonic05")))((("", startref="BIP3905")))The page (https://iancoleman.github.io/bip39/) can be used offline in a browser, or accessed online.
+
+==== Creating an HD Wallet from the Seed
+
+((("wallets", "technology of", "creating HD wallets from root seed")))((("root seeds")))((("hierarchical deterministic (HD) wallets")))HD wallets are created from a single _root seed_, which is a 128-, 256-, or 512-bit random number. Most commonly, this seed is generated from a _mnemonic_ as detailed in the previous section.
+
+Every key in the HD wallet is deterministically derived from this root seed, which makes it possible to re-create the entire HD wallet from that seed in any compatible HD wallet. This makes it easy to back up, restore, export, and import HD wallets containing thousands or even millions of keys by simply transferring only the mnemonic that the root seed is derived from.
+
+==== Hierarchical Deterministic Wallets (BIP-32) and paths (BIP-43/44)
+
+Most HD wallets follow the BIP-32 standard, which has become a de-facto industry standard for deterministic key generation. You can read the detailed specification in:
+
+https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+
+We won't be discussing the details of BIP-32 here, only the components necessary to understand how it is used in wallets. There are dozens of interoperable implementations of BIP-32 offered in many software libraries:
+
+https://github.com/ConsenSys/eth-lightwallet[Consensys/eth-lightwallet]:: Lightweight JS Ethereum Wallet for nodes and browser (with BIP-32)
+
+There is also a BIP-32 standalone web page generator that is very useful for testing and experimentation with BIP-32:
+
+http://bip32.org/
+
+[NOTE]
+====
+The standalone BIP-32 generator is not an HTTPS site. That's to remind you that the use of this tool is not secure. It is only for testing. You should not use the keys produced by this site in production (with real funds).
+====
+
+===== Extended public and private keys
+
+In BIP-32 terminology, a parent key that can be extended to produce "children", is called an _extended key_. If it is a private key, it is an _extended private key_ distinguished by the prefix _xprv_:
+
+----
+xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8imbZKLYVBxFPND1pniTZ81vKfd45EHKX73
+----
+
+An _extended public key_ is distinguished by the prefix _xpub_:
+
+----
+xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn4urGJ6b264DfTGKr8zjmYDjyDTi9U7iyT
+----
+
+
+A very useful characteristic of HD wallets is the ability to derive public child keys from public parent keys, _without_ having the private keys. This gives us two ways to derive a child public key: either from the child private key, or directly from the parent public key.
+
+An extended public key can be used, therefore, to derive all of the _public_ keys (and only the public keys) in that branch of the HD wallet structure.
+
+This shortcut can be used to create very secure public key&#x2013;only deployments where a server or application has a copy of an extended public key and no private keys whatsoever. That kind of deployment can produce an infinite number of public keys and Ethereum addresses, but cannot spend any of the money sent to those addresses. Meanwhile, on another, more secure server, the extended private key can derive all the corresponding private keys to sign transactions and spend the money.
+
+One common application of this solution is to install an extended public key on a web server that serves an ecommerce application. The web server can use the public key derivation function to create a new Ethereum address for every transaction (e.g., for a customer shopping cart). The web server will not have any private keys that would be vulnerable to theft. Without HD wallets, the only way to do this is to generate thousands of Ethereum addresses on a separate secure server and then preload them on the ecommerce server. That approach is cumbersome and requires constant maintenance to ensure that the ecommerce server doesn't "run out" of keys.
+
+((("cold storage")))((("storage", "cold storage")))((("hardware wallets")))Another common application of this solution is for cold-storage or hardware wallets. In that scenario, the extended private key can be stored on a hardware wallet, while the extended public key can be kept online. The user can create "receive" addresses at will, while the private keys are safely stored offline. To spend the funds, the user can use the extended private key on an offline signing Ethereum client or sign transactions on the hardware wallet device.
+
+===== Hardened child key derivation
+
+((("public and private keys", "hardened child key derivation")))((("hardened derivation")))The ability to derive a branch of public keys from an xpub is very useful, but it comes with a potential risk. Access to an xpub does not give access to child private keys. However, because the xpub contains the chain code, if a child private key is known, or somehow leaked, it can be used with the chain code to derive all the other child private keys. A single leaked child private key, together with a parent chain code, reveals all the private keys of all the children. Worse, the child private key together with a parent chain code can be used to deduce the parent private key.
+
+To counter this risk, HD wallets use an alternative derivation function called _hardened derivation_, which "breaks" the relationship between parent public key and child chain code. The hardened derivation function uses the parent private key to derive the child chain code, instead of the parent public key. This creates a "firewall" in the parent/child sequence, with a chain code that cannot be used to compromise a parent or sibling private key.
+
+In simple terms, if you want to use the convenience of an xpub to derive branches of public keys, without exposing yourself to the risk of a leaked chain code, you should derive it from a hardened parent, rather than a normal parent. As a best practice, the level-1 children of the master keys are always derived through the hardened derivation, to prevent compromise of the master keys.
+
+===== Index numbers for normal and hardened derivation
+
+The index number used in the BIP-32 derivation function is a 32-bit integer. To easily distinguish between keys derived through the normal derivation function versus keys derived through hardened derivation, this index number is split into two ranges. Index numbers between 0 and 2^31^&#x2013;1 (0x0 to 0x7FFFFFFF) are used _only_ for normal derivation. Index numbers between 2^31^ and 2^32^&#x2013;1 (0x80000000 to 0xFFFFFFFF) are used _only_ for hardened derivation. Therefore, if the index number is less than 2^31^, the child is normal, whereas if the index number is equal or above 2^31^, the child is hardened.
+
+To make the index number easier to read and display, the index number for hardened children is displayed starting from zero, but with a prime symbol. The first normal child key is therefore displayed as 0, whereas the first hardened child (index 0x80000000) is displayed as 0++&#x27;++. In sequence then, the second hardened key would have index 0x80000001 and would be displayed as 1++&#x27;++, and so on. When you see an HD wallet index i++&#x27;++, that means 2^31^+i.
+
+===== HD wallet key identifier (path)
+
+((("hierarchical deterministic (HD) wallets")))Keys in an HD wallet are identified using a "path" naming convention, with each level of the tree separated by a slash (/) character (see <<hd_path_table>>). Private keys derived from the master private key start with "m." Public keys derived from the master public key start with "M." Therefore, the first child private key of the master private key is m/0. The first child public key is M/0. The second grandchild of the first child is m/0/1, and so on.
+
+The "ancestry" of a key is read from right to left, until you reach the master key from which it was derived. For example, identifier m/x/y/z describes the key that is the z-th child of key m/x/y, which is the y-th child of key m/x, which is the x-th child of m.
+
+[[hd_path_table]]
+.HD wallet path examples
+[options="header"]
+|=======
+|HD path | Key described
+| m/0 | The first (0) child private key from the master private key (m)
+| m/0/0 | The first grandchild private key of the first child (m/0)
+| m/0'/0 | The first normal grandchild of the first _hardened_ child (m/0')
+| m/1/0 | The first grandchild private key of the second child (m/1)
+| M/23/17/0/0 | The first great-great-grandchild public key of the first great-grandchild of the 18th grandchild of the 24th child
+|=======
+
+===== Navigating the HD wallet tree structure
+
+The HD wallet tree structure offers tremendous flexibility. Each parent extended key can have 4 billion children: 2 billion normal children and 2 billion hardened children. Each of those children can have another 4 billion children, and so on. The tree can be as deep as you want, with an infinite number of generations. With all that flexibility, however, it becomes quite difficult to navigate this infinite tree. It is especially difficult to transfer HD wallets between implementations, because the possibilities for internal organization into branches and subbranches are endless.
+
+Two BIPs offer a solution to this complexity by creating some proposed standards for the structure of HD wallet trees. BIP-43 proposes the use of the first hardened child index as a special identifier that signifies the "purpose" of the tree structure. Based on BIP-43, an HD wallet should use only one level-1 branch of the tree, with the index number identifying the structure and namespace of the rest of the tree by defining its purpose. For example, an HD wallet using only branch m/i++&#x27;++/ is intended to signify a specific purpose and that purpose is identified by index number "i."
+
+Extending that specification, BIP-44 proposes a multicurrency multiaccount structure as "purpose" number +44'+ under BIP-43. All HD wallets following the BIP-44 structure are identified by the fact that they only used one branch of the tree: m/44'/.
+
+BIP-44 specifies the structure as consisting of five predefined tree levels:
+
+-----
+m / purpose' / coin_type' / account' / change / address_index
+-----
+
+The first-level "purpose" is always set to +44'+. The second-level "coin_type" specifies the type of cryptocurrency coin, allowing for multicurrency HD wallets where each currency has its own subtree under the second level. There are several currencies defined in a standards document, called SLIP0044:
+
+https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+
+A few examples: Ethereum is m/44++&#x27;++/60++&#x27;++, Ethereum Classic is m/44++&#x27;++/61++&#x27;++, Bitcoin is m/44++&#x27;++/0++&#x27;++, and Testnet for all currencies is m/44++&#x27;++/1++&#x27;++.
+
+The third level of the tree is "account," which allows users to subdivide their wallets into separate logical subaccounts, for accounting or organizational purposes. For example, an HD wallet might contain two Ethereum "accounts": m/44++&#x27;++/60++&#x27;++/0++&#x27;++ and m/44++&#x27;++/60++&#x27;++/1++&#x27;++. Each account is the root of its own subtree.
+
+((("keys and addresses", see="also public and private keys")))Because BIP-44 was created originally for bitcoin, it contains a "quirk" that isn't relevant in the Ethereum world. On the fourth level of the path, "change," an HD wallet has two subtrees, one for creating receiving addresses and one for creating change addresses. Only the "receive" path is used in Ethereum, as there is not such thing as a change address. Note that whereas the previous levels used hardened derivation, this level uses normal derivation. This is to allow this level of the tree to export extended public keys for use in a nonsecured environment. Usable addresses are derived by the HD wallet as children of the fourth level, making the fifth level of the tree the "address_index." For example, the third receiving address for Ethereum payments in the primary account would be M/44++&#x27;++/60++&#x27;++/0++&#x27;++/0/2. <<bip44_path_examples>> shows a few more examples.
+
+[[bip44_path_examples]]
+.BIP-44 HD wallet structure examples
+[options="header"]
+|=======
+|HD path | Key described
+| M/44++&#x27;++/60++&#x27;++/0++&#x27;++/0/2 | The third receiving public key for the primary Ethereum account
+| M/44++&#x27;++/0++&#x27;++/3++&#x27;++/1/14 | The fifteenth change-address public key for the fourth bitcoin account
+| m/44++&#x27;++/2++&#x27;++/0++&#x27;++/0/1 | The second private key in the Litecoin main account, for signing transactions
+|=======
