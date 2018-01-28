@@ -1,0 +1,354 @@
+= Ethereum Clients
+
+An Ethereum client is a software application that implements the Ethereum specification and interoperates over the peer-to-peer network with other Ethereum clients.
+
+Ethereum is an _open source_ project and the source code is available under an open (LGPL v3.0) license, free to download and use for any purpose. Open source means more than simply free to use. It also means that Ethereum is developed by an open community of volunteers and can be modified by anyone.
+
+Ethereum is defined by a formal specification called the "Yellow Paper".
+This is in contrast to, for example, Bitcoin, which is not defined in any formal way. Where Bitcoin's "specification" is the reference implementation Bitcoin Core, Ethereum's specification is documented in a paper combining an English and a mathematical (formal) specification.
+This formal specification, in addition to various Ethereum Improvement Proposals, defines the standard behavior of an Ethereum client.
+
+As a result of having a clear formal specification, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Ethereum has a greater diversity of implementations running on the network than any other blockchain.
+
+The vast majority of the Ethereum network runs one of the two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
+
+In this section, we will look at the two most common clients, Geth and Parity. We'll learn to set up a node using each of them and explore some of their command-line and application programming interfaces (APIs).
+
+== Should I run a full node?
+
+The health, resilience and censorship resistance of Ethereum depends on having many independently operated and geographically dispersed full nodes. Each full node can help other new nodes obtain the block data to bootstrap their operation, as well as offer the operator an authoritative and independent verification of all transactions and contracts.
+
+However, to run a full node you will incur a significant cost in hardware resources and bandwidth. A full node must download more than 50GB of data and store it on a local hard drive. This data burden increases quite rapidly every day as new transactions and blocks are added. More on this topic in <<requirements>>.
+
+A full node is not necessary for Ethereum development. You can do everything you need to do with a testnet node (which stores a copy of the smaller public test blockchain), or with a local private blockchain.
+
+A lightweight client can be used to connect to existing networks, such as your own full node, the public Ethereum blockchain, the public testnet, or a local test blockchain. In practice, you will likely use a lightweight client such as MetaMask as a convenient way to switch between all of the different node options.
+
+Each of the options for running a node has advantages and disadvantages:
+
+=== Full Node Advantages and Disadvantages
+
+Choosing to run a full node helps the Ethereum network, but also incurs costs for you. Let's look at some of the advantages and disadvantages.
+
+Advantages:
+* Supports the resilience and censorship resistance of the Ethereum network
+* Authoritatively validates all transactions
+* Can interact with any contract on the public blockchain
+* Can directly deploy your own contracts into the public blockchain
+
+Disadvantages:
+* Requires significant and growing hardware and bandwidth resources
+* Requires several hours or days to fully sync
+* Must be maintained, upgraded and kept online to remain synced
+* Deploying test contracts to the public blockchain will cost ETH for gas
+
+=== Public Testnet Advantages and Disadvantages
+
+Whether you choose to run a full node or not, you will probably want to also run a public testnet node. Let's look at some of the advantages and disadvantages of using a public testnet. The current public testnet is called _Ropsten_. We will refer to a node that is synced with Ropsten as a _Ropsten node_.
+
+Advantages:
+* A Ropsten node needs to sync and store much less data, about 10GB.
+* A Ropsten node can sync fully in a few hours.
+* To deploy contracts or make transactions you need test-ETH, which has no value and can be acquired for free from several sources.
+* Ropsten is a public blockchain with many other users and contracts, running "live".
+
+Disadvantages:
+* You can't use "real" money on Ropsten, it runs on test-ETH.
+* Consequently, you can't test security against real adversaries, as there is nothing at stake.
+* There are some aspects of a public blockchain that you cannot test realistically on Ropsten. For example, transaction fees are not a consideration on testnet.
+
+=== Local Instance (TestRPC) Advantages and Disadvantages
+
+For many testing purposes, the best option is to launch a single instance private blockchain, using the +testrpc+ node. TestRPC creates a local-only, private blockchain that you can interact with, without any other participants. It shares many of the advantages and disadvantages of the public testnet, but also has some differences.
+
+Advantages:
+* No syncing and almost no data on disk. You mine the first block yourself.
+* No need to find test-ETH, you "award" yourself mining rewards that you can use for testing.
+* No other users, just you.
+* No other contracts, just the ones you deploy after you launch it.
+
+Disadvantages:
+* No other users means that it doesn't behave the same as a public blockchain. There's no competition for transaction space or sequencing of transactions.
+* No miners other than you means that mining is more predictable, therefore you can't test some scenarios that occur on a public blockchains
+* No other contracts means you have to deploy everything that you want to test, including dependencies and contract libraries
+* You can't recreate some of the public contracts and their addresses to test some scenarions (eg. the DAO contract)
+
+[[requirements]]
+== Hardware Requirements for a Full Node
+
+Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 35 to 40GB of disk space to run a full node with a full copy of the Ethereum blockchain. If you want to also run a full node on the Ethereum testnet, you will need a minimum of 15GB of disk space for that. Downloading 50GB of blockchain will also require a fast Internet connection, otherwise it can take a long time.
+
+Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best to have a Solid-State Drive (SSD). If you have a mechanical hard disk drive (HDD), you will need at least 8GB of RAM to use as cache, otherwise you may discover your system is too slow to keep up and sync fully.
+
+Minimum Requirements:
+
+* CPU with 2 or 4 cores preferred
+* Solid State Drive (SSD) with at least 50GB free space
+* 4GB RAM minimum, 8GB+ if you have an HDD and not SSD.
+* 8MBit/sec download Internet service
+
+These are the minimum requirements to sync the Ethereum blockchain, without storing a complete copy (pruned blockchain). If you want to sync in a reasonable amount of time and store all the development tools, libraries, clients and blockchains we discuss in this book, you will need a faster and better equipped computer:
+
+Recommended:
+
+* Fast CPU with 4+ cores
+* 16GB+ RAM
+* Fast SSD with at least 250GB free space
+* 25+ MBit/sec download Internet service
+
+[[sw_reqs]]
+== Software Requirements for Building and Running a Node
+
+This section assumes you are using a Unix-like command-line environment, such as that provided by Linux, or MacOS operating systems, for example. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
+
+[TIP]
+====
+((("$ symbol")))((("shell commands")))((("terminal applications")))In many of the examples in this chapter we will be using the operating system's command-line interface (also known as a "shell"), accessed via a "terminal" application. The shell will display a prompt; you type a command; and the shell responds with some text and a new prompt for your next command. The prompt may look different on your system, but in the following examples it is denoted by a +$+ symbol. In the examples, when you see text after a +$+ symbol, don't type the +$+ symbol but type the command immediately following it, then press Enter to execute the command. In the examples, the lines below each command are the operating system's responses to that command. When you see the next +$+ prefix, you'll know it's a new command and you should repeat the process.
+====
+
+
+Before we get started, we may need to get some pre-requisites satisfied. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For the examples that follow, you will need to install +git+, the source-code management system; +golang+, the Go programming language and standard libraries; and Rust, a systems programming language.
+
+Git can be installed by following the instructions here:
+https://git-scm.com/
+
+Go can be installed by following the instructions here:
+https://golang.org/
+
+[NOTE]
+====
+Geth requires Go version 1.7 or greater. The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org.
+====
+
+Rust can be installed by following the instructions here:
+https://www.rustup.rs/
+
+[NOTE]
+====
+Parity requires Rust version 1.18 or greater.
+====
+
+Parity also requires some software libraries, such as OpenSSL and libudev. To install these on a Linux (Debian) compatible system:
+
+----
+$ sudo apt-get install openssl libssl-dev libudev-dev
+----
+
+For other operating systems, use the package manager of your OS or follow the Wiki instructions (https://github.com/paritytech/parity/wiki/Setup) to install the required libraries.
+
+Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's get to work!
+
+== Go-Ethereum (Geth)
+
+Geth is one of the three original implementations of the Ethereum client, which included an implementation in C++, Python and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator Vitalik Buterin.
+
+=== Getting Geth
+
+Geth's home is found at https://geth.ethereum.org/. On this site, you will find instructions to download and install Geth for your operating system. Since this book is aimed at developers, we will be building Geth from the source code.
+
+You can also skip these instructions and install a pre-compiled binary for your platform of choice. But where's the fun and learning in that?
+
+=== Cloning the repository
+
+Our first step is to clone the git repository, so as to get a copy of the source code.
+
+The Geth source code repository is hosted on GitHub at:
+
+https://github.com/ethereum/go-ethereum
+
+To make a local clone of this repository, use the +git+ command as follows, in your home directory or under any directory you use for development:
+
+----
+$ git clone https://github.com/ethereum/go-ethereum.git
+----
+
+You should see a progress report as the repository is copied to your local system:
+
+----
+Cloning into 'go-ethereum'...
+remote: Counting objects: 62587, done.
+remote: Compressing objects: 100% (26/26), done.
+remote: Total 62587 (delta 10), reused 13 (delta 4), pack-reused 62557
+Receiving objects: 100% (62587/62587), 84.51 MiB | 1.40 MiB/s, done.
+Resolving deltas: 100% (41554/41554), done.
+Checking connectivity... done.
+----
+
+Great! Now we have a local copy of Geth, we can compile an executable for our platform.
+
+=== Building Geth from Source Code
+
+To build Geth, change to the directory where the source code was downloaded and use the +make+ command:
+----
+$ cd go-ethereum
+$ make geth
+----
+
+If all goes well, you will see the go compiler building each component until it produces the +geth+ executable:
+
+----
+build/env.sh go run build/ci.go install ./cmd/geth
+>>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c -v ./cmd/geth
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto/sha3
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/common
+[...]
+github.com/ethereum/go-ethereum/cmd/utils
+github.com/ethereum/go-ethereum/cmd/geth
+Done building.
+Run "build/bin/geth" to launch geth.
+$
+----
+
+Let's run +geth+ to make sure it works:
+
+----
+$ ./build/bin/geth version
+
+Geth
+Version: 1.6.6-unstable
+Git Commit: 58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c
+Architecture: amd64
+Protocol Versions: [63 62]
+Network Id: 1
+Go Version: go1.8.3
+Operating System: linux
+GOPATH=/usr/local/src/gocode/
+GOROOT=/usr/local/go
+
+----
+
+Your +geth version+ command may show slightly different information, but you should see a version report much like the one above.
+
+As the last step, we may want to copy the +geth+ command to our operating systems application directory (or a directory on the command-line execution path). On Linux, we'd use the following command:
+
+----
+$ sudo cp ./build/bin/geth /usr/local/bin
+----
+Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
+
+
+== Parity
+
+Parity is an implementation of a full node Ethreum client and dapp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a highly modular, very secure and scalable Ethereum client. Parity is developed by Parity Tech, a UK company and is released under a GPLv3 open source license.
+
+[NOTE]
+====
+Disclosure: The author of this book, Gavin Wood, is the founder of Parity Tech and wrote most of the Parity client. However, the decision to write about Parity was made by the other author, Andreas M. Antonopoulos, because Parity represents 50% of the installed Ethereum client base.
+====
+
+To install Parity, you can use the Rust package manager +cargo+ or download the source code from github. The package manager also downloads the source code, so there's not much difference between the two options. In the next section we will show you how to download and compile it yourself.
+
+=== Installing Parity
+
+The Parity Wiki offers instructions for building Parity in different environments and containers:
+
+https://github.com/paritytech/parity/wiki/Setup
+
+We'll build Parity from source. This assumes you have already installed Rust, using +rustup+ (See <<sw_reqs>>).
+
+First, let's get the source code from github:
+
+----
+$ git clone https://github.com/paritytech/parity
+----
+
+Now, let's change to the +parity+ directory and use +cargo+ to build the executable:
+
+----
+$ cd parity
+$ cargo build
+----
+
+If all goes well, you should see something like:
+
+----
+$ cargo build
+    Updating git repository `https://github.com/paritytech/js-precompiled.git`
+ Downloading log v0.3.7
+ Downloading isatty v0.1.1
+ Downloading regex v0.2.1
+
+ [...]
+
+Compiling parity-ipfs-api v1.7.0
+Compiling parity-rpc v1.7.0
+Compiling parity-rpc-client v1.4.0
+Compiling rpc-cli v1.4.0 (file:///home/aantonop/Dev/parity/rpc_cli)
+Finished dev [unoptimized + debuginfo] target(s) in 479.12 secs
+$
+----
+
+Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
+
+----
+$ parity --version
+Parity
+  version Parity/v1.7.0-unstable-02edc95-20170623/x86_64-linux-gnu/rustc1.18.0
+Copyright 2015, 2016, 2017 Parity Technologies (UK) Ltd
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+By Wood/Paronyan/Kotewicz/Drwięga/Volf
+   Habermeier/Czaban/Greeff/Gotchac/Redmann
+$
+----
+
+Great! Now that parity is installed, we can sync the blockchain and get started with some basic command-line options.
+
+
+=== Parity's Geth Compatibility Mode
+
+----
+$ parity --geth
+----
+
+////
+TODO
+////
+
+[[first_sync]]
+== First Synchronization of the Ethereum Blockchain
+
+Normally, when syncing the Ethereum blockchain, your Ethereum client will download and validate every block and every transaction since the genesis block.
+
+While it is possible to fully sync the blockchain this way, it is not practical, as it will take a very long time and has higher computing resource requirements (much more RAM and faster storage).
+
+Doing a "normal" sync, your Ethereum client will make rapid progress until it reaches block 2,283,397. This block was mined on September 18th 2016 and marks the beginning of a series of Denial-of-Service attacks against Ethereum's blockchain. From this block and until block 2,700,031 (November 26th 2016) the validation of transactions becomes extremely slow, memory intensive, and I/O intensive resulting in block validation times exceeding 1 minute. The Ethereum system implemented a series of upgrades using hard forks, to address the underlying vulnerabilities that were exploited in the DoS and clean up the blockchain by removing some 20 million empty accounts created by spam transactions.
+
+If you are syncing with full validation, your client will slow down and may take several weeks or longer to validate the blocks in this range.
+
+Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. For Geth, the option to enable fast synchronization is +--fast+. For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
+
+[NOTE]
+====
+Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch to fast syncing. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful not to delete any wallets when deleting the blockchain data!
+====
+
+== Light Clients
+
+=== MyEtherWallet
+
+=== BlockCypher
+
+https://www.blockcypher.com/dev/ethereum
+
+== Browsers and RPC Gateways
+
+=== Parity Browser
+
+=== Mist
+The official browser by the Ethereum Foundation
+
+=== MetaMask
+Another take on what an Ethereum browser is. Instead of building a full new browser like Mist and Parity, MetaMask hooks into Google Chrome as an extension.
+
+=== Status
+Mobile browser in alpha. Decentralized all the way. Light client.
+
+=== Token
+Mobile browser in alpha. Pretty much the same as Status. A little more centralized to make operations easier for the user.
