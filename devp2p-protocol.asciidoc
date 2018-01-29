@@ -1,0 +1,146 @@
+////
+Source:
+https://github.com/ethereum/devp2p/blob/master/rlpx.md#node-discovery
+https://github.com/ethereum/wiki/wiki/%C3%90%CE%9EVp2p-Wire-Protocol
+https://github.com/ethereum/wiki/wiki/Ethereum-Wire-Protocol
+License: Not defined yet
+Added By: @fjrojasgarcia
+////
+
+== Communications between nodes - a simplified vision
+
+Ethereum nodes communicate among themselves using a simple wire protocol forming a virtual or overlay well-formed network.
+To achieve this goal, this protocol called ÐΞVp2p, uses technologies and standards such as RLP.
+
+=== Transport protocol
+In order to provide confidentiality and protect against network disruption, ÐΞVp2p nodes use RLPx messages, an encrypted and authenticated transport protocol.
+RLPx utilizes Kademlia-like routing, a DHT (distributed hash table) for decentralized peer-to-peer computer networks.
+
+RLPx, as an underlying transport protocol, allows among other, "Node Discovery and Network Formation".
+Another remarkable feature of RLPx is the support of multiple protocols over a single connection.
+
+When ÐΞVp2p nodes communicate via Internet (as they usually do), they use TCP, which provides a connection-oriented medium, but actually ÐΞVp2p nodes communicate in terms of packets, using the so-called facilities (or messages) provided by the underlying transport protocol RLPx, allowing them to communicate sending and receiving packets.
+
+Packets are dynamically framed, prefixed with an RLP encoded header, encrypted and authenticated. Multiplexing is achieved via the frame header which specifies the destination protocol of a packet.
+
+
+==== Encrypted Handshake
+Connections are established via a handshake and, once established, packets are encrypted and encapsulated as frames.
+
+Network Formation
+
+
+Packets are dynamically framed
+
+Multiplexing is achieved via the frame header which specifies the destination protocol of a packet.
+
+
+All cryptographic operations are based on secp256k1 and each node is expected to maintain a static private key which is saved and restored between sessions
+
+Until encryption is implemented packets have a timestamp property to reduce the window of time for carrying out replay attacks.
+
+it's recommended that the receiver only accept packets created within the last 3 seconds
+
+Packets are signed. Verification is performed by recovering the public key from the signature and checking that it matches an expected value.
+
+
+
+In order for two peers to be able to communicate and form a network, they need to follow a special protocol that covers the demand of all their interaction needs in the network.
+In Ethereum, this wire-protocol called ÐΞVp2p, make use of existing ÐΞV technologies and standards that we will cover later.
+
+== Basic establishment of communication
+
+As a very simple example, when two peers initiate their communication, each one greets the other with a special message called "hello".
+Through this particular "hello" message, each node will disclose to its peer relevant data that will allow the communication to begin at a very basic level.
+
+In this very first step, each peer will know the following information about his peer.
+
+- The implemented version of the P2P protocol.
+- The client software identity, as a human-readable string (e.g. "Ethereum(++)/1.0.0").
+- Peer capability name as a length-3 ASCII string. Current supported capabilities are eth, shh.
+- Peer capability version as a positive integer.
+- The port that the client is listening on.
+- The Unique Identity of the node specified as a 512-bit hash.
+
+== But what really happens at a more detailed level?
+
+At a low level, ÐΞVp2p nodes communicate using its own encrypted and authenticated transport protocol called RLPx. This basic wire protocol allows peers communicate in terms of packets.
+RLPx provides sub-protocols also named facilities to send and receive packets.
+
+
+== Sub-protocols
+
+Ethereum (ÐΞVp2p) nodes communicate by sending capabilities or sub-protocols.
+
+using RLPx, an encrypted and authenticated transport protocol.
+
+=== Status
+
+=== NewBlockHashes
+
+=== Transactions
+
+=== GetBlockHashes
+
+=== BlockHashes
+
+=== GetBlocks
+
+=== Blocks
+
+=== NewBlock
+
+== Specific for PV61 version protocol
+
+=== BlockHashesFromNumber
+
+== PV62 - A new synchronization model
+
+=== NewBlockHashes
+
+=== GetBlockHeaders
+
+=== BlockHeaders
+
+=== GetBlockBodies
+
+=== BlockBodies
+
+== PV63 - Fast synchronization
+
+=== GetNodeData
+
+=== NodeData
+
+=== GetReceipts
+
+=== Receipts
+
+==  ÐΞVp2p - The underlying protocol
+
+=== At a Low Level
+
+=== Payloads
+
+=== At the P2P layer
+
+==== Hello
+
+==== Disconnect
+
+==== Ping
+
+==== Pong
+
+==== Pong
+
+=== Identity of nodes
+
+=== Nodes reputation
+
+=== How the session is managed
+
+== Basic synchronization of chains
+
+When two peers initiate their communication, each one greets the other with a special message called "hello".
+Through this particular "hello" message, each node will disclose to its peer relevant data that will allow the communication to begin at a basic level.
