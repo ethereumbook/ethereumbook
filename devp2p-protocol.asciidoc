@@ -67,9 +67,12 @@ To carry out an ordered disconnection, the node that wants to disconnect, will s
 The *"reason"* param can take values from _"0x00"_ to _"0x10"_, e.g. "_0x00_: *Disconnect requested"* and "_0x04_: *Too many peers"*.
 
 ==== Status - Ethereum sub-protocol example
+This sub-protocol is identified by the _"+0x00"_ message-id.
+
 This message should be sent after the initial handshake and prior to any ethereum related messages and inform of its current state.
 
-With this message the node disclose to its peer the following data about its current state;
+
+To do this, the node disclose to its peer the following data;
 
 - The protocol version
 - The networkId
@@ -93,7 +96,17 @@ About the networks ids currently known, here is a list of those currently known;
 - 99: *POA*; The public Proof of Authority Ethereum network
 - 7762959: *Musicoin*; The music blockchain
 
-==== NewBlockHashes - Another sub-protocol example
+==== GetBlocks - Another sub-protocol example
+This sub-protocol is identified by the _"+0x05"_ message-id.
+
+With this message the node requests its peer the specified blocks each by its own hash.
+
+The way to request the nodes is through a list with all the hashes of them, taking the message the following form;
+....
+[+0x05: P, hash_0: B_32, hash_1: B_32, ...]
+....
+
+The requesting node must not have a response message containing all the requested blocks, in which case it must request again those that have not been sent by its peer.
 
 === Node identity and reputation
 The identity of a ÐΞVp2p node is a *secp256k1* public key.
