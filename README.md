@@ -21,7 +21,7 @@ Here's what is available now (# bars represent word count x 500):
 * [Preface](preface.asciidoc) ### <!--wordcount-->
 * [Glossary](glossary.asciidoc) (_pending [PR](https://github.com/ethereumbook/ethereumbook/pull/2) from homestead-guide_)
 * [What is Ethereum](what-is.asciidoc) ## <!--wordcount-->
-* [Introduction](intro.asciidoc) # <!--wordcount-->
+* [Introduction](intro.asciidoc) ###### <!--wordcount-->
 * [Ethereum Clients](clients.asciidoc) ###### <!--wordcount-->
 * [Ethereum Testnets](ethereum-testnets.asciidoc) # <!--wordcount-->
 * [Keys and Addresses](keys-addresses.asciidoc) ############# <!--wordcount-->
