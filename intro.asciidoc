@@ -249,11 +249,14 @@ Ethereum has many different high-level languages, all of which can be used to wr
 For our first example, we will write a contract that controls a _faucet_. We've already used a faucet to get test ether on the Ropsten test network. A faucet is a relatively simple thing: it gives out ether to any address that asks, and can be refilled periodically. You can implement a faucet as a wallet controlled by a human (or a web server), but instead we will write a Solidity contract that implements a faucet:
 
 [[solidity_faucet_example]]
-.A Solidity contract implementing a faucet
+.Faucet.sol : A Solidity contract implementing a faucet
 [source,solidity,linenums]
 ----
 include::code/Faucet.sol[]
 ----
+
+Download +Faucet.sol+ from:
+https://github.com/ethereumbook/ethereumbook/blob/first_edition/code/Faucet.sol
 
 This is a very simple contract, about as simple as we can make it. It is also a *flawed* contract, demonstrating a number of bad practices and security vulnerabilities. We will learn by examining all its flaws in later sections. For now, however, let's look at what this contract does and how it works, line by line.
 
@@ -317,5 +320,86 @@ Right below our default function is the final closing curly bracket, which close
 
 === Compiling the Faucet contract
 
+Now that we have our first example contract, we need to use a Solidity compiler to convert the Solidity code into EVM bytecode, so it can be executed by the EVM.
+
+The Solidity compiler comes as a standalone executable, as part of different frameworks, and also bundled in an _Integrated Development Environment (IDE)_. To keep things simple, we will use one of the more popular IDEs, called Remix.
+
+Use your Chrome browser (with the MetaMask wallet we installed earlier) to navigate to the Remix IDE at:
+
+https://remix.ethereum.org/
+
+When you first load Remix, it will start with a sample contract caller +ballot.sol+. We don't need that, so let's close it, clicking on the +x+ on the corner of the tab:
+
+[[remix_close_tab]]
+.Close the default example tab
+image::images/remix_close_tab.png["Close the default example tab"]
+
+Now, add a new tab by clicking on the circular-plus-sign in the left toolbar, naming the new file +Faucet.sol+:
+
+[[remix_toolbar]]
+.Click the plus sign to open a new tab
+image::images/remix_toolbar.png["Click the plus sign to open a new tab"]
+
+Once you have a new tab open, copy and paste the code from our example +Faucet.sol+:
+
+[[remix_faucet_load]]
+.Copy the Faucet example code into the new tab
+image::images/remix_faucet_load.png["Copy the Faucet example code into the new tab"]
+
+Now we have loaded the +Faucet.sol+ contract into the Remix IDE, the IDE will automatically compile the code. If all goes well, you will see a green box with "Faucet" in it appear on the right, under the Compile tab, confirming the successful compilation:
+
+[[remix_compile]]
+.Remix succesfully compiles the Faucet.sol contract
+image::images/remix_compile.png[""]
+
+If something goes wrong, the most likely problem is that Remix IDE is using a version of the Solidity compiler that is different from +0.4.19+. In that case, our pragma directive will prevent +Faucet.sol+ from compiling.To change the compiler version, go to the "Settings" tab, set the compiler version to +0.4.19+, and try again.
+
+The Solidity compiler has now compiled our +Faucet.sol+ into EVM bytecode. If you are curious, the bytecode looks like this:
+
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST PUSH1 0xE5 DUP1 PUSH2 0x1D PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1 0x40 MSTORE PUSH1 0x4 CALLDATASIZE LT PUSH1 0x3F JUMPI PUSH1 0x0 CALLDATALOAD PUSH29 0x100000000000000000000000000000000000000000000000000000000 SWAP1 DIV PUSH4 0xFFFFFFFF AND DUP1 PUSH4 0x2E1A7D4D EQ PUSH1 0x41 JUMPI JUMPDEST STOP JUMPDEST CALLVALUE ISZERO PUSH1 0x4B JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST PUSH1 0x5F PUSH1 0x4 DUP1 DUP1 CALLDATALOAD SWAP1 PUSH1 0x20 ADD SWAP1 SWAP2 SWAP1 POP POP PUSH1 0x61 JUMP JUMPDEST STOP JUMPDEST PUSH8 0x16345785D8A0000 DUP2 GT ISZERO ISZERO ISZERO PUSH1 0x77 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST CALLER PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND PUSH2 0x8FC DUP3 SWAP1 DUP2 ISZERO MUL SWAP1 PUSH1 0x40 MLOAD PUSH1 0x0 PUSH1 0x40 MLOAD DUP1 DUP4 SUB DUP2 DUP6 DUP9 DUP9 CALL SWAP4 POP POP POP POP ISZERO ISZERO PUSH1 0xB6 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP JUMP STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 PUSH9 0x13D1EA839A4438EF75 GASLIMIT CALLVALUE LOG4 0x5f PUSH24 0x7541F409787592C988A079407FB28B4AD000290000000000
+----
+
+Aren't you glad you are using a high-level language like Solidity instead of programming directly in EVM bytecode? Me too!
+
 === Creating the contract on the blockchain
+
+So, we have a contract, we've compiled it into bytecode. Now, we need to "register" the contract on the Ethereum blockchain. We will be using the Ropsten testnet to test our contract, so that's the blockchain we want to record it on.
+
+Registering a contract on the blockchain involves creating a special transaction, whose destination is the address 0x0000000000000000000000000000000000000000, also known as the _zero address_. The zero address is a special address that tells the Ethereum blockchain that you want to register a contract. Fortunately, Remix IDE will handle all of that for you and send the transaction to MetaMask.
+
+First, switch to the "Run" tab and select "Injected Web3" in the "Environment" dropdown selection box. This connects Remix IDE to the MetaMask wallet, and through MetaMask to the Ropsten Test Network. Once you do that, you can see "Ropsten" under Environment. Also, in the Account selection box it shows the address of your wallet:
+
+[[remix_run.png]]
+.Remix IDE "Run" tab, with "Injected Web3" environment selected
+image::images/remix_run.png["Remix IDE Run tab, with Injected Web3 environment selected"]
+
+Right below the "Run" settings we just confirmed, is the Faucet contract, ready to be created. Click on the "Create" button:
+
+[[remix_create_contract]]
+.Click the Create button in the Run tab
+image::images/remix_create_contract.png["Click the Create button in the Run tab"]
+
+Remix IDE will construct the special "creation" transaction and MetaMask will ask you to approve it. As you can see from MetaMask, the contract creation transaction has no ether in it, but it has 258 bytes (the compiled contract) and will consume 10 Gwei in gas. Click "Submit" to approve it:
+
+[[remix_metamask_create]]
+.MetaMask showing the contract creation transaction
+image::images/remix_metamask_create.png["MetaMask showing the contract creation transaction"]
+
+Now, wait: It will take about 15 to 30 seconds for the contract to be mined on Ropsten. Remix IDE won't appear to be doing much, be patient.
+
+Once the contract is created, it appears at the bottom of the Run tab:
+
+[[remix_contract_interact]]
+.The Faucet contract is ALIVE!
+image::images/remix_contract_interact.png["The Faucet contract is ALIVE!"]
+
+Notice that the Faucet contract now has an address of its own: Remix shows it as +Faucet at 0x72e....c7829+. The small clipboard symbol to the right allows you to copy the contract address into your clipboard. We will use that in the next section.
+
 === Interacting with the contract
+
+
+
+[[]]
+.
+image::images/.png[""]
