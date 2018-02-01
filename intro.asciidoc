@@ -224,12 +224,98 @@ Here you can see all the transaction history of your Ethereum address. It shows 
 
 You can explore the transaction history of any address. See if you can explore the transaction history of the Ropsten Test Faucet address (Hint, it is the "sender" address listed in the oldest payment to your address). You can see all the test ether sent from the faucet to you and to other addresses. Every transaction you see can lead you to more addresses and more transactions. Before long you will be lost in the maze of interconnected data. Public blockchains contain an enormous wealth of information, all of which can be explored programmaticaly, as we will see in subsequent examples.
 
-=== From wallets to contracts
+=== Introducing the world computer
 
-=== Types of accounts: EOA and contracts
+We've got a wallet and we've sent and received ether. So far, we've treated Ethereum as a cryptocurrency. But Ethereum is much, much more. The cryptocurrency function is, in fact, subservient to Ethereum's function as a world computer, a decentralized smart contract platform. Ether is meant to be used to pay for running _smart contracts_, which are computer programs that run inside an emulated computer called the _Ethereum Virtual Machine (EVM)_.
+
+The EVM is a global singleton, meaning that it operates as if it is a global single-instance computer running everywhere. Each node on the Ethereum network runs a local copy of the EVM to validate contract execution and the Ethereum blockchain records the changing _state_ of this world computer as it processes transactions and smart contracts.
+
+=== Externally Owned Accounts (EOAs) and Contracts
+
+The type of account we created in the MetaMask wallet is called an _Externally Owned Account (EOA)_. Externally owned accounts are those that have a private key, which controls access to funds or contracts. Now, you're probably guessing there is another type of account. The other type of account is a _contract_ account. A contract account is owned (and controlled) by the logic of a software program recorded on the Ethereum blockchain and executed by the EVM.
+
+In the future, all Ethereum wallets might be running as Ethereum contracts, blurring the distinction between Externally Owned Accounts and contracts. The important distinction that will always remain is this: A human making decisions (EOA), or a piece of software making decisions (contract).
+
+Contracts have an address, just like EOAs (wallets). Contracts can send and receive ether, just like wallets. When a transaction destination is a contract address, it causes that contract to _run_ in the EVM, using the transaction as its input.
+
+In addition to ether, transactions can contain _data_ indicating which specific function in the contract to run and what parameters to pass to that function. This way, transactions _call_ functions within contracts. Finally, contracts can generate transactions calling other contracts, building complex execution paths.
+
+In the next few sections we will write our first contract. We will then create, fund, and use that contract with our MetaMask wallet and test ether, on the Ropsten test network.
 
 === A simple contract
 
-=== Creating the contract on the blockchain
+Ethereum has many different high-level languages, all of which can be used to write a contract and produce EVM bytecode. You can read about many of th emost prominent and interesting ones in <<high_level_languages>>. One high-level language is by far the dominant language for smart contract programming: Solidity. Solidity was created by Gavin Wood, the co-author of this book and has become the most widely used language in Ethereum and beyond. We'll use Solidity to write our first contract.
 
+For our first example, we will write a contract that controls a _faucet_. We've already used a faucet to get test ether on the Ropsten test network. A faucet is a relatively simple thing: it gives out ether to any address that asks, and can be refilled periodically. You can implement a faucet as a wallet controlled by a human (or a web server), but instead we will write a Solidity contract that implements a faucet:
+
+[[solidity_faucet_example]]
+.A Solidity contract implementing a faucet
+[source,solidity,linenums]
+----
+include::code/Faucet.sol[]
+----
+
+This is a very simple contract, about as simple as we can make it. It is also a *flawed* contract, demonstrating a number of bad practices and security vulnerabilities. We will learn by examining all its flaws in later sections. For now, however, let's look at what this contract does and how it works, line by line.
+
+The first line is a comment:
+----
+// Version of Solidity compiler this program was written for
+----
+
+Comments are for humans to read and are not included in the EVM bytecode that actually runs. We usually put them on the line before the code we are trying to explain, or sometimes on the same line. Comments start with two forward slashes +//+. Everything from the slashes and beyond, until the end of that line, is treated the same as a blank line and ignored.
+
+The second line is a _version pragma_, which declares what compiler version this program was written for:
+
+----
+pragma solidity ^0.4.19;
+----
+
+The Solidity compiler reads it and will produce an error if it is the wrong compiler version. In this case our pragma directive says that this program can be compiled by a Solidity compiler with a minimum version 0.4.19 and minor revisions above that (eg. 0.4.20, but not 0.5.0). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
+
+Ok, the next lines are where our _actual_ contract starts:
+
+----
+contract Faucet {
+----
+
+This line declares a contract object, similar to a +class+ declaration in other object-oriented languages like Javascript, Java or Cpass:[++]. The contract definition includes all the lines between the curly braces pass:[{}] which define a +scope+, much the same as curly braces are used in many other programming languages.
+
+Next, we declare the first function of the Faucet contract:
+
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+The function is named +withdraw+, takes one unsigned-integer (+uint+) parameter named +withdraw_amount+. It is declared as a +public+ function, meaning it can be called by other contracts. The function definition follows between curly braces:
+
+----
+require(withdraw_amount <= 100000000000000000);
+----
+
+The first part of the +withdraw+ function sets a limit on withdrawals. It uses the built-in Solidity function +require+ to test a precondition, that the +witdraw_amount+ is less than or equal to 100000000000000000 +wei+, which is the base unit of ether (see <<ether_denominations>>) and equivalent to 0.1 ether. If the +withdraw+ function is called with a +withdraw_amount+ greater than than amount, the +require+ function here will cause contract execution to stop and fail with an _exception_.
+
+This part of the contract is the main logic of our faucet. It controls the flow of funds out of the contract by placing a limit on withdrawals. It's a very simple control, but gives you a glimpse of the power of a programmable blockchain: decentralized software controlling money.
+
+Next comes the actual withdrawal:
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+A couple of interesting things are happening here. The +msg+ object is one of the inputs that all contracts can access. It represents the transaction that triggered the execution of this contract. The attribute +sender+ is the sender address from the transaction. The function +transfer+ is a built-in function that transfers ether from the contract to the address it is called from. Reading it backwards, this means +transfer+ to the +sender+ of the +msg+ that triggered this contract execution. The +transfer+ function takes an amount as its only parameter. We pass the +withdraw_amount+ value that was the parameter to the +withdraw+ function declared a few lines above.
+
+The very next line is the closing curly brace, indicating the end of the definition of our +withdraw+ function.
+
+Below we declare one more function:
+
+----
+function () public payable {}
+----
+
+This function is a so called _"fallback"_ or _default_ function, which is called if the transaction that triggered the contract didn't name any of the declared functions in the contract, or any function at all, or didn't contain data. Contracts can have one such default function (without a name) and it is usually the one that receives ether. That's why it is defined as a +public+ and +payable+ function, which means it can accept ether into the contract. It doesn't do anything, other than accept the ether, as indicated by the empty definition in the curly brackets pass:[{}]. If we make a transaction that sends ether to the contract address, as if it were a wallet, this function will handle it.
+
+Right below our default function is the final closing curly bracket, which closes the definition of the contract +Faucet+. That's it!
+
+=== Compiling the Faucet contract
+
+=== Creating the contract on the blockchain
 === Interacting with the contract
