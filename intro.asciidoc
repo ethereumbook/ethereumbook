@@ -463,24 +463,30 @@ Wait a minute and then reload the +etherscan+ block explorer to see the transact
 
 [[etherscan_withdrawal_tx]]
 .Etherscan shows the transaction calling the withdraw function
-image::images/etherscan_withdrawal_tx.png[""]
+image::images/etherscan_withdrawal_tx.png["Etherscan shows the transaction calling the withdraw function"]
 
 
+We now see a new transaction with the contract address as the destination and zero ether. he contract balance has changed and is now 0.9 ether, because it sent us 0.1 ether as requested. But we don't see an "OUT" transation in the contract address history.
+
+Where's the outgoing withdrawal? A new tab has appeared in the contract's address history page, named "Internal Transactions". Because the 0.1 ether transfer originated from the contract code, it is an internal transaction (also called a _message_). Click on the "Internal Transactions" tab to see it:
 
 
+[[etherscan_withdrawal_internal]]
+.Etherscan shows the internal transaction transferring ether out from the contract
+image::images/etherscan_withdrawal_internal.png["Etherscan shows the internal transaction transferring ether out from the contract]
 
+This "internal transaction" was sent by the contract in this line of code (from the +withdraw+ function in +Faucet.sol+):
 
+----
+msg.sender.transfer(withdraw_amount);
+----
 
+To recap: We sent a transaction from our MetaMask wallet that contained data instructions to call the +withdraw+ function with a +withdraw_amount+ argument of 0.1 ether. That transaction caused the contract to run inside the EVM. As the EVM ran the Faucet contract's +withdraw+ function, first it called the +require+ function and validated that our amount was less than or equal to the maximum allowed withdrawal of 0.1 ether. Then it called the +transfer+ function to send us the ether. Running the +transfer+ function generated an internal transaction that deposited 0.1 ether into our wallet address, from the contract's balance. That's the one shown in the "Internal Transactions" tab in +etherscan+.
 
+In this chapter, we've set up a wallet using MetaMask and we've funded it using a faucet on the Ropsten Test Network. We received ether into our wallet's Ethereum address. Then we sent ether to the faucet's Ethereum address.
 
-1000000000000000
+Next, we wrote a faucet contract in Solidity. We used the Remix IDE to compile the contract into EVM bytecode. We used Remix to form a transaction and recorded the faucet contract on the Ropsten blockchain. Once recorded, the faucet contract had an Ethereum address and we sent it some ether. Finally, we constructed a transaction to call the +withdraw+ function and successfully asked for 0.1 ether. The contract checked our request and sent us 0.1 ether with an internal transaction.
 
+It may not seem like much, but we've just successfully interacted with software that controls money on a decentralized world computer.
 
-
-
-
-
-
-[[]]
-.
-image::images/.png[""]
+We will do a lot more smart contract programming in <<smart contracts>> and learn about best practices and security considerations.  
