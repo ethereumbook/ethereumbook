@@ -10,9 +10,9 @@ With that control comes a big responsibility. If you lose your keys, you lose ac
 
 * When you are prompted to back up a key or mnemonic words, use pen and paper to make a physical backup. Do not leave that task for "later", you will forget.
 
-* Do not store key material (encrypted or not) in digital documents, digital photos, online drives, encrypted PDFs, etc. Don't improvise security. Use a password manager or pen and paper.
+* Do not store key material (encrypted or not) in digital documents, digital photos, screenshots, online drives, encrypted PDFs, etc. Don't improvise security. Use a password manager or pen and paper.
 
-* Before transferring any large amounts, first do a small test transaction (e.g., $1 value). Once you receive the test transaction, try sending it from that wallet. This is a good time to find out you forgot the password.
+* Before transferring any large amounts, first do a small test transaction (e.g., $1 value). Once you receive the test transaction, try sending it from that wallet. If you forgot your password or can't send the funds for any other reason, it is better to find out with a small loss.
 
 * Do not send money to any of the addresses shown in this book. The private keys are listed in the book and someone will immediately take that money.
 
@@ -26,11 +26,11 @@ Ethereum's currency unit is called _ether_, identified also as ETH or with the s
 Use the HTML code & Xi; and & diams; for the symbols &Xi; and &diams; respectively (without a space after the &)
 ====
 
-Ether is subdivided into smaller units, down to the smallest unit possible, which is named _wei_. One _ether_ is 1 quintilion _wei_ (1 x 10^18^ or 1,000,000,000,000,000,000). You may hear people refer to the currency "Ethereum" too, but this is a common beginner's mistake.
+Ether is subdivided into smaller units, down to the smallest unit possible, which is named _wei_. One _ether_ is 1 quintilion _wei_ (1 x 10^18^ or 1,000,000,000,000,000,000). You may hear people refer to the currency "Ethereum" too, but this is a common beginner's mistake. Ethereum is the system, ether is the currency.
 
-The value of ether is always represented internally in Ethereum as integer multiples of _wei_. When you transact 1 ether, the transaction encodes 10^18^ wei as the value.
+The value of ether is always represented internally in Ethereum as an unsigned integer value denominated in _wei_. When you transact 1 ether, the transaction encodes 10000000000000000000 wei as the value.
 
-Ether's various denominations have both a _scientific name_ using the International System of units (_SI_), and a colloquial name that pays homage to many of the great minds of cryptography and computer science.
+Ether's various denominations have both a _scientific name_ using the International System of units (_SI_), and a colloquial name that pays homage to many of the great minds of computing and cryptography.
 
 Table <<ether_denominations>> shows the various units, their colloquial (common) name and their SI name. In keeping with the internal representation of value, the table shows all denominations in wei (first row), with ether shown as 10^18^ wei in the 7th row:
 
@@ -54,9 +54,9 @@ Table <<ether_denominations>> shows the various units, their colloquial (common)
 
 An Ethereum wallet is your gateway to the Ethereum system. It holds your keys and can create and broadcast transactions on your behalf. Choosing an Ethereum wallet is difficult. There are many different options, with different features and designs. Some are more suitable for beginners and some are more suitable for experts. Even if you choose well now, you might decide to change your choice a year from now. Ethereum itself is constantly changing and the "best" wallets change as some manage to keep up and others don't.
 
-Don't worry! If you choose a wallet and don't like how it works, you can change wallets quite easily. All you have to do is make a transaction that sends your funds from the old wallet to the new wallet. In Ethereum (as in all open blockchains), a transaction between your own wallets is indistinguishable from, and just as easy as, any other transaction.
+Don't worry! If you choose a wallet and don't like how it works, you can change wallets quite easily. All you have to do is make a transaction that sends your funds from the old wallet to the new wallet, or move the keys by exporting and importing. In Ethereum (as in all open blockchains), a transaction between your own wallets is indistinguishable from, and just as easy as, any other transaction.
 
-To get us started, we will choose three different wallets that we will be using throughout many of the examples: one mobile wallet, one desktop wallet and one web-based wallet. These three wallets are good choices for the readers of this book, as they represent a broad range of complexity and features. The choice of these wallets is not an endorsement of their quality or security. They are good enough for demonstration and testing and we have to start somewhere.
+To get started, we will choose three different wallets that we will be using throughout many of the examples: one mobile wallet, one desktop wallet and one web-based wallet. These three wallets are good choices for the examples in this book, as they represent a broad range of complexity and features. The choice of these wallets is not an endorsement of their quality or security. They are good enough for demonstration and testing and we have to start somewhere.
 
 Starter wallets:
 
@@ -397,6 +397,87 @@ image::images/remix_contract_interact.png["The Faucet contract is ALIVE!"]
 Notice that the Faucet contract now has an address of its own: Remix shows it as +Faucet at 0x72e....c7829+. The small clipboard symbol to the right allows you to copy the contract address into your clipboard. We will use that in the next section.
 
 === Interacting with the contract
+
+Let's recap what we've learned so far: Ethereum contracts are programs that control money, which run inside a virtual machine called the EVM. They are created by a special transaction that submits their bytecode to be recorded on the blockchain. Once they are created on the blockchain, they have an Ethereum address, just like wallets. Anytime someone sends a transaction to a contract address it causes the contract to run in the EVM, with the transaction as its input. Transactions sent to contract addresses may have ether or data or both in them. If they contain ether, it is "deposited" to the contract balance. If they contain data, the data can specify a named function in the contract and call it, passing arguments to the function.
+
+==== Viewing the contract address in a block explorer
+
+Now, we have a contract recorded on the blockchain and we can see it has an Ethereum address. Let's check it out on the +ropsten.etherscan.io+ block explorer and see what a contract looks like. Copy the address of the contract by clicking on the clipboard icon next to its name:
+
+[[remix_contract_address]]
+.Copy the contract address from Remix
+image::images/remix_contract_address.png["Copy the contract address from Remix"]
+
+Keep Remix open in a tab, we'll come back to it again later. Now, navigate your browser to +ropsten.etherscan.io+ and paste the address into the search box. You should see the contract's Ethereum address history:
+
+[[etherscan_contract_address]]
+.View the Faucet contract address in the etherscan block explorer
+image::images/etherscan_contract_address.png["View the Faucet contract address in the etherscan block explorer"]
+
+==== Funding the contract
+
+For now, the contract only has one transaction in its history: the contract creation transaction. As you can see, the contract also has no ether (zero balance). That's because we didn't send any ether to the contract in the creation transaction, even though we could have.
+
+Let's send some ether to the contract! You should still have the address of the contract in your clipboard (if not, copy it again from Remix). Open MetaMask, and send 1 ether to it, exactly as you would any other Ethereum address:
+
+[[metamask_send_to_contract]]
+.Send 1 ether to the contract address
+image::images/metamask_send_to_contract.png[""]
+
+In a minute, if you reload the etherscan block explorer, it will show another transaction to the contract address and an updated balance of 1 ether.
+
+Remember the unnamed default public payable function in our +Faucet.sol+ code? It looked like this:
+
+----
+function () public payable {}
+----
+
+When you sent a transaction to the contract address, with no data specifying which function to call, it called this default function. Because we declared it as a +payable+, it accepted and deposited the 1 ether into the contract account balance. Your transaction caused the contract to run in the EVM, updating its balance. We have funded our faucet!
+
+==== Withdrawing from our contract
+
+Next, let's withdraw some funds from the faucet. To withdraw, we have to construct a transaction that calls the +withdraw+ function and passes a +withdraw_amount+ argument to it. To keep things simple for now, Remix will construct that transaction for us and MetaMask will present it for our approval.
+
+Return to the Remix tab and look at the contract under the "Run" tab. You should see a red box labeled +withdraw+ with a field entry labeled +uint256 withdraw_amount+ :
+
+[[remix_contract_interact]]
+.The withdraw function of Faucet.sol, in Remix
+image::images/remix_contract_interact.png["The withdraw function of Faucet.sol, in Remix"]
+
+This is the Remix interface to the contract. It allows us to construct transactions that call the functions defined in the contract. We will enter a +withdraw_amount+ and click the +withdraw+ button to generate the transaction.
+
+First, let's figure out the +withdraw_amount+. We want to try and withdraw 0.1 ether, which is the maximum amount allowed by our contract. Remember that all currency values in Ethereum are denominated in +wei+ internally, and our +withdraw+ function expects the +withdraw_amount+ to be denominated in +wei+ too. The amount we want is 0.1 ether, which is +100000000000000000 wei+ (1 followed by 17 zeros). Type that (carefully) into the +withdraw_amount+ box and click on the +withdraw+ button:
+
+
+[[remix_withdraw]]
+.Click "withdraw" in Remix to create a withdrawal transaction
+image::images/remix_withdraw.png[""]
+
+MetaMask will pop-up a transaction window for you to approve. Click "Submit" to send your withdrawal call to the contract:
+
+[[metamask_withdraw]]
+.MetaMask transaction to call the withdraw function
+image::images/metamask_withdraw.png["MetaMask transaction to call the withdraw function"]
+
+Wait a minute and then reload the +etherscan+ block explorer to see the transaction reflected in the Faucet contract address history:
+
+[[etherscan_withdrawal_tx]]
+.Etherscan shows the transaction calling the withdraw function
+image::images/etherscan_withdrawal_tx.png[""]
+
+
+
+
+
+
+
+
+
+1000000000000000
+
+
+
+
 
 
 
