@@ -21,7 +21,7 @@ Here's what is available now:
 | Section | Progress |
 |-------|------|
 | [Preface](preface.asciidoc) | ### |
-| [Glossary](glossary.asciidoc) | ## |
+| [Glossary](glossary.asciidoc) | ### |
 | [What is Ethereum](what-is.asciidoc) | ## |
 | [Introduction](intro.asciidoc) | ########## |
 | [Ethereum Clients](clients.asciidoc) | ###### |
