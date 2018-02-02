@@ -23,7 +23,7 @@ Here's what is available now:
 | [Preface](preface.asciidoc) | ### |
 | [Glossary](glossary.asciidoc) | ### |
 | [What is Ethereum](what-is.asciidoc) | ## |
-| [Introduction](intro.asciidoc) | ########## |
+| [Introduction](intro.asciidoc) | ############# |
 | [Ethereum Clients](clients.asciidoc) | ###### |
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | # |
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# |
