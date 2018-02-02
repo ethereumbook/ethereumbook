@@ -21,13 +21,13 @@ readme_f = open('README.md','r')
 readme = readme_f.read()
 readme_f.close()
 
-wc_tag_re = re.compile("(.*)\((.*asciidoc)\)(.*)(<!--wordcount-->)")
+wc_tag_re = re.compile("\| +(\[.*\])\((.*asciidoc)\) +\| +[\#]* +\|")
 
 readme_f = open('README.md','w')
 for line in readme.splitlines():
-    match_re = wc_tag_re.match(line)
-    if match_re:
-        wordcount_bar = "#" * (wordcount[match_re.group(2)]//500)
-        line = match_re.expand("\g<1>(\g<2>) #" + wordcount_bar + " \g<4>")
-    readme_f.write(line+"\n")
+	match_re = wc_tag_re.match(line)
+	if match_re:
+		wordcount_bar = "#" * ((wordcount[match_re.group(2)]//500) + 1)
+		line = match_re.expand("| \g<1>(\g<2>) | " + wordcount_bar + " |")
+	readme_f.write(line+"\n")
 readme_f.close()

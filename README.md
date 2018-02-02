@@ -18,23 +18,23 @@ Note: the order or structure of these snippets is in constant flux.
 
 Here's what is available now:
 
-| Section | Progress (# is 500 words) |
+| Section | Progress |
 |-------|------|
 | [Preface](preface.asciidoc) | ### |
-| [Glossary](glossary.asciidoc) | # |
-| [What is Ethereum](what-is.asciidoc) | ##  |
-| [Introduction](intro.asciidoc) | ##########  |
-| [Ethereum Clients](clients.asciidoc) | ######  |
-| [Ethereum Testnets](ethereum-testnets.asciidoc) | #  |
-| [Keys and Addresses](keys-addresses.asciidoc) | #############  |
-| [Wallets](wallets.asciidoc) | ###########  |
-| [Transactions](transactions.asciidoc) | #  |
-| [Smart Contracts](smart-contracts.asciidoc) | #  |
-| [Tokens](tokens.asciidoc) | #  |
-| [Accounting & Gas](gas.asciidoc) | #  |
-| [EVM](evm.asciidoc) | #  |
-| [Development Tools and Frameworks](dev-tools.asciidoc) | #  |
-| [Decentralized Applications (Dapps) |](dapps.asciidoc) | #  |
+| [Glossary](glossary.asciidoc) | ## |
+| [What is Ethereum](what-is.asciidoc) | ## |
+| [Introduction](intro.asciidoc) | ########## |
+| [Ethereum Clients](clients.asciidoc) | ###### |
+| [Ethereum Testnets](ethereum-testnets.asciidoc) | # |
+| [Keys and Addresses](keys-addresses.asciidoc) | ############# |
+| [Wallets](wallets.asciidoc) | ########### |
+| [Transactions](transactions.asciidoc) | # |
+| [Smart Contracts](smart-contracts.asciidoc) | # |
+| [Tokens](tokens.asciidoc) | # |
+| [Accounting & Gas](gas.asciidoc) | # |
+| [EVM](evm.asciidoc) | # |
+| [Dev Tools and Frameworks](dev-tools.asciidoc) | # |
+| [Dapps](dapps.asciidoc) | # |
 
 Jump in! Review, comment, suggest and contribute...
 
