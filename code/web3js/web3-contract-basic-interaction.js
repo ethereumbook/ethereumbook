@@ -8,7 +8,7 @@ console.log(infura_token);
 
 // Prepare your Infura host url
 var infura_host = "https://kovan.infura.io/" + infura_token
-// Show your Infura host url for you web3 connection
+// Show your Infura host url for your web3 connection
 console.log(infura_host);
 
 // Instantiate web3 provider
