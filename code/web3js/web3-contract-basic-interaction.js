@@ -1,3 +1,6 @@
+// Take a closer look at the web3 1.0 documentation for calling methods (it's very different from the 0.2x API).
+// https://stackoverflow.com/questions/48547268/smart-contract-method-is-not-a-function-in-web3
+
 var Web3 = require('web3');
 var fs = require('fs')
 
@@ -51,3 +54,17 @@ our_contract.options.address
 our_contract.options.jsonInterface
 
 // This is turning more interesting, let's see what's going with our contract methods
+// our_contract.methods.totalSupply().call( function(err, res) {
+//     if(!err) {
+//         console.log(res);
+//     } else {
+//         console.log(err);
+//     }
+// );
+
+// Or you can use the returned Promise instead of passing in the callback:
+our_contract.methods.totalSupply().call().then(function(res){
+    console.log(res);
+}).catch(function(err) {
+    console.log(err);
+});
