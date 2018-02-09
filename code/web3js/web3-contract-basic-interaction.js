@@ -3,17 +3,34 @@
 /**
  * @author Francisco Javier Rojas García <fjrojasgarcia@gmail.com>
  */
- 
+
 // Take a closer look at the web3 1.0 documentation for calling methods (it's very different from the 0.2x API).
 // https://stackoverflow.com/questions/48547268/smart-contract-method-is-not-a-function-in-web3
 
 console.log('Mastering Ethereum - web3.js basic interactions')
 console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
-process.exit()
+const optionDefinitions = [
+  { name: 'localRPC', alias: 'l', type: Boolean },
+  { name: 'infuraToken', type: String, defaultOption: true },
+  { name: 'teachMe', alias: 't', type: Boolean }
+]
+
+const commandLineArgs = require('command-line-args')
+const options = commandLineArgs(optionDefinitions)
+
+console.log(options);
 
 var Web3 = require('web3');
 var fs = require('fs')
+
+if (options.infuraToken) {
+    console.log(options.infuraToken);
+} else {
+  console.log('Not argument for infura token');
+}
+
+process.exit()
 
 // Load a file from which to load your Infura token
 var infura_token = fs.readFileSync('/path/to/your/infura-token', 'utf8');
