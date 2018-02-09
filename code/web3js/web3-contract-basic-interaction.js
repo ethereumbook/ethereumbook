@@ -12,35 +12,40 @@ console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
 const optionDefinitions = [
   { name: 'localRPC', alias: 'l', type: Boolean },
-  { name: 'infuraToken', type: String, defaultOption: true },
+  { name: 'infuraFileToken', type: String, defaultOption: true },
   { name: 'teachMe', alias: 't', type: Boolean }
 ]
 
 const commandLineArgs = require('command-line-args')
 const options = commandLineArgs(optionDefinitions)
 
-console.log(options);
+if (options.teachMe) console.log(options);
 
 var Web3 = require('web3');
 var fs = require('fs')
 
-if (options.infuraToken) {
-    console.log(options.infuraToken);
+if (options.infuraFileToken) {
+  console.log(options.infuraFileToken);
+
+  // Load a file from which to load your Infura token
+  var infura_token = fs.readFileSync(options.infuraFileToken, 'utf8');
+  // Show your Infura token
+  console.log(infura_token);
+
+  // Prepare your Infura host url
+  var infura_host = "https://kovan.infura.io/" + infura_token
+
 } else {
   console.log('Not argument for infura token');
+  // Prepare your Infura host url
+  var infura_host = "https://kovan.infura.io"
+
 }
 
-process.exit()
-
-// Load a file from which to load your Infura token
-var infura_token = fs.readFileSync('/path/to/your/infura-token', 'utf8');
-// Show your Infura token
-console.log(infura_token);
-
-// Prepare your Infura host url
-var infura_host = "https://kovan.infura.io/" + infura_token
 // Show your Infura host url for your web3 connection
 console.log(infura_host);
+
+process.exit()
 
 // Instantiate web3 provider
 var web3 = new Web3(infura_host);
