@@ -1,5 +1,16 @@
+#!/usr/bin/env node
+
+/**
+ * @author Francisco Javier Rojas García <fjrojasgarcia@gmail.com>
+ */
+ 
 // Take a closer look at the web3 1.0 documentation for calling methods (it's very different from the 0.2x API).
 // https://stackoverflow.com/questions/48547268/smart-contract-method-is-not-a-function-in-web3
+
+console.log('Mastering Ethereum - web3.js basic interactions')
+console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
+
+process.exit()
 
 var Web3 = require('web3');
 var fs = require('fs')
