@@ -12,23 +12,21 @@ console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
 const optionDefinitions = [
   { name: 'localRPC', alias: 'l', type: Boolean },
-  { name: 'infuraFileToken', type: String, defaultOption: true },
-  { name: 'teachMe', alias: 't', type: Boolean }
+  { name: 'infuraFileToken', type: String, defaultOption: true }
 ]
 
 const commandLineArgs = require('command-line-args')
 const options = commandLineArgs(optionDefinitions)
 
-if (options.teachMe) console.log(options);
-
 var Web3 = require('web3');
 var fs = require('fs')
 
-if (options.infuraFileToken) {
+if (options.infuraFileToken && !options.localRPC) {
   console.log(options.infuraFileToken);
 
-  // Load a file from which to load your Infura token
+  // Loading an Infura Token from a file
   var infura_token = fs.readFileSync(options.infuraFileToken, 'utf8');
+
   // Show your Infura token
   console.log(infura_token);
 
@@ -36,7 +34,8 @@ if (options.infuraFileToken) {
   var infura_host = "https://kovan.infura.io/" + infura_token
 
 } else {
-  console.log('Not argument for infura token');
+  console.log('Not argument found for infura token');
+
   // Prepare your Infura host url
   var infura_host = "https://kovan.infura.io"
 
@@ -45,21 +44,30 @@ if (options.infuraFileToken) {
 // Show your Infura host url for your web3 connection
 console.log(infura_host);
 
-process.exit()
-
 // Instantiate web3 provider
 var web3 = new Web3(infura_host);
 
 // Show the web3 version
-web3.version
+//web3.version
 
 // Let's do some basic interactions at web3 level
 // Let's see the Protocol Version
-web3.eth.getProtocolVersion().then(console.log);
+web3.eth.getProtocolVersion().then(function(protocolVersion) {
+      console.log("Protocol Version: " + protocolVersion);
+  })
+
 // Now I'm curious about the current gas price
-web3.eth.getGasPrice().then(console.log);
+web3.eth.getGasPrice().then(function(gasPrice) {
+      console.log("Gas Price: " + gasPrice);
+  })
+
 // And, Whats the last mined block in my chain?
-web3.eth.getBlockNumber().then(console.log);
+web3.eth.getBlockNumber().then(function(blockNumber) {
+      console.log("Block Number: " + blockNumber);
+  })
+
+// process.exit()
+
 
 // Now let's dive into some basics actions with a contract
 // We will use the contract at;
@@ -101,3 +109,5 @@ our_contract.methods.totalSupply().call().then(function(res){
 }).catch(function(err) {
     console.log(err);
 });
+
+// process.exit()
