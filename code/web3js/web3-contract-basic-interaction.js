@@ -77,9 +77,18 @@ web3.eth.getBlockNumber().then(function(blockNumber) {
 var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
 
 // Let's see its balance
-web3.eth.getBalance(our_contract_address).then(console.log);
+web3.eth.getBalance(our_contract_address).then(function(balance) {
+      console.log("Balance: " + balance);
+  })
+
+
 // Now let's see its byte code
-web3.eth.getCode(our_contract_address).then(console.log);
+web3.eth.getCode(our_contract_address).then(function(code) {
+      console.log("Contract code: ----------------------------------------------\n");
+      console.log(code);
+      console.log("-------------------------------------------------------------\n");
+  })
+
 
 // Let's initialize our external programmatic description of contract's interface or abi
 var our_contract_abi = [{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"src","type":"address"},{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"wad","type":"uint256"}],"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"dst","type":"address"},{"name":"wad","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"deposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"guy","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":true,"name":"dst","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"dst","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"src","type":"address"},{"indexed":false,"name":"wad","type":"uint256"}],"name":"Withdrawal","type":"event"}]
@@ -88,11 +97,13 @@ var our_contract_abi = [{"constant":true,"inputs":[],"name":"name","outputs":[{"
 var our_contract = new web3.eth.Contract(our_contract_abi, our_contract_address);
 
 // Let's see our contract address
-our_contract._address
+console.log("Our Contract address: " + our_contract._address);
+
 // or in this way
-our_contract.options.address
+console.log("Our Contract address in other way: " + our_contract.options.address);
+
 // Now our contract abi
-our_contract.options.jsonInterface
+console.log("Our contract abi: " + our_contract.options.jsonInterface);
 
 // This is turning more interesting, let's see what's going with our contract methods
 // our_contract.methods.totalSupply().call( function(err, res) {
