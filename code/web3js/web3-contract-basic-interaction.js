@@ -47,9 +47,6 @@ console.log(infura_host);
 // Instantiate web3 provider
 var web3 = new Web3(infura_host);
 
-// Show the web3 version
-//web3.version
-
 // Let's do some basic interactions at web3 level
 // Let's see the Protocol Version
 web3.eth.getProtocolVersion().then(function(protocolVersion) {
