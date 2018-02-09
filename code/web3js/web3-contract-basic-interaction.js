@@ -103,17 +103,17 @@ console.log("Our Contract address in other way: " + our_contract.options.address
 console.log("Our contract abi: " + JSON.stringify(our_contract.options.jsonInterface));
 
 // This is turning more interesting, let's see what's going with our contract methods
-// our_contract.methods.totalSupply().call( function(err, res) {
-//     if(!err) {
-//         console.log(res);
-//     } else {
-//         console.log(err);
-//     }
-// );
+our_contract.methods.totalSupply().call(function(err, totalSupply) {
+    if (!err) {
+        console.log("Total Supply with a callback: " + totalSupply);        
+    } else {
+        console.log(err);
+    }
+});
 
 // Or you can use the returned Promise instead of passing in the callback:
 our_contract.methods.totalSupply().call().then(function(totalSupply){
-    console.log("Total Supply: " + totalSupply);
+    console.log("Total Supply with a promise: " + totalSupply);
 }).catch(function(err) {
     console.log(err);
 });
