@@ -113,10 +113,10 @@ client.getPromise("http://kovan.etherscan.io/api?module=contract&action=getabi&a
 })
 .then((our_contract) => {
   // Let's see our contract address
-  console.log("Our Contract address: " + our_contract._address);
+  console.log(`Our Contract address:  ${our_contract._address}`);
 
   // or in this other way
-  console.log("Our Contract address in other way: " + our_contract.options.address);
+  console.log(`Our Contract address in other way:  ${our_contract.options.address}`);
 
   // Now our contract abi
   console.log("Our contract abi: " + JSON.stringify(our_contract.options.jsonInterface));
@@ -125,7 +125,7 @@ client.getPromise("http://kovan.etherscan.io/api?module=contract&action=getabi&a
   // Now let's see our contract total supply in a callback fashion
   our_contract.methods.totalSupply().call(function(err, totalSupply) {
       if (!err) {
-          console.log("Total Supply with a callback: " + totalSupply);
+          console.log(`Total Supply with a callback:  ${totalSupply}`);
       } else {
           console.log(err);
       }
@@ -133,11 +133,9 @@ client.getPromise("http://kovan.etherscan.io/api?module=contract&action=getabi&a
 
   // Or you can use the returned Promise instead of passing in the callback:
   our_contract.methods.totalSupply().call().then(function(totalSupply){
-      console.log("Total Supply with a promise: " + totalSupply);
+      console.log(`Total Supply with a promise:  ${totalSupply}`);
   }).catch(function(err) {
       console.log(err);
   });
 
 })
-
-// process.exit()
