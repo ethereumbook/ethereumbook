@@ -82,7 +82,7 @@ web3.eth.getCode(our_contract_address).then(function(code) {
       console.log("-------------------------------------------------------------\n");
 })
 
-// Let's initialize our contract usl in Etherescan for Kovan chain
+// Let's initialize our contract url in Etherescan for Kovan chain
 var etherescan_url = `http://kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
 console.log(etherescan_url);
 
