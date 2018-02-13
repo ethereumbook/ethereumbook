@@ -6,10 +6,10 @@ contract METoken is StandardToken {
 	string public name = 'Mastering Ethereum Token';
 	string public symbol = 'MET';
 	uint8 public decimals = 2;
-	uint public INITIAL_SUPPLY = 21000000;
+	uint _initial_supply = 2100000000;
 
 	function METoken() public {
-		totalSupply_ = INITIAL_SUPPLY;
-		balances[msg.sender] = INITIAL_SUPPLY;
+		totalSupply_ = _initial_supply;
+		balances[msg.sender] = _initial_supply;
 	}
 }
