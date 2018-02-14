@@ -78,9 +78,9 @@ ERC20 is a standard for _fungible tokens_ meaning that different units of an ERC
 
 The ERC20 standard defines a common interface for contracts implementing a token, such that any compatible token can be accessed and used in the same way. The interface consists of a number of functions that must be present in every implementation of the standard, as well as some optional functions and attributes that may be added by developers.
 
-===== ERC20 Required Functions
+===== ERC20 required functions & events
 
-totalSupply:: Returns the total units of this token that exist.
+totalSupply:: Returns the total units of this token that currently exist. ERC20 tokens can have fixed or variable supply.
 
 balanceOf:: Given an address, returns the token balance of that address.
 
@@ -92,7 +92,11 @@ approve:: Given a recipient address and amount, authorizes that address to execu
 
 allowance:: Given an owner address and a spender address, returns the remaining amount that the spender is approved to withdraw from the owner.
 
-===== ERC20 Optional Functions
+Transfer event:: Event triggered upon successful transfer (call to +transfer+ or +transferFrom+) (even for zero value transfers).
+
+Approval event:: Event logged upon successful call to +approve+.
+
+===== ERC20 optional functions
 
 name:: Returns a human readable name (eg. "US Dollars") of the token.
 
@@ -100,6 +104,34 @@ symbol:: Returns a human readable symbol (eg. "USD") for the token.
 
 decimals:: Returns the number of decimals used to divide token amounts. For example, if decimals is 2, then the token amount is divided by 100 to get its user representation.
 
+===== The ERC20 interface defined in Solidity
+
+Here's what an ERC20 interface specification looks like in Solidity:
+
+----
+contract ERC20 {
+   function totalSupply() constant returns (uint theTotalSupply);
+   function balanceOf(address _owner) constant returns (uint balance);
+   function transfer(address _to, uint _value) returns (bool success);
+   function transferFrom(address _from, address _to, uint _value) returns (bool success);
+   function approve(address _spender, uint _value) returns (bool success);
+   function allowance(address _owner, address _spender) constant returns (uint remaining);
+   event Transfer(address indexed _from, address indexed _to, uint _value);
+   event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+----
+
+===== ERC20 workflows: "transfer" and "approve & transferFrom"
+
+The ERC20 token standard has two transfer functions. You might be wondering why?
+
+ERC20 allows two different workflows. The first is a single-transaction, straightforward workflow using the +transfer+ function. This workflow is the one used by wallets to send tokens to other wallets. The vast majority of token transactions happen with the +transfer+ workflow.
+
+Executing the transfer contract is very simple. If Alice wants to send an 10 tokens to Bob, her wallet sends a transaction to the token contract's address, calling the +transfer+ function with Bob's address and "10" as the arguments. The token contract adjusts Alice's balance (-10) and Bob's balance (+10) and issues a +Transfer+ event.
+
+The second workflow is a two-transaction workflow that uses +approve+, followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token.
+
+For the +approve & transferFrom+ workflow, two transactions are needed. Let's say that Alice wants to allow the AliceICO contract to sell 50% of all the AliceCoin tokens to buyers like Bob and Charlie. First, Alice launches the AliceCoin ERC20 contract, issuing all the AliceCoin to her own address. Then, Alice launches the AliceICO contract that can sell tokens for ether. Next, Alice initiates the +approve & transferFrom+ workflow. She sends a transaction to AliceCoin, calling +approve+, with the address of AliceICO and 50% of the +totalSupply+. This will trigger the +Approval+ event. Now, the AliceICO contract can sell AliceCoin. When AliceICO receives ether from Bob, it needs to send some AliceCoin to Bob in return. To do that, AliceICO calls the AliceCoin +transferFrom+ function, with Alice's address as the sender, Bob's address as the recipient and the amount of tokens to give Bob. The AliceCoin contract transfers the balance from Alice's address to Bobk's address and triggers a +Transfer+ event. The AliceICO contract can call +transferFrom+ an unlimited number of times, as long as it doesn't exceed the approval limit Alice set. The AliceICO contract can keep track of how many AliceCoin tokens it can sell by calling the +allowance+ function.
 
 ===== ERC20 Implementations
 
@@ -243,11 +275,15 @@ On the +ganache+ console, we should see that our deployment has created 4 new tr
 .METoken deployment on Ganache
 image::images/ganache_metoken.png["METoken deployment on Ganache"]
 
+==== Interacting with METoken using the truffle console
+
+
+
 ==== Interacting with METoken using MetaMask
 
 ==== Sending METoken
 
-==== Interacting with METoken using the web3 console
+
 
 
 
