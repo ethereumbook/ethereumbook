@@ -30,7 +30,7 @@ Here's what is available now:
 | [Wallets](wallets.asciidoc) | ########### |
 | [Transactions](transactions.asciidoc) | # |
 | [Smart Contracts](smart-contracts.asciidoc) | # |
-| [Tokens](tokens.asciidoc) | ##### |
+| [Tokens](tokens.asciidoc) | ###### |
 | [Accounting & Gas](gas.asciidoc) | # |
 | [EVM](evm.asciidoc) | # |
 | [Concensus](consensus.asciidoc) | # |
