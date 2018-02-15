@@ -33,7 +33,7 @@ Here's what is available now:
 | [Tokens](tokens.asciidoc) | ###### |
 | [Accounting & Gas](gas.asciidoc) | # |
 | [EVM](evm.asciidoc) | # |
-| [Concensus](consensus.asciidoc) | # |
+| [Consensus](consensus.asciidoc) | # |
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ## |
 | [Dapps](dapps.asciidoc) | # |
