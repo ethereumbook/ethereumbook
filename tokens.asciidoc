@@ -277,18 +277,100 @@ image::images/ganache_metoken.png["METoken deployment on Ganache"]
 
 ==== Interacting with METoken using the truffle console
 
+We can interact with our contract on the +ganache+ blockchain, using the +truffle console+. This is an interactive Javascript environment that provides access to the truffle environment and, via Web3, to the blockchain. In this case, we will connect the +truffle console+ to the +ganache+ blockchain:
 
+----
+$ truffle console --network ganache
+truffle(ganache)>
+----
 
-==== Interacting with METoken using MetaMask
+The +truffle(ganache)>+ prompt shows that we are connected to the +ganache+ blockchain and are ready to type our commands. The +truffle console+ supports all the truffle commands, so we could +compile+ and +migrate+ from the console. We've already ran those commands, so let's go directly to the contract itself. The METoken contract exists as a Javascript object within the truffle environment. Type +METoken+ at the prompt and it will dump the entire contract definition:
 
-==== Sending METoken
+----
+truffle(ganache)> METoken
+{ [Function: TruffleContract]
+  _static_methods:
 
+[...]
 
+currentProvider:
+ HttpProvider {
+   host: 'http://localhost:7545',
+   timeout: 0,
+   user: undefined,
+   password: undefined,
+   headers: undefined,
+   send: [Function],
+   sendAsync: [Function],
+   _alreadyWrapped: true },
+network_id: '5777' }
 
+----
 
+The +METoken+ object also exposes several attributes, such as the address of the contract (as deployed by the +migrate+ command):
 
+----
+truffle(ganache)> METoken.address
+'0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+----
 
+If we want to interact with the deployed contract, we have to use an asynchronous call, in the form of a Javascript "promise". We use the +deployed+ function to get the contract instance and then call the +totalSupply+ function:
 
+----
+truffle(ganache)> METoken.deployed().then(function(instance){ return instance.totalSupply();})
+BigNumber { s: 1, e: 9, c: [ 2100000000 ] }
+----
+
+Next, let's use the accounts created by +ganache+ to check our METoken balance and send some METoken to another address. First, let's get the account addresses:
+
+----
+truffle(ganache)> var accounts;
+undefined
+truffle(ganache)> web3.eth.getAccounts(function(err,res) { accounts = res;})
+undefined
+truffle(ganache)> accounts[0]
+'0x627306090abab3a6e1400e9345bc60c78a8bef57'
+
+----
+
+The +accounts+ list now contains all the accounts created by +ganache+, and +account[0]+ is the account that deployed the METoken contract. It should have a balance of METoken, because our METoken constructor gives the enitre token supply to the address that created it. Let's check:
+
+----
+truffle(ganache)> METoken.deployed().then(function(instance){ instance.balanceOf(accounts[0]).then(function(result){console.log(result);});})
+undefined
+BigNumber { s: 1, e: 9, c: [ 2100000000 ] }
+----
+
+Finally, let's transfer 1000.00 METoken from +account[0]+ to +account[1]+, by calling the contract's +transfer+ function:
+
+----
+truffle(ganache)> METoken.deployed().then(function(instance){ instance.transfer(accounts[1], 100000);})
+undefined
+truffle(ganache)>
+undefined
+truffle(ganache)> METoken.deployed().then(function(instance){ instance.balanceOf(accounts[0]).then(function(result){console.log(result);});})
+undefined
+truffle(ganache)> BigNumber { s: 1, e: 9, c: [ 2099900000 ] }
+
+undefined
+truffle(ganache)> METoken.deployed().then(function(instance){ instance.balanceOf(accounts[1]).then(function(result){console.log(result);});})
+undefined
+truffle(ganache)> BigNumber { s: 1, e: 5, c: [ 100000 ] }
+
+----
+
+[TIP]
+====
+METoken has 2 decimals of precision, meaning that 1 METoken is 100 units in the contract. When we transfer 1000 METoken, we specify the value as 100,000 in the transfer function.
+====
+
+As you can see, in the console, +account[0]+ now has 20,999,000 MET, and +account[1]+ has 1000 MET.
+
+If you switch to the +ganache+ graphical user interface, you will see the transaction that called the +transfer+ function:
+
+[[ganache_metoken_transfer]]
+.METoken transfer on Ganache
+image::images/ganache_metoken_transfer.png["METoken transfer on Ganache"]
 
 
 ===== Problems with ERC20
