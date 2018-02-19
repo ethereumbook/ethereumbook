@@ -187,7 +187,7 @@ Edit the +truffle.js+ configuration file to setup your +truffle+ environment, or
 
 https://github.com/ethereumbook/ethereumbook/blob/first_edition/code/Faucet/truffle.js
 
-If you use the example +truffle.js+, remember to create a file +.env+ in the +METoken+ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as Ropsten or Kovan. You can export your test network private key from MetaMask.
+If you use the example +truffle.js+, remember to create a file +.env+ in the +METoken+ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as ganache or Kovan. You can export your test network private key from MetaMask.
 
 [WARNING]
 ====
@@ -376,9 +376,81 @@ If you switch to the +ganache+ graphical user interface, you will see the transa
 image::images/ganache_metoken_transfer.png["METoken transfer on Ganache"]
 
 
-===== Problems with ERC20
+==== Pitfalls of ERC20 tokens
 
-Both ERC223 and ERC777 standards are proposals that attempt to address issues with the ERC20 standard.
+So far we've setup an ERC20 token and transferred from one account to another. All the accounts we used for these demonstrations are externally-owned accounts (EOAs), meaning they are controlled by a private key, not a contract. What happens if we send MET to a contract address? Let's find out!
+
+First, let's deploy another contract into our test environment. For this example we will use our first contract +Faucet.sol+. Let's add it to the METoken project by copying it to the +contracts+ directory. Our directory should look like this:
+
+----
+METoken/
+├── contracts
+│   ├── Faucet.sol
+│   ├── METoken.sol
+│   └── Migrations.sol
+----
+
+We'll also add a migration, to deploy +Faucet+ separately from +METoken+:
+
+----
+var Faucet = artifacts.require("Faucet");
+
+module.exports = function(deployer) {
+  // Deploy the Faucet contract as our only task
+  deployer.deploy(Faucet);
+};
+----
+
+Let's compile and migrate the contracts, from the truffle console:
+
+----
+$ truffle console --network ganache
+truffle(ganache)> compile
+Compiling ./contracts/Faucet.sol...
+Writing artifacts to ./build/contracts
+
+truffle(ganache)> migrate
+Using network 'ganache'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0x89f6a7bd2a596829c60a483ec99665c7af71e68c77a417fab503c394fcd7a0c9
+  Migrations: 0xa1ccce36fb823810e729dce293b75f40fb6ea9c9
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Replacing METoken...
+  ... 0x28d0da26f48765f67e133e99dd275fac6a25fdfec6594060fd1a0e09a99b44ba
+  METoken: 0x7d6bf9d5914d37bcba9d46df7107e71c59f3791f
+Saving artifacts...
+Running migration: 3_deploy_faucet.js
+  Deploying Faucet...
+  ... 0x6fbf283bcc97d7c52d92fd91f6ac02d565f5fded483a6a0f824f66edc6fa90c3
+  Faucet: 0xb18a42e9468f7f1342fa3c329ec339f254bc7524
+Saving artifacts...
+----
+
+Great. Now let's send some MET to the +Faucet+ contract:
+
+----
+truffle(ganache)> METoken.deployed().then(instance => { instance.transfer(Faucet.address, 100000) })
+truffle(ganache)> METoken.deployed().then(instance => { instance.balanceOf(Faucet.address).then(console.log)})
+truffle(ganache)> BigNumber { s: 1, e: 5, c: [ 100000 ] }
+----
+
+Alright, we have transferred 1000 MET to the +Faucet+ contract. Now, how do we withdraw from the +Faucet+?
+
+Remember, +Faucet.sol+ is a pretty simple contract. It only has one function, +withdraw+, which is for withdrawing _ether_. It doesn't have a function for withdrawing MET, or any other ERC20 token. If we use +withdraw+ it will try to send ether, but since the faucet doesn't have a balance of ether yet, it will fail.
+The +METoken+ contract knows that +Faucet+ has a balance, but the only way that it can transfer that balance is if it receives a +transfer+ call from the address of the contract. Somehow we need to make the +Faucet+ contract call the +transfer+ function in +METoken+.
+
+If you're wondering what to do next, don't. There is no solution to this problem. The MET sent to +Faucet+ is stuck, forever. Only the +Faucet+ contract can transfer it, and the +Faucet+ contract doesn't have code to call the +transfer+ function of an ERC20 token contract.
+
+Perhaps you anticipated this problem. Most likely, you didn't. In fact, neither did hundreds of Ethereum users who accidentally transferred various tokens to contracts that didn't have any ERC20 capability. According to some estimates, tokens worth more than $2.5 million USD have been "stuck" like this and are lost forever.
+
+One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer, is when they attempt to transfer to an exchange or other service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts serve a number of different functions, most often sweeping all funds sent to them to a "cold storage" or other centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
+
+
+//
+// Both ERC223 and ERC777 standards are proposals that attempt to address issues with the ERC20 standard.
 
 ==== ERC223
 
