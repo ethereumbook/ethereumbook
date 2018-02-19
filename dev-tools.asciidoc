@@ -238,7 +238,7 @@ Saving artifacts...
 
 ==== Using the truffle console
 
-Truffle offers a Javascript console that we can use to interact with the Ethereum network (via the local node), interact with deployed contracts, and interact with the wallet provider. In our current configuration (+localnode+), the node and wallet provider is our local +parity+ client.
+Truffle offers a Javascript console that we can use to interact with the Ethereum network (via the local node), interact with deployed contracts, and interact with the wallet provider. In our current configuration (+localnode+), the node and wallet provider is our local parity client.
 
 Let's start the truffle console and try some commands:
 
@@ -249,7 +249,7 @@ truffle(localnode)>
 
 Truffle presents a prompt, showing the selected network configuration (+localnode+). It's important to remember and be aware of which network we are using. You wouldn't want to accidentally deploy a test contract or make a transaction on the Ethereum main network. That could be an expensive mistake!
 
-The truffle console offers an auto-complete function that makes it easy for us to explore the environment. If we press +Tab+ after a partially-completed command, truffle will complete the command for us. Pressing +Tab+ twice will show all possible completions if there were more than one possible commands that matched our partial input. In fact, if we press +Tab+ twice on an empty prompt, truffle lists all commands (we truncated the output to save space here):
+The truffle console offers an auto-complete function that makes it easy for us to explore the environment. If we press +Tab+ after a partially-completed command, truffle will complete the command for us. Pressing +Tab+ twice will show all possible completions if more than one command matches our input. In fact, if we press +Tab+ twice on an empty prompt, truffle lists all commands:
 
 ----
 truffle(localnode)>
@@ -260,7 +260,7 @@ ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array I
 __defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
 ----
 
-The vast majority of the wallet and node related functions are provided by the +web3+ object, which is an instance of the +web3.js+ library. The +web3+ object abstracts the RPC interface into our +parity+ node. You will also notice two objects with familiar names: +Migrations+ and +Faucet+. Those represent the contracts we just deployed. Let's see how we can use the console to interact with the contracts. First, let's check our wallet via the +web3+ object:
+The vast majority of the wallet and node related functions are provided by the +web3+ object, which is an instance of the +web3.js+ library. The +web3+ object abstracts the RPC interface into our parity node. You will also notice two objects with familiar names: +Migrations+ and +Faucet+. Those represent the contracts we just deployed. We will use the truffle console to interact with a contract. First, let's check our wallet via the +web3+ object:
 
 ----
 truffle(localnode)> web3.eth.accounts
@@ -271,8 +271,8 @@ truffle(localnode)> web3.eth.accounts
 Our parity client has two wallets, with some test-ETH on Ropsten. The +web3.eth.accounts+ attribute contains a list of all the accounts. We can check the balance of the first account, using the +getBalance+ function:
 
 ----
-truffle(localnode)> web3.eth.getBalance(web3.eth.accounts[0])
-BigNumber { s: 1, e: 18, c: [ 19119, 85728000000002 ] }
+truffle(localnode)> web3.eth.getBalance(web3.eth.accounts[0]).toNumber()
+191198572800000000
 truffle(localnode)>
 ----
 
@@ -281,8 +281,8 @@ The +web3.js+ is a large Javascript library that offers a comprehensive interfac
 ----
 truffle(localnode)> Faucet.address
 '0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
-truffle(localnode)> web3.eth.getBalance(Faucet.address)
-BigNumber { s: 1, e: 0, c: [ 0 ] }
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+0
 truffle(localnode)>
 ----
 
@@ -296,9 +296,8 @@ truffle(localnode)> web3.eth.sendTransaction({from:web3.eth.accounts[0], to:Fauc
 Switch to the web console on +parity+, where you will see a pop-up asking you to confirm this transaction. Wait a minute and once the transaction is mined, you will be able to see the balance of our +Faucet+ contract:
 
 ----
-truffle(localnode)> web3.eth.getBalance(Faucet.address)
-BigNumber { s: 1, e: 17, c: [ 5000 ] }
-truffle(localnode)>
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+500000000000000000
 ----
 
 Let's call the +withdraw+ function now, to withdraw some test-ETH from the Faucet:
@@ -310,8 +309,8 @@ truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.t
 Again, you will need to approve the transaction in the parity web console. The balance of the +Faucet+ has decreased, and our test wallet has received +0.1+ ether:
 
 ----
-truffle(localnode)> web3.eth.getBalance(Faucet.address)
-BigNumber { s: 1, e: 17, c: [ 4000 ] }
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+400000000000000000
 ----
 
 
@@ -321,7 +320,6 @@ truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.t
 
 ----
 StatusError: Transaction: 0xe147ae9e3610334ada8d863c9028c12bd0501be2d0cfd05865c18612b92d3f9c exited with an error (status 0).
-
 ----
 
 === Ganache: A personal blockchain for Ethereum development
