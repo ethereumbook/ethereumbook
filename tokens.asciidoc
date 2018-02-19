@@ -131,6 +131,10 @@ Executing the transfer contract is very simple. If Alice wants to send an 10 tok
 
 The second workflow is a two-transaction workflow that uses +approve+, followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token.
 
+[[approve_transferFrom_workflow]]
+.The two-step approve & transferFrom workflow of ERC20 tokens
+image::images/approve_transferFrom_workflow.png["The two-step approve & transferFrom workflow of ERC20 tokens"]
+
 For the +approve & transferFrom+ workflow, two transactions are needed. Let's say that Alice wants to allow the AliceICO contract to sell 50% of all the AliceCoin tokens to buyers like Bob and Charlie. First, Alice launches the AliceCoin ERC20 contract, issuing all the AliceCoin to her own address. Then, Alice launches the AliceICO contract that can sell tokens for ether. Next, Alice initiates the +approve & transferFrom+ workflow. She sends a transaction to AliceCoin, calling +approve+, with the address of AliceICO and 50% of the +totalSupply+. This will trigger the +Approval+ event. Now, the AliceICO contract can sell AliceCoin. When AliceICO receives ether from Bob, it needs to send some AliceCoin to Bob in return. To do that, AliceICO calls the AliceCoin +transferFrom+ function, with Alice's address as the sender, Bob's address as the recipient and the amount of tokens to give Bob. The AliceCoin contract transfers the balance from Alice's address to Bobk's address and triggers a +Transfer+ event. The AliceICO contract can call +transferFrom+ an unlimited number of times, as long as it doesn't exceed the approval limit Alice set. The AliceICO contract can keep track of how many AliceCoin tokens it can sell by calling the +allowance+ function.
 
 ===== ERC20 Implementations
