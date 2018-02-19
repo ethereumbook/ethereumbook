@@ -30,12 +30,12 @@ Here's what is available now:
 | [Wallets](wallets.asciidoc) | ########### |
 | [Transactions](transactions.asciidoc) | # |
 | [Smart Contracts](smart-contracts.asciidoc) | # |
-| [Tokens](tokens.asciidoc) | ####### |
+| [Tokens](tokens.asciidoc) | ######## |
 | [Accounting & Gas](gas.asciidoc) | # |
 | [EVM](evm.asciidoc) | # |
 | [Consensus](consensus.asciidoc) | # |
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |
-| [Dev Tools and Frameworks](dev-tools.asciidoc) | #### |
+| [Dev Tools and Frameworks](dev-tools.asciidoc) | ##### |
 | [Dapps](dapps.asciidoc) | # |
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | ## |
 
