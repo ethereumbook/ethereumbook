@@ -26,9 +26,51 @@ Bitcoin establishes the decentralized consensus on account balance amongst all p
 Ethereum is an open-source, globally decentralized computing infrastructure that executes programs called smart contracts. It uses a blockchain to synchronize and store the system state along with a cryptocurrency called ether to meter and constrain execution resource cost. __copied from here__ https://github.com/ethereumbook/ethereumbook/blob/develop/what-is.asciidoc#what-is-ethereum
 
 ==== Bitcoin state transition 
-The Bitcoin implementation can be seen as an implementation of a state transaction system too, where, the state is the account balance. For example, at a certain point in time, there are only two account holders - A and B - each with a balance of $10. The account holder A, transfers $2 to B, in exchange for certain goods. Therefore, at a later point in time, the changed state is $8 balance with A and $12 balance with B. This change in state is not recorded in the systems of a central authority. Instead, it is in the Bitcoin ledger that exists on every computer in the Bitcoin network.
+The Bitcoin implementation can also be seen as an implementation of a state transaction system, where, the state is the account balance. Suppose, at a certain point in time, there are only two account holders - A and B - each with a balance of $10. The account holder A, transfers $2 to B, in exchange for certain goods. Therefore, at a later point in time, the changed state is $8 balance with A and $12 balance with B. This change in state is not recorded in the systems of a central authority. Instead, it is in the Bitcoin ledger that exists on every computer in the Bitcoin network.
 
 In summary, Bitcoin saves three things in the ledger: current balance in the account, transition and the to-be balance in the account. 
 
 ==== Generic state transition
-What if, there was a decentralized system that maintained the transition of state of any system? For example, the movement of goods from a factory to a customer is a state transition of the produced goods. Ethereum is that decentralized system that allows for state transition without the need for a central authority.
+What if, there was a decentralized system that maintained the transition of state of __any__ system? For example, the movement of goods from a factory to a customer is a state transition of the produced goods. Ethereum is that decentralized system that allows for state transition without the need for a central authority.
+
+=== Ethereum Development
+__Leading text here__ 
+
+==== Ethereum components
+By now it should be clear that, the goal of Ethereum is to provide a global, state transition system. Such a system would necessarily have the following components.
+- *State store* to store the states as they transition from current to to-be.
+- *Gossip protocol* to communicate with nodes to announce, amongst others, incoming transactions.
+_ *Consensus algorithm* to verify the set of current state, transaction and to-be state is true.
+_ *State definitions* to provide an interface to apply transitions on current state.
+- *State transitions* to execute a transition on the current state.
+
+In the Ethereum software, the mapping of the components is as follows:
+|=========================================================
+|Component |Technology |Remarks
+|State store | LevelDB | LevelDB is the 'container' for the Merkle Patricia tree data structure that stores the state. Links: http://leveldb.org/ https://github.com/ethereum/wiki/wiki/Patricia-Tree
+|Gossip protocol | ÐΞV technologies | https://github.com/ethereum/wiki/wiki/%C3%90%CE%9EVp2p-Wire-Protocol
+|Consensus algorithm | ethash | Proof-of-Work algorithm https://github.com/ethereum/wiki/wiki/Ethash
+|State definitions | Smart Contract programming languages | Mutan https://forum.ethereum.org/discussion/922/mutan-faq[deprecated], LLL, Serpent, Solidity, Vyper, Bamboo
+https://media.consensys.net/an-introduction-to-lll-for-ethereum-smart-contract-development-e26e38ea6c23 __(GitHub URL?)__ https://github.com/ethereum/wiki/wiki/Serpent https://github.com/ethereum/solidity https://github.com/ethereum/vyper https://github.com/pirapira/bamboo 
+|State transitions | Ethereum Virtual Machine | https://github.com/ethereum/wiki/wiki/Ethereum-Virtual-Machine-(EVM)-Awesome-List
+|=========================================================
+
+The complete Ethereum software, with its components, can be thought of as similar to Linux operating system with components for disk, RAM, network, security, drivers and so on. While these components are constantly developed and enhanced, application development is typically 'on top' of these compoenents with an abstract, interface layer. In Ethereum, such an abstraction layer is provided via Ethereum clients.
+
+==== Ethereum clients
+An Ethereum client can be defined as (__what is the official definition?__) an implementation of the Ethereum components discussed above. Therefore, an Ethereum client can (__should?__) do the following:
+- A container for the Ethereum Virtual Machine (EVM).
+- Generate blocks for appending into state store.
+- Read and append functions for the state store.
+- Node discovery and communication.
+- Expose end-points for external communication.
+
+With those capabilities, an Ethereum client allows
+- a developer to publish and execute Smart Contracts
+- a developer to read the state store for down-stream applications
+- a miner to mine for new blocks and earn ETH 
+
+The following is a partial list of clients:
+http://ethdocs.org/en/latest/ethereum-clients/choosing-a-client.html
+
+__Build table here__
