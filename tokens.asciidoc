@@ -151,6 +151,7 @@ OpenZeppelin StandardToken:: This implementation is ERC20-compatible, with addit
 You can see the Solidity code for OpenZeppelin StandardToken here:
 https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/ERC20/StandardToken.sol
 
+[[metoken_example]]
 ==== Launching our own ERC20 token
 
 Let's create and launch our own token. For this example, we will use the +truffle+ framework (see <<truffle>>). The example assumes you have already installed +truffle+, configured it, and are familiar with its basic operation.
@@ -447,6 +448,106 @@ If you're wondering what to do next, don't. There is no solution to this problem
 Perhaps you anticipated this problem. Most likely, you didn't. In fact, neither did hundreds of Ethereum users who accidentally transferred various tokens to contracts that didn't have any ERC20 capability. According to some estimates, tokens worth more than $2.5 million USD have been "stuck" like this and are lost forever.
 
 One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer, is when they attempt to transfer to an exchange or other service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts serve a number of different functions, most often sweeping all funds sent to them to a "cold storage" or other centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
+
+==== Demonstrating the approve & transferFrom workflow
+
+Our +Faucet+ contract couldn't handle ERC20 tokens. Sending tokens to it, using the +transfer+ function results in the loss of those tokens. Let's rewrite the contract and make it handle ERC20 tokens. Specifically we will turn it into a faucet that gives out MET to anyone who asks.
+
+For this example, we make a copy of the truffle project directory, call it +METoken_METFaucet+, initialize truffle, npm, install OpenZeppelin dependencies and copy the +METoken.sol+ contract. See our first example <<metoken_example>> for the detailed instructions.
+
+Now, let's create a new faucet contract, call it +METFaucet.sol+. It will look like this:
+
+[[METFaucet]]
+.METFaucet.sol: a faucet for METoken
+[source,solidity,linenums]
+----
+include::code/METoken_METFaucet/contracts/METFaucet.sol
+----
+
+We've made quite a few changes to the basic faucet example. Since METFaucet will use the +transferFrom+ function in +METoken+, it will need two additional variables. One will hold the address of the deployed +METoken+ contract. The other will hold the address of the owner of MET who will provide approval the faucet withdrawals. The +METFaucet+ will call +METoken.transferFrom+ and instruct it to move MET from the owner to the address where the faucet withdrawal request came from.
+
+We declare these two variables here:
+----
+StandardToken public METoken;
+address public METOwner;
+----
+
+Since our faucet needs to be initialized with the correct addesses for +METoken+ and +METOwner+ we need to declare a custom constructor:
+
+----
+// METFaucet constructor, provide the address of METoken contract and
+// the owner address we will be approved to transferFrom
+function METFaucet(address _METoken, address _METOwner) public {
+
+	// Initialize the METoken from the address provided
+	METoken = StandardToken(_METoken);
+	METOwner = _METOwner;
+}
+----
+
+The next change is to the +withdraw+ function. Instead of calling +transfer+, +METFaucet+ uses the +transferFrom+ function in +METoken+ and asks +METoken+ to transfer MET to the faucet recipient:
+
+----
+// Use the transferFrom function of METoken
+METoken.transferFrom(METOwner, msg.sender, withdraw_amount);
+----
+
+Finally, since our faucet no longer sends ether, we should probably prevent anyone from sending ether to +METFaucet+, as we wouldn't want it to get stuck. We change the fallback payable function to reject incoming ether, using the +revert+ function to revert any incoming payments:
+
+----
+// REJECT any incoming ether
+function () public payable { revert(); }
+----
+
+Now that our +METFaucet.sol+ code is ready, we need to modify the migration script to deploy it. This migration script will be a bit more complex, as +METFaucet+ depends on the address of +METoken+. We will use a Javascript promise to deploy the two contracts in sequence. Create +2_deply_contracts.js+ as follows:
+
+----
+var METoken = artifacts.require("METoken");
+var METFaucet = artifacts.require("METFaucet");
+var owner = web3.eth.accounts[0];
+
+module.exports = function(deployer) {
+
+	// Deploy the METoken contract first
+	deployer.deploy(METoken, {from: owner}).then(function() {
+		// then deploy METFaucet and pass the addres of METoken
+		// and the address of the owner of all the MET who will approve METFaucet
+		return deployer.deploy(METFaucet, METoken.address, owner);
+  	});
+}
+----
+
+Now, we can test everything in the truffle console. First, we use +migrate+ to deploy the contracts. When +METoken+ is deployed it will allocate all the MET to the account that created it, +web3.eth.accounts[0]+. Then, we call the +approve+ function in METoken to approve +METFaucet+ to send up to 1000 MET on behalf of +web3.eth.accounts[0]+. Finally, to test our faucet, we call +METFaucet.withdraw+ from +web3.eth.accounts[1]+ and try to withdraw 10 MET. Here are the console commands:
+
+
+----
+$ truffle console --network ganache
+truffle(ganache)> migrate
+Using network 'ganache'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0x79352b43e18cc46b023a779e9a0d16b30f127bfa40266c02f9871d63c26542c7
+  Migrations: 0xaa588d3737b611bafd7bd713445b314bd453a5c8
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Replacing METoken...
+  ... 0xc42a57f22cddf95f6f8c19d794c8af3b2491f568b38b96fef15b13b6e8bfff21
+  METoken: 0xf204a4ef082f5c04bb89f7d5e6568b796096735a
+  Replacing METFaucet...
+  ... 0xd9615cae2fa4f1e8a377de87f86162832cf4d31098779e6e00df1ae7f1b7f864
+  METFaucet: 0x75c35c980c0d37ef46df04d31a140b65503c0eed
+Saving artifacts...
+truffle(ganache)> METoken.deployed().then(instance => { instance.approve(METFaucet.address, 100000) })
+truffle(ganache)> METoken.deployed().then(instance => { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })
+truffle(ganache)> BigNumber { s: 1, e: 0, c: [ 0 ] }
+truffle(ganache)> METFaucet.deployed().then(instance => { instance.withdraw(1000, {from:web3.eth.accounts[1]}) } )
+truffle(ganache)> METoken.deployed().then(instance => { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })
+truffle(ganache)> BigNumber { s: 1, e: 3, c: [ 1000 ] }
+----
+
+
+
 
 
 //
