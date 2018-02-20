@@ -212,6 +212,115 @@ Because we are using a local node to connect to the Ethereum network and manage 
 .Parity asking for confirmation to deploy Faucet
 image::images/parity_deployment_confirmation.png["Parity asking for confirmation to deploy Faucet"]
 
+You will see four transactions, total. One to deploy +Migrations+, one to update the deployments counter to +1+, one to deploy +Faucet+ and one to update the deployments counter to +2+.
+
+Truffle will show the migrations completing, show each of the transactions and show the contract addresses:
+
+----
+$ truffle migrate --network localnode
+Using network 'localnode'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xfa090db179d023d2abae543b4a21a1479e70ca7d35a469a5d1a98bfc6bd80fe8
+  Migrations: 0x8861c27715550bed8362c0345add158489df6db0
+Saving successful migration to network...
+  ... 0x985c4a32716826ddbe4eae284104bef8bc69e959899f62246a1b27c9dfcd6c03
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xecdbeef77f0558edc689440e34b7bba0a3ba7a45e4b680b071b47c30a930e9d6
+  Faucet: 0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300
+Saving successful migration to network...
+  ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
+Saving artifacts...
+----
+
+==== Using the truffle console
+
+Truffle offers a Javascript console that we can use to interact with the Ethereum network (via the local node), interact with deployed contracts, and interact with the wallet provider. In our current configuration (+localnode+), the node and wallet provider is our local parity client.
+
+Let's start the truffle console and try some commands:
+
+----
+$ truffle console --network localnode
+truffle(localnode)>
+----
+
+Truffle presents a prompt, showing the selected network configuration (+localnode+). It's important to remember and be aware of which network we are using. You wouldn't want to accidentally deploy a test contract or make a transaction on the Ethereum main network. That could be an expensive mistake!
+
+The truffle console offers an auto-complete function that makes it easy for us to explore the environment. If we press +Tab+ after a partially-completed command, truffle will complete the command for us. Pressing +Tab+ twice will show all possible completions if more than one command matches our input. In fact, if we press +Tab+ twice on an empty prompt, truffle lists all commands:
+
+----
+truffle(localnode)>
+Array Boolean Date Error EvalError Function Infinity JSON Math NaN Number Object RangeError ReferenceError RegExp String SyntaxError TypeError URIError decodeURI decodeURIComponent encodeURI encodeURIComponent eval isFinite isNaN parseFloat parseInt undefined
+
+ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Intl Map Migrations Promise Proxy Reflect Set StateManager Symbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ assert async_hooks buffer child_process clearImmediate clearInterval clearTimeout cluster console crypto dgram dns domain escape events fs global http http2 https module net os path perf_hooks process punycode querystring readline repl require root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
+
+__defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
+----
+
+The vast majority of the wallet and node related functions are provided by the +web3+ object, which is an instance of the +web3.js+ library. The +web3+ object abstracts the RPC interface into our parity node. You will also notice two objects with familiar names: +Migrations+ and +Faucet+. Those represent the contracts we just deployed. We will use the truffle console to interact with a contract. First, let's check our wallet via the +web3+ object:
+
+----
+truffle(localnode)> web3.eth.accounts
+[ '0x9e713963a92c02317a681b9bb3065a8249de124f',
+  '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
+----
+
+Our parity client has two wallets, with some test-ETH on Ropsten. The +web3.eth.accounts+ attribute contains a list of all the accounts. We can check the balance of the first account, using the +getBalance+ function:
+
+----
+truffle(localnode)> web3.eth.getBalance(web3.eth.accounts[0]).toNumber()
+191198572800000000
+truffle(localnode)>
+----
+
+The +web3.js+ is a large Javascript library that offers a comprehensive interface to the Ethereum system, via a provider such as a local client. We will examine +web3.js+ in more detail in <<web3js>>. Now let's try to interect with our contracts:
+
+----
+truffle(localnode)> Faucet.address
+'0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+0
+truffle(localnode)>
+----
+
+Next, we'll use +sendTransaction+ to send some test-ETH to fund the +Faucet+. Note the use of +web3.toWei+ to convert ether units for us. Typing eighteen zeros without making a mistake is both difficult and dangerous, so it's always better to use a unit converter for values. Here's how we send the transaction:
+
+----
+truffle(localnode)> web3.eth.sendTransaction({from:web3.eth.accounts[0], to:Faucet.address, value:web3.toWei(0.5, 'ether')});
+'0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
+----
+
+Switch to the web console on +parity+, where you will see a pop-up asking you to confirm this transaction. Wait a minute and once the transaction is mined, you will be able to see the balance of our +Faucet+ contract:
+
+----
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+500000000000000000
+----
+
+Let's call the +withdraw+ function now, to withdraw some test-ETH from the Faucet:
+
+----
+truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.toWei(0.1, 'ether'))}).then(console.log)
+----
+
+Again, you will need to approve the transaction in the parity web console. The balance of the +Faucet+ has decreased, and our test wallet has received +0.1+ ether:
+
+----
+truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+400000000000000000
+----
+
+
+----
+truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.toWei(1, 'ether'))})
+----
+
+----
+StatusError: Transaction: 0xe147ae9e3610334ada8d863c9028c12bd0501be2d0cfd05865c18612b92d3f9c exited with an error (status 0).
+----
 
 === Ganache: A personal blockchain for Ethereum development
 
@@ -225,8 +334,9 @@ This tool was previously known under the name "ethereumJS TestRPC".
 
 https://github.com/trufflesuite/ganache-cli/
 
-+npm+ install -g ganache-cli
-
+----
+$ npm install -g ganache-cli
+----
 
 
 === Embark
@@ -236,6 +346,10 @@ Github link; https://github.com/iurimatias/embark-framework
 Read the docs link; https://embark.readthedocs.io/en/2.6.4/
 
 +npm+ packages repository link; https://www.+npm+js.com/package/embark
+
+----
+$ npm -g install embark
+----
 
 === OpenZeppelin
 

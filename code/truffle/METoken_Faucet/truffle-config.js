@@ -50,6 +50,6 @@ module.exports = {
 			host: "localhost",
 			port: 7545,
 			gas: 6721975,
-		},
-	},
+		}
+	}
 };
