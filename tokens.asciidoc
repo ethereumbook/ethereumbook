@@ -377,7 +377,7 @@ If you switch to the +ganache+ graphical user interface, you will see the transa
 image::images/ganache_metoken_transfer.png["METoken transfer on Ganache"]
 
 
-==== Pitfalls of ERC20 tokens
+==== Sending ERC20 tokens to contract addresses
 
 So far we've setup an ERC20 token and transferred from one account to another. All the accounts we used for these demonstrations are externally-owned accounts (EOAs), meaning they are controlled by a private key, not a contract. What happens if we send MET to a contract address? Let's find out!
 
@@ -546,16 +546,48 @@ truffle(ganache)> METoken.deployed().then(instance => { instance.balanceOf(web3.
 truffle(ganache)> BigNumber { s: 1, e: 3, c: [ 1000 ] }
 ----
 
+As you can see from the results, we can use the +approve+ and +transferFrom+ workflow to authorize one contract to transfer tokens defined in another token. If properly used, ERC20 tokens can be used by externally-owned addresses and other contracts.
 
+However, the burden of managing ERC20 tokens correctly is pushed to the user interface. If a user incorrectly attempts to transfer ERC20 tokens to a contract address and that contract is not equipped to receive ERC20 tokens, the tokens will be lost.
 
+==== Issues with ERC20 tokens
 
+The adoption of the ERC20 token standard has been truly explosive. Thousands of tokens have been launched, both to experiment with new capabilities and to raise funds in various "crowdfund" auctions and Initial Coin Offerings (ICOs). However there are some potential pitfalls, as we saw with the issue of transferring tokens to contract addresses.
 
-//
-// Both ERC223 and ERC777 standards are proposals that attempt to address issues with the ERC20 standard.
+One of the less obvious issues with ERC20 tokens is that they expose subtle differences between tokens and ether itself. Where ether is transfered by a transaction which has a recipient address as its destination, token transfers occur within the _specific token contract state_ and have the token contract as their destination, not the recipient's address. The token contract tracks balances, and issues events. In a token transfer, no transaction is actually sent to the recipient of the token. Instead, the recipients address is added to a map within the token contract itself. A transaction sending ether to an address, changes the state of an address. A transaction transferring a token to an address, only changes the state of the token contract, not the state of the recipient address. Even a wallet that has support for ERC20 tokens does not become aware of a token balance, unless the user explicitly adds a specific token contract to "watch". Some wallets watch the most popular token contracts to detect balances held by addresses they control, but that's limited to a small fraction of the available ERC20 contracts.
+
+In fact, it's unlikely that a user would _want_ to track all balances in all possible ERC20 token contracts. Many ERC20 tokens are more like email spam than usable tokens. They automatically create balances for accounts that have ether activity, to attract users. If you have an Ethereum address with a long history of activity, especially if it was created in the presale, you will find it full of "junk" tokens that appeared out of nowhere. Of course, the address isn't really full of tokens, it's the token contracts that have your address in them. You only see these balances if these tokens contracts are being watched by the block explorer or wallet you use to view your address.
+
+Tokens don't behave the same way as ether. Ether is sent with the +send+ function and accepted by any payable function in a contract or any externally owned address. Tokens are sent using +transfer+ or +approve & transferFrom+ functions that exist only in the ERC20 contract, and do not (at least in ERC20) trigger any payable functions in a recipient contract. Tokens are meant to function just like a cryptocurrency such as ether, but they come with certain subtle distinctions that break that illusion.
+
+Consider another issue. To send ether, or use any Ethereum contract you need ether to pay gas. To send tokens, you _also need ether_. You cannot pay for a transaction's gas with a token and the token contract can't pay the gas for you. This can cause some rather strange user experiences. For example, let's say you use an exchange or Shapeshift to convert some bitcoin to a token. You "receive" the token in a wallet that tracks that token's contract and shows your balance. It looks the same as any of the other cryptocurrencies you have in your wallet. Now try sending the token and your wallet will inform you that you need ether to do that. You might be confused - after all you didn't need ether to receive the token. Perhaps you have no ether. Perhaps you didn't even know the token was an ERC20 token on Ethereum, maybe you thought it was a cryptocurrency with its own blockchain. The illusion just broke.
+
+Some of these issues are specific to ERC20 tokens. Others are more general issues that relate to abstraction and interface boundaries within Ethereum. Some can be solved by changing the token interface, others may need changes to fundamental structures within Ethereum (such as the distinction between EOAs and contracts, and between transactions and messages). Some may not be "solvable" exactly and may require user interface design to hide the nuances and make the user experience consistent regardless of the underlying distinctions.
+
+In the next sections we will look at various proposals that attempt to address some of these issues.
 
 ==== ERC223
 
+The ERC223 proposal attempts to solve the problem of inadvertent transfer of tokens to a contract (that may or may not support tokens) by detecting whether the destination address is a contract or not. ERC223 requires that contracts designed to accept tokens implement a function named +tokenFallback+. If the destination of a transfer is a contract and the contract does not have support for tokens (i.e. does not implement +tokenFallback+), the transfer fails.
+
+To detect whether the destination address is a contract, the ERC223 reference implementation uses a small segment of inline bytecode, in a rather creative way:
+
+----
+function isContract(address _addr) private view returns (bool is_contract) {
+	uint length;
+	assembly {
+		  //retrieve the size of the code on target address, this needs assembly
+		  length := extcodesize(_addr)
+	}
+	return (length>0);
+}
+----
+
+You can see the discussion around the ERC223 proposal here:
+
 https://github.com/ethereum/EIPs/issues/223
+
+ERC223 is not widely implemented and there is some debate in that discussion thread about backwards compatibility and trade-offs between implementing changes at the contract interface level versus the user interface. The debate continues.
 
 ==== ERC777
 
