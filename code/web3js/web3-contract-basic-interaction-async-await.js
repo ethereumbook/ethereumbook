@@ -79,13 +79,13 @@ async function basicInterations() {
   var totalSupply = await our_contract.methods.totalSupply().call();
   console.log(`Total Supply of Our Contract address ${our_contract._address}:  ${totalSupply}`);
 
-  // Now let's see our contract public name variable  
+  // Now let's see our contract public variable name  
   var name = await our_contract.methods.name().call();
-  console.log(`public name variable of Our Contract address ${our_contract._address}:  ${name}`);
+  console.log(`Public variable name of our Contract address ${our_contract._address}:  ${name}`);
 
-  // Now let's see our contract public symbol variable  
+  // Now let's see our contract public variable symbol  
   var symbol = await our_contract.methods.symbol().call();
-  console.log(`Public symbol variable of Our Contract address ${our_contract._address}:  ${symbol}`);
+  console.log(`Public variable symbol of our Contract address ${our_contract._address}:  ${symbol}`);
 
 
 }
