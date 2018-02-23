@@ -86,8 +86,6 @@ async function basicInterations() {
   // Now let's see our contract public variable symbol  
   var symbol = await our_contract.methods.symbol().call();
   console.log(`Public variable symbol of our Contract address ${our_contract._address}:  ${symbol}`);
-
-
 }
 
 // Let's interact with a node
