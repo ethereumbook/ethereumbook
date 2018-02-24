@@ -121,6 +121,26 @@ contract ERC20 {
 }
 ----
 
+===== ERC20 data structures
+
+If you examine any ERC20 implementation, it will contain two data structures, one to track balances and one to track allowances. In Solidity, they are implemented with a _data mapping_.
+
+The first data mapping implementes an internal table of token balances, by owner. This allows the token contract to keep track of who owns the tokens. Each transfer, is a deduction from one balance and an addition to another balance.
+
+.Balances: a mapping from address (owner) to amount (balance)
+----
+mapping(address => uint256) balances;
+----
+
+The second data structure is a data mapping of allowances. As we will see in <<transfer_workflows>>, with ERC20 tokens an owner of a token can delegate authority to a spender, allowing them to spend a specific amount (allowance) from the owner's balance. The ERC20 contract keeps track of the allowances with a two-dimensional mapping, with the primary key being the address of the token owner, mapping to a spender address and an allowance amount:
+
+.Allowances: a mapping from address (owner) to address (spender) to amount (allowance)
+----
+mapping (address => mapping (address => uint256)) public allowed;
+----
+
+
+[[transfer_workflows]]
 ===== ERC20 workflows: "transfer" and "approve & transferFrom"
 
 The ERC20 token standard has two transfer functions. You might be wondering why?
@@ -566,7 +586,7 @@ Some of these issues are specific to ERC20 tokens. Others are more general issue
 
 In the next sections we will look at various proposals that attempt to address some of these issues.
 
-==== ERC223
+==== ERC223 - a proposed token contract interface standard
 
 The ERC223 proposal attempts to solve the problem of inadvertent transfer of tokens to a contract (that may or may not support tokens) by detecting whether the destination address is a contract or not. ERC223 requires that contracts designed to accept tokens implement a function named +tokenFallback+. If the destination of a transfer is a contract and the contract does not have support for tokens (i.e. does not implement +tokenFallback+), the transfer fails.
 
@@ -589,16 +609,53 @@ https://github.com/ethereum/EIPs/issues/223
 
 ERC223 is not widely implemented and there is some debate in that discussion thread about backwards compatibility and trade-offs between implementing changes at the contract interface level versus the user interface. The debate continues.
 
-==== ERC777
+==== ERC777 - a proposed token contract interface standard
 
+Another proposal for an improved token contract standard is ERC777. This proposal has several goals, including:
+
+* To offer an ERC20 compatibility interface
+* To transfer tokens using a +send+ function, similar to ether transfers
+* To be compatible with ERC820 for token contract registration
+* Contracts and addresses can control which tokens they send through a +tokensToSend+ function that is called prior to sending
+* Contracts and addresses are notified by calling a +tokensReceived+ function in the recipient
+* Token transfer transactions contain metadata in a +userData+ and +operatorData+ field
+* To operate in the same way, whether sending to a contract or EOA
+
+The details and ongoing discussion on ERC777 can be found here:
 https://github.com/ethereum/EIPs/issues/777
 
-==== ERC721
+A reference implementation of ERC777 is linked in the proposal. ERC777 depends on a parallel proposal for a registry contract, specified in ERC820. Some of the debate on ERC777 is about the complexity of adopting two big changes at once: a new token standard and a registry standard. The discussion continues.
 
+==== ERC721 - non-fungible token (deed) standard
+
+All the token standards we have looked at so far are _fungible_ tokens, meaning that each unit of a token is entirely interchangeable. The ERC20 token standard only tracks the final balance of each account and does not (explicitly) track the provenance of any token.
+
+The ERC721 proposal is for a standard for _non-fungible_ tokens, also known as _deeds_.
+
+From the Oxford Dictionary:
+
+    deed: A legal document that is signed and delivered, especially one regarding the ownership of property or legal rights.
+
+The use of the word deed is intended to reflect the "ownership of property" part, even though these are not recognized as "legal documents" in any jurisdiction, at least not currently.
+
+Non-fungible tokens track ownership of a unique thing. The thing owned can be a digital item, such as a game item, or digital collectible. Or, the thing can be a physical item whose ownership is tracked by a token, such as a house, a car, artwork. A deed could also represent things with negative value, such as loans (debt), liens, easements, etc. The ERC721 standard places no limitation or expectation on the nature of the thing whose ownership is tracked by a deed, only that it can be uniquely identified, which in the case of this standard is achieved by a 256-bit identifier.
+
+The details of the standard and discussion are tracked in two different GitHub locations:
+
+Initial proposal:
 https://github.com/ethereum/EIPs/issues/721
 
-ERC721 is a standard for non-fungible tokens. For example, CryptoKitty is a ERC721 token. Each unit of the token represents a virtual cat with a unique set of characteristics.
+Continued discussion:
+https://github.com/ethereum/EIPs/pull/841
 
-https://www.reddit.com/r/ethereum/comments/7qjw6x/everything_you_need_to_know_about_erc777_the_new/
+To grasp the basic difference between ERC20 and ERC721, it is sufficient to look at the internal data structure used in ERC721:
+
+----
+// Mapping from deed ID to owner
+mapping (uint256 => address) private deedOwner;
+----
+
+Whereas ERC20 tracks the balances that belong to each owner, with the owner being the primary key of the mapping, ERC721 tracks each deed ID and who owns it, with the deed ID being the primary key of the mapping. From this basic difference flow all the properties of a non-fungible token.
+
 
 === Tokens and ICOs
