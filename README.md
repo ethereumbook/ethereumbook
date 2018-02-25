@@ -18,7 +18,7 @@ Note: the order or structure of these snippets is in constant flux.
 
 Here's what is available now:
 
-| Section | Progress | Content Status | Review Status |
+| Section | Progress | Content Complete | Review Complete |
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
 | [Glossary](glossary.asciidoc) | ### |||
@@ -30,7 +30,7 @@ Here's what is available now:
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
 | [Transactions](transactions.asciidoc) | # |||
 | [Smart Contracts](smart-contracts.asciidoc) | # |||
-| [Tokens](tokens.asciidoc) | ############## |||
+| [Tokens](tokens.asciidoc) | ################ | :heavy_check_mark: ||
 | [Accounting & Gas](gas.asciidoc) | # |||
 | [EVM](evm.asciidoc) | # |||
 | [Consensus](consensus.asciidoc) | # |||
