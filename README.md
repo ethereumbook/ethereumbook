@@ -19,7 +19,7 @@ Note: the order or structure of these snippets is in constant flux.
 Here's what is available now:
 
 | Section | Progress | Content Status | Review Status |
-|-------|------|------|------|
+|-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
 | [Glossary](glossary.asciidoc) | ### |||
 | [What is Ethereum](what-is.asciidoc) | ### |||
