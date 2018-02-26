@@ -14,11 +14,60 @@ Certain aspects of the Java VM (JVM) specification however, do contain similarit
 
 ==== EVM Machine Language (Bytecode)
 
-The EVM Maching Language is divided into specific instruction set groups, such as arithmetic oprations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
+The EVM Machine Language is divided into specific instruction set groups, such as arithmetic operations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
 
 ==== State
 
 ==== Compiling Solidity to EVM bytecode
+
+Compiling a Solidity source file to EVM bytecode can be accomplished via the command line. For a list of additional compile options, simply run the following command:
+
+----
+$ solc --help
+----
+
+Generating the raw opcode of a Solidity source file is easily achieved with the _--opcodes_ command line option. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
+
+----
+$ solc -o BytecodeOutputDir --opcodes Example.sol
+---- 
+
+The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ has only one contract named "example".
+
+----
+pragma solidity ^0.4.19;
+
+contract example {
+
+  address contractOwner;
+
+  function example() {
+    contractOwner = msg.sender;
+  }
+}
+----
+
+If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ which contains the EVM machine language instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
+
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1 
+/*snip*/
+----
+
+Let's examine the first two instructions:
+
+----
+PUSH1 0x60 PUSH1 0x40
+----
+
+Here we have the _mnemonic_ "PUSH1" with a _value_ of "0x60". This corresponds to the EVM instruction of pushing a 1-byte item onto the stack. This operation is capable of pushing a 32-byte item on the stack with the following opcode:
+
+----
+PUSH32 0x7f
+---- 
+
+The second push opcode value "0x40" indicates the hash value of a complete block. 
+
 
 ==== Execution of EVM bytecode
 

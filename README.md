@@ -18,26 +18,27 @@ Note: the order or structure of these snippets is in constant flux.
 
 Here's what is available now:
 
-| Section | Progress |
-|-------|------|
-| [Preface](preface.asciidoc) | ### |
-| [Glossary](glossary.asciidoc) | ### |
-| [What is Ethereum](what-is.asciidoc) | ## |
-| [Introduction](intro.asciidoc) | ############# |
-| [Ethereum Clients](clients.asciidoc) | ###### |
-| [Ethereum Testnets](ethereum-testnets.asciidoc) | # |
-| [Keys and Addresses](keys-addresses.asciidoc) | ############# |
-| [Wallets](wallets.asciidoc) | ########### |
-| [Transactions](transactions.asciidoc) | # |
-| [Smart Contracts](smart-contracts.asciidoc) | # |
-| [Tokens](tokens.asciidoc) | ############ |
-| [Accounting & Gas](gas.asciidoc) | # |
-| [EVM](evm.asciidoc) | # |
-| [Consensus](consensus.asciidoc) | # |
-| [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |
-| [Dev Tools and Frameworks](dev-tools.asciidoc) | ##### |
-| [Dapps](dapps.asciidoc) | # |
-| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | ## |
+| Section | Progress | Content Complete | Review Complete |
+|-------|------|:------:|:------:|
+| [Preface](preface.asciidoc) | ### |||
+| [Glossary](glossary.asciidoc) | ### |||
+| [What is Ethereum](what-is.asciidoc) | ### |||
+| [Introduction](intro.asciidoc) | ############# |||
+| [Ethereum Clients](clients.asciidoc) | ###### |||
+| [Ethereum Testnets](ethereum-testnets.asciidoc) | # |||
+| [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
+| [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
+| [Transactions](transactions.asciidoc) | # |||
+| [Smart Contracts](smart-contracts.asciidoc) | # |||
+| [Tokens](tokens.asciidoc) | ################ | :heavy_check_mark: ||
+| [Accounting & Gas](gas.asciidoc) | # |||
+| [EVM](evm.asciidoc) | # |||
+| [Consensus](consensus.asciidoc) | # |||
+| [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |||
+| [Dev Tools and Frameworks](dev-tools.asciidoc) | ##### |||
+| [Dapps](dapps.asciidoc) | # |||
+| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | ## |||
+
 
 Jump in! Review, comment, suggest and contribute...
 

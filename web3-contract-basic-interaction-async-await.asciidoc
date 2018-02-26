@@ -1,0 +1,163 @@
+== web3.js contract basic interaction (async/await) as if they were synchronous functions
+
+=== Description
+This script is for educational use and is based on web3@1.0.0-beta.29 web3.js version.
+
+It should be see as an introduction to web3.js.
+
+The web3.js library is a collection of modules which contain specific functionality for the ethereum ecosystem.
+
+The web3.js object is an umbrella package to house all ethereum related modules.
+
+This is the Ethereum compatible JavaScript API which implements the Generic JSON RPC spec.
+
+It run in a blocked (async/await) mode to move the reader away from the hell of the Promises as long as their version of nodejs or javascript allows it.
+
+The most remarkable thing about this script is that you don’t need to run your own local node to use it, because it use the https://infura.io[Infura services].
+
+=== Prepare the environment
+To see this script in action you should follow this simple steps.
+
+==== Check you have a valid npm version
+----
+$ npm -v
+5.6.0
+----
+
+==== If you don't have already done, initialize your package
+----
+$ npm init
+----
+
+==== Install basic dependences
+----
+npm i web3
+npm i node-rest-client-promise
+----
+
+This will update your package.json cofiguracion file with your new dependences.
+
+==== Node.js script execution
+
+Execution example;
+----
+code/web3js/./web3-contract-basic-interaction-async-await.js
+----
+
+== What the hell this script do?
+This script try to introduce to the basic use of web3.js using async/await (less Code), as if they were synchronous functions that return values ​​directly instead of promises.
+
+=== web3 provider
+We use web3.js Web3 object to obtain a basic web3 provider.
+
+----
+var web3 = new Web3(infura_host);
+----
+
+=== Let's do some basic interactions at web3 level
+Let's get the Protocol Version.
+
+----
+var protocolVersion = await web3.eth.getProtocolVersion();
+----
+
+Now I'm curious about the current gas price.
+
+----
+var gasPrice = await web3.eth.getGasPrice();
+----
+
+And, Whats the last mined block in my chain?
+
+----
+var blockNumber = await web3.eth.getBlockNumber();
+----
+
+=== Now let's dive into some basics actions with a contract
+We will use the contract at;
+https://kovan.etherscan.io/address/0xd0a1e359811322d97991e03f863a0c30c2cf029c#code
+
+First things first, let's initialize our contract address.
+
+----
+var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
+----
+
+Let's get its balance.
+
+----
+var balance = await web3.eth.getBalance(our_contract_address);
+----
+
+Now let's get its byte code.
+
+----
+var code = await web3.eth.getCode(our_contract_address);
+----
+
+=== Now we are going to deal with the contract
+We prepare our environment to interact with the Etherescan explorer API.
+
+Let's initialize our contract url in the Etherescan explorer API for the Kovan chain.
+
+----
+var etherescan_url = `http://kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
+----
+
+And now get a rest client to operate with.
+
+----
+var client = require('node-rest-client-promise').Client();
+----
+
+Let's get the client response.
+
+----
+var etherescan_response = await client.getPromise(etherescan_url)
+----
+
+Now we get here our contract ABI from the client response (from the Etherescan explorer).
+
+----
+our_contract_abi = JSON.parse(etherescan_response.data.result);
+----
+
+Let's instantiate our contract object
+
+----
+var our_contract = await new web3.eth.Contract(our_contract_abi, our_contract_address);
+----
+
+Let's see our contract address.
+----
+console.log(`Our Contract address:  ${our_contract._address}`);
+----
+
+or in this other way.
+----
+console.log(`Our Contract address in other way:  ${our_contract.options.address}`);
+----
+
+Now our contract abi.
+----
+console.log("Our contract abi: " + JSON.stringify(our_contract.options.jsonInterface));
+----
+
+=== This is turning more interesting, let's see what's going on with our contract
+Now let's get our contract total supply.
+
+----
+var totalSupply = await our_contract.methods.totalSupply().call();
+----
+
+Now let's get our contract public variable name.
+
+----
+var name = await our_contract.methods.name().call();
+----
+
+Now let's get our contract public variable symbol.
+
+----
+var symbol = await our_contract.methods.symbol().call();
+----
