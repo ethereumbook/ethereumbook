@@ -83,7 +83,7 @@ As the popular saying goes: "If it walks like a duck and quacks like a duck - it
 
 The real problem however is that utility tokens introduce significant risks and adoption barriers for startups. Perhaps in a distant future "tokenize all the things" becomes a reality. But, at present, the number of people who have access to, understanding, and desire to use a token is a subset of the already small cryptocurrency market.
 
-For a startup, each innovation represents a risk and a market filter. Innovation is taking the road least travelled, walking away from the path of tradition. It is already a lonely walk. If a startup is trying to innovate in a new area of technology, such as storage sharing over P2P networks, that is a lonely enough path. Adding a utility token to that innovation and requiring users to adopt tokens in order to use the service compounds the risk and increases the barriers to adoption. It's walking off the already lonely trail of P2P storage innovation and into the wilderness.
+For a startup, each innovation represents a risk and a market filter. Innovation is taking the road least traveled, walking away from the path of tradition. It is already a lonely walk. If a startup is trying to innovate in a new area of technology, such as storage sharing over P2P networks, that is a lonely enough path. Adding a utility token to that innovation and requiring users to adopt tokens in order to use the service compounds the risk and increases the barriers to adoption. It's walking off the already lonely trail of P2P storage innovation and into the wilderness.
 
 Think of each innovation as a filter. It limits adoption to the subset of the market that can become early adopters of this innovation. Adding a second filter compounds that effect, further limiting the addressable market. You are asking your early adopters to adopt not one but two completely new technologies: the novel application/platform/service you built, and the token economy.
 
@@ -158,7 +158,7 @@ contract ERC20 {
 
 If you examine any ERC20 implementation, it will contain two data structures, one to track balances and one to track allowances. In Solidity, they are implemented with a _data mapping_.
 
-The first data mapping implementes an internal table of token balances, by owner. This allows the token contract to keep track of who owns the tokens. Each transfer, is a deduction from one balance and an addition to another balance.
+The first data mapping implements an internal table of token balances, by owner. This allows the token contract to keep track of who owns the tokens. Each transfer, is a deduction from one balance and an addition to another balance.
 
 .Balances: a mapping from address (owner) to amount (balance)
 ----
@@ -392,7 +392,7 @@ truffle(ganache)> accounts[0]
 
 ----
 
-The +accounts+ list now contains all the accounts created by +ganache+, and +account[0]+ is the account that deployed the METoken contract. It should have a balance of METoken, because our METoken constructor gives the enitre token supply to the address that created it. Let's check:
+The +accounts+ list now contains all the accounts created by +ganache+, and +account[0]+ is the account that deployed the METoken contract. It should have a balance of METoken, because our METoken constructor gives the entire token supply to the address that created it. Let's check:
 
 ----
 truffle(ganache)> METoken.deployed().then(instance => { instance.balanceOf(accounts[0]).then(console.log) })
@@ -563,7 +563,7 @@ module.exports = function(deployer) {
 
 	// Deploy the METoken contract first
 	deployer.deploy(METoken, {from: owner}).then(function() {
-		// then deploy METFaucet and pass the addres of METoken
+		// then deploy METFaucet and pass the address of METoken
 		// and the address of the owner of all the MET who will approve METFaucet
 		return deployer.deploy(METFaucet, METoken.address, owner);
   	});
@@ -607,7 +607,7 @@ However, the burden of managing ERC20 tokens correctly is pushed to the user int
 
 The adoption of the ERC20 token standard has been truly explosive. Thousands of tokens have been launched, both to experiment with new capabilities and to raise funds in various "crowdfund" auctions and Initial Coin Offerings (ICOs). However there are some potential pitfalls, as we saw with the issue of transferring tokens to contract addresses.
 
-One of the less obvious issues with ERC20 tokens is that they expose subtle differences between tokens and ether itself. Where ether is transfered by a transaction which has a recipient address as its destination, token transfers occur within the _specific token contract state_ and have the token contract as their destination, not the recipient's address. The token contract tracks balances, and issues events. In a token transfer, no transaction is actually sent to the recipient of the token. Instead, the recipients address is added to a map within the token contract itself. A transaction sending ether to an address, changes the state of an address. A transaction transferring a token to an address, only changes the state of the token contract, not the state of the recipient address. Even a wallet that has support for ERC20 tokens does not become aware of a token balance, unless the user explicitly adds a specific token contract to "watch". Some wallets watch the most popular token contracts to detect balances held by addresses they control, but that's limited to a small fraction of the available ERC20 contracts.
+One of the less obvious issues with ERC20 tokens is that they expose subtle differences between tokens and ether itself. Where ether is transferred by a transaction which has a recipient address as its destination, token transfers occur within the _specific token contract state_ and have the token contract as their destination, not the recipient's address. The token contract tracks balances, and issues events. In a token transfer, no transaction is actually sent to the recipient of the token. Instead, the recipients address is added to a map within the token contract itself. A transaction sending ether to an address, changes the state of an address. A transaction transferring a token to an address, only changes the state of the token contract, not the state of the recipient address. Even a wallet that has support for ERC20 tokens does not become aware of a token balance, unless the user explicitly adds a specific token contract to "watch". Some wallets watch the most popular token contracts to detect balances held by addresses they control, but that's limited to a small fraction of the available ERC20 contracts.
 
 In fact, it's unlikely that a user would _want_ to track all balances in all possible ERC20 token contracts. Many ERC20 tokens are more like email spam than usable tokens. They automatically create balances for accounts that have ether activity, to attract users. If you have an Ethereum address with a long history of activity, especially if it was created in the presale, you will find it full of "junk" tokens that appeared out of nowhere. Of course, the address isn't really full of tokens, it's the token contracts that have your address in them. You only see these balances if these tokens contracts are being watched by the block explorer or wallet you use to view your address.
 
