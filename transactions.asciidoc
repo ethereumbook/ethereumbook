@@ -28,7 +28,70 @@ While this is the actual transaction structure transmitted, most internal repres
 
 For example you may notice there is no "+from+" data in the address identifying the originator EOA. That EOA's public key can easily be derived from the +v,r,s+ components of the ECDSA signature. The address can, in turn, be easily derived from the public key. When you see a transaction showing a "from" field, that was added by the software used to visualize the transaction. Other metadata frequently added to the transaction by client software include the block number (once it is mined) and a transaction ID (calculated hash). Again, this data is derived from the transaction and not part of the transaction message itself.
 
+==== The transaction nonce
 
+The nonce is one of the most important and least understood components of a transaction. The definition in the Yellow Paper (see <<yellow_paper>>) reads:
+
+ nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
+
+Strictly speaking, the nonce is an attribute of the originating address, but nonces are seen only in transactions.
+
+===== Keeping track of nonces
+
+In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (mined) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface:
+
+[[nonce_getTransactionCount]]
+.Retrieving the transaction count of our example address
+----
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")
+40
+----
+
+[TIP]
+====
+The nonce is zero-based counter, meaning the first transaction has nonce 0. In <<nonce_getTransactionCount>>, we have a transaction count of 40, meaning nonces 0 through 39 have been seen. The next transaction's nonce will be 40.
+====
+
+Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
+
+When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count towards the +getTransactionCount+ total. One way to handle that issue is to count _pending_ transactions and not just confirmed transactions. We do this by passing the argument +"pending"+ in +getTransactionCount+:
+
+----
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
+40
+----
+
+Unfortunately, the +getTransactionCount+ function will run into some problems if we send a few transactions in a row. Let's look at an example:
+
+----
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
+40
+web3.eth.sendTransaction({from: web3.eth.accounts[0], to: "0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
+41
+web3.eth.sendTransaction({from: web3.eth.accounts[0], to: "0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
+41
+web3.eth.sendTransaction({from: web3.eth.accounts[0], to: "0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});
+web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
+41
+----
+
+As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent 3 more transactions in quick succession, the +getTransactionCount+ call didn't count them correctly. It only counted one, even though there are 3 pending in the mempool. If we wait a few seconds, once a block is mined, the +getTransactionCount+ call will return the correct number. But in the interim, while there are more than one transactions pending, it does not help us.
+
+When you build an application that constructs transactions, it cannot rely on +getTransactionCount+ for pending transactions. Only when pending and confirmed are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
+
+===== Gaps in nonces, duplicate nonces, and confirmation
+
+Things get more complicated if you create unintentional gaps in the nonces you assign to transactions, or if you accidentally reuse an existing nonce.
+
+TODO
+
+===== Concurrency and transaction origination
+
+Strategies for managing transaction origination from multiple application threads, processes or separate origination nodes, all using the same account
+
+TODO
 
 === Transaction propagation
 
