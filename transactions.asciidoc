@@ -1,6 +1,34 @@
 == Transactions
 
+Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network and recorded (mined) on the Ethereum blockchain. Behind that basic definition, there are a lot of surprising and fascinating details. Another way to look at transactions is that they are the only thing that can trigger a change of state or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are the only thing that can make that state machine "tick", changing its state. Contracts don't run on their own. Ethereum doesn't run "in the background". Everything starts with a transaction.
+
+In this section we will dissect transactions, show how they work and understand the details.
+
 === Structure of Transaction
+
+First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using it's own internal data structure, perhaps embelished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
+
+A transaction is an RLP-encoded message that contains the following data:
+
+nonce:: A sequence number, issued by the originating EOA, used to prevent message replay.
+
+gas price:: The price of gas (in wei) the originator is willing to pay.
+
+start gas:: The maximum amount of gas the originator is willing to pay.
+
+to:: Destination Ethereum address.
+
+value:: Amount of ether to send to destination.
+
+data:: Variable length binary data payload.
+
+v,r,s:: The three components of an ECDSA signature of the originating EOA.
+
+While this is the actual transaction structure transmitted, most internal representations and user-interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
+
+For example you may notice there is no "+from+" data in the address identifying the originator EOA. That EOA's public key can easily be derived from the +v,r,s+ components of the ECDSA signature. The address can, in turn, be easily derived from the public key. When you see a transaction showing a "from" field, that was added by the software used to visualize the transaction. Other metadata frequently added to the transaction by client software include the block number (once it is mined) and a transaction ID (calculated hash). Again, this data is derived from the transaction and not part of the transaction message itself.
+
+
 
 === Transaction propagation
 
