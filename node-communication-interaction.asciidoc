@@ -1,0 +1,220 @@
+[[node-communication-and-interaction]]
+Node Communication and Interaction
+----------------------------------
+
+Ethereum defines a set of rules (protocol) in order for the
+nodes/clients to communicate and interact with each other. The wire
+protocol is used to describe the way information is structured and
+transfered between machines. The protocol may be either text-based or a
+binary protocol.
+
+Text-based protocols are typically optimized for human parsing and
+interpretation, and are therefore suitable whenever human inspection of
+protocol contents is required, such as during debugging and during early
+protocol development design phases.
+
+A binary protocol is a protocol which is intended to be read by a
+machine rather than a human being, as opposed to a plain text protocol
+such as IRC, SMTP, or HTTP. Binary protocols have the advantage of
+terseness, which translates into speed of transmission and
+interpretation.
+
+image:images/rlpx_rpc_xs.png[RLPx and JSONRPC]
+
+https://github.com/ethereum/wiki/wiki/%C3%90%CE%9EVp2p-Wire-Protocol
+
+https://en.wikipedia.org/wiki/Binary_protocol
+
+https://en.wikipedia.org/wiki/Text-based_protocol
+
+[[rlpx-binary-protocol]]
+RLPx (Binary Protocol)
+~~~~~~~~~~~~~~~~~~~~~~
+
+In Ethereum, *peer-to-peer* communication and data transmition is
+achieved using the RLPx stack(Devp2p and RLP) which in terms uses a
+connection-oriented channel to transfer RLP encoded data.
+
+https://github.com/ethereum/devp2p/blob/master/rlpx.md
+
+https://github.com/ethereum/wiki/wiki/RLP
+
+[[jsonrpc-2.0-plain-text-protocol]]
+JSONRPC 2.0 (Plain-text Protocol)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In addition to RLPx, Ethereum provides a Plain-text JSON RPC
+request–response protocol which can be used by decentralized
+applications(Dapps) or clients to **interact with a node**. Requests and
+responses are formated in JSON and transfered over HTTP, Websockets and
+IPC.
+
+https://github.com/ethereum/wiki/wiki/JSON-RPC
+
+JSON-RPC is a stateless, light-weight remote procedure call (RPC)
+protocol. Primarily this specification defines several data structures
+and the rules around their processing. It is transport agnostic in that
+the concepts can be used within the same process, over sockets, over
+http, or in many various message passing environments.
+
+image:images/http_ws_ipc_jsonrpc.png[JSONRPC Transports]
+
+[[jsonrpc2.0-http]]
+JSONRPC2.0 HTTP
+^^^^^^^^^^^^^^^
+
+Go-Ethereum exposes an HTTP server which accepts JSONRPC requests on
+port *8545* (default port). The following command runs Go-Ethereum
+client with rpc support:
+
+....
+$ geth --rpc --rpcaddr 0.0.0.0 --rpccorsdomain "*" --rpcport <portnumber>
+....
+
+the `--rpccorsdomain` flag allows browsers to make cross-origin HTTP
+request from a different domain, protocol, or port.
+
+https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+
+[[jsonrpc2.0-websockets]]
+JSONRPC2.0 WebSockets
+^^^^^^^^^^^^^^^^^^^^^
+
+Similar to the HTTP server, a WebSockets connection may be established
+with the node on port *8546* (default port). Initially a request is sent
+to the HTTP server which is later upgraded to the WebSocket protocol
+providing full-duplex communication channels over a single TCP
+connection.
+
+....
+$ geth --ws --wsaddr 0.0.0.0 --wsorigins "*" --wsport <portnumber>
+....
+
+https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
+
+[[jsonrpc2.0-ipc]]
+JSONRPC2.0 IPC
+^^^^^^^^^^^^^^
+
+An IPC socket is a communication channel for exchanging data between
+processes executing on the same host operating system. Go-Ethereum
+creates a socket (**geth.ipc**) by default which allows any process
+running on the host machine to communicate with the node.
+
+[[interacting-with-a-node-through-the-jsonrpc-interface]]
+Interacting with a Node through the JSONRPC interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section describes the process to run a private blockchain network
+and the interaction with the nodes on the network. The interaction
+process can also be applied to a node which runs on a public blockchain
+network.
+
+This setup is useful and cost effective for trying out Ethereum and
+test/develop dApps built on Ethereum without having to use real Ether.
+You either pre-generate or mine your own Ether on the private Ethereum
+Testnet.
+
+[[private-ethereum-testnet-setup]]
+Private Ethereum Testnet Setup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1.Download and install Geth
+
+Instructions:
+https://github.com/ethereum/go-ethereum/wiki/Building-Ethereum
+
+2.Create chain data folder and the genesis block for your private
+testnet
+
+....
+$ mkdir -p $HOME/testnet/chaindata
+$ cd $HOME/testnet
+$ nano genesis.json
+....
+
+Paste the following content in the `genesis.json` file :
+
+....
+{
+    "config": {  
+        "chainId": 245948721, //random value for your private testnet
+        "homesteadBlock": 0,
+        "eip155Block": 0,
+        "eip158Block": 0
+    },
+    "difficulty": "0x400",    //low difficulty-level to mine Ether
+    "gasLimit": "0x8000000",  //set this really high for testing
+    "alloc": {}
+}
+....
+
+3.Initialize genesis block
+
+....
+$ geth --identity "MobinPrivateTestNode" --datadir $HOME/testnet/chaindata init $HOME/testnet/genesis.json
+....
+
+4.Run the node with the custom genesis block
+
+....
+$ geth --rpc --rpcaddr 0.0.0.0 --rpccorsdomain "*" --ws --wsaddr 0.0.0.0 --wsorigins "*" --datadir $HOME/testnet/chaindata --networkid 245948721
+....
+
+5.Attaching session to the node using the IPC socket
+
+....
+$ geth attach $HOME/testnet/chaindata/geth.ipc
+....
+
+6.Create accounts and mine Ethers
+
+....
+# Create account
+$ personal.newAccount()
+
+# Set the generated address to reward Ethers to
+$ miner.setEtherbase(personal.listAccounts[0])
+
+# Start mining
+miner.start()
+
+# Wait few minutes
+....
+
+[[interact-with-the-node-through-the-jsonrpc-interface]]
+Interact with the node through the JSONRPC interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Develop apps which call few of the procedures... use different transport
+for each of them Need to demonstrate that no magic is done in web3.js,
+procedures are simply called in js using the jsonrpc interface
+
+[[jsonrpc-transport-http]]
+JSONRPC Transport: HTTP
+^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: 1. Create a simple client to call the endpoint (js/golang) 2.
+Integrate in a web app
+
+[[jsonrpc-transport-websockets]]
+JSONRPC Transport: WebSockets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: 2. Create a simple client to call the endpoint (js/golang) 2.
+Integrate in a web app
+
+[[jsonrpc-transport-ipc]]
+JSONRPC Transport: IPC
+^^^^^^^^^^^^^^^^^^^^^^
+
+TODO: 3. Develop a program to communicate with the node over the
+unixsocket
+
+[[web3.js]]
+Web3.js
++++++++
+
+Explain that web3.js is the js lib which implements the above transports
+to communicate with a node and there is no magic ...
+
