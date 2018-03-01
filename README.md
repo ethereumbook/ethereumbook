@@ -28,9 +28,9 @@ Here's what is available now:
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | # |||
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
-| [Transactions](transactions.asciidoc) | # |||
-| [Smart Contracts](smart-contracts.asciidoc) | # |||
-| [Tokens](tokens.asciidoc) | ################ | :heavy_check_mark: ||
+| [Transactions](transactions.asciidoc) | ## |||
+| [Smart Contracts](smart-contracts.asciidoc) | ## |||
+| [Tokens](tokens.asciidoc) | ################## | :heavy_check_mark: ||
 | [Accounting & Gas](gas.asciidoc) | # |||
 | [EVM](evm.asciidoc) | # |||
 | [Consensus](consensus.asciidoc) | # |||

@@ -261,8 +261,8 @@ In Ethereum you may see public keys represented as a hexadecimal serialization o
 | Prefix | Meaning | Length (bytes counting prefix) |
 |0x00| Point at Infinity | 1 |
 |0x04| Uncompressed Point | 65 |
-|0x00| Compressed Point with even Y | 33 |
-|0x00| Compressed Point with odd Y | 33 |
+|0x02| Compressed Point with even Y | 33 |
+|0x03| Compressed Point with odd Y | 33 |
 |===
 
 Ethereum only uses uncompressed public keys, therefore the only prefix that is relevant is (hex) +04+. The serialization concatenated the X and Y coordinates of the public key:
@@ -302,11 +302,11 @@ Determinism:: Any input message always produces the same hash digest.
 
 Verifiability:: Computing the hash of a message is efficient (linear performance).
 
-Irreversibility:: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
+Irreversibility (resistance to first pre-image):: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
 
 Uncorrelated:: A small change to the message (e.g. one bit change) should change the hash output so extensively that it cannot be correlated to the hash of the original message.
 
-Collision Protection:: It should be infeasible to calculate two different messages that produce the same hash output.
+Collision Protection (resistance to second pre-image):: It should be infeasible to calculate two different messages that produce the same hash output.
 
 The combination of these properties make cryptographic hash functions useful for a broad range of security applications including:
 
@@ -351,7 +351,7 @@ a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
 
 So, regardless of what the function is called, you can test it to see whether it is the original Keccak-256, or the final NIST standard FIPS-202 SHA-3, by running the simple test above. Remember, Ethereum uses Keccak-256, even though it is often called SHA-3 in the code.
 
-Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys
+Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys.
 
 === Ethereum Addresses
 
@@ -381,7 +381,7 @@ Then we keep only the last 20 bytes, which is our Ethereum address:
 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
-Most often you will see Ethereum addresses with the prefix +0x" that indicates it is a hexadecimal encoding, like this:
+Most often you will see Ethereum addresses with the prefix "0x" that indicates it is a hexadecimal encoding, like this:
 
 ----
 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
