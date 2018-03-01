@@ -54,14 +54,9 @@ The nonce is zero-based counter, meaning the first transaction has nonce 0. In <
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
 
-When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count towards the +getTransactionCount+ total. One way to handle that issue is to count _pending_ transactions and not just confirmed transactions. We do this by passing the argument +"pending"+ in +getTransactionCount+:
+When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count towards the +getTransactionCount+ total.
 
-----
-web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
-40
-----
-
-Unfortunately, the +getTransactionCount+ function will run into some problems if we send a few transactions in a row. Let's look at an example:
+Unfortunately, the +getTransactionCount+ function will run into some problems if we send a few transactions in a row. There is a known bug where +getTransactionCount+ does not count pending transactions correctly. Let's look at an example:
 
 ----
 web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
@@ -81,17 +76,44 @@ As you can see, the first transaction we sent increased the transaction count to
 
 When you build an application that constructs transactions, it cannot rely on +getTransactionCount+ for pending transactions. Only when pending and confirmed are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
 
+Parity's JSON RPC interface offers the +parity_nextNonce+ function, that returns the next nonce that should be used in a transaction. The +parity_nextNonce+ function counts nonces correctly, even if you construct several transactions in rapid succession, without confirming them.
+
+Parity has a web console for accessing the JSON RPC interface, but here we are using a command line HTTP client to access it:
+
+----
+curl --data '{"method":"parity_nextNonce","params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+----
+
 ===== Gaps in nonces, duplicate nonces, and confirmation
 
-Things get more complicated if you create unintentional gaps in the nonces you assign to transactions, or if you accidentally reuse an existing nonce.
+It is important to keep track of nonces if you are creating transactions programmaticaly, especially if you are doing so from multiple independent processes simultaneously.
 
-TODO
+The Ethereum network processes transactions sequentially, based on the nonce. That means that if you transmit a transaction with nonce +0+ and then transmit a transaction with nonce +2+, the second transaction will not be mined. It will be stored in the mempool, while the Ethereum network waits for the missing nonce to appear. All nodes will assume that the missing nonce has simply been delayed and that the transaction with nonce +2+ was received out-of-sequence.
+
+If you then transmit a transaction with the missing nonce +1+, both transactions (nonces +1+ and +2+) will be mined. Once you fill the gap, the network can mine the out-of-sequence transaction that it held in the mempool.
+
+What this means is that if you create several transactions in sequence and one of them does not get mined, all the subsequent transactions will be "stuck", waiting for the missing nonce. A transaction can create an inadvertent "gap" in the nonce sequence because it is invalid or has insufficient gas. To get things moving again, you have to transmit a valid transaction with the missing nonce.
+
+If on the other hand you accidentally duplicate a nonce, for example by transmitting two transactions with the same nonce, but different recipients or values, then one of them will be confirmed and one will be rejected. Which one is confirmed will be determined by the sequence in which they arrive at the first validating node that receives them.
+
+As you can see, keeping track of nonces is necessary and if your application doesn't manage that process correctly, you will run into problems. Unfortunately, things get even more difficult if you are trying to do this concurrently, as we will see in the next section.
 
 ===== Concurrency, transaction origination, and nonces
 
-Strategies for managing transaction origination from multiple application threads, processes or separate origination nodes, all using the same account
+Concurrency is a complex aspect of computer science, and it crops up unexpectedly sometimes, especially in decentralized/distributed real-time systems like Ethereum.
 
-TODO
+In simple terms, concurrency is when you have simultaneous computation by multiple independent systems. These can be in the same program (e.g. threading), on the same CPU (e.g. multi-processing), or on different computers (i.e. distributed systems). Ethereum, by definition, is a system that allows concurrency of operations (nodes, clients, dapps), but enforces a singleton state (e.g. there is only one common/shared state of the system at each mined block).
+
+Now, imagine that we have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals for a hot wallet. Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing and broadcasting transactions from the same hot wallet account coordinate?
+
+You could use a single computer to assign nonces, on a first-come first-served basis to computers signing transactions. However, this computer is now a single-point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all of the subsequent ones get stuck.
+
+You could generate the transactions, but don't sign them or assign a nonce to them. Then queue them to a single node that signs them and also keeps track of nonces. Again, you have a single point of failure. The signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of unsigned transaction is the part you don't really need to parallelize. You have concurrency, but you don't have it in any useful part of the process.
+
+In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmation in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange.
+
 
 === Transaction propagation
 
