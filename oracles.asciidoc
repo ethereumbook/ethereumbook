@@ -1,0 +1,117 @@
+== Oracles
+
+A key property of the Ethereum Virtual Machine is its ability to execute smart contract bytecode in a fully deterministic fashion. The EVM guarantees that the same operations will return identical outputs, regardless of the computer upon which they were actually run. While this characteristic is key to Ethereum's security assurances, the constraints of executing smart contracts within this deterministically walled garden impose strict limitations on their functionality, since the retrieval and processing of real-world data from off-chain is prevented. 
+
+There are a wide range of applications where smart contract might require such extrinsic information, and it is here that Oracles come into play. Oracles can be defined as authoritative sources of off-chain data which allow smart contracts to receive and condition their execution using this information - they can be thought of as a mechanism for bridging the gap between on and off-chain. Extending the scope of smart contracts to enforce contractual relationship based on real-world events and data broadens their scope dramatically. Examples of data that might be provided by oracles include:
+
+* Random numbers/entropy from physical sources (e.g. quantum/thermal phenomenon): to fairly select a winner in a lottery smart contract
+* Parametric triggers indexed to natural hazards: triggering of catastrophe bond smart contracts (e.g. wind speed for a hurricane bond)
+* Exchange rate data: accurate pegging of stablecoins to fiat currency
+* Capital markets data: pricing baskets of tokenized assets/securities
+* Benchmark reference data: incorporating interest rates into smart financial derivatives
+* Static/pseudo-static data: security identifiers, country codes, currency codes
+* Weather data: insurance premium calculation based on a weather forecast
+* Political events: prediction market resolution
+* Sporting events: prediction market resolution and fantasy sports contracts
+* Geo-location data: supply chain tracking  
+* Damage verification: insurance contracts
+* Events occurring on other blockchains: interoperability functions
+* Transaction gas price: gas price oracles
+* Flight delays: insurance contracts
+
+In this section, we will examine the primary functions of oracles, subscription patterns, data authentication considerations, the notion of computation Oracles, and look at some of the unsolved challenges that remain.
+
+=== Primary Functions
+
+In practical terms, an oracle might be implemented as a system of on-chain smart contracts and off-chain infrastructure used to monitor requests, retrieve and return data. A request for data from a decentralized application would typically be an asynchronous process involving a number of steps. 
+
+Firstly, an externally-controlled account would transact with a decentralized application, resulting in an interaction with a function defined in the oracle smart contract. This function initiates the request to the oracle, with the associated arguments detailing the data requested in addition to supplementary information that might include callback functions and scheduling parameters. Once this transaction has been validated, the oracle request can be observed as an EVM event emitted by the oracle contract, or as a state change; the arguments can be retrieved and used to perform the actual query from the off-chain data source. The oracle may also require payment for processing the request, gas payment for the callback, and data permissioning or rights obligations might have to be met. Finally, the resulting data is signed by the oracle owner, essentially attesting to the value of the data at a given time, and delivered in a transaction to the decentralized application that made the request - either directly or via the oracle contract. Depending on the scheduling parameters, the oracle may broadcast further transactions updating the data at regular intervals, for example, end of day pricing information. 
+
+A range of alternative schemes are also possible. Data can be requested from and returned directly by an externally-controlled account, removing the need for an oracle smart contract, or the request and response can be made to and from an Internet of Things enabled hardware sensor. Oracles can therefore be human, software, or hardware-based.
+
+The primary functions of an oracle may therefore be summarized as follows:
+
+* Responding to queries from decentralized applications
+* Parsing the query
+* Checking that payment and data permissioning/rights obligations are met
+* Retrieval of data from an off-chain source
+* Signing of data within a transaction
+* Broadcast of transaction to network
+* Further scheduling of transactions
+
+=== Subscription Patterns
+
+The subscription pattern described above is a typical request-response pattern, commonly seen in client-server architectures. While this is a useful messaging pattern which allows applications to have a two-way conversation, it is relatively simple pattern and perhaps inappropriate under certain conditions. For example, a smart bond requiring an interest rate from an oracle might have to request the data on a daily basis under a request-response pattern in order to ensure the rate is always correct. Given that interest rates change infrequently, a publish–subscribe pattern may be more appropriate here, especially when taking into consideration Ethereum's limited bandwidth.    
+
+Publish–subscribe is a pattern where publishers - here, Oracles - do not send messages directly to receivers, but instead categorize published messages into distinct classes. Subscribers are able to express an interest in one or more classes, retrieving only those messages which are of interest. Under such a pattern, an Oracle might write the interest rate to its own internal storage, when and only when it changes. Multiple subscribed decentralized applications can simply read it from the oracle contract, thereby reducing the impact on network bandwidth while minimizing storage costs.
+
+In a broadcast or multicast pattern, an Oracle would post all messages to a channel and subscribing contracts would listen to the channel under a variety of subscription modes. For example, an Oracle might publish messages to a cryptocurrency exchange rate channel. A subscribing smart contract could request the full content of the channel if it required the timeseries for, e.g. a moving average calculation; another might require only the last rate for a spot price calculation. A broadcast pattern is appropriate where the Oracle does not need to know the identity of the subscribing contract.
+
+=== Data Authentication
+
+If we assume that the source of data being queried by a decentralized application is both authoritative and trustworthy, an outstanding question remains: given that the Oracle and the query/response mechanism may be operated by distinct entities, how are we able trust this mechanism? There is a distinct possibility that data may be tampered with whilst in transit, so off-chain methods that can attest to its integrity are critical. Two approaches that are applicable here are authenticity proofs and Trusted Execution Environments (TEEs).
+
+Authenticity proofs are cryptographic guarantees that prove that data has not been tampered with. Based on a variety of attestation techniques (e.g. digitally signed proofs), they effectively shift the trust from the data carrier to the attestor, i.e. the provider of the attestation method. By verifying the authenticity proof on-chain, smart contracts are able to verify the integrity of the data before operating upon it. An authenticity proof that has been implemented by Oraclize [1] and is currently available for data queries from the Ethereum main network is the TLSNotary Proof [2]. TLSNotary Proofs allow a client to provide evidence to a third party that HTTPS web traffic occurred between the client and a server; while HTTPS is itself secure, it doesn't support data signing, so TLSNotary (via PageSigner [3]) signatures are used. TLSNotary Proofs leverage the Transport Layer Security (TLS) protocol, enabling the TLS master key, which signs the data after it has been accessed, to be split between three parties: the server (the Oracle), an auditee (Oraclize), and an auditor. As an auditor, Oraclize use an Amazon Web Services (AWS) virtual machine instance that can be verified as unmodified since instantiation [4]. This AWS instance stores the TLSNotary secret, allowing it to provide honesty proofs. While offering higher assurances against data tampering than a purely trusted query/response mechanism, this approach assumes that Amazon itself will not tamper with the VM instance.
+
+TownCrier [5,6] is an authenticated data feed Oracle system based on Trusted Execution Environment; such methods adopt a different approach that utilizes hardware-based secure enclaves to verify data integrity. TownCrier uses Intel's SGX (Software Guard eXtensions) to ensure that responses from HTTPS queries can be verified as authentic. SGX provides guarantees of integrity, ensuring that applications running within an enclave are protected by the CPU against tampering by any other process. It also provides confidentiality, ensuring that an application's state is opaque to other processes when running within the enclave. And finally, SGX allows attestation, by generating a digitally signed proof that an application - securely identified by a hash of its build - is actually running within an enclave. By verifying this digital signature, it is possible for a decentralized application to prove that a TownCrier instance is running securely within a SGX enclave. This in turn proves that the instance has not been tampered with, and that the data emitted by TownCrier is therefore authentic. The confidentiality property additionally enables TownCrier to handle private data by allowing data queries to be encrypted using the TownCrier instance's public key. By operating an Oracle's query/response mechanism within an enclave such as SGX, it can effectively be thought of as running securely on trusted third party hardware, ensuring that the requested data is returned untampered (assuming that we trust Intel/SGX).
+
+=== Computation Oracles
+
+So far, we have only discussed Oracles in the context of requesting and delivering data. However, Oracles can also be used to perform arbitrary computation, a function which can be especially useful given Ethereum's block gas limit. Rather than just relaying the results of a query, Computation Oracles can be used to perform a relevant computation on a set of inputs, returning a calculated result that would have been infeasible to calculate on-chain. An example might include a computationally-heavy regression calculation to estimate the yield of a bond contract. Some promising implementations of Computation Oracles are outlined below.
+
+Oraclize provide a service allowing decentralized applications to request the output of a computation performed in a sandboxed AWS virtual machine. The AWS instance is instantiated from a Docker file, an archive of which is store on IPFS. On request, Oraclize retrieves this archive using its hash, and then initializes and executes the Docker application on AWS, passing any arguments that are provided to the application as environment variables. The Docker application performs the calculation, subject to a time constraint, and must print the output to standard output where it can be retrieved by Oraclize and returned to the decentralized application. Oraclize currently offer this service on an auditable t2.micro AWS instance.
+
+TrueBit [7] is a solution for scalable and verifiable off-chain computation. It introduces a system of solvers and verifiers, who are each incentivized to perform computations, and verification of their correctness, respectively. Should a solution be challenged, an iterative verification process on subsets of the computation are performed on-chain - a kind of 'verification game'. The game proceeds through a series of rounds, recursively checking smaller and smaller subset of the computation, until a final round. Here, the challenge is sufficiently trivial such that the judges – Ethereum miners - can make a final ruling on whether the challenge was justified, on-chain. In effect, TrueBit is an implementation of a computation market, allowing decentralized applications to pay for verifiable computation to be peformed outside of the network, but relying on Ethereum to enforce the rules of the verification game. In theory, this enables trustless smart contracts to securely perform any computation task. 
+
+There are a broad range of applications for systems like TrueBit, ranging from machine learning, to verification of any proof-of-work. An example of the latter is the Dogethereum bridge, which utilizes TrueBit to verify Dogecoin’s proof-of-work, Scrypt, a memory-hard and computationally intensive function that cannot be computed within the Ethereum block gas limit. By performing this verification on TrueBit, it has been possible to securely verify Dogecoin transactions within a smart contract on Ethereum's Rinkeby testnet.
+
+=== TO DO
+
+* Data privacy, e.g. zero-knowledge but for state variables/oracle-deliver/requested data 
+* Stateless? What if the data changes?
+* Data entitlement/digital rights management (relates to privacy, above)
+* Token-based payment, subscription models 
+* Combinations of oracles, aggregation functions
+* Schelling Coin protocol
+* Data availability/unavailability
+* Oracle markets
+* Decentralized oracles, reputation systems
+..
+
+=== Example oracles and their features
+
+* Oraclize
+* Reality Keys 
+* BlockOne IQ
+* Chainlink
+* TownCrier
+..
+
+=== Sample Oracle Client Solidity Implementations
+* Oraclize
+* BlockOne IQ
+..
+
+=== References
+
+[1] http://www.oraclize.it/
+[2] https://tlsnotary.org/
+[3] https://tlsnotary.org/pagesigner.html
+[4] https://bitcointalk.org/index.php?topic=301538.0
+[5] http://hackingdistributed.com/2017/06/15/town-crier/
+[6] https://www.cs.cornell.edu/~fanz/files/pubs/tc-ccs16-final.pdf
+[7] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf
+
+
+=== Other Links
+
+https://ethereum.stackexchange.com/questions/201/how-does-oraclize-handle-the-tlsnotary-secret
+https://blog.oraclize.it/on-decentralization-of-blockchain-oracles-94fb78598e79
+https://medium.com/@YondonFu/off-chain-computation-solutions-for-ethereum-developers-507b23355b17
+https://blog.oraclize.it/overcoming-blockchain-limitations-bd50a4cfb233
+https://medium.com/@jeff.ethereum/optimising-the-ethereum-virtual-machine-58457e61ca15
+http://docs.oraclize.it/#ethereum
+https://media.consensys.net/a-visit-to-the-oracle-de9097d38b2f
+https://blog.ethereum.org/2014/07/22/ethereum-and-oracles/
+http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf
+http://www.oraclize.it/papers/random_datasource-rev1.pdf
