@@ -114,6 +114,48 @@ You could generate the transactions, but don't sign them or assign a nonce to th
 
 In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmation in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange.
 
+=== Transaction gas
+
+We discuss _gas_ in detail in <<gas>>. However, let's cover some basics about the role of the +gasPrice+ and +startGas+ components of a transaction.
+
+Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with an exchange rate vis-a-vis ether. Ethereum uses gas to control the amount of resources that a transaction can spend, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertent resource-devouring transactions.
+
+Gas is separate from ether, in order to protect the system from volatility that might arise from rapid changes in the value of ether.
+
+The +gasPrice+ field in a transaction allows the transaction originator to set the exchange rate of each unit of gas. Gas price is measured in +wei+ per gas unit. For example, in a transaction we recently created for an example in this book, our wallet had set the +gasPrice+ to +3 Gwei+ (3 Giga-wei, 3 billion wei).
+
+The popular site +ethgasstation.info+ provides information on the current prices of gas, and other relevant gas metrics for the Ethereum main network:
+
+https://ethgasstation.info/
+
+Wallets can adjust the +gasPrice+ in transactions they originate, to achieve faster confirmation (mining) of transactions. The higher the +gasPrice+, the faster the transaction is likely to confirm. Conversely, lower priority transactions can carry a reduced price they are willing to pay for gas, resulting in slower confirmation. The minimum +gasPrice+ that can be set is zero, which means a fee-free transaction. During periods of low demand for space in a block, such transactions will get mined.
+
+[TIP]
+====
+The minimum acceptable gasPrice is zero. That means that wallets can generate completely free transactions. Depending on capacity, these may never be mined, but there is nothing in the protocol that prohibits free transactions. You can find several examples of such transactions successfully mined in the Ethereum blockchain.
+====
+
+The web3 interface offers a gasPrice suggestion, by calculating a median price across several blocks:
+
+----
+truffle(mainnet)> web3.eth.getGasPrice(console.log)
+truffle(mainnet)> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+----
+
+The second important field related to gas, is +startGas+. This is explained in more detail in <<gas>>. In simple terms, +startGas+ defines how many units of gas the transaction originator is willing to spend to complete the transaction. For simple payments, meaning transactions that transfer ether from one EOA to another EOA, the gas amount needed is fixed at 21,000 gas units. To calculate how much ether that will cost, you multiply 21,000 with the +gasPrice+ you're willing to pay:
+
+----
+truffle(mainnet)> web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )
+truffle(mainnet)> 210000000000000
+----
+
+If your transaction's destination address is a contract, then the amount of gas needed can be estimated but cannot be determined with accuracy. That's because a contract can evaluate different conditions that lead to different execution paths, with different gas costs. That means that the contract may execute only a simple computation or a more complex one depending on conditions that are outside of your control and cannot be predicted. To demonstrate this let's use a rather contrived example: each time a contract is called it increments a counter and on the 100th time (only) it computes something complex. If you call the contract 99 times one thing happens, but on the 100th something completely different happens. The amount of gas you would pay for that depends on how many other transactions have called that function before your transaction is mined. Perhaps your estimate is based on being the 99th transaction and just before your transaction is mined, someone else calls the contract for the 99th time. Now you're the 100th transaction to call and the computation effort (and gas cost) is much higher.
+
+To borrow a common analogy used in Ethereum, you can think of startGas as the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey such as a diversion (a more complex execution path), which increase fuel consumption.
+
+The analogy to a fuel tank is somewhat misleading, however. It's more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * startGas+ fee. But the amount is not actually deducted from your account until the end of the transaction execution. You are only billed for gas actually consumed by your transaction at the end, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction. 
+
+=== Transaction signing
 
 === Transaction propagation
 
