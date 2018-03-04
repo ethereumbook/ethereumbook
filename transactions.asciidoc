@@ -54,14 +54,9 @@ The nonce is zero-based counter, meaning the first transaction has nonce 0. In <
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
 
-When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count towards the +getTransactionCount+ total. One way to handle that issue is to count _pending_ transactions and not just confirmed transactions. We do this by passing the argument +"pending"+ in +getTransactionCount+:
+When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count towards the +getTransactionCount+ total.
 
-----
-web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
-40
-----
-
-Unfortunately, the +getTransactionCount+ function will run into some problems if we send a few transactions in a row. Let's look at an example:
+Unfortunately, the +getTransactionCount+ function will run into some problems if we send a few transactions in a row. There is a known bug where +getTransactionCount+ does not count pending transactions correctly. Let's look at an example:
 
 ----
 web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
@@ -81,17 +76,236 @@ As you can see, the first transaction we sent increased the transaction count to
 
 When you build an application that constructs transactions, it cannot rely on +getTransactionCount+ for pending transactions. Only when pending and confirmed are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
 
+Parity's JSON RPC interface offers the +parity_nextNonce+ function, that returns the next nonce that should be used in a transaction. The +parity_nextNonce+ function counts nonces correctly, even if you construct several transactions in rapid succession, without confirming them.
+
+Parity has a web console for accessing the JSON RPC interface, but here we are using a command line HTTP client to access it:
+
+----
+curl --data '{"method":"parity_nextNonce","params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+----
+
 ===== Gaps in nonces, duplicate nonces, and confirmation
 
-Things get more complicated if you create unintentional gaps in the nonces you assign to transactions, or if you accidentally reuse an existing nonce.
+It is important to keep track of nonces if you are creating transactions programmaticaly, especially if you are doing so from multiple independent processes simultaneously.
 
-TODO
+The Ethereum network processes transactions sequentially, based on the nonce. That means that if you transmit a transaction with nonce +0+ and then transmit a transaction with nonce +2+, the second transaction will not be mined. It will be stored in the mempool, while the Ethereum network waits for the missing nonce to appear. All nodes will assume that the missing nonce has simply been delayed and that the transaction with nonce +2+ was received out-of-sequence.
+
+If you then transmit a transaction with the missing nonce +1+, both transactions (nonces +1+ and +2+) will be mined. Once you fill the gap, the network can mine the out-of-sequence transaction that it held in the mempool.
+
+What this means is that if you create several transactions in sequence and one of them does not get mined, all the subsequent transactions will be "stuck", waiting for the missing nonce. A transaction can create an inadvertent "gap" in the nonce sequence because it is invalid or has insufficient gas. To get things moving again, you have to transmit a valid transaction with the missing nonce.
+
+If on the other hand you accidentally duplicate a nonce, for example by transmitting two transactions with the same nonce, but different recipients or values, then one of them will be confirmed and one will be rejected. Which one is confirmed will be determined by the sequence in which they arrive at the first validating node that receives them.
+
+As you can see, keeping track of nonces is necessary and if your application doesn't manage that process correctly, you will run into problems. Unfortunately, things get even more difficult if you are trying to do this concurrently, as we will see in the next section.
 
 ===== Concurrency, transaction origination, and nonces
 
-Strategies for managing transaction origination from multiple application threads, processes or separate origination nodes, all using the same account
+Concurrency is a complex aspect of computer science, and it crops up unexpectedly sometimes, especially in decentralized/distributed real-time systems like Ethereum.
 
-TODO
+In simple terms, concurrency is when you have simultaneous computation by multiple independent systems. These can be in the same program (e.g. threading), on the same CPU (e.g. multi-processing), or on different computers (i.e. distributed systems). Ethereum, by definition, is a system that allows concurrency of operations (nodes, clients, dapps), but enforces a singleton state (e.g. there is only one common/shared state of the system at each mined block).
+
+Now, imagine that we have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals for a hot wallet. Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing and broadcasting transactions from the same hot wallet account coordinate?
+
+You could use a single computer to assign nonces, on a first-come first-served basis to computers signing transactions. However, this computer is now a single-point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all of the subsequent ones get stuck.
+
+You could generate the transactions, but don't sign them or assign a nonce to them. Then queue them to a single node that signs them and also keeps track of nonces. Again, you have a single point of failure. The signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of unsigned transaction is the part you don't really need to parallelize. You have concurrency, but you don't have it in any useful part of the process.
+
+In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmation in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange.
+
+=== Transaction gas
+
+We discuss _gas_ in detail in <<gas>>. However, let's cover some basics about the role of the +gasPrice+ and +startGas+ components of a transaction.
+
+Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with an exchange rate vis-a-vis ether. Ethereum uses gas to control the amount of resources that a transaction can spend, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertent resource-devouring transactions.
+
+Gas is separate from ether, in order to protect the system from volatility that might arise from rapid changes in the value of ether.
+
+The +gasPrice+ field in a transaction allows the transaction originator to set the exchange rate of each unit of gas. Gas price is measured in +wei+ per gas unit. For example, in a transaction we recently created for an example in this book, our wallet had set the +gasPrice+ to +3 Gwei+ (3 Giga-wei, 3 billion wei).
+
+The popular site +ethgasstation.info+ provides information on the current prices of gas, and other relevant gas metrics for the Ethereum main network:
+
+https://ethgasstation.info/
+
+Wallets can adjust the +gasPrice+ in transactions they originate, to achieve faster confirmation (mining) of transactions. The higher the +gasPrice+, the faster the transaction is likely to confirm. Conversely, lower priority transactions can carry a reduced price they are willing to pay for gas, resulting in slower confirmation. The minimum +gasPrice+ that can be set is zero, which means a fee-free transaction. During periods of low demand for space in a block, such transactions will get mined.
+
+[TIP]
+====
+The minimum acceptable gasPrice is zero. That means that wallets can generate completely free transactions. Depending on capacity, these may never be mined, but there is nothing in the protocol that prohibits free transactions. You can find several examples of such transactions successfully mined in the Ethereum blockchain.
+====
+
+The web3 interface offers a gasPrice suggestion, by calculating a median price across several blocks:
+
+----
+truffle(mainnet)> web3.eth.getGasPrice(console.log)
+truffle(mainnet)> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+----
+
+The second important field related to gas, is +startGas+. This is explained in more detail in <<gas>>. In simple terms, +startGas+ defines how many units of gas the transaction originator is willing to spend to complete the transaction. For simple payments, meaning transactions that transfer ether from one EOA to another EOA, the gas amount needed is fixed at 21,000 gas units. To calculate how much ether that will cost, you multiply 21,000 with the +gasPrice+ you're willing to pay:
+
+----
+truffle(mainnet)> web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )
+truffle(mainnet)> 210000000000000
+----
+
+If your transaction's destination address is a contract, then the amount of gas needed can be estimated but cannot be determined with accuracy. That's because a contract can evaluate different conditions that lead to different execution paths, with different gas costs. That means that the contract may execute only a simple computation or a more complex one depending on conditions that are outside of your control and cannot be predicted. To demonstrate this let's use a rather contrived example: each time a contract is called it increments a counter and on the 100th time (only) it computes something complex. If you call the contract 99 times one thing happens, but on the 100th something completely different happens. The amount of gas you would pay for that depends on how many other transactions have called that function before your transaction is mined. Perhaps your estimate is based on being the 99th transaction and just before your transaction is mined, someone else calls the contract for the 99th time. Now you're the 100th transaction to call and the computation effort (and gas cost) is much higher.
+
+To borrow a common analogy used in Ethereum, you can think of startGas as the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey such as a diversion (a more complex execution path), which increase fuel consumption.
+
+The analogy to a fuel tank is somewhat misleading, however. It's more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * startGas+ fee. But the amount is not actually deducted from your account until the end of the transaction execution. You are only billed for gas actually consumed by your transaction at the end, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.
+
+=== Transaction recipient
+
+The recipient of a transaction is specified in the +to+ field. This contains a 20-byte Ethereum address. The address can be an EOA or a contract address.
+
+Ethereum does no further validation of this field. Any 20-byte value is considered valid. If the 20-byte value corresponds to an address without a corresponding private key, or without a corresponding contract, the transaction is still valid. Ethereum has no way of knowing whether an address was correctly derived from a public key (and therefore from a private key).
+
+[WARNING]
+====
+Ethereum cannot and does not validate recipient addresses in transaction. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user-interface level.
+====
+
+Sending a transaction to an invalid address will _burn_ the ether sent, rendering it forever inaccessible (unspendable), since no signature can be generated to spend it. It is assumed that validation of the address happens at the user-interface level (see <<eip-55>> or <<icap>>). In fact, there are a number of valid reasons for burning ether, including as a game-theory disincentive to cheating in payment channels and other smart contracts.
+
+=== Transaction value and data
+
+The main "payload" of a transaction is contained in two fields: +value+ and +data+. Transactions can have both value and data, only value, only data, or neither value nor data. All four combinations are valid.
+
+A transaction with only value is a _payment_. A transaction with only data is an _invocation_. A transaction with neither value nor data, well that's probably just a waste of gas! But it is still possible.
+
+Let's try all of the above combinations:
+
+First, we set the source and destination addresses from our wallet, just to make the demo easier to read:
+
+.Set the source and destination addresses
+[source,javascript]
+----
+src = web3.eth.accounts[0];
+dst = web3.eth.accounts[1];
+----
+
+===== Transaction with value (payment), and no data payload
+
+.Value, no data
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: web3.toWei(0.01, "ether"), data: ""});
+----
+
+Our wallet shows a confirmation screen, indicating the value to send, and no data payload:
+
+[[parity_txdemo_value_nodata]]
+.Parity wallet showing a transaction with value, but no data
+image::images/parity_txdemo_value_nodata.png["Parity wallet showing a transaction with value, but no data"]
+
+
+===== Transaction with value (payment), and a data payload
+
+.Value and data
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: web3.toWei(0.01, "ether"), data: "0x1234"});
+----
+
+Our wallet shows a confirmation screen, indicating the value to send and a data payload:
+
+[[parity_txdemo_value_data]]
+.Parity wallet showing a transaction with value and data
+image::images/parity_txdemo_value_data.png["Parity wallet showing a transaction with value and data"]
+
+
+===== Transaction with 0 value, only a data payload
+
+.No value, only data
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
+----
+
+Our wallet shows a confirmation screen, indicating the value as 0 and a data payload:
+
+[[parity_txdemo_novalue_data]]
+.Parity wallet showing a transaction with no value, only data
+image::images/parity_txdemo_novalue_data.png["Parity wallet showing a transaction with no value, only data"]
+
+
+===== Transaction with neither value (payment), nor data payload
+
+.No value, no data
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
+----
+
+Our wallet shows a confirmation screen, indicating 0 value and no data:
+
+[[parity_txdemo_novalue_nodata]]
+.Parity wallet showing a transaction with no value, and no data
+image::images/parity_txdemo_novalue_nodata.png["Parity wallet showing a transaction with no value, and no data"]
+
+=== Transmitting value to EOAs and contracts
+
+When you construct an Ethereum transaction that contains +value+, in other words a _payment_, it will behave differently depending on whether the destination address is a contract, or not.
+
+For EOA addresses, or rather for any address that isn't registered as a contract on the blockchain, Ethereum will record a state change, adding the value you sent to the balance of the address. If the address has not been seen before, it will be created and its balance initialized to the +value+ of your payment.
+
+If the destination address (+to+) is a contract, then the EVM will execute the contract and attempt to call the function named in the +data+ payload of your transaction (see <<invocation>>). If there is no +data+ payload in your transaction, the EVM will call the destination contract's _fallback_ function and, if that function is payable, will execute it to determine what to do next.
+
+A contract can reject incoming payments by throwing an exception immediately when the payable function is called, or as determined by conditions coded in the payable function. If the payable function terminated successfully (without an exception), then the contract's state is updated to reflect an increase in the contract's ether balance.
+
+=== Transmitting a data payload to an EOR or contract
+
+When your transaction contains a +data+ payload, it is most likely addressed to a contract address. That doesn't mean you cannot send a +data+ payload to an EOA. In fact, you can do that. However, in that case, the interpretation of the +data+ payload is up to the wallet you use to access the EOA. Most wallets ignore any +data+ payload received in a transaction to an EOA they control. In the future, it is possible that standards may emerge that allow wallets to interpret +data+ payload encodings the way contracts do, thereby allowing transactions to invoke functions running inside user wallets. The critical difference is that any interpretation of the data payload by an EOA, is not subject to Ethereum's consensus rules, unlike a contract execution.
+
+For now, let's assume your transaction is delivering a +data+ payload to a contract address. In that case, the +data+ payload will be interpreted by the EVM as _function invocation_, calling the named function and passing any encoded arguments to the function.
+
+The +data+ payload sent to a contract is a hex-serialized encoding of:
+
+A function selector:: The first 4 bytes of the Keccak256 hash of the function's _prototype_. This allows the EVM to unambiguously identify which function you wish to invoke.
+
+The function arguments:: The function's arguments, encoded according to the rules for the various elementary types defined by the EVM.
+
+Let's look at a simple example, drawn from our <<solidity_faucet_example>>. In +Faucet.sol+, we defined a single function for withdrawals:
+
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+The _prototype_ of the withdraw function is defined as the string containing the name of the function, followed by the data type of each of its arguments enclosed in parenthesis and separated by a single comma. The function name is +withdraw+ and it takes a single argument that is a uint (which is an alias for uint256). So the prototype of +withdraw+ would be:
+
+----
+withdraw(uint256)
+----
+
+Let's calculate the Keccak256 hash of this string (we can use the truffle console or any JavaScript web3 console to do that):
+
+----
+web3.sha3("withdraw(uint256)");
+'0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
+----
+
+The first 4 bytes of the hash are +0x2e1a7d4d+. That's our "function selector" value, which will tell the EMV which function we want to call.
+
+Next, let's calculate a value to pass as the argument +withdraw_amount+. We want to withdraw 0.01 ether. Let's encode that to a hex-serialized big-endian unsigned 256-bit integer, denominated in wei:
+
+----
+withdraw_amount = web3.toWei(0.01, "ether");
+'10000000000000000'
+withdraw_amount_hex = web3.toHex(withdraw_amount);
+'0x2386f26fc10000'
+----
+
+Now, we add the function selector to the amount (padded to 32 bytes):
+
+----
+2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000
+----
+
+That's the +data+ payload for our transaction, invoking the +withdraw+ function and requesting 0.01 ether as the +withdraw_amount+.
+
+
+=== Transaction signing
 
 === Transaction propagation
 
