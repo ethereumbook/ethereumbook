@@ -1,4 +1,4 @@
-![Mastering Ethereum Cover](images/cover_thumb.png)
+![Mastering Ethereum Cover](images/cover_thumb.png)____________________**Watch a video tutorial on how to contribute ---->**[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/1.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
