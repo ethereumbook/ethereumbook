@@ -302,11 +302,13 @@ Determinism:: Any input message always produces the same hash digest.
 
 Verifiability:: Computing the hash of a message is efficient (linear performance).
 
-Irreversibility (resistance to first pre-image):: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
-
 Uncorrelated:: A small change to the message (e.g. one bit change) should change the hash output so extensively that it cannot be correlated to the hash of the original message.
 
+Irreversibility (resistance to first pre-image):: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
+
 Collision Protection (resistance to second pre-image):: It should be infeasible to calculate two different messages that produce the same hash output.
+
+Resistance to second pre-image is primarily important to prevent digital signature forgery in Ethereum.
 
 The combination of these properties make cryptographic hash functions useful for a broad range of security applications including:
 
@@ -342,10 +344,10 @@ An easy way to tell is to use a _test vector_, an expected output for a given in
 [[sha3_test_vectors]]
 .Testing whether the SHA3 library you are using is Keccak-256 of FIP-202 SHA-3
 ----
-Keccak-256("") =
+Keccak256("") =
 c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
-SHA-3("") =
+SHA3("") =
 a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
 ----
 
@@ -369,13 +371,18 @@ Public Key _K_ (X and Y coordinates concatenated and shown as hex):
 K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
 ----
 
+[WARNING]
+====
+It is worth noting that the public key is not formatted with the prefix (hex) 04 when the address is calculated.
+====
+
 We use Keccak-256 to calculate the _hash_ of this public key:
 
 ----
 Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
-Then we keep only the last 20 bytes, which is our Ethereum address:
+Then we keep only the last 20 bytes (the least significant bytes in big-endian), which is our Ethereum address:
 
 ----
 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
@@ -471,7 +478,7 @@ EIP-55 is quite simple to implement. We take the Keccak-256 hash of the lower-ca
 1. Hash the lower-case address, without the +0x+ prefix:
 
 ----
-Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
 ----
 
@@ -509,7 +516,7 @@ Now let's make a basic mistake in reading that address. The character before the
 Fortunately, our wallet is EIP-55 compliant! It notices the mixed capitalization and attempts to validate the address. It converts it to lower case, and calculates the checksum hash:
 
 ----
-Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
 5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
 ----
 
