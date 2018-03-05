@@ -8,7 +8,7 @@ In this section we will dissect transactions, show how they work and understand 
 
 First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using it's own internal data structure, perhaps embelished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
 
-A transaction is an RLP-encoded message that contains the following data:
+A transaction is an serialized binary message that contains the following data:
 
 nonce:: A sequence number, issued by the originating EOA, used to prevent message replay.
 
@@ -23,6 +23,10 @@ value:: Amount of ether to send to destination.
 data:: Variable length binary data payload.
 
 v,r,s:: The three components of an ECDSA signature of the originating EOA.
+
+The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme (see <<rlp>>), which was created specifically for accurate and byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded a big-endian integers, of lengths that are multiples of 8 bits.
+
+Note that the field labels ("to", "start gas", e.t.c.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, therefore, belongs to the next field in the structure.
 
 While this is the actual transaction structure transmitted, most internal representations and user-interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
 
