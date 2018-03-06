@@ -1,11 +1,18 @@
 == Gas
 
-Because programs require computational "work" to perform an action or set of actions, there is a cost associated with calling on smart contracts and transacting on the Ethereum blockchain. This cost is related to the number of computational steps that the program undergoes. Unlike Bitcoin transaction fees which only takes into account the size of a transaction (kB), Ethereum smart contracts can perform an arbitrary number of computational steps. The higher the number of operations a program performs, the higher the cost to run it to completion. **Gas** is Ethereum's unit for measuring how much computational "work" an action or set of actions takes to perform. Every operation performed by a transaction or contract costs a certain number of gas.
+As computational "work" is required to perform an action or set of actions, there is a cost associated with executing smart contract code and transacting on the Ethereum blockchain. This cost is related to the type and number of computational steps that are executed. In contrast to Bitcoin transaction fees which only take into account the size of a transaction (kB), Ethereum transaction fees must account for arbitrary number of computational steps that can be performed by smart contract code. The higher the number of operations a program performs, the higher the cost to run it to completion. **Gas** is Ethereum's unit for measuring how much computational "work" an action or set of actions takes to perform. Every operation performed by a transaction or contract costs a certain number of gas.
 
-To each operation, a fixed amount of gas is assigned some examples from the Ethereum yellow paper
+To each operation, a fixed amount of gas is assigned. Some examples from the Ethereum yellow paper:
+
 * Adding two numbers costs 3 gas
 * Calculating a Keccak256 hash costs 30 gas + 6 more gas for every 256 bits of data being hashed
 * Sending a transaction costs 21000 gas
+
+Gas is a crucial component of Ethereum's defense against denial-of-service attacks. In order to prevent accidental or malicious infinite loops or other computational wastage in the network, the initiator of each transaction is required to set a limit to the amount they are willing to spend on gas. The gas system therefore decentivizes attackers from sending spam transactions, as they must pay proportionately for the computational, bandwidth, and storage resource that they consume.
+
+=== Halting Problem
+
+The idea of transaction fees and accounting seem practical, though you might wonder why Ethereum requires gas in the first place. Gas is pivotal, as it not only attends to the halting problem, but is also critical for safety and liveness. What is the halting problem, safety, and liveness, and why should you care?
 
 === Paying for gas
 
@@ -13,10 +20,17 @@ Gas cannot be "owned" nor "spent". It exists only inside the Ethereum Virtual Ma
 
 ==== Who pays for gas?
 
+If the transaction is being sent from an Externally Owned Account (EOA), gas fee would be withdrawn from the EOA's balance. In other words, the initiator of the transaction is paying for the gas. The initiator funds the total gas consumed by the transaction as well as any sub-executions that follow. This means that if the initiator X attaches 1000 gas to call contract A, which spends 500 gas on computation and then sends another message to contract B, the gas used by A to send the message to B is also deducted from X's gas allowance specified at the start.
 
-////
-TODO
-////
+```
+An EOA account X initiates a transaction and calls functions on contract account A, attaching 1000 gas
+
+Contract A spends 500 gas on computation and sends a message costing 100 gas to Contract B
+
+Contract B spends 300 gas on computation and completes the transaction.
+
+100 gas gets refunded to X
+```
 
 === Gas cost vs. gas price
 
@@ -26,7 +40,7 @@ While the **gas cost** is a measure of operational steps performed in the EVM, t
 
 This amount is deducted from the sender's account at the start of the transaction execution. Instead of "total gas used", the sender is to set a **gas limit** that should be sufficient to cover the amount of gas required to perform the transaction.
 
-=== Gas limit and running out of gas
+=== Gas cost limit and running out of gas
 
 Before sending a transaction, senders must specify a **gas limit** - the maximum amount of gas they are willing to buy. They must also specify the **gas price** - the price in ether they are willing to pay for each unit of gas.
 
@@ -42,6 +56,12 @@ In which case:
 
 `excess gas * gasprice` ether is refunded to the sender
 
+=== Gas price and transaction prioritization
+
+Gas price is the amount in ether that the transaction sender is willing to pay for each unit of gas used. The miner who mines the next block gets to decide which transactions to include. Since gas price is factored into the transaction fee they will receive as a reward, they are more likely to include transactions with highest gas prices first. If the sender sets the gas price too low, they may have to wait a long time before their transaction makes it into a block.
+
+Miners can also decide the order in which transactions are included in a block. Since multiple miners are competing to append their block to the blockchain, the order of transactions within a block is arbitrarily decided by the "winning" miner and then the other miners verify with that order. While transactions from different accounts can be ordered arbitrarily, transactions from an individual accounts are executed in order of an auto-incrementing nonce.
+
 === Questions that need to be answered in this section
 
 * x What is Gas
@@ -51,11 +71,11 @@ In which case:
 * x Who pays gas
 * x What happens if there's not enough gas
 * x Is gas paid if there's not enough?
-* Who pays for contract calls if intiated by EOA
-* Who pays if the contract initiates the message?
+* x Who pays for contract calls if intiated by EOA
+* x Who pays if the contract initiates the message?
 * How are contracts funded
 * x Can you set the gas limit above the balance you have?
 * x When is gas actually charged
 * x Can you double spend gas? Why not?
-* how are transactions sequenced when sent concurrently (same block), in terms of gas and balance?
+* x how are transactions sequenced when sent concurrently (same block), in terms of gas and balance?
 * How can a contract run out of gas?
