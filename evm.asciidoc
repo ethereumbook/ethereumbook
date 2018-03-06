@@ -18,6 +18,29 @@ The EVM Machine Language is divided into specific instruction set groups, such a
 
 ==== State
 
+As with any computating system, the concept of state is an important one. Just like a CPU keeping track of a process in execution, the EVM must keep track of the status of various components in order to support a transaction. The status or _state_ of these components ultimately drives the level of change in the overarching blockchain. This aspect leads to the description of Ethereum as a _transaction-based state machine_ containing the following components:
+
+World State:: A mapping between 160-bit address identifiers and account state, maintained in an immutable _Merkle Patricia Tree_ data structure.
+
+Account State:: Contains the following four components:
+
+* _nonce_: A value representing either the number of transactions sent or the number of contracts created from this respective account.
+
+* _balance_: The number of _Wei_ owned by the account address.
+
+* _storageRoot_: A 256-bit hash of the Merkle Patricia Tree's root node.
+
+* _codeHash:_: An immutable hash value of the EVM code for the respective account.
+
+State transitions are calculated with the following functions:
+
+Ethereum State Transition Function:: Used to calculate a _valid state transition_.
+
+Block Finalization State Transition Function:: Used to determine the state of a finalized block as part of the mining process, including block reward.
+
+Block Level State Transition Function:: The resulting state of the Block Finalization State Transition Function when applied to a transaction state.
+
+
 ==== Compiling Solidity to EVM bytecode
 
 Compiling a Solidity source file to EVM bytecode can be accomplished via the command line. For a list of additional compile options, simply run the following command:
@@ -30,7 +53,7 @@ Generating the raw opcode of a Solidity source file is easily achieved with the 
 
 ----
 $ solc -o BytecodeOutputDir --opcodes Example.sol
----- 
+----
 
 The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ has only one contract named "example".
 
@@ -50,7 +73,7 @@ contract example {
 If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ which contains the EVM machine language instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
 
 ----
-PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1 
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1
 /*snip*/
 ----
 
@@ -64,9 +87,9 @@ Here we have the _mnemonic_ "PUSH1" with a _value_ of "0x60". This corresponds t
 
 ----
 PUSH32 0x7f
----- 
+----
 
-The second push opcode value "0x40" indicates the hash value of a complete block. 
+The second push opcode value "0x40" indicates the hash value of a complete block.
 
 
 ==== Execution of EVM bytecode
