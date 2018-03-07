@@ -35,6 +35,10 @@ The best way to contribute to this book is by making a pull request:
 6. Commit your change. Include a commit message describing the correction.
 7. Submit a pull request against the ethereumbook repository.
 
+Here's a video tutorial to help you make your first pull request:
+
+[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/0.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
+
 ## Contributing with an Issue
 
 If you find a mistake and you're not sure how to fix it, or you don't know how to do a pull request, then you can file an Issue. Filing an Issue will help us see the problem and fix it.

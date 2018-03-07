@@ -194,7 +194,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 [[ec_math]]
 ==== Elliptic Curve Arithmetic Operations
 
-A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of adding numbers is adding points on the curve. Once we have the addition operator, we can also define multiplication of a point and an whole number, such that it is equivalent to repeated addition.
+A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of adding numbers is adding points on the curve. Once we have the addition operator, we can also define multiplication of a point and a whole number, such that it is equivalent to repeated addition.
 
 Addition is defined such that given two points P~1~ and P~2~ on the elliptic curve, there is a third point P~3~ = P~1~ + P~2~, also on the elliptic curve.
 
@@ -261,8 +261,8 @@ In Ethereum you may see public keys represented as a hexadecimal serialization o
 | Prefix | Meaning | Length (bytes counting prefix) |
 |0x00| Point at Infinity | 1 |
 |0x04| Uncompressed Point | 65 |
-|0x00| Compressed Point with even Y | 33 |
-|0x00| Compressed Point with odd Y | 33 |
+|0x02| Compressed Point with even Y | 33 |
+|0x03| Compressed Point with odd Y | 33 |
 |===
 
 Ethereum only uses uncompressed public keys, therefore the only prefix that is relevant is (hex) +04+. The serialization concatenated the X and Y coordinates of the public key:
@@ -296,17 +296,19 @@ In simple terms, "a hash function is any function that can be used to map data o
 
 A cryptographic hash function is a _one way_ hash function that maps data of arbitrary size to a fixed-size bit string, where it is computationally infeasible to recreate the input if one knows the output. The only way to determine the input is to conduct a brute-force search of possible inputs, checking for a matching output.
 
-Cryptographic hash functions ave five main properties (https://en.wikipedia.org/wiki/Cryptographic_hash_function[Source: Wikipedia/Cryptographic Hash Function]):
+Cryptographic hash functions have five main properties (https://en.wikipedia.org/wiki/Cryptographic_hash_function[Source: Wikipedia/Cryptographic Hash Function]):
 
 Determinism:: Any input message always produces the same hash digest.
 
 Verifiability:: Computing the hash of a message is efficient (linear performance).
 
-Irreversibiility:: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
-
 Uncorrelated:: A small change to the message (e.g. one bit change) should change the hash output so extensively that it cannot be correlated to the hash of the original message.
 
-Collision Protection:: It should be infeasible to calculate two different messages that produce the same hash output.
+Irreversibility (resistance to first pre-image):: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
+
+Collision Protection (resistance to second pre-image):: It should be infeasible to calculate two different messages that produce the same hash output.
+
+Resistance to second pre-image is primarily important to prevent digital signature forgery in Ethereum.
 
 The combination of these properties make cryptographic hash functions useful for a broad range of security applications including:
 
@@ -342,16 +344,16 @@ An easy way to tell is to use a _test vector_, an expected output for a given in
 [[sha3_test_vectors]]
 .Testing whether the SHA3 library you are using is Keccak-256 of FIP-202 SHA-3
 ----
-Keccak-256("") =
+Keccak256("") =
 c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 
-SHA-3("") =
+SHA3("") =
 a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
 ----
 
 So, regardless of what the function is called, you can test it to see whether it is the original Keccak-256, or the final NIST standard FIPS-202 SHA-3, by running the simple test above. Remember, Ethereum uses Keccak-256, even though it is often called SHA-3 in the code.
 
-Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys
+Next, lets examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys.
 
 === Ethereum Addresses
 
@@ -369,19 +371,24 @@ Public Key _K_ (X and Y coordinates concatenated and shown as hex):
 K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
 ----
 
+[WARNING]
+====
+It is worth noting that the public key is not formatted with the prefix (hex) 04 when the address is calculated.
+====
+
 We use Keccak-256 to calculate the _hash_ of this public key:
 
 ----
 Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
-Then we keep only the last 20 bytes, which is our Ethereum address:
+Then we keep only the last 20 bytes (the least significant bytes in big-endian), which is our Ethereum address:
 
 ----
 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
-Most often you will see Ethereum addresses with the prefix +0x" that indicates it is a hexadecimal encoding, like this:
+Most often you will see Ethereum addresses with the prefix "0x" that indicates it is a hexadecimal encoding, like this:
 
 ----
 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
@@ -471,7 +478,7 @@ EIP-55 is quite simple to implement. We take the Keccak-256 hash of the lower-ca
 1. Hash the lower-case address, without the +0x+ prefix:
 
 ----
-Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
 ----
 
@@ -509,7 +516,7 @@ Now let's make a basic mistake in reading that address. The character before the
 Fortunately, our wallet is EIP-55 compliant! It notices the mixed capitalization and attempts to validate the address. It converts it to lower case, and calculates the checksum hash:
 
 ----
-Keccak-256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
 5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
 ----
 
