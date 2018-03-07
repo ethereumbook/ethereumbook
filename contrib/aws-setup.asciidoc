@@ -1,155 +1,215 @@
-== Ethereum Basics
+== Introduction
 
-=== What is a blockchain?
-Traditionally, the IT industry has developed technologies that address a class of problems. For example, around the time computers started influencing humankind, a common problem was around efficient storage and retrieval of data. The IT industry responded with database technologies. See this https://en.wikipedia.org/wiki/Database#History[link] for a brief history of databases.  In the same fashion, the blockchain technology aims at addressing the problem of *decentralized consensus*. To explore this problem of decentralized consensus, let us first define consensus.
+This section describes in detail the set-up of a private Ethereum network on Amazon Web Services (AWS) cloud. It deploys the *Mastering Ethereum Token MET* on to this private network and describes application development against this network.
 
-==== Consensus
-The Cambridge English dictionary https://dictionary.cambridge.org/dictionary/english/consensus[defines] the word _consensus_ as 
-[quote]
-a generally accepted opinion or decision among a group of people. 
+The following are the broad steps to be followed:
 
-In business terms, _consensus_ could mean the agreement between two or more parties (internal to an organisation or external) on the value of parameter(s) of interest to all parties involved. For example, the parameter could be inventory levels, current location or status of a shipment, ownership of equipment and so on. Traditionally, the values of such parameters have been entrusted with a central organization. For example, the central bank of a country serves as the https://en.wikipedia.org/wiki/Central_bank#Activities_and_responsibilities_of_the_central_banks[banker's bank], the road transportation office is the organisation to decide automobile ownership and so on.
+* Set up nodes for launch
+* Configure nodes 
+* Peering
+* Account set-up 
+* Mining
+* RPC end-point
+* Contract deployment and execution
 
-Therefore, the central organisation assumes the role of _custodian of truth_ and enforces that truth to all parties who repose their faith in such an organisation.
+=== Set up nodes for launch
 
-==== Decentralized Consensus
-To understand the idea of decentralized consensus, let us ask the question as, _what if, there was no central custodian of truth and yet all parties agreed upon a truth_? This is a radical question and strikes at the very existence of a central authority. It is revolutionary also because of the expected change in societal behavior where, 'looking up' a central authority has been the way to arrive at certain facts, resolve disputes, etc.
+==== Launch instances
 
-Philosophy aside, the case of decentralized consensus is to arrive at the value of parameter(s) of interest without involving a central authority. For example, across the value chain of an industry, can the parties agree on a parameter of interest? How does a buyer of a high-end garment be sure of its provenance? Can a buyer be sure that an item of jewelery does not have 'conflict minerals'?
+To launch Ethereum nodes on AWS, follow the steps below. See here for notes on instance type: []
 
-=== What is Bitcoin?
-Bitcoin is the most visible implementation of blockchain technology. In terms of decentralized consensus, the parameter of interest is simply the balance in an account. Let us see the origin of this consensus problem.
+1. Launch an AWS EC2 `t2.micro` instance of Ubuntu 64-bit OS.
+2. For now, launch the instance in the default VPC and allow it to have a public IP address.
+3. Once launched, note the IP address.
 
-In the good old days of non-electronic world, cash was the _de facto_ mechanism to conclude a transaction. So, a buyer would hand out $10 in his or her wallet to a seller in exchange of certain goods or services. At the end of the transaction, the balance in the buyer wallet is debited by $10 and the balance in the seller wallet is credited to by $10. Clean and simple - no further consensus is required on the balance in the wallets.
+Repeat steps 1 to 3 to start one more instance.
 
-In the still good, but not so old days, Internet broke into scene and brought e-mail. With the 'carbon copy' (Cc) feature, it was no easy to type once and send the email to multiple recipients. If the email had an attachment of the image of a cute cat, then the image file would be replicated as many times as the recipients. Imagine money being transferred via e-mail. A $10 amount could then have been replicated and sent to multiple recipients! This glaring issue is the basis of https://www.investopedia.com/terms/d/doublespending.asp[ *double spending* ] problem. In terms of consensus, the challenge would be the agreement on the account balance - the parameter of interest. And thus, https://www.gartner.com/it-glossary/core-banking-systems/[core banking systems] were born to play the role, amongst others, of a custodian of truth on account balances.
+==== Install Ethereum client
 
-Bitcoin establishes the decentralized consensus on account balance amongst all parties by eliminating the double spending problem without the need for a central authority.
+1. Log onto an instance with `ssh`.
+2. Install `go-ethereum` client on this machine with instructions below.
+3. Create a directory by name `eth-priv`.
+4. Create a file in the `eth-priv` named as `genesis.json` as shown below.
 
-=== What is Ethereum?
-Ethereum, as defined https://github.com/ethereumbook/ethereumbook/blob/develop/what-is.asciidoc#what-is-ethereum[here] is:
-[quote]
-Ethereum is an open-source, globally decentralized computing infrastructure that executes programs called smart contracts. It uses a blockchain to synchronize and store the system state along with a cryptocurrency called ether to meter and constrain execution resource cost. 
+[source,bash]
+----
+sudo apt-get install software-properties-common
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install -y ethereum
+----
 
-==== Bitcoin state transition 
-The Bitcoin implementation can also be seen as an implementation of a state transaction system, where, the state is the account balance. Suppose, at a certain point in time, there are only two account holders - A and B - each with a balance of $10. The account holder A, transfers $2 to B, in exchange for certain goods. Therefore, at a later point in time, the changed state is $8 balance with A and $12 balance with B. This change in state is not recorded in the systems of a central authority. Instead, it is in the Bitcoin ledger that exists on every computer in the Bitcoin network.
+=== Configure nodes
 
-In summary, Bitcoin saves three things in the ledger: current balance in the account, transition and the to-be balance in the account. 
+Create a JSON document for genesis block.
 
-==== Generic state transition
-Extending the Bitcoin state transition concept, let us ask a more generalised question. 
+.genesis.json
+[source,json]
+----
+{
+    "config": {
+        "chainId": 15,
+        "homesteadBlock": 0,
+        "eip155Block": 0,
+        "eip158Block": 0
+    },
+    "nonce": "0x0000000000000042",
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "difficulty": "0x4000",
+    "alloc": {},
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "timestamp": "0x00",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "gasLimit": "0xffffffff"
+}
+----
 
-What if, there was a decentralized system that maintained the transition of state of __any__ system? 
+NOTES:
+The `genesis.json` shown above has the following settings for a simplified set-up.
 
-For example, the movement of goods from a factory to a customer is a state transition of the produced goods. 
+* `chainId` set to `15` to differentiate itself as a private Ethereum network.
+* `gasLimit` is set to maximum.
+* `difficulty` is set to low.
 
-[quote]
-Ethereum is that decentralized system that allows for state transition without the need for a central authority.
+For more details on all settings, see here: [https://ethereum.stackexchange.com/q/2376/3137]
 
-=== Development with Ethereum 
-This section will explain the expectations with respect to development with Ethereum followed by development support currently available within Ethereum eco-system.
+==== Initialize nodes
 
-==== Ethereum components
-By now it should be clear that, the goal of Ethereum is to provide a global, state transition system. Such a system would necessarily have the following components.
+Follow the steps to start Ethereum on **first** machine.
 
-- *State store* to store the states as they transition from current to to-be.
-- *Gossip protocol* to communicate with nodes to announce, amongst others, incoming transactions.
-_ *Consensus algorithm* to verify the set of current state, transaction and to-be state is true.
-_ *State definitions* to provide an interface to apply transitions on current state.
-- *State transitions* to execute a transition on the current state.
+[source,bash]
+----
+geth --data-dir eth-priv init eth-priv/genesis.json
+----
 
-In the Ethereum software, the mapping of the components is as follows:
+==== Start blockchain
+Start blockchain with the command below. Note that, the value of `--networkid` matches with the value of `chainId` in `genesis.json` file. Also, with the `--nodiscover` flag, this machine becomes a sort of host machine. Finally, this machine will listen of peering connections at port number `30333`.
 
-.Ethereum Components [[eth-components]]
-|==================================================================================================================================
-|Component |Technology |Remarks
-|State store | LevelDB | LevelDB is the 'container' for the Merkle Patricia tree data structure that stores the state. Links: http://leveldb.org/ https://github.com/ethereum/wiki/wiki/Patricia-Tree
-|Gossip protocol | ÐΞV technologies | https://github.com/ethereum/wiki/wiki/%C3%90%CE%9EVp2p-Wire-Protocol
-|Consensus algorithm | ethash | Proof-of-Work algorithm https://github.com/ethereum/wiki/wiki/Ethash
-|State definitions | Smart Contract programming languages | Mutan https://forum.ethereum.org/discussion/922/mutan-faq[deprecated], LLL, Serpent, Solidity, Vyper, Bamboo
-https://media.consensys.net/an-introduction-to-lll-for-ethereum-smart-contract-development-e26e38ea6c23 __(GitHub URL?)__ https://github.com/ethereum/wiki/wiki/Serpent https://github.com/ethereum/solidity https://github.com/ethereum/vyper https://github.com/pirapira/bamboo 
-|State transitions | Ethereum Virtual Machine | https://github.com/ethereum/wiki/wiki/Ethereum-Virtual-Machine-(EVM)-Awesome-List
-|==================================================================================================================================
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 3  --port 30333 console
+----
 
-The complete Ethereum software, with its components, can be thought of as similar to Linux operating system with components for disk, RAM, network, security, drivers and so on. While these components are constantly developed and enhanced, application development is typically 'on top' of these compoenents with an abstract, interface layer. In Ethereum, such an abstraction layer is provided via Ethereum clients.
+From the console, get the node value.
 
-==== Ethereum clients
-An Ethereum client can be defined as (__what is the official definition?__) an implementation of the Ethereum components discussed above. Therefore, an Ethereum client can (__should?__) do the following:
+[source,bash]
+----
+admin.nodeInfo.enode
+"enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@[::]:30333?discport=0"
+----
 
-- A container for the Ethereum Virtual Machine (EVM).
-- Generate blocks for appending into state store.
-- Read and append functions for the state store.
-- Node discovery and communication.
-- Expose end-points for external communication.
+=== Peering
 
-With those capabilities, an Ethereum client allows
+1. Log on to second machine, create folder `eth-priv` and copy `genesis.json` (created above) here. Start Ethereum with command below.
 
-- a developer to publish and execute Smart Contracts
-- a developer to read the state store for down-stream applications
-- a miner to mine for new blocks and earn ETH 
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --maxpeers 3  --port 30333 console
+----
 
-The following is a partial list of clients:
-http://ethdocs.org/en/latest/ethereum-clients/choosing-a-client.html
+2. From the console, add peer.
 
-.Ethereum Clients 
-|==================================================================================================================================
-|Clients |Language |Developers |Latest relase
-|go-ethereum |Go |Ethereum Foundation |go-ethereum-v1.4.18
-|Parity |Rust |Ethcore |Parity-v1.4.0
-|cpp-ethereum |C++ |Ethereum Foundation |cpp-ethereum-v1.3.0
-|pyethapp |Python |Ethereum Foundation |pyethapp-v1.5.0
-|ethereumjs-lib |Javascript |Ethereum Foundation |ethereumjs-lib-v3.0.0
-|Ethereum(J) |Java |<ether.camp> |ethereumJ-v1.3.1
-|ruby-ethereum |Ruby |Jan Xie |ruby-ethereum-v0.9.6
-|ethereumH |Haskell |BlockApps | No Homestead relase yet
-|==================================================================================================================================
+To add a peer, replace the `[::]` in the node information value (see step 3 in previous section) of the first machine with the public IP address of the first machine.
 
-When multiple such clients are grouped into a network, we get a functional Ethereum based blockchain system.
+[source,bash]
+----
+admin.addPeer("enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333?discport=0")
+----
 
-==== Application development
-[quote]
-An abstract, but a more conventional way, of looking at application development with Ethereum is, to develop code that reads or appends a data store. 
+Use `admin.peers` function to list connected peers.
 
-The code is deployed to an Ethereum client which executes the code, creating a block and broadcasts to the decentralized network for consensus. __Is a read operation also recorded in the blockchain?__ This code is called as a Smart Contract and maybe developed in any of the languages mentioned at <<Ethereum Clients>>.
+Repeat the above steps on the third machine.
 
-Yet another way of looking at application development, is a traditional web or a mobile application that accesses the data store directly. For example, a blockchain explorer type of application will only read the state store (current or prior) for blocks, transactions, gas and other metrics for visualization purposes. Similarly, a Business Intelligence type of application may interpret the transactions, persisted in the data store, for better consumption by executives in an organization. Finally, the data store functions maybe exposed as APIs for consumption by external parties.
+On the fourth machine, add a `static-nodes.json` file in the `eth-priv` folder with the node information of the first machine. For example,
 
-This book is focussed on development of Smart Contracts with Solidity programming language.
+[source,json]
+----
+[
+    "enode:///342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333"
+]
+----
 
-In summary, application development with Ethereum may comprise the following steps:
+==== Start nodes
 
-- Build or identify a network for deployment - refer (__later__) section p.q.r
-- Develop and publish Smart Contracts with Solidity - refer (__later__) section p.q.r 
-- Browse the blockchain for transaction processing - refer (__later__) section p.q.r 
+1. Log onto first machine and start Ethereum with the command below.
 
-==== Getting started 
-__Should this section introduce tools in general before converging on Truffle as the choice for this book?__
-IDE including debugger, Blockchain explorer, Gas estimator.
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 2  --port 30333 console
+----
 
-Following up on the abstract notion of database application development, here is a mental mapping of development tools that are needed.
+2. Log onto second machine and start Ethereum with the command below.
 
-.Ethereum - Getting started 
-|==================================================================================================================================
-| Artefact | Conventional | Ethereum 
-| Database | RDMBS, NoSQL, Graph, etc. | Network of peers with storage data structure for state transitions e.g. link:aws-setup.asciidoc[AWS Set-up], https://azuremarketplace.microsoft.com/en-in/marketplace/apps/microsoft-azure-blockchain.azure-blockchain-service?tab=PlansAndPrice[Microsoft Azure Blockchain Service]
-| Language bindings | High level languages e.g. COBOL, Java, Python etc. | See <<eth-components>>
-| Integrated Development Editor (IDE) | E.g. Eclipse, NetBeans, etc. | See <<Editors>>
-| Debugger | Normally integrated with IDE | See <<Editors>>
-| Viewer | Browser based viewers e.g. https://addons.mozilla.org/en-US/firefox/addon/sqlite-manager/[SQLite Manager] and desktop based viewers e.g. https://www.pgadmin.org/[pgAdmin] and https://www.mongodb.com/products/compass[Compass] | Blockchain explorer e.g. https://github.com/carsenk/explorer[Ethereum Blockchain explorer]
-| Query explainer | Administration tools such as https://www.pgadmin.org/[pgAdmin] and https://www.mongodb.com/products/compass[Compass] | Gas estimator https://ethereum.github.io/yellowpaper/paper.pdf[Appendix G in Ethereum Yellow paper]
-|==================================================================================================================================
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --port 30333 console
+----
 
-=== Editors
-Some of the popular editors support development of contracts in Solidity language. These are listed below.
+3. Check for connected peer with the command below.
 
-.Solidity editors 
-|==================================================================================================================================
-|Software |Vendor |Notes
-|Visual Studio Code |Microsoft | https://marketplace.visualstudio.com/items?itemName=kodebox.solidity-language-server[Solidity Language Support]
-|Sublime | https://en.wikipedia.org/wiki/Nagware[Nagware] | https://packagecontrol.io/packages/Ethereum[Package Control - Ethereum]
-|Atom |GitHub | https://atom.io/packages/etheratom[etheratom]
-|==================================================================================================================================
+[source,bash]
+----
+admin.peers
+----
 
-**Note** that, Visual Studio Code can compile Solidity code, whereas, Atom can compile and deploy Solidity code.
+4. Exit with `Ctrl-D` on the third machine.
 
-A popular web based IDE, with support for debugging also, is Remix - https://remix.ethereum.org/ The Remix project is hosted here https://github.com/ethereum/remix
+==== Set-up accounts
+
+For now, we will set-up accounts only on the third machine. First, we launch the console as shown below.
+
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 console
+----
+
+Then, we add an account as below.
+
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" account new
+----
+
+Finally, we start the mining process so that ethers are credited to this account.
+
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --mine
+----
+
+We can check the balance using the following command on the console.
+
+[source,bash]
+----
+eth.getBalance(eth.accounts[0])
+----
+
+==== Start RPC
+
+On the third machine, open up the RPC port to allow for communication with a client.
+
+[source,bash]
+----
+geth --datadir eth-priv --networkid 15 --maxpeers 2 --port 30333 --rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "*"
+----
+
+**NOTE** that, the `--rpcaddr 0.0.0.0` value has been set for testing only. This value is **strongly discouraged**.
+
+=== Mining
+
+[source,bash]
+----
+geth --datadir eth-priv --networkid 15 --maxpeers 3 --port 30333 --rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "*" --mine
+----
+
+=== RPC End-point
+
+=== Contract deployment and execution
+
+==== deployment
+
+==== Execution 
+
+=== Automated deployment `puppeth`
+
+=== Bootnodes
