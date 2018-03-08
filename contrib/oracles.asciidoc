@@ -74,92 +74,10 @@ There are a broad range of applications for systems like TrueBit, ranging from m
 
 The mechanisms outlined above all describe centralized Oracle systems reliant on trusted authorities. While they should suffice for many applications, they do however represent central points of failure in the Ethereum network. A number of schemes have been proposed around the idea of Decentralized Oracles as a means of ensuring data availability, and the creation of a network of individual data providers with an on-chain data aggregation system. 
 
-ChainLink [8]
+ChainLink [8] have proposed a decentralized oracle network consisting of three key smart contracts: a reputation contract, an order-matching contract, and an aggregation contract, along with an off-chain registry of data providers. The reputation contract is used to keep track of data providers' performance, with scores being used to populate the off-chain registry. The order-matching contract selects bids from Oracles using the reputation contract, before finalizing a Service Level Agreement (SLA) - which would include query parameters and the number of Oracles required - meaning the purchaser needn't transact with the individual Oracles directly. The aggregation contract collects responses from multiple Oracle, submitted using a commit/reveal scheme, and calculates the final collective result of the query, feeding the results back into the repuation contract.
 
+One of the main challenges with such a decentralized approach is the formulation of the aggregation function. ChainLink propose calculating a weighted response, allowing a validity score for Oracle to be reported for each Oracle response. Detecting an 'invalid' score here is non-trivial, since it relies on the premise that outlying data points, measured by deviations from responses provided by peers, are incorrect. Calculating a validity score based on the location of an Oracle response amongst a distribution of responses risks penalising correct answers over average ones. ChainLink offer a standard set of aggregating contracts, but also allow customized aggregation contracts to be specified.
 
-
-In this paper we present ChainLink, a decentralized oracle network. We describe
-the on-chain components that ChainLink provides for contracts to gain
-external connectivity, and the software powering the nodes of the network. We
-present both a simple on-chain contract data aggregation system, and a more
-efficient off-chain consensus mechanism. We also describe supporting reputation
-and security monitoring services for ChainLink that help users make informed
-provider selections and achieve robust service even under aggressively adversarial
-conditions. Finally, we characterize the properties of an ideal oracle as
-guidance for our security strategy, and lay out possible future improvements,
-including richly featured oracle programming, data-source infrastructure modifications,
-and confidential smart-contract execution.
-
-Behind CHAINLINK-SC, ChainLink has an on-chain component consisting of three
-main contracts: a reputation contract, an order-matching contract, and an aggregating
-contract. The reputation contract keeps track of oracle-service-provider performance
-metrics. The order-matching smart contract takes a proposed service level agreement,
-logs the SLA parameters, and collects bids from oracle providers. It then selects bids
-using the reputation contract and finalizes the oracle SLA. The aggregating contract
-collects the oracle providers’ responses and calculates the final collective result of
-the ChainLink query. It also feeds oracle provider metrics back into the reputation
-contract. ChainLink contracts are designed in a modular manner, allowing for them
-to be configured or replaced by users as needed. The on-chain work flow has three
-steps: 1) oracle selection, 2) data reporting, 3) result aggregation.
-
-
-Oracle Selection An oracle services purchaser specifies requirements that make up
-a service level agreement (SLA) proposal. The SLA proposal includes details such as
-query parameters and the number of oracles needed by the purchaser. Additionally,
-the purchaser specifies the reputation and aggregating contracts to be used for the
-rest of the agreement.
-Using the reputation maintained on-chain, along with a more robust set of data
-gathered from logs of past contracts, purchasers can manually sort, filter, and select
-oracles via off-chain listing services. Our intention is for ChainLink to maintain one
-such listing service, collecting all ChainLink-related logs and verifying the binaries of
-listed oracle contracts. We further detail the listing service and reputation systems
-in Section 5. The data used to generate listings will be pulled from the blockchain,
-allowing for alternative oracle-listing services to be built. Purchasers will submit
-SLA proposals to oracles off-chain, and come to agreement before finalizing the SLA
-on-chain.
-Manual matching is not possible for all situations. For example, a contract may
-need to request oracle services dynamically in response to its load. Automated solutions
-solve this problem and enhance usability. For these reasons, automated oracle
-matching is also being proposed by ChainLink through the use of order-matching
-contracts.
-Once the purchaser has specified their SLA proposal, instead of contacting the oracles
-directly, they will submit the SLA to an order-matching contract. The submission
-of the proposal to the order-matching contract triggers a log that oracle providers can
-5
-monitor and filter based on their capabilities and service objectives. ChainLink nodes
-then choose whether to bid on the proposal or not, with the contract only accepting
-bids from nodes that meet the SLA’s requirements. When an oracle service provider
-bids on a contract, they commit to it, specifically by attaching the penalty amount
-that would be lost due to their misbehavior, as defined in the SLA.
-Bids are accepted for the entirety of the bidding window. Once the SLA has
-received enough qualified bids and the bidding window has ended, the requested
-number of oracles is selected from the pool of bids. Penalty payments that were
-offered during the bidding process are returned to oracles who were not selected, and
-a finalized SLA record is created. When the finalized SLA is recorded it triggers a
-log notifying the selected oracles. The oracles then perform the assignment detailed
-by the SLA.
-Data Reporting Once the new oracle record has been created, the off-chain oracles
-execute the agreement and report back on-chain. For more detail about off-chain
-interactions, see Sections 2.2 and 4.
-Result Aggregation Once the oracles have revealed their results to the oracle contract,
-their results will be fed to the aggregating contract. The aggregating contract
-tallies the collective results and calculates a weighted answer. The validity of each
-oracle response is then reported to the reputation contract. Finally, the weighted
-answer is returned to the specified contract function in USER-SC.
-Detecting outlying or incorrect values is a problem that is specific to each type
-of data feed and application. For instance, detecting and rejecting outlying answers
-before averaging may be necessary for numeric data but not boolean. For this reason,
-there will not be a specific aggregating contract, but a configurable contract address
-which is specified by the purchaser. ChainLink will include a standard set of aggregating
-contracts, but customized contracts may also be specified, provided they
-conform to the standard calculation interface.
-
-
-They are developing a decentralized oracle blockchain middleware called the “LINK network” that allows anyone to become a provider of external data. These utility tokens will allow you to monetize the data you are sending to smart contracts and get paid in LINK tokens. They are currently in the pre-sale phase of their token sale for LINK tokens.
-
-
-https://blog.oraclize.it/on-decentralization-of-blockchain-oracles-94fb78598e79
-https://www.reddit.com/r/ethereum/comments/73rgzu/is_solving_the_oracle_problem_a_paradox/
 
 
 === TO DO
@@ -210,3 +128,5 @@ https://media.consensys.net/a-visit-to-the-oracle-de9097d38b2f +
 https://blog.ethereum.org/2014/07/22/ethereum-and-oracles/ +
 http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
 http://www.oraclize.it/papers/random_datasource-rev1.pdf +
+https://blog.oraclize.it/on-decentralization-of-blockchain-oracles-94fb78598e79 +
+https://www.reddit.com/r/ethereum/comments/73rgzu/is_solving_the_oracle_problem_a_paradox/ +
