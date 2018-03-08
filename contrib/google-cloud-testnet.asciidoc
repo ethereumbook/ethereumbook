@@ -1,0 +1,377 @@
+
+=== Launching a testnet on Google Cloud Platform using [puppeth!](https://github.com/ethereum/go-ethereum/tree/master/cmd/puppeth)
+## Intro
+Puppeth is a powerful devops tool which allows for rapid deployment of a private Ethereum testnet. It deploys the following components allowing for easy interaction:
+
+* a private instance of [EthStats](https://ethstats.net/)
+
+* a private instance of [MyEtherWallet](https://myetherwallet.com)
+
+* a private instance of a faucet for testnet ether
+
+* miners which mine blocks for you
+
+* quick connection instructions
+
+* a light version of EtherChain(https://www.etherchain.org/)
+
+* a dashboard for navigating all the above components
+
+
+The following are instructions for setting up a private ethereum test network on
+google cloud.
+
+## Architecture
+
+For a secured private test network, you'll need the following:
+
+* a virtual private cloud (VPC)
+* a virtual private network (VPN) to access that VPC
+* at least two virtual machine instances.
+
+## Virtual Private Cloud Setup
+
+Prereqs:
+* A google cloud account with an empty project. To keep things simple and
+  separated, you'll want to keep all the test network bits away from all your
+  other code, even if it will be using that test network.
+
+### Create the VPC
+
+1. Go to the [VPC network tab](https://console.cloud.google.com/networking/networks/list) in gcloud.
+2. Click "Create VPC Network" and use the following settings:
+
+   * Name: `testnet`
+   * Subnet:
+     * Name: `testnet`
+     * Region: `us-central1` (or whatever you are already using)
+     * IP Address range: `10.0.0.0/20` (or something else if you know more about networking than I do)
+     * Private Google Access: `Enabled` for ease of use
+   * Dynamic Routing Mode: `Regional`
+
+### Setup the firewall
+
+We will create the following firewall rules:
+
+* `allow-vpn` - This is the access point to connect to the testnet from your
+  local computer
+* `allow-ssh` - This lets you access the servers via ssh to set them up
+* `allow-internal` - This is so all the testnet components can talk to each
+  other within the VPC
+
+1. Click on the newly created network in the list
+2. Go to the "Firewall rules" tab
+3. Click "Add firewall rule"
+4. Use the following settings:
+
+   * Name: `allow-vpn`
+   * Targets: `Specified Target Tags`
+   * Target Tags: `vpn-servers`
+   * Source filter: `IP ranges`
+   * Source IP ranges: `0.0.0.0/0`
+   * Specified Protocols and ports: `udp:18856` (You can choose a different port if you want)
+
+   You can leave the rest of the settings as their defaults. Then click
+   "Create".
+
+6. Click "Add firewall rule" again
+
+7. Use the following settings:
+   * Name: `allow-ssh`
+   * Targets: `Specified Target Tags`
+   * Target Tags: `allow-ssh-outside-vpc`
+   * Source filter: `IP ranges`
+   * Source IP ranges: `0.0.0.0/0`
+   * Specified Protocols and ports: `tcp:22`
+
+   You can leave the rest of the settings as their defaults. Then click
+   "Create".
+
+8. Click "Add firewall rule" again
+
+9. Use the following settings:
+   * Name: `allow-internal`
+   * Targets: `All instances in the network`
+   * Source filter: `Subnetworks`
+   * Subnetworks: `testnet`
+   * Specified Protocols and ports: `tcp:22`
+
+   You can leave the rest of the settings as their defaults. Then click
+   "Create".
+
+That should be it for the VPC. You can tweak this further for added security,
+but that's outside the scope of this document.
+
+
+### VPN Instance Setup
+
+1. Go to [the instances page](https://console.cloud.google.com/compute/instances) in gcloud.
+2. Click "Create Instance" and fill out the form with the following fields:
+
+   * Name: `testnet-vpn`
+   * Region: `us-central1-b`
+   * Boot disk: `Ubuntu 16.04 LTS`
+   * Allow HTTP/HTTPS traffic: `checked`
+
+3. Expand the `Management, disks, networking, SSH keys` section and switch to
+   the network tab and enter the following:
+
+   * Network Tags: `vpn-servers` and `allow-ssh-outside-vpc`
+   * Network Interfaces (click Edit icon):
+     * Network: `testnet`
+     * External IP: `Create IP Address`
+       * Call it `testnet-vpn`
+     * Public DNS PTR Record: `Enabled` for `vpn.[yourdappsurl].com`
+
+   Then click Save
+
+4. Click "Create" and wait for the instance to start up.
+
+5. ssh into the instance through gcloud
+
+6. Follow the [documentation for installing pritunl](https://docs.pritunl.com/docs/installation)
+
+7. Follow the instructions for configuration pritunl. Make sure you do the following:
+   * use the port you specified in the firewall rules when creating a new server in pritunl.
+   * remove the 0.0.0.0/0 route for the server and add 10.0.0.0/20 in its place.
+
+8. Install the VPN Client: https://client.pritunl.com/ and rejoice!
+
+
+## Testnet Puppeth Instance setup
+
+1. Create a new instance similar to the above but without an external ip. Call it `testnet` and use 2 VCPU instead of 1.
+
+2. ssh into the instance by first ssh'ing into the vpn instance and then
+   immediately running `ssh -A 10.0.0.4` (or whatever IP the new instance was
+   given)
+
+
+
+The testnet is currently setup on a single GCE instance. Here is the process for
+setting up another one.
+
+1. Create a new Compute Engine Instance from the Ubuntu 16.04 LTS
+   release. Enable HTTP/HTTPS traffic in the network settings.
+
+2. Login to that instance using (through the compute engine UI or manually with
+   ssh)
+
+3. Install addition apt-packages including `ethereum-unstable` and `docker-ce`
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y software-properties-common python-software-properties net-tools iputils-ping
+   sudo add-apt-repository -y ppa:ethereum/ethereum
+   sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+   sudo apt-get update
+   sudo apt-get install -y ethereum-unstable
+   sudo apt-get install -y --allow-unauthenticated docker-ce
+   ```
+
+4. Create a new passwordless user named `testnet` and add this user to the `docker`
+   group
+
+   ```bash
+   sudo adduser testnet --disabled-password
+   sudo usermod -a -G docker testnet
+   ```
+
+5. Download and install `docker-compose`
+
+   ```bash
+   sudo curl -L https://github.com/docker/compose/releases/download/1.17.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+   sudo chmod +x /usr/local/bin/docker-compose
+   sudo chown testnet:docker /usr/local/bin/docker-compose
+   ```
+
+6. Login to the `testnet` account and setup ssh keys and a geth node. Also pull a
+   few of the docker images that will be needed for the puppeth components. Then
+   logout of the `testnet` account.
+
+   ```bash
+   sudo su - testnet
+   ssh-keygen -t rsa -b 4096 -C "testnet@[yourdappsurl].com"
+   cat .ssh/id_rsa.pub >> .ssh/authorized_keys
+   chmod go-w ~
+   chmod 700 ~/.ssh
+   chmod 600 ~/.ssh/authorized_keys
+   echo "unsecurepassword" > password.txt
+   geth account new --datadir node1 --password password.txt > address.txt
+   docker image pull puppeth/ethstats:latest
+   docker image pull puppeth/faucet:latest
+   docker image pull puppeth/wallet:latest
+   docker image pull puppeth/explorer:latest
+
+   exit
+   ```
+
+7. Restart the ssh service
+
+   ```bash
+   sudo service ssh restart
+   ```
+
+8. (Optional) at this point you can create a reusable image of the current state
+   which can be used to deploy more instances quickly. These new instances can
+   be used to run the various components that puppeth sets up.
+
+## Puppeth component setup
+
+These instructions only cover the scenario where you install every component on
+one GCE instance.
+
+Once the instance has all the dependencies completed, log in the `testnet` account
+and run puppeth.
+
+```bash
+puppeth --network testnet
+```
+
+**Note: Make sure the network name doesn't have any dashes in it!**
+
+Start by setting up a new genesis block, using all the default settings except
+for the first one where you want to chose ethash instead of clique.
+
+Next, go through each of the components and use all the default settings for
+each component. When asked for configuration that has no default, refer to the
+following:
+
+* `~/address.txt` contains the blockchain address for the geth node that will do
+  everything. Always use it when asked for an address.
+* `~/password.txt` contains the password for accessing the ethstats api and
+other things. Always use it when asked for a password.
+* `127.0.0.1` is the proper server ip address for installing every component.
+* `<component>.testnet.[yourdappsurl].com` is the domain name for each component.
+* `~/node1/keystore/UTC<numbers and hex digits>` is where the "signer's key
+  JSON" is stored. Always use that when asked for the "signer's key"
+* `~/<component>` when asked where to store the node data
+
+* add 10000 to the port for each component
+
+* permit non authenticated funding requests
+
+Now just walk through the puppeth setup, and whenever you are asked for a
+password, use the one stored in `~/password.txt` and whenever you are asked for
+an address, use the one stored in `~/address.txt`.
+
+## DNS Setup
+
+After all the components have been configurd and are running, you need to setup
+the DNS accordingly.
+
+First copy down the internal IP address of the GCE instance that everything is
+running on.
+
+Using Google Cloud DNS (found under Network services), create a new `A` record
+for each component subdomain that points to the IP address of the GCE instance.
+
+## Using the testnet
+
+### Connecting with Metamask
+
+1. In the MetaMask network dropdown, select "Custom RPC".
+
+2. In the RPC url box, enter in the wallet url: `http://wallet.testnet.[yourdappsurl].com:8545` and click Save
+
+3. Go to the faucet: http://faucet.testnet.[yourdappsurl].com:8080 and follow the directions there to acquire some ETH.
+
+## Troubleshooting
+
+Once you get all the services up and running, you should go to http://ethstats.testnet.[yourdappsurl].com
+and see all the nodes on the page. The sealer node should be mining blocks, and the
+other nodes should be syncing those blocks. But this might not be happening! So here
+are some things that you might need to do:
+
+### Nodes are not syncing!
+
+The bootnode and the sealer node should be peers. If they are not peers, then the bootnode won't sync
+and nobody will be able to get any eth from the sealer.
+
+To confirm that missing peers are the problem, do the following:
+
+1. ssh into GCE instance (using the gcloud ui for example)
+2. attach a geth console to the bootnode:
+
+   ```
+   sudo geth attach /home/testnet/bootnodedata/geth.ipc
+   ```
+
+3. Verify that there are in fact no peers and syncing is not happening:
+
+   ```
+   > eth.syncing
+   false
+   > admin.peers
+   []
+   ```
+
+4. Assuming the above is what you see, then look at the configuration for the bootnode with:
+
+   ```
+   > admin.nodeInfo
+   {
+     enode: "enode://[enode address here]@[::]:30303",
+     id: "[id here]",
+     ip: "::",
+     listenAddr: "[::]:30303",
+     name: "Geth/v1.8.0-unstable-50df2b78/linux-amd64/go1.9.2",
+     ports: {
+       discovery: 30303,
+       listener: 30303
+     },
+     protocols: {
+       eth: {
+         difficulty: 198091,
+         genesis: "0x2bdb832462d23650aa5adcf1c556cd4c78ba52a193ad4b78cadfd69921d057e4",
+         head: "0x1ced80cf7795582ae696c0a3fd52cfbce38432c2b5351649c2071c8f3d44b811",
+         network: 14311
+       },
+       les: {
+         difficulty: 198091,
+         genesis: "0x2bdb832462d23650aa5adcf1c556cd4c78ba52a193ad4b78cadfd69921d057e4",
+         head: "0x1ced80cf7795582ae696c0a3fd52cfbce38432c2b5351649c2071c8f3d44b811",
+         network: 14311
+       }
+     }
+   }
+   ```
+
+   Your version would show difficulty 1 and the same head/genesis hashes because nothing has been synced from the sealer yet!
+
+5. Now you need to connect the sealer and the bootnode. At this point you can exit out of the bootnode console and switch to the sealer. Then you add the bootnode as a peer manually.
+
+   ```
+   $ sudo geth attach /home/testnet/sealerdata/geth.ipc
+
+   > admin.addPeer("enode://[enode address here]@[::]:30303")
+   ```
+
+   Make sure to use the `enode` value from step here. You should also check that the sealer is in fact using the same genesis block by running `node.nodeInfo` again and comparing the two hashes.
+
+After a minute or two, you should see the syncing begin on the ethstats page. But if not, you can also verify this by looking at `admin.peers` and `eth.syncing` on the bootnode, which will now be populated.
+
+### Faucet doesn't show up!
+
+In theory you should be able to go to http://faucet.testnet.[yourdappsurl].com and get yourself some eth. But if that doesn't work, it might be broken!
+
+1. Start by logging into the GCE instance with ssh.
+2. Stop the faucet altogether with:
+
+   ```
+   sudo docker container stop testnet_faucet_1
+   ```
+
+3. Start a new faucet container with special port mapping and bootnode config:
+
+   ```
+   sudo docker run -d \
+     -p 0.0.0.0:8080:8080 \
+     --name testnet_faucet_2 \
+     testnet/faucet \
+       -bootnodes "enode://[enode address here]@35.196.29.213:30303"
+   ```
+
+   This command will start a new docker container for the faucet but with a couple of customizations. 1) The faucet will be exposed to the world over port 8080, allowing you to route around the puppeth nginx config in case that is broken. 2) The bootnode is explicitly specified in case the faucet was misconfigured by puppeth. Make sure you use the correct enode _and_ the correct public ip for the GCE instance.
+
+   Now you should at least be able to go to http://faucet.testnet.[yourdappsurl].com:8080 and see something.

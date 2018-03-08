@@ -1,4 +1,4 @@
-![Mastering Ethereum Cover](images/cover_thumb.png)
+![Mastering Ethereum Cover](images/cover_thumb.png)____________________**Watch a video tutorial on how to contribute ---->**[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/1.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
@@ -21,18 +21,18 @@ Here's what is available now:
 | Section | Progress | Content Complete | Review Complete |
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
-| [Glossary](glossary.asciidoc) | ### |||
+| [Glossary](glossary.asciidoc) | #### |||
 | [What is Ethereum](what-is.asciidoc) | ### |||
-| [Introduction](intro.asciidoc) | ############# |||
+| [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
 | [Ethereum Clients](clients.asciidoc) | ###### |||
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | # |||
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
-| [Transactions](transactions.asciidoc) | ######## |||
+| [Transactions](transactions.asciidoc) | ############## | :heavy_check_mark: ||
 | [Smart Contracts](smart-contracts.asciidoc) | ## |||
 | [Tokens](tokens.asciidoc) | ################## | :heavy_check_mark: ||
-| [Accounting & Gas](gas.asciidoc) | # |||
-| [EVM](evm.asciidoc) | # |||
+| [Accounting & Gas](gas.asciidoc) | ### |||
+| [EVM](evm.asciidoc) | ## |||
 | [Consensus](consensus.asciidoc) | # |||
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |||
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
