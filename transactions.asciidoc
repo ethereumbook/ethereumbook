@@ -309,6 +309,27 @@ Now, we add the function selector to the amount (padded to 32 bytes):
 
 That's the +data+ payload for our transaction, invoking the +withdraw+ function and requesting 0.01 ether as the +withdraw_amount+.
 
+=== Special transaction: Contract registration
+
+There is one special case of a transaction with a data payload and no value. This is a transaction the _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
+
+A contract registration transaction should contain no ether value, only a data payload that contains the compiled bytecode of the contract. The only effect of this transaction is to register the contract.
+
+====
+TODO Add example, show in web3 console and etherscan
+====
+
+While the zero address is only intended for contract registration, it sometimes receives payments from various addresses. There are two explanations for this: either it is by accident, resulting in the loss of ether, or it is an intentional _ether burn_ (see <<burning_ether>>). If you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
+
+----
+0x000000000000000000000000000000000000dEaD
+----
+
+[WARNING]
+====
+Any ether sent to the contract registration address +0x0+ or the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
+====
+
 === Digital signatures
 
 ((("transactions", "digital signatures and")))So far, we have not delved into any detail about "digital signatures." In this section we look at how digital signatures work and how they can present proof of ownership of a private key without revealing that private key.
@@ -417,6 +438,7 @@ To sign a transaction in Ethereum, the originator must:
 1. Compute the ECDSA signature, signing the hash with the originating EOA's private key
 1. Insert the ECDSA signature's computed +r+ and +s+ values in the transaction
 
+[[raw_tx]]
 ==== Raw transaction creation and signing
 
 Let's create a raw transaction and sign it, using the +ethereumjs-tx+ library. The source code for this example is in +raw_tx_demo.js+ in the GitHub repository:
@@ -497,16 +519,28 @@ Plug each of the two possible K values into the signature verification function 
 
 To make things even easier, the transaction signature includes a prefix value +v+, which tells us which of the two possible R values are the ephemeral public key. If +v+ is even, then R is the correct value. If +v+ is odd, then R^'^. That way, we need to calculate only one value for R and only one value for K, making the process a bit simpler.
 
+=== Separating signing and transmission (offline signing)
+
+Once a transaction is signed, it is ready to transmit to the Ethereum network. The three steps of creating, signing, and broadcasting a transaction normally happen in a single function, for example using +web3.eth.sendTransaction+. However, as we saw in <<raw_tx>>, you can create and sign the transaction in two separate steps. Once you have a signed transaction, you can then transmit it using +web3.eth.sendSignedTransaction+ which takes a hex-encoded and signed transaction message and transmits it on the Ethereum network.
+
+Why would you want to separate the signing and transmission of transactions? The most common reason is security: the computer that signs a transaction must have unlocked private keys loaded in memory. The computer that transmits must be connected to the internet and be running an Ethereum client. If these two functions are on one computer, then you have private keys on an online system, which is quite dangerous. Separating the functions of signing and transmitting is called _offline signing_ and is a common security practice.
+
+Depending on the level of security you need, your "offline signing" computer can have varying degrees of separation from the online computer, ranging from an isolated and firewalled subnet (online but segregated) to a completely offline system known as an _air-gapped_ system. In an air-gapped system there is no network connectivity at all - the computer is separated from the online environment by a gap of "air". To sign transactions you transfer them to and from the air-gapped computer using data storage media or (better) a webcam and QR code. Of course, this means you must manually transfer every transaction you want signed, and this doesn't scale.
+
+While not many environments can utilize a fully air-gapped system, even a small degree of isolation has significant security benefits. For example, an isolated subnet with a firewall that only allows a message-queue protocol through, can offer a much reduced attack surface and much higher security than signing on the online system. Many companies use a protocol such as ZeroMQ (0MQ), as it offers a reduced attack surface for the signing computer. With a setup like that, transactions are serialized and queued for signing. The queueuing protocol transmits the serialized message, in a way similar to a TCP socket, to the signing computer. The signing computer reads the serialized transactions from the queue (carefully), applies a signature with the appropriate key, and places them on an outgoing queue. The outgoing queue transmits the signed transactions to a computer with an Ethereum client that de-queues them and transmits them.
+
 === Transaction propagation
 
-=== Transaction Validation
+The Ethereum network uses a "flood" routing protocol. Each Ethereum client, acts as a _node_ in a _Peer-to-Peer (P2P)_, which (ideally) forms a _mesh_ network. No network node is "special", they all act as equal peers. We will use the term "node" to refer to an Ethereum client that is connected to and participating in the P2P network.
 
-=== Receipts
+Transaction propagation starts with the originating Ethereum node creating (or receiving from offline) a signed transaction. The transaction is validated and then transmitted to all the other Ethereum nodes that are _directly_ connected to the originating node. On average, each Ethereum node maintains connections to at least 13 other nodes, called its _neighbors_. Each neighbor node validates the transaction as soon as they receive it. If they agree that it is valid, they store a copy and then they propagate it to all their neighbors (except the one it came from). As a result, the transaction ripples outwards from the originating node, _flooding_ across the network, until all nodes in the network have a copy of the transaction.
 
-=== Events
-
-=== Exceptions
+Within just a few seconds, an Ethereum transaction propagates to all the Ethereum nodes around the globe. From the perspective of each node, it is not possible to discern the origin of the transaction. The neighbor that sent it to our node may be the originator of the transaction or may have received it from one of its neighbors. To be able to track the origin of transactions, or interfere with propagation, an attacker would have to control a significant percentage of all nodes. This is part of the security and privacy design of P2P networks, especially as applied to blockchains.
 
 === Recording in the chain
 
-=== Special transaction: Contract registration
+While all the nodes in Ethereum are equal peers, some of them are operated by _miners_ and are feeding transactions and blocks to _mining farms_, which are computers with high-performance Graphical Processing Units (GPUs). The mining computers add transactions to a candidate block and attempt to find a _Proof-of-Work_ that makes the candidate block valid. We will discuss this in more detail in <<consensus>>.
+
+Without going into much detail, valid transactions will eventually (in a few seconds or minutes) be included in a block of transactions and, thus, recorded in the Ethereum blockchain. Once mined into a block, transactions also modify the state of the Ethereum singleton, either by modifying the balance of an account (in the case of a simple payment), or by invoking contracts that change their internal state. These changes are recorded along side the transaction, in the form of a transaction _receipt_, which may also include _events_. We will examine all this in much more detail in <<evm>>
+
+Our transaction has completed its journey from creation to signing by an EOA, propagation, and finally mining. It has changed the state of the singleton and left an indelible mark on the blockchain.
