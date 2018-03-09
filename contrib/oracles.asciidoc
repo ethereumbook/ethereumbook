@@ -81,39 +81,47 @@ One of the main challenges with such a decentralized approach is the formulation
 Teusch recently proposed a new design for a decentralized off-chain data availability Oracle [9]. They leverage a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system releases data after its registration period ends, allowing storage space to be reused.
 
 
-=== Oracle Client Interface in Solidity
+=== Oracle Client Interfaces in Solidity
 
-Here's what an ERC20 interface specification looks like in Solidity:
+Below is a Solidity example demonstrating how Oraclize can be used to fetch the EUR/GBP exchange rate using the fixer.io API: 
 
 ----
+pragma solidity ^0.4.11;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
-contract WolframAlpha is usingOraclize {
-    
-    string public temperature;
-    
-    event newOraclizeQuery(string description);
-    event newTemperatureMeasure(string temperature);
+contract ExampleContract is usingOraclize {
 
-    function WolframAlpha() {
-        update();
+    string public EURGBP;
+    event LogPriceUpdated(string price);
+    event LogNewOraclizeQuery(string description);
+
+    function ExampleContract() payable {
+        updatePrice();
     }
-    
-    function __callback(bytes32 myid, string result) {
+
+    function __callback(bytes32 queryId, string result) {
         if (msg.sender != oraclize_cbAddress()) throw;
-        temperature = result;
-        newTemperatureMeasure(temperature);
-        // do something with the temperature measure..
+        EURGBP = result;
+        LogPriceUpdated(result);
     }
-    
-    function update() payable {
-        newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-        oraclize_query("WolframAlpha", "temperature in London");
-    }
-    
-} 
 
+    function updatePrice() payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            oraclize_query("URL", "json(http://api.fixer.io/latest?symbols=USD,GBP).rates.GBP");
+        }
+    }
+}
 ----
+
+To integrate with Oraclize, the contract ExampleContract must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
+
+* A datasource such as a URL, WolframAlpha, IPFS
+* The argument for the given datasource, which may include the use of JSON or XML parsing helpers
+
+In order to perform the query, Oraclize requires the payment of a small fee in ether. This is dependend on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback function is called by the usingOraclize contract, passing in the response valie and a queryId argument which be used to implement different behaviors, for example, when the are multiple pending calls from Oraclize.
 
 
 === TO DO
@@ -124,17 +132,6 @@ contract WolframAlpha is usingOraclize {
 * Token-based payment, subscription models 
 * Schelling Coin protocol
 ..
-
-
-=== Example Oracles and their features
-
-* Oraclize
-* Reality Keys 
-* BlockOne IQ
-* Chainlink
-* TownCrier +
-..
-
 
 === References
 
