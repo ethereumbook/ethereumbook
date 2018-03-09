@@ -81,6 +81,41 @@ One of the main challenges with such a decentralized approach is the formulation
 Teusch recently proposed a new design for a decentralized off-chain data availability Oracle [9]. They leverage a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system releases data after its registration period ends, allowing storage space to be reused.
 
 
+=== Oracle Client Interface in Solidity
+
+Here's what an ERC20 interface specification looks like in Solidity:
+
+----
+import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
+
+contract WolframAlpha is usingOraclize {
+    
+    string public temperature;
+    
+    event newOraclizeQuery(string description);
+    event newTemperatureMeasure(string temperature);
+
+    function WolframAlpha() {
+        update();
+    }
+    
+    function __callback(bytes32 myid, string result) {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        temperature = result;
+        newTemperatureMeasure(temperature);
+        // do something with the temperature measure..
+    }
+    
+    function update() payable {
+        newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+        oraclize_query("WolframAlpha", "temperature in London");
+    }
+    
+} 
+
+
+
+
 === TO DO
 
 * Data privacy/confidentiality, e.g. zero-knowledge but for state variables/oracle-deliver/requested data 
@@ -100,10 +135,6 @@ Teusch recently proposed a new design for a decentralized off-chain data availab
 * TownCrier +
 ..
 
-=== Sample Oracle Client Solidity Implementations
-* Oraclize
-* BlockOne IQ +
-..
 
 === References
 
