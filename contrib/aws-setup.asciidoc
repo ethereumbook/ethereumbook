@@ -1,30 +1,76 @@
+[[_anchor_introduction_aws_setup]]
 == Introduction
 
-This section describes in detail the set-up of a private Ethereum network on Amazon Web Services (AWS) cloud. It deploys the *Mastering Ethereum Token MET* on to this private network and describes application development against this network.
+This section describes in detail the set-up of a private Ethereum network on Amazon Web Services (AWS) cloud. It deploys the *Mastering Ethereum Token (MET)* on to this private network and describes application development against this network.
 
-The following are the broad steps to be followed:
+The following are the steps to be followed:
 
 * Set up nodes for launch
-* Configure nodes 
+* Configuring genesis for nodes 
 * Peering
 * Account set-up 
 * Mining
 * RPC end-point
 * Contract deployment and execution
 
+[[_anchor_pre_requisites]]
+=== Pre-requisites
+
+The following pre-requisites apply:
+
+- An AWS account. If you do not have one, create here https://aws.amazon.com/account/
+- General command line knowledge on Linux (ideally, Ubuntu) operating system.
+
+[[_anchor_node_setup]]
 === Set up nodes for launch
 
-==== Launch instances
+The nodes to be launched for this set-up will be for the topology shown in figure below.
 
-To launch Ethereum nodes on AWS, follow the steps below. See here for notes on instance type: []
+[[_image_aws_topology_simple_bootnode]]
+.AWS Topology - Simple Ethereum network with boot node 
+image::images/aws-topology-simple-bootnode.png["Simple topology of Ethereum nodes with bootnode"]
 
-1. Launch an AWS EC2 `t2.micro` instance of Ubuntu 64-bit OS.
-2. For now, launch the instance in the default VPC and allow it to have a public IP address.
-3. Once launched, note the IP address.
+In the table below, the nodes in the topology are described. These nodes will be referred to by the name as mentioned in this table.
 
-Repeat steps 1 to 3 to start one more instance.
+[[_table_aws_topology_nodes]]
+.AWS Topology - Nodes 
+|==================================================================================================================================
+|Name |Type | Remarks
+|Ethereum-0 |Boot node |Remarks
+|Ethereum-1 |RPC node |Remarks
+|Ethereum-2 |Mining node |Remarks 
+|Ethereum-3 |Stand-alone node |Remarks
+|==================================================================================================================================
 
+[[_anchor_launch_instances_quick]]
+==== Quick launch 
+To get started immediately, launch instances using the publicly available Amazon Machine Image (AMI) `ami-nnnnnn`. Apply security group as described in <<_table_AWS_instance_security_group>>
+
+[[_anchor_launch_instances_manual]]
+==== Manual launch
+To choose the right instance for launching an Ethereum node, the following points can help.
+
+* *Memory requirements*. For `geth`, this page on Metrics and Monitoring can help. https://github.com/ethereum/go-ethereum/wiki/Metrics-and-Monitoring
+* *Storage requiremens*. For `Parity`, this blog post has some excellent information on storage growth for Ethereum. https://dev.to/5chdn/the-ethereum-blockchain-size-will-not-exceed-1tb-anytime-soon-58a
+* *Network requirements*. Depending on the rate of submitting transactions, an instance with appropriate network bandwidth may be selected. This rate also has an implication on the size of blocks and therefore, storage requirements.
+* *CPU requirements*. The computation power is required especially for nodes set-up for mining. And, mining depends on hash rate and that in turn depends on the **difficulty level** setting for a network. Note that, the difficulty level also impacts the rate at which blocks are mined and therefore, impacts the network requirements.
+
+The rest of this chapter assumes that, the nodes are launched on a `t2.micro` instance of AWS. When launching a `t2.micro` instance for Ethereum, accept the defaults that the wizard provides; unless, specific needs apply. For example, let the instance be launched in the default, public Virtual Private Cloud (VPC) in the chosen region. However, when applying securtiy groups, the following port numbers are suggested to be opened. It is recommended that, the port be opened for only the IP address that accesses AWS. Later, more detailed access rules maybe applied.
+
+[[_table_AWS_instance_security_group]]
+.AWS instance security groups
+|==================================================================================================================================
+|Port number| Protocol type| Description
+|30303 | UDP | Default node discovery port.
+|30303 | TCP | Default node discovery port.
+|8545 | TCP | Default RPC port.
+|22 | TCP | Default `ssh` port.
+|==================================================================================================================================
+
+[[_anchor install_ethereum_client]]
 ==== Install Ethereum client
+Once the instance is launched
+
 
 1. Log onto an instance with `ssh`.
 2. Install `go-ethereum` client on this machine with instructions below.
@@ -39,10 +85,12 @@ sudo apt-get update
 sudo apt-get install -y ethereum
 ----
 
-=== Configure nodes
+[[_anchor_node_configuration]]
+=== Configuring genesis for nodes
 
 Create a JSON document for genesis block.
 
+[[_code_genesis_json]]
 .genesis.json
 [source,json]
 ----
@@ -73,18 +121,22 @@ The `genesis.json` shown above has the following settings for a simplified set-u
 
 For more details on all settings, see here: [https://ethereum.stackexchange.com/q/2376/3137]
 
+[[_anchor_node_init]]
 ==== Initialize nodes
 
 Follow the steps to start Ethereum on **first** machine.
 
+[[_code_node_init]]
 [source,bash]
 ----
 geth --data-dir eth-priv init eth-priv/genesis.json
 ----
 
+[[_anchor_start_blockchain]]
 ==== Start blockchain
 Start blockchain with the command below. Note that, the value of `--networkid` matches with the value of `chainId` in `genesis.json` file. Also, with the `--nodiscover` flag, this machine becomes a sort of host machine. Finally, this machine will listen of peering connections at port number `30333`.
 
+[[_code_start_blockchain]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 3  --port 30333 console
@@ -92,14 +144,21 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 3 
 
 From the console, get the node value.
 
+[[_code_add_node]]
 [source,bash]
 ----
 admin.nodeInfo.enode
 "enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@[::]:30333?discport=0"
 ----
 
+[[_anchor_peering]]
 === Peering
 
+
+==== Peering manually
+
+
+==== Peering with `bootnode`
 1. Log on to second machine, create folder `eth-priv` and copy `genesis.json` (created above) here. Start Ethereum with command below.
 
 [source,bash]
@@ -111,6 +170,7 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --maxpeers 3  --port 30333
 
 To add a peer, replace the `[::]` in the node information value (see step 3 in previous section) of the first machine with the public IP address of the first machine.
 
+[[_code_add_peer]]
 [source,bash]
 ----
 admin.addPeer("enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333?discport=0")
@@ -122,6 +182,7 @@ Repeat the above steps on the third machine.
 
 On the fourth machine, add a `static-nodes.json` file in the `eth-priv` folder with the node information of the first machine. For example,
 
+[[_code_connected_node]]
 [source,json]
 ----
 [
@@ -129,10 +190,12 @@ On the fourth machine, add a `static-nodes.json` file in the `eth-priv` folder w
 ]
 ----
 
+[[_anchor_start_nodes]]
 ==== Start nodes
 
 1. Log onto first machine and start Ethereum with the command below.
 
+[[_code_start_node_nodiscover]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 2  --port 30333 console
@@ -140,6 +203,7 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 2 
 
 2. Log onto second machine and start Ethereum with the command below.
 
+[[_code_start_node]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --port 30333 console
@@ -147,6 +211,7 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --port 30333 console
 
 3. Check for connected peer with the command below.
 
+[[_code_node_list]]
 [source,bash]
 ----
 admin.peers
@@ -154,10 +219,12 @@ admin.peers
 
 4. Exit with `Ctrl-D` on the third machine.
 
+[[_anchor_account_setup]]
 ==== Set-up accounts
 
 For now, we will set-up accounts only on the third machine. First, we launch the console as shown below.
 
+[[_code_console_launch]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" --networkid 15 console
@@ -165,6 +232,7 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 console
 
 Then, we add an account as below.
 
+[[_code_add_account]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" account new
@@ -172,6 +240,7 @@ geth --datadir "/home/ubuntu/eth-priv" account new
 
 Finally, we start the mining process so that ethers are credited to this account.
 
+[[_code_start_mining]]
 [source,bash]
 ----
 geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --mine
@@ -179,15 +248,18 @@ geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --mine
 
 We can check the balance using the following command on the console.
 
+[[_code_account_balance]]
 [source,bash]
 ----
 eth.getBalance(eth.accounts[0])
 ----
 
+[[_anchor_RPC]]
 ==== Start RPC
 
 On the third machine, open up the RPC port to allow for communication with a client.
 
+[[_code_start_rpc]]
 [source,bash]
 ----
 geth --datadir eth-priv --networkid 15 --maxpeers 2 --port 30333 --rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "*"
@@ -195,13 +267,16 @@ geth --datadir eth-priv --networkid 15 --maxpeers 2 --port 30333 --rpc --rpcapi 
 
 **NOTE** that, the `--rpcaddr 0.0.0.0` value has been set for testing only. This value is **strongly discouraged**.
 
+[[_anchor_mining]]
 === Mining
 
+[[_code_start_mining_rpc]]
 [source,bash]
 ----
 geth --datadir eth-priv --networkid 15 --maxpeers 3 --port 30333 --rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "*" --mine
 ----
 
+[[_anchor_RPC_end-point]]
 === RPC End-point
 
 === Contract deployment and execution
