@@ -7,9 +7,9 @@ In this section we will dissect transactions, show how they work and understand 
 [[tx_struct]]
 === Structure of Transaction
 
-First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using it's own internal data structure, perhaps embelished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
+First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using its own internal data structure, perhaps embelished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
 
-A transaction is an serialized binary message that contains the following data:
+A transaction is a serialized binary message that contains the following data:
 
 nonce:: A sequence number, issued by the originating EOA, used to prevent message replay.
 
@@ -25,7 +25,7 @@ data:: Variable length binary data payload.
 
 v,r,s:: The three components of an ECDSA signature of the originating EOA.
 
-The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme (see <<rlp>>), which was created specifically for accurate and byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded a big-endian integers, of lengths that are multiples of 8 bits.
+The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme (see <<rlp>>), which was created specifically for accurate and byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded as big-endian integers, of lengths that are multiples of 8 bits.
 
 Note that the field labels ("to", "start gas", e.t.c.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, therefore, belongs to the next field in the structure.
 
@@ -527,7 +527,7 @@ Why would you want to separate the signing and transmission of transactions? The
 
 Depending on the level of security you need, your "offline signing" computer can have varying degrees of separation from the online computer, ranging from an isolated and firewalled subnet (online but segregated) to a completely offline system known as an _air-gapped_ system. In an air-gapped system there is no network connectivity at all - the computer is separated from the online environment by a gap of "air". To sign transactions you transfer them to and from the air-gapped computer using data storage media or (better) a webcam and QR code. Of course, this means you must manually transfer every transaction you want signed, and this doesn't scale.
 
-While not many environments can utilize a fully air-gapped system, even a small degree of isolation has significant security benefits. For example, an isolated subnet with a firewall that only allows a message-queue protocol through, can offer a much reduced attack surface and much higher security than signing on the online system. Many companies use a protocol such as ZeroMQ (0MQ), as it offers a reduced attack surface for the signing computer. With a setup like that, transactions are serialized and queued for signing. The queueuing protocol transmits the serialized message, in a way similar to a TCP socket, to the signing computer. The signing computer reads the serialized transactions from the queue (carefully), applies a signature with the appropriate key, and places them on an outgoing queue. The outgoing queue transmits the signed transactions to a computer with an Ethereum client that de-queues them and transmits them.
+While not many environments can utilize a fully air-gapped system, even a small degree of isolation has significant security benefits. For example, an isolated subnet with a firewall that only allows a message-queue protocol through, can offer a much reduced attack surface and much higher security than signing on the online system. Many companies use a protocol such as ZeroMQ (0MQ), as it offers a reduced attack surface for the signing computer. With a setup like that, transactions are serialized and queued for signing. The queuing protocol transmits the serialized message, in a way similar to a TCP socket, to the signing computer. The signing computer reads the serialized transactions from the queue (carefully), applies a signature with the appropriate key, and places them on an outgoing queue. The outgoing queue transmits the signed transactions to a computer with an Ethereum client that de-queues them and transmits them.
 
 === Transaction propagation
 
