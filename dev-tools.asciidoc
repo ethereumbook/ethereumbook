@@ -12,6 +12,8 @@ Website link; https://truffleframework.com
 
 Documentation link; https://truffleframework.com/docs
 
+Truffle Boxes link; http://truffleframework.com/boxes/ 
+
 +npm+ packages repository link; https://www.+npm+js.com/package/truffle
 
 
@@ -20,7 +22,7 @@ Documentation link; https://truffleframework.com/docs
 
 The truffle framework is made of several +NodeJS+ packages. Before we install +truffle+, we need to have an up-to-date and working installation of +NodeJS+ and the Node Package Manager (+npm+).
 
-The recommended way to install +NodeJS+ and +npm+, is to use the Node Version Manager, +nvm+. Once we install +nvm+, it will handle all the dependencies and updates for us. We'll follow the instructions found at:
+The recommended way to install +NodeJS+ and +npm+, is to use the Node Version Manager (NVM), +nvm+. Once we install +nvm+, it will handle all the dependencies and updates for us. We'll follow the instructions found at:
 http://nvm.sh
 
 Once +nvm+ is installed on your operating system, installing +NodeJS+ is simple. We use the +--lts+ flag to tell nvm that we want the most recent "Long Term Support (LTS)" version of +NodeJS+
@@ -38,6 +40,13 @@ $ npm -v
 5.6.0
 ----
 
+Create a hidden file .nvmrc that contains the Node.js version supported by your Dapp so developers just need to run `nvm install` in the root of the project directory and it will automatically install and switch to using that version.
+
+----
+$ node -v > .nvmrc
+$ nvm install
+----
+
 Looking good. Now to install truffle:
 
 ----
@@ -45,6 +54,15 @@ $ npm -g install truffle
 
 + truffle@4.0.6
 installed 1 package in 37.508s
+----
+
+[[truffle_box]]
+==== Integrating a pre-built Truffle project (Truffle Box)
+
+If we want to use or create a Dapp that builds upon a pre-built boilerplate, then at the Truffle Boxes link we can choose an existing Truffle project, and then run the following to download and extract it:
+
+----
+$ truffle unbox <BOX_NAME>
 ----
 
 [[truffle_project_directory]]
@@ -119,6 +137,10 @@ $ npm install dotenv truffle-wallet-provider ethereumjs-wallet
 ----
 
 You now have a +node_modules+ directory with several thousand files, inside your Faucet directory.
+
+Prior to deploying the Dapp to a cloud production or continuous integration environment it is important to specify the `"engines"` field so you Dapp is built with the correct Node.js version and associated dependencies installed.
+
+Package.json "engines" field configuration link; https://docs.npmjs.com/files/package.json#engines
 
 ==== Configuring truffle
 
@@ -338,6 +360,20 @@ https://github.com/trufflesuite/ganache-cli/
 $ npm install -g ganache-cli
 ----
 
+Let's start a node simulation of the the Ethereum blockchain protocol.
+* [ ] Check the `--networkId` and `--port` flag values match your configuration in truffle.js
+* [ ] Check the `--gasLimit` flag value matches the latest Mainnet Gas Limit (i.e. 8000000 gas) shown at https://ethstats.net to avoid encountering `out of gas` exceptions unnecessarily. Note that a `--gasPrice` of 4000000000 represents a Gas Price of 4 gwei.
+* [ ] Optionally enter a `--mnemonic` flag value to restore a previous HD wallet and associated addresses
+
+----
+$ ganache-cli \
+  --networkId=3 \
+  --port="8545" \
+  --verbose \
+  --gasLimit=8000000 \
+  --gasPrice=4000000000;
+----
+
 
 === Embark
 
@@ -425,15 +461,17 @@ https://dapp.tools/hevm/
 
 == Libraries
 
-=== web3js
+=== web3.js
 
-web3js is the Ethereum compatible JS API for communicating with clients via JSON RPC, developed by the Ethereum foundation.
+web3.js is the Ethereum compatible JS API for communicating with clients via JSON RPC, developed by the Ethereum foundation.
 
 Github link; https://github.com/ethereum/web3.js
 
 +npm+ link; https://www.+npm+js.com/package/web3
 
-Documentation link; https://github.com/ethereum/wiki/wiki/JavaScript-API
+Documentation link for web3.js API 0.2x.x; https://github.com/ethereum/wiki/wiki/JavaScript-API
+
+Documentation link for web3.js API 1.0.0-beta.xx; https://web3js.readthedocs.io/en/1.0/web3.html
 
 === web3.py
 
