@@ -55,7 +55,7 @@ To choose the right instance for launching an Ethereum node, the following point
 * *Network requirements*. Depending on the rate of submitting transactions, an instance with appropriate network bandwidth may be selected. This rate also has an implication on the size of blocks and therefore, storage requirements.
 * *CPU requirements*. The computation power is required especially for nodes set-up for mining. And, mining depends on hash rate and that in turn depends on the **difficulty level** setting for a network. Note that, the difficulty level also impacts the rate at which blocks are mined and therefore, impacts the network requirements.
 
-The rest of this chapter assumes that, the nodes are launched on a `t2.micro` instance of AWS. When launching a `t2.micro` instance for Ethereum, accept the defaults that the wizard provides; unless, specific needs apply. For example, let the instance be launched in the default, public Virtual Private Cloud (VPC) in the chosen region. However, when applying securtiy groups, the following port numbers are suggested to be opened. It is recommended that, the port be opened for only the IP address that accesses AWS. Later, more detailed access rules maybe applied.
+The rest of this chapter assumes that, the nodes are launched on a `t2.micro` instance of AWS. When launching a `t2.micro` instance for Ethereum, accept the defaults that the wizard provides; unless, specific needs apply. For example, let the instance be launched in the default, public Virtual Private Cloud (VPC) in the chosen region. However, when applying securtiy groups, the following port numbers are suggested to be opened. It is recommended that, the port be opened for only the IP address that accesses AWS. Later, more detailed access rules maybe applied. Refer this link for guidance on launching EC2 instances. https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html
 
 [[_table_AWS_instance_security_group]]
 .AWS instance security groups
@@ -69,13 +69,7 @@ The rest of this chapter assumes that, the nodes are launched on a `t2.micro` in
 
 [[_anchor install_ethereum_client]]
 ==== Install Ethereum client
-Once the instance is launched
-
-
-1. Log onto an instance with `ssh`.
-2. Install `go-ethereum` client on this machine with instructions below.
-3. Create a directory by name `eth-priv`.
-4. Create a file in the `eth-priv` named as `genesis.json` as shown below.
+Once the instance is launched and logged on to, `geth`, the Ethereum client needs to be installed with the steps below.
 
 [source,bash]
 ----
@@ -85,10 +79,18 @@ sudo apt-get update
 sudo apt-get install -y ethereum
 ----
 
+Then, a directory needs to be created to store the data for this private network.
+
+[source,bash]
+----
+mkdir eth-priv
+----
+
+
 [[_anchor_node_configuration]]
 === Configuring genesis for nodes
 
-Create a JSON document for genesis block.
+Create a JSON document, `genesis.json` in `eth-priv` folder for genesis block. This document should exist in the same format in all the machines of the network.
 
 [[_code_genesis_json]]
 .genesis.json
@@ -115,9 +117,9 @@ Create a JSON document for genesis block.
 NOTES:
 The `genesis.json` shown above has the following settings for a simplified set-up.
 
-* `chainId` set to `15` to differentiate itself as a private Ethereum network.
-* `gasLimit` is set to maximum.
-* `difficulty` is set to low.
+* `chainId` set to `15` to differentiate itself as a private Ethereum network. Any other positive integer may be used for `chainId` value.
+* `gasLimit` is set to maximum so that, any contract maybe run successfully.
+* `difficulty` is set to low so that, mining time is least.
 
 For more details on all settings, see here: [https://ethereum.stackexchange.com/q/2376/3137]
 
@@ -154,11 +156,10 @@ admin.nodeInfo.enode
 [[_anchor_peering]]
 === Peering
 
+==== Peering with `bootnode`
 
 ==== Peering manually
 
-
-==== Peering with `bootnode`
 1. Log on to second machine, create folder `eth-priv` and copy `genesis.json` (created above) here. Start Ethereum with command below.
 
 [source,bash]
@@ -281,10 +282,6 @@ geth --datadir eth-priv --networkid 15 --maxpeers 3 --port 30333 --rpc --rpcapi 
 
 === Contract deployment and execution
 
-==== deployment
+==== Deployment
 
 ==== Execution 
-
-=== Automated deployment `puppeth`
-
-=== Bootnodes
