@@ -89,13 +89,13 @@ Below is a Solidity example demonstrating how Oraclize can be used to fetch the 
 pragma solidity ^0.4.11;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
-contract ExampleContract is usingOraclize {
+contract ExampleOraclizeContract is usingOraclize {
 
     string public EURGBP;
     event LogPriceUpdated(string price);
     event LogNewOraclizeQuery(string description);
 
-    function ExampleContract() payable {
+    function ExampleOraclizeContract() payable {
         updatePrice();
     }
 
@@ -126,6 +126,8 @@ In order to perform the query, Oraclize requires the payment of a small fee in e
 Financial data provider Thomson Reuters also provide an Oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks. A simplified version of the interface is show below. Like Oraclize, requesting decentralized applications must be child instances of this contract:
 
 ----
+pragma solidity ^0.4.11;
+
 contract Oracle {
     function initRequest(uint256 queryType, function(uint256) external onSuccess, function(uint256) external onFailure) returns (uint256 id);
     function addArgumentToRequest(uint256 id, bytes32 name, uint256 arg);
@@ -134,6 +136,70 @@ contract Oracle {
     function getResponse(uint256 id, bytes32 name) constant returns(uint256);
     function getResponseError(uint256 id) constant returns(bytes32);
     function deleteResponse(uint256 id) constant;
+}
+
+contract OracleB1IQClient {
+    
+    Oracle private oracle;
+
+    uint256 public lastId;
+    uint256 public numErrors;
+    uint256 public numResponses;
+    uint256 public divisor;
+    bytes32[] public errorLog;
+
+    struct IntradayResult {
+        uint256 id;
+        bytes32 symbol;
+        uint256 open;
+        uint256 high;
+        uint256 low;
+        uint256 close;
+        uint256 bid;
+        uint256 ask;
+        uint256 timestamp;
+    }
+
+    IntradayResult[] public intradayResults;
+
+    function OracleB1IQClient(address addr) {
+        numErrors = 0;
+        numResponses = 0;
+        oracle = Oracle(addr);
+        divisor = oracle.divisor();
+    }
+
+    function intraday(bytes32 ric, uint256 timestamp) {
+        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
+        oracle.addArgumentToRequestString(id, "symbol", ric);
+        oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
+        oracle.executeRequest(id);
+    }
+
+    function getData(uint256 id) {
+        bytes32 ric = oracle.getResponseString(id, "symbol");
+        uint256 open = oracle.getResponseUint(id, "open");
+        uint256 high = oracle.getResponseUint(id, "high");
+        uint256 low = oracle.getResponseUint(id, "low");
+        uint256 close = oracle.getResponseUint(id, "close");
+        uint256 bid = oracle.getResponseUint(id, "bid");
+        uint256 ask = oracle.getResponseUint(id, "ask");
+        uint256 timestamp = oracle.getResponseUint(id, "timestamp");
+        intradayResults.push(IntradayResult(id, ric, open, high, low, close, bid, ask, timestamp));
+    }
+
+    function handleSuccess(uint256 id) {
+        ++numResponses;
+        lastId = id;
+        getData(id);
+    }
+
+    function handleFailure(uint256 id) {
+        ++numErrors;
+        bytes32 error = oracle.getResponseError(id);
+        errorLog.push(error);
+        oracle.deleteResponse(id);
+    }
 }
 ----
 
