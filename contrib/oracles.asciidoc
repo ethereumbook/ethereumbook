@@ -208,22 +208,29 @@ Reality Keys [12] allows requests for facts to be made off-chain using POST requ
 wget -qO- https://www.realitykeys.com/api/v1/blockchain/new --post-data="chain=XBT&address=1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX&which_total=total_received&comparison=ge&value=1000&settlement_date=2015-09-23&objection_period_secs=604800&accept_terms_of_service=current&use_existing=1"
 ----
 
-For this example, arguments allow the blockchain to be specified, the amount to be queried (total received or final balance) and the result to be compared with a provided value. The resulting JSON object includes the returned value, in addition to the "signature_v2" which allows the result to be verified in a smart contract using the ecrecover() function:
+For this example, arguments allow the blockchain to be specified, the amount to be queried (total received or final balance) and the result to be compared with a provided value. The resulting JSON object includes the returned value, in addition to the "signature_v2" field which allows the result to be verified in a smart contract using the ecrecover() function:
 
 ----
 "machine_resolution_value" : "29665.80352",
 "signature_v2" : {
-  "base_unit" : 1,
-  "sig_der" : "3046022100a2cd9dc040e393299b86b1c21cbb55141ef5ee868072427fc12e7cfaf8fd02d10221008f3199b9c5696df34c5193afd0d690241291d251a5d7b5c660fa8fb310e76f80",
-  "sig_s" : "8f3199b9c5696df34c5193afd0d690241291d251a5d7b5c660fa8fb310e76f80",
-  "ethereum_address" : "6fde387af081c37d9ffa762b49d340e6ae213395",
-  "signed_value" : "0000000000000000000000000000000000000000000000000000000000000001",
-  "pubkey" : "02e577bc17badf301e14d86c33d76be5c3b82a0c416fc93cd124d612761191ec21",
-  "signed_hash" : "b1984dd996e6f89081dd4906233d80c950b453e0fb2df3cfd61a965f86bc6ed3",
-  "sig_v" : 27,
-  "fact_hash" : "aadb3fa8e896e56bb13958947280047c0b4c3aa4ab8c07d41a744a79abf2926b",
-  "sig_r" : "a2cd9dc040e393299b86b1c21cbb55141ef5ee868072427fc12e7cfaf8fd02d1"
+	"fact_hash" : "aadb3fa8e896e56bb13958947280047c0b4c3aa4ab8c07d41a744a79abf2926b",
+	"ethereum_address" : "6fde387af081c37d9ffa762b49d340e6ae213395",
+	"base_unit" : 1,
+	"signed_value" : "0000000000000000000000000000000000000000000000000000000000000001",
+  	"sig_r" : "a2cd9dc040e393299b86b1c21cbb55141ef5ee868072427fc12e7cfaf8fd02d1",
+  	"sig_s" : "8f3199b9c5696df34c5193afd0d690241291d251a5d7b5c660fa8fb310e76f80",
+  	"sig_v" : 27
 }
+----
+
+To verify the signature, ecrecover() can verify that the data was signed by ethereum_address as follows. The fact_hash and signed_value are hashed, and passed to ecrecover() with the three signature parameters:
+
+----
+bytes32 result_hash = sha3(fact_hash, signed_value);
+address signer_address = ecrecover(result_hash, sig_v, sig_r, sig_s);
+assert(signer_address != ethereum_address);
+uint256 result = uint256(signed_value) / base_unit;
+// Do something with the result..    
 ----
 
 
@@ -247,9 +254,9 @@ For this example, arguments allow the blockchain to be specified, the amount to 
 [6] https://www.cs.cornell.edu/~fanz/files/pubs/tc-ccs16-final.pdf +
 [7] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
 [8] https://link.smartcontract.com/whitepaper +
-[9] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf
-[10] http://www.wolframalpha.com
-[11] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum
+[9] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
+[10] http://www.wolframalpha.com +
+[11] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum +
 [12] https://www.realitykeys.com
 
 === Other Links
