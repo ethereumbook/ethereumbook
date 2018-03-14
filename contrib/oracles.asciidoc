@@ -147,22 +147,7 @@ contract Oracle {
 contract OracleB1IQClient {
     
     Oracle private oracle;
-    uint8 public constant intraday = 0;
     event LogError(bytes32 description);
-
-    struct IntradayResult {
-        uint256 id;
-        bytes32 symbol;
-        uint256 open;
-        uint256 high;
-        uint256 low;
-        uint256 close;
-        uint256 bid;
-        uint256 ask;
-        uint256 timestamp;
-    }
-
-    IntradayResult[] public intradayResults;
 
     function OracleB1IQClient(address addr) public payable {
         oracle = Oracle(addr);
@@ -170,7 +155,7 @@ contract OracleB1IQClient {
     }
 
     function getIntraday(bytes32 ric, uint256 timestamp) public {
-        uint256 id = oracle.initRequest(intraday, this.handleSuccess, this.handleFailure);
+        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
         oracle.addArgumentToRequestString(id, "symbol", ric);
         oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
         oracle.executeRequest(id);
@@ -187,7 +172,6 @@ contract OracleB1IQClient {
         uint256 ask = oracle.getResponseUint(id, "ask");
         uint256 timestamp = oracle.getResponseUint(id, "timestamp");
         oracle.deleteResponse(id);
-        intradayResults.push(IntradayResult(id, ric, open, high, low, close, bid, ask, timestamp));
         // Do something with the price data..        
     }
 
