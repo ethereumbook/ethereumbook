@@ -68,16 +68,37 @@ The ABI thus specifies information about functions in a smart contract, relaying
 
 If a web application wants to interact with a published smart contract, it needs the contract address and its Ethereum ABI.
 
-==== Example from Ethereum's ABI specification:
+==== Simple Example:
 
 Given the contract:
 
 [source,solidity]
-contract Foo {
-  function bar(fixed[2] xy) {}
-  function baz(uint32 x, bool y) returns (bool r) { r = x > 32 || y; }
-  function sam(bytes name, bool z, uint[] data) {}
+contract Example {
+  function greater2000(uint32 x, uint32 y) returns (bool b) { x+y > 2000; }
 }
+
+.Our contract above contains only a single function, `greater2000`, which measures if its two integer inputs are strictly greater than the integer 2000. Assume we call `greater2000` with parameters `1150` and `763`. In this case, we would pass 68 bytes in total, broken down into: 
+* `0x25f611fb`: the Method ID, derived as the first four bytes of the Keccak-256 hash of the signature `greater20(uint32,uint32)`
+* `0x000000000000000000000000000000000000000000000000000000000000047E`: the first parameter `x`, the uint32 value `1150` padded to 32 bytes
+* `0x00000000000000000000000000000000000000000000000000000000000002FB`: the second parameter `y`, the uint32 value `763` padded to 32 bytes
+
+In total: 
+
+`0x25f611fb000000000000000000000000000000000000000000000000000000000000047E00000000000000000000000000000000000000000000000000000000000002FB`
+
+We notice that this function returns a single `bool`. For this choice of `x` and `y`, `greater2000` returns `false`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`.
+
+....
+Assume we want to call function `greater2000` with parameters `1150` and `763`
+greater20(uint32,uint32)
+0x25f611fb
+
+1150 763
+
+   0x000000000000000000000000000000000000000000000000000000000000047E
+   0x00000000000000000000000000000000000000000000000000000000000002FB
+   
+   0x25f611fb000000000000000000000000000000000000000000000000000000000000047E00000000000000000000000000000000000000000000000000000000000002FB
 
 .To call function `baz` with parameters `69` and `true`, we would pass 68 bytes in total, which can be broken down into:
 * `0xcdcd77c0`: the Method ID. This is derived as the first 4 bytes of the Keccak hash of the ASCII form of the signature `baz(uint32,bool)`
@@ -88,7 +109,8 @@ In total:
 
 `0xcdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001`
 
-We notice that this function returns a single `bool`. If, for example, it were to return `false`, its output would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`, a single bool.
+We notice that this function returns a single `bool`. For this choice of `x` and `y`, `greater2000` returns `false`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`.
+....
 
 ==== Further Information
 The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts the intend to call available at compile-time.
