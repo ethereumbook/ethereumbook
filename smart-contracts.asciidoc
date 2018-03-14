@@ -96,8 +96,66 @@ The Application Binary Interface (ABI) is strongly typed, known at compilation t
 A more rigorous and in-depth explanation of the Ethereum ABI can be found at 
 `https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`
 
-=== Deploying Smart Contracts
+=== Deploying Smart Contracts?
+After you've typed up your smart contract, you'll want to deploy it to the main ethereum network. 
+The process is as follows: 
 
+1. Compile your source solidity code to EVM bytecode
+2. Sign the bytecode into a transaction
+3. Send the code to an Ethereum node to be mined into the network
+4. Then you can interact with the contract by sending it transactions
+
+
+We'll now go through the deployment process using the Go Ethereum client (geth).
+First you'll want to install the Solidity compilier (solc).
+----
+npm install -g solc
+----
+You'll also want to have Geth (Go-ethereum) installed (with homebrew installed)
+----
+brew tap ethereum/ethereum
+brew install ethereum
+----
+Now compile your solidity file into an interface (abi) and bytecode (bin)
+----
+solcjs --abi foo.sol
+solcjs --bin foo.sol
+----
+Now display the contents of these two files with:
+----
+more foo_sol_foo.abi
+more foo_sol_foo.bin
+----
+
+After this you'll want to start up a geth node in a new terminal window with:
+----
+geth console
+----
+You should see something like:
+----
+Welcome to the Geth JavaScript console!
+
+instance: Geth/v1.8.1-stable/darwin-amd64/go1.10
+INFO [03-14|18:34:37] Etherbase automatically configured       address=0x6e6A1eFF05ba3a16c3A3E5a274B288b10490C428
+coinbase: 0x6e6a1eff05ba3a16c3a3e5a274b288b10490c428
+at block: 4535991 (Sat, 11 Nov 2017 21:17:37 EST)
+ datadir: /Users/brianleffew/Library/Ethereum
+ modules: admin:1.0 debug:1.0 eth:1.0 miner:1.0 net:1.0 personal:1.0 rpc:1.0 txpool:1.0 web3:1.0
+----
+
+If you this is your first time using geth, it might take a while to sync up to the network.
+Then set up your variables with:
+----
+> var foo = eth(<CONTENTS_OF_ABI_FILE>)
+> var byteCode = '0x<CONTENTS_OF_BIN_FILE>)
+----
+Fill in the parameters with the outputs from the more commands above.
+Then finally deploy your contract with:
+----
+> var deploy = {from eth.coinbase, data:byteCode, gas:2000000}
+> var fooInstance = foo(bar, baz)
+----
+//TODO use the example from the intro, incorporate infura, truffle deployment?, and expand on intro
 === Best Practices
 
 ==== Development Style
