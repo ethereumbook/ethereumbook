@@ -16,6 +16,7 @@ contract Oracle {
 contract OracleB1IQClient {
     
     Oracle private oracle;
+    uint8 public constant intraday = 0;
     event LogError(bytes32 description);
 
     struct IntradayResult {
@@ -38,7 +39,7 @@ contract OracleB1IQClient {
     }
 
     function getIntraday(bytes32 ric, uint256 timestamp) public {
-        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
+        uint256 id = oracle.initRequest(intraday, this.handleSuccess, this.handleFailure);
         oracle.addArgumentToRequestString(id, "symbol", ric);
         oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
         oracle.executeRequest(id);

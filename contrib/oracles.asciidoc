@@ -124,7 +124,7 @@ To integrate with Oraclize, the contract ExampleOraclizeContract must be a child
 
 The temperature query is performed in the update() function. In order to perform the query, Oraclize requires the payment of a small fee in ether. This is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by the usingOraclize contract, passing in the response value and a queryId argument which be used to implement different behaviors, for example, when the are multiple pending calls from Oraclize.
 
-Financial data provider Thomson Reuters also provide an Oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks. A simplified version of the interface is show below. Like Oraclize, requesting decentralized applications must be child instances of this contract:
+Financial data provider Thomson Reuters also provide an Oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [11]. Below is the interface, which must be inherited by the client contract that is making the request:
 
 ----
 pragma solidity ^0.4.11;
@@ -145,6 +145,7 @@ contract Oracle {
 contract OracleB1IQClient {
     
     Oracle private oracle;
+    uint8 public constant intraday = 0;
     event LogError(bytes32 description);
 
     struct IntradayResult {
@@ -167,7 +168,7 @@ contract OracleB1IQClient {
     }
 
     function getIntraday(bytes32 ric, uint256 timestamp) public {
-        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
+        uint256 id = oracle.initRequest(intraday, this.handleSuccess, this.handleFailure);
         oracle.addArgumentToRequestString(id, "symbol", ric);
         oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
         oracle.executeRequest(id);
@@ -198,7 +199,8 @@ contract OracleB1IQClient {
 }
 ----
 
-The data request is initiated using the initRequest function, which takes query arguments and allows various callback functions to be specified which must be implemented in the requesting contract. This returns a uint256 identifier which can then be used to provide additional arguments and to actually execute the query using the addArgumentToRequestUint and executeRequest, respectively. Example arguments that can be provided here include scheduling parameters such as INTRADAY or ENDOFDAY. Once the request has been processed, the Oracle contract will call the onSuccess callback function with the resulting data, else the onFailure callback with an error code in the event of retrieval failure. Details of the response can also be accessed using the getResponse functions.
+The data request is initiated using the initRequest() function, which allows the query type (in this example, a request for an intraday price) to be specified in addition to two callback functions. 
+This returns a uint256 identifier which can then be used to provide additional arguments. The addArgumentToRequestString() function is used to specify the RIC (Reuters Instrument Code), here for IBM stock, and addArgumentToRequestUint() allows the timestamp to be specified. Passing in now, an alias for block.timestamp, will therefore retrieve the current price for IBM. The request is then executed by the executeRequest() function. Once the request has been processed, the Oracle contract will call the onSuccess callback function with the query identifier, allowing the resulting data to be retrieved, else the onFailure callback with an error code in the event of retrieval failure. The available fields that can be retrieved on success include open, high, low, close (OHLC) and bid/ask prices.
 
 
 === TO DO
