@@ -66,7 +66,7 @@ Compiling a Solidity source file to EVM bytecode can be accomplished via the com
 $ solc --help
 ----
 
-Generating the raw opcode of a Solidity source file is easily achieved with the _--opcodes_ command line option. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
+Generating the raw opcode stream of a Solidity source file is easily achieved with the _--opcodes_ command line option. This opcode stream leaves out some information (the _--asm_ option produces the full information), but is sufficient for this first introduction. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
 
 ----
 $ solc -o BytecodeOutputDir --opcodes Example.sol
@@ -100,13 +100,13 @@ Let's examine the first two instructions:
 PUSH1 0x60 PUSH1 0x40
 ----
 
-Here we have the _mnemonic_ "PUSH1" with a _value_ of "0x60". This corresponds to the EVM instruction of pushing a 1-byte item onto the stack. This operation is capable of pushing a 32-byte item on the stack with the following opcode:
+Here we have the _mnemonic_ "PUSH1" followed with a raw byte of value "0x60". This corresponds to the EVM instruction of interpreting the single byte following the opcode as a literal value and pushing it onto the stack. It is possible to push values of size up to 32 bytes onto the stack. For example, the following bytecode pushes a 4 byte value onto the stack:
 
 ----
-PUSH32 0x7f
+PUSH4 0x7f1baa12
 ----
 
-The second push opcode value "0x40" indicates the hash value of a recent complete block.
+The second push opcode stores "0x40" onto the stack (on top of "0x60" already present there).
 
 Moving on to the next two instructions:
 
@@ -114,7 +114,7 @@ Moving on to the next two instructions:
 MSTORE CALLVALUE
 ----
 
-MSTORE is a stack/memory operation that saves a value to memory, while CALLVALUE is an opcode that returns the deposited value of the executing transaction.
+MSTORE is a stack/memory operation that saves a value to memory, while CALLVALUE is an opcode that returns the deposited value of the executing message call.
 
 
 ==== Execution of EVM bytecode
