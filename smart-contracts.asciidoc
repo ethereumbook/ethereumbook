@@ -57,14 +57,39 @@ Although most testing shouldn't occur on deployed contracts, a contract's behavi
 ///TODO: this would have a few commands along the lines of eth.getCode(contractaddress) to explain geth commands to verify correct execution.
 
 === Ethereum ABI
-In computer software, an application binary interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other as a program run by a user. An ABI defines how data structures or computational routines are accessed in _machine code_; this is not to be confused with an API, which defines this access in high-level, often human-readable format known as _source code_.
+In computer software, an application binary interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures or computational routines are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the de facto method for encoding and decoding data into and out of machine code.
 
-In Ethereum, 
-as discussed before, a smart contract is stored as bytecode into the blockchain under an address known as its contract address. The purpose of the ABI is to access the bytecode, in that the ABI defines the functions you can invoke as well as get a guarantee that the function will return data in expected format.
+In Ethereum, the ABI is used to encode contract calls for the EVM, as well as to read data out of transactions.
+As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a contract address. The purpose of an ABI is to specify which functions in the contract to invoke and to get a guarantee that the function will return data in expected format.
 
-For example, if a web application wants to interact with a published smart contract, it needs the contract address, and the Ethereum ABI. 
+For any specific smart contract, an ABI is viewed as a list of the contract's functions and arguments in JSON format. An account wishing to use a smart contract's function uses the ABI to hash the function definition so it can create the EVM bytecode required to call the function. This is then included in the data field of a transaction and interpreted by the EVM with the code at the target account (the address of the contract).
 
-Thus, the ABI specifies information about functions in a smart contract, such as relaying information about its inputs and its type. The ABI only contains information about functions and events, none about state variables or modifiers.
+The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for state variables or modifiers.
+
+If a web application wants to interact with a published smart contract, it needs the contract address and its Ethereum ABI.
+
+The following is an excellent example from Ethereum's ABI specification:
+
+Given the contract:
+
+[source,solidity]
+contract Foo {
+  function bar(fixed[2] xy) {}
+  function baz(uint32 x, bool y) returns (bool r) { r = x > 32 || y; }
+  function sam(bytes name, bool z, uint[] data) {}
+}
+
+.If we wanted to call _baz_ with the parameters _69_ and _true_, we would pass 68 bytes in total, which can be broken down into:
+* 0xcdcd77c0: the Method ID. This is derived as the first 4 bytes of the Keccak hash of the ASCII form of the signature baz(uint32,bool).
+* 0x0000000000000000000000000000000000000000000000000000000000000045: the first parameter, a uint32 value 69 padded to 32 bytes
+* 0x0000000000000000000000000000000000000000000000000000000000000001: the second parameter - boolean true, padded to 32 bytes
+
+In total:
+  0xcdcd77c000000000000000000000000000000000000000000000000000000000000000450000000000000000000000000000000000000000000000000000000000000001
+
+This function returns a single _bool_. If, for example, it were to return false, its output would be the single byte array 0x0000000000000000000000000000000000000000000000000000000000000000, a single bool.
+
+
 === Deploying Smart Contracts
 
 === Best Practices
