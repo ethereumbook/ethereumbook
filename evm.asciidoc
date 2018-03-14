@@ -12,9 +12,50 @@ Virtual Machine technologies such as Virtualbox and QEMU/KVM differ from the EVM
 
 Certain aspects of the Java VM (JVM) specification however, do contain similarities to the EVM. From a high-level overview, the JVM is designed to provide a runtime environment that is irrespective of the underlying host OS or hardware, enabling compatibility across a wide variety of systems. High level program languages such as Java or Scala that run on the JVM are compiled into the respective instruction set bytecode. This is comparable to compiling a Solidity source file to run on the EVM.
 
-==== EVM Machine Language (Bytecode)
+==== EVM Machine Language (Bytecode Operations)
 
 The EVM Machine Language is divided into specific instruction set groups, such as arithmetic operations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
+
+Common Stack Operations:: Opcode instructions for stack and memory management:
+
+----
+POP     //Pop item off the stack
+PUSH    //Push item on the stack
+MLOAD   //Load item into memory
+MSTORE  //Store item in memory
+JUMP    //Alter the location of program counter (PC)
+PC      //Program counter
+MSIZE   //Active memory size
+GAS     //Amount of available gas for transaction
+DUP     //Stack item duplication
+SWAP    //Stack item exchange operation
+----
+
+Common System Operations:: Opcode instructions for the system executing the program:
+
+----
+CREATE  //Create a new account 
+CALL    //Instruction for message passing between accounts
+RETURN  //Execution halt
+REVERT  //Execution halt, reverting state changes
+SELFDESTRUCT //Execution halt, and flag account for deletion
+----
+
+Arithmetic Operations:: Common arithmetic opcode instructions:
+
+----
+ADD      //Add 
+MUL      //Multiplication
+SUB      //Subtraction
+DIV      //Integer division
+SDIV     //Signed integer division
+MOD      //Modulo (Remainder) operation
+SMOD     //Signed modulo operation
+ADDMOD   //Modulo addition
+MULMOD   //Modulo multiplication
+EXP      //Exponent operation
+STOP     //Halt operation
+----
 
 ==== State
 
@@ -47,6 +88,17 @@ Block Information:: The state values needed for a transaction include the follow
 * _difficulty_: The current block's difficulty.
 
 * _gaslimit_: The current block's gas-limit.
+
+Runtime Environment Information: Information used to facilitate transactions.
+
+* _gasprice_: Current gas price, which is specified by the transaction initiator.
+
+* _codesize_: Size of the transaction codebase.
+
+* _caller_: Address of the account executing the current transaction.
+
+* _origin_: Address of the current transactions original sender.
+
 
 
 State transitions are calculated with the following functions:
