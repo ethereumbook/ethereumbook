@@ -183,6 +183,7 @@ contract OracleB1IQClient {
         uint256 bid = oracle.getResponseUint(id, "bid");
         uint256 ask = oracle.getResponseUint(id, "ask");
         uint256 timestamp = oracle.getResponseUint(id, "timestamp");
+        oracle.deleteResponse(id);
         intradayResults.push(IntradayResult(id, ric, open, high, low, close, bid, ask, timestamp));
         // Do something with the price data..        
     }
@@ -190,8 +191,8 @@ contract OracleB1IQClient {
     function handleFailure(uint256 id) public {
         assert(msg.sender == address(oracle));
         bytes32 error = oracle.getResponseError(id);
-        emit LogError(error);
         oracle.deleteResponse(id);
+        emit LogError(error);        
     }
 
 }
