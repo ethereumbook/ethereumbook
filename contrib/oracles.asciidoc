@@ -83,37 +83,36 @@ Teusch recently proposed a new design for a decentralized off-chain data availab
 
 === Oracle Client Interfaces in Solidity
 
-Below is a Solidity example demonstrating how Oraclize can be used to fetch the EUR/GBP exchange rate using the fixer.io API: 
+Below is a Solidity example demonstrating how Oraclize can be used to fetch the temperature in London from WolframAlpha []: 
 
 ----
 pragma solidity ^0.4.11;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
 contract ExampleOraclizeContract is usingOraclize {
+    
+    string public temperature;
+    
+    event newOraclizeQuery(string description);
+    event newTemperatureMeasurement(string temperature);
 
-    string public EURGBP;
-    event LogPriceUpdated(string price);
-    event LogNewOraclizeQuery(string description);
-
-    function ExampleOraclizeContract() payable {
-        updatePrice();
+    function ExampleOraclizeContract() {
+        update();
     }
 
-    function __callback(bytes32 queryId, string result) {
+    function update() payable {
+        newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+        oraclize_query("WolframAlpha", "temperature in London");
+    }
+    
+    function __callback(bytes32 myid, string result) {
         if (msg.sender != oraclize_cbAddress()) throw;
-        EURGBP = result;
-        LogPriceUpdated(result);
+        temperature = result;
+        newTemperatureMeasurement(temperature);
+        // Do something with the temperature measurement..
     }
 
-    function updatePrice() payable {
-        if (oraclize_getPrice("URL") > this.balance) {
-            LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
-        } else {
-            LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            oraclize_query("URL", "json(http://api.fixer.io/latest?symbols=USD,GBP).rates.GBP");
-        }
-    }
-}
+} 
 ----
 
 To integrate with Oraclize, the contract ExampleContract must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
@@ -141,12 +140,8 @@ contract Oracle {
 contract OracleB1IQClient {
     
     Oracle private oracle;
-
-    uint256 public lastId;
-    uint256 public numErrors;
-    uint256 public numResponses;
     uint256 public divisor;
-    bytes32[] public errorLog;
+    event LogError(bytes32 description);
 
     struct IntradayResult {
         uint256 id;
@@ -162,11 +157,10 @@ contract OracleB1IQClient {
 
     IntradayResult[] public intradayResults;
 
-    function OracleB1IQClient(address addr) {
-        numErrors = 0;
-        numResponses = 0;
+    function OracleB1IQClient(address addr) payable {
         oracle = Oracle(addr);
         divisor = oracle.divisor();
+        intraday("IBM", now);
     }
 
     function intraday(bytes32 ric, uint256 timestamp) {
@@ -176,7 +170,7 @@ contract OracleB1IQClient {
         oracle.executeRequest(id);
     }
 
-    function getData(uint256 id) {
+    function handleSuccess(uint256 id) {
         bytes32 ric = oracle.getResponseString(id, "symbol");
         uint256 open = oracle.getResponseUint(id, "open");
         uint256 high = oracle.getResponseUint(id, "high");
@@ -186,20 +180,15 @@ contract OracleB1IQClient {
         uint256 ask = oracle.getResponseUint(id, "ask");
         uint256 timestamp = oracle.getResponseUint(id, "timestamp");
         intradayResults.push(IntradayResult(id, ric, open, high, low, close, bid, ask, timestamp));
-    }
-
-    function handleSuccess(uint256 id) {
-        ++numResponses;
-        lastId = id;
-        getData(id);
+        // Do something with the price data..        
     }
 
     function handleFailure(uint256 id) {
-        ++numErrors;
         bytes32 error = oracle.getResponseError(id);
-        errorLog.push(error);
+        LogError(error);
         oracle.deleteResponse(id);
     }
+
 }
 ----
 
