@@ -56,19 +56,50 @@ Although most testing shouldn't occur on deployed contracts, a contract's behavi
 
 ///TODO: this would have a few commands along the lines of eth.getCode(contractaddress) to explain geth commands to verify correct execution.
 
-=== Ethereum ABI
+=== Ethereum Contract ABI
 In computer software, an application binary interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures or computational routines are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the de facto method for encoding and decoding data into and out of machine code.
 
 In Ethereum, the ABI is used to encode contract calls for the EVM, as well as to read data out of transactions.
-As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a contract address. The purpose of an ABI is to specify which functions in the contract to invoke and to get a guarantee that the function will return data in expected format.
+As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a contract address. The purpose of an ABI is to thus specify which functions in the contract to invoke and to get a guarantee that the function will return data in expected format. 
 
-For any specific smart contract, an ABI is viewed as *a list of the contract's functions and arguments in JSON format*. An account wishing to use a smart contract's function uses the ABI to hash the function definition so it can create the EVM bytecode required to call the function. This is then included in the data field of a transaction and interpreted by the EVM with the code at the target account (the address of the contract).
+`An account wishing to use a smart contract's function uses the ABI to hash the function definition so it can create the EVM bytecode required to call the function. This is then included in the data field of a transaction and interpreted by the EVM with the code at the target account (the address of the contract).`
+
+The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`. 
 
 The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for fields such as state variables or modifiers.
 
 If a web application wants to interact with a published smart contract, it needs the contract address and its Ethereum ABI.
 
-==== Simple Example:
+==== Structure of Call Data
+The call data for a function call is a concatenation of several values of bytes. We discuss these in steps below.
+
+*First Four Bytes*: The call data always begins with *four bytes* of the function signature. In specific, these are the first four bytes of the Keccak-256 hash of the *signature* of a function. In this context, the signature is simply the function name with a parenthesised list of parameter types split by a single comma. 
+
+Assume, as our running example, the brief contract `Test`: 
+
+[source,solidity]
+contract Test {
+  function foo(uint32 u, bool b) returns (bool b) { u > 2000 && b; }
+}
+
+.To encode function `foo(uint32 u, bool b)`:
+* The signature of `foo(uint32 u, bool b)` would be `foo(uint32,bool)`
+* Running `foo(uint32,bool)` through Keccack-256 outputs the hash `cc822237a37f9290b70dab4d640156d816bf8abdb959b5971d803a639dadef98`
+* The first four bytes of the hash are `cc822237`, which brings us to our Method ID `0xcc822237`
+
+*5th Byte And On*: We continue our data by encoding the *arguments* of our function. Encoding a `uint32` means converting the number to hexadecimal form and padding it with 0's until it becomes 32 bytes long, while encoding a `bool` is equivalent to encoding a `1` for `true` and `0` for `false`. A full list type encoding can be found at the link attached in the _Further Reading_ section.
+
+.To continue with our example above, we call our function `foo` with parameters `2345` and `true`:
+* The hexadecimal representation of `2345` is `0x929`, and so padded to 32 bytes the first argument `u` is encoded as `0x0000000000000000000000000000000000000000000000000000000000000929`
+* The hexadecimal representation of `true` is `1`, and so padded to 32 bytes the second argument `b` becomes `0x0000000000000000000000000000000000000000000000000000000000000001`
+
+*Result*: Concatenating all of the calculated values brings us to the finished call data for our function, 
+`0xcc82223700000000000000000000000000000000000000000000000000000000000009290000000000000000000000000000000000000000000000000000000000000001`
+
+We notice that our function returns a single `bool` value. For our choices of `u` and `b`, `foo` returns `true`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`.
+
+....
+==== Example (Maybe delete this section):
 
 Given the contract:
 
@@ -87,13 +118,15 @@ In total:
 `0x25f611fb000000000000000000000000000000000000000000000000000000000000047E00000000000000000000000000000000000000000000000000000000000002FB`
 
 We notice that this function returns a single `bool`. For this choice of `x` and `y`, `greater2000` returns `false`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`.
+....
 
+//TO-DO: Discuss Events
 
-==== Further Information
-The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts the intend to call available at compile-time.
+==== Further Reading
+The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts the intend to call available at compile-time. Formal specification of the encoding 
 
 A more rigorous and in-depth explanation of the Ethereum ABI can be found at 
-`https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`
+`https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`. The link includes details about the formal specification of encoding and various helpful examples.
 
 === Deploying Smart Contracts
 
