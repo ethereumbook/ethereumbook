@@ -12,13 +12,54 @@ Virtual Machine technologies such as Virtualbox and QEMU/KVM differ from the EVM
 
 Certain aspects of the Java VM (JVM) specification however, do contain similarities to the EVM. From a high-level overview, the JVM is designed to provide a runtime environment that is irrespective of the underlying host OS or hardware, enabling compatibility across a wide variety of systems. High level program languages such as Java or Scala that run on the JVM are compiled into the respective instruction set bytecode. This is comparable to compiling a Solidity source file to run on the EVM.
 
-==== EVM Machine Language (Bytecode)
+==== EVM Machine Language (Bytecode Operations)
 
 The EVM Machine Language is divided into specific instruction set groups, such as arithmetic operations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
 
+Common Stack Operations:: Opcode instructions for stack and memory management:
+
+----
+POP     //Pop item off the stack
+PUSH    //Push item on the stack
+MLOAD   //Load item into memory
+MSTORE  //Store item in memory
+JUMP    //Alter the location of program counter (PC)
+PC      //Program counter
+MSIZE   //Active memory size
+GAS     //Amount of available gas for transaction
+DUP     //Stack item duplication
+SWAP    //Stack item exchange operation
+----
+
+Common System Operations:: Opcode instructions for the system executing the program:
+
+----
+CREATE  //Create a new account 
+CALL    //Instruction for message passing between accounts
+RETURN  //Execution halt
+REVERT  //Execution halt, reverting state changes
+SELFDESTRUCT //Execution halt, and flag account for deletion
+----
+
+Arithmetic Operations:: Common arithmetic opcode instructions:
+
+----
+ADD      //Add 
+MUL      //Multiplication
+SUB      //Subtraction
+DIV      //Integer division
+SDIV     //Signed integer division
+MOD      //Modulo (Remainder) operation
+SMOD     //Signed modulo operation
+ADDMOD   //Modulo addition
+MULMOD   //Modulo multiplication
+EXP      //Exponent operation
+STOP     //Halt operation
+----
+
 ==== State
 
-As with any computating system, the concept of state is an important one. Just like a CPU keeping track of a process in execution, the EVM must keep track of the status of various components in order to support a transaction. The status or _state_ of these components ultimately drives the level of change in the overarching blockchain. This aspect leads to the description of Ethereum as a _transaction-based state machine_ containing the following components:
+As with any computing system, the concept of state is an important one. Just like a CPU keeping track of a process in execution, the EVM must keep track of the status of various components in order to support a transaction. The status or _state_ of these components ultimately drives the level of change in the overarching blockchain. This aspect leads to the description of Ethereum as a _transaction-based state machine_ containing the following components:
 
 World State:: A mapping between 160-bit address identifiers and account state, maintained in an immutable _Merkle Patricia Tree_ data structure.
 
@@ -32,7 +73,7 @@ Account State:: Contains the following four components:
 
 * _codeHash:_: An immutable hash value of the EVM code for the respective account.
 
-Storage State:: Account specific state information maintained at rumtime on the EVM.
+Storage State:: Account specific state information maintained at runtime on the EVM.
 
 Block Information:: The state values needed for a transaction include the following:
 
@@ -47,6 +88,17 @@ Block Information:: The state values needed for a transaction include the follow
 * _difficulty_: The current block's difficulty.
 
 * _gaslimit_: The current block's gas-limit.
+
+Runtime Environment Information: Information used to facilitate transactions.
+
+* _gasprice_: Current gas price, which is specified by the transaction initiator.
+
+* _codesize_: Size of the transaction codebase.
+
+* _caller_: Address of the account executing the current transaction.
+
+* _origin_: Address of the current transactions original sender.
+
 
 
 State transitions are calculated with the following functions:
@@ -66,7 +118,7 @@ Compiling a Solidity source file to EVM bytecode can be accomplished via the com
 $ solc --help
 ----
 
-Generating the raw opcode of a Solidity source file is easily achieved with the _--opcodes_ command line option. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
+Generating the raw opcode stream of a Solidity source file is easily achieved with the _--opcodes_ command line option. This opcode stream leaves out some information (the _--asm_ option produces the full information), but is sufficient for this first introduction. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
 
 ----
 $ solc -o BytecodeOutputDir --opcodes Example.sol
@@ -100,13 +152,13 @@ Let's examine the first two instructions:
 PUSH1 0x60 PUSH1 0x40
 ----
 
-Here we have the _mnemonic_ "PUSH1" with a _value_ of "0x60". This corresponds to the EVM instruction of pushing a 1-byte item onto the stack. This operation is capable of pushing a 32-byte item on the stack with the following opcode:
+Here we have the _mnemonic_ "PUSH1" followed with a raw byte of value "0x60". This corresponds to the EVM instruction of interpreting the single byte following the opcode as a literal value and pushing it onto the stack. It is possible to push values of size up to 32 bytes onto the stack. For example, the following bytecode pushes a 4 byte value onto the stack:
 
 ----
-PUSH32 0x7f
+PUSH4 0x7f1baa12
 ----
 
-The second push opcode value "0x40" indicates the hash value of a recent complete block.
+The second push opcode stores "0x40" onto the stack (on top of "0x60" already present there).
 
 Moving on to the next two instructions:
 
@@ -114,7 +166,7 @@ Moving on to the next two instructions:
 MSTORE CALLVALUE
 ----
 
-MSTORE is a stack/memory operation that saves a value to memory, while CALLVALUE is an opcode that returns the deposited value of the executing transaction.
+MSTORE is a stack/memory operation that saves a value to memory, while CALLVALUE is an opcode that returns the deposited value of the executing message call.
 
 
 ==== Execution of EVM bytecode
