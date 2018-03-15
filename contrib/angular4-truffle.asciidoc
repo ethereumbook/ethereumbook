@@ -337,6 +337,7 @@ webpack: Compiled successfully.
 - Create two input text boxes.
     - Amount  
     - Friend Address
+- Create a form to wrap up above parameters along with `send()` function attached Send button.    
 - Once done the  code  for `app.component.html` should look something similar to below.
 
 ----
@@ -351,7 +352,7 @@ webpack: Compiled successfully.
 </section>
 <br>
 <div class="container">
-  <h1 class="title">Split</h1>
+  <h1 class="title"></h1>
   <h1 class="title is-4 is-info help">{{status}}</h1>
 
   <form #transferForm="ngForm">
@@ -390,7 +391,7 @@ webpack: Compiled successfully.
           [disabled]="!transferForm.valid"
           (click)="send()"
           class="button is-primary">
-          Split
+          Send
         </button>
       </p>
     </div>
@@ -400,3 +401,249 @@ webpack: Compiled successfully.
 
 </div>
 ----
+
+- We need to modify the `app.module.ts` file to add the ng module we used above.Replace
+it with below code.
+
+----
+import { BrowserModule } from '@angular/platform-browser';
+import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { HttpModule } from '@angular/http';
+import { AppComponent } from './app.component';
+
+
+const SERVICES = [
+]
+
+@NgModule({
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpModule
+  ],
+  declarations: [
+    AppComponent
+  ],
+  providers: [SERVICES],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+----
+
+
+- Refresh your browser and you should see UI coming up with fields created above.
+
+- Lets add some basic css to make it look decent.Head on to index.html and add
+the below css link.
+
+----
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.2/css/bulma.min.css">
+----
+
+- Wait for the browser to refresh and now you have some css look.
+
+- Let's plumb in some type script to make our HTML functional. Open `app.component.ts` 
+and code to recieve the fields and functionality to `send()` function created.
+
+----
+import { Component, HostListener, NgZone } from '@angular/core';
+
+
+declare var window: any;
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent {
+
+  // TODO add proper types these variables
+  account: any;
+  accounts: any;
+
+  balance: number;
+  sendingAmount: number;
+  
+  status: string;
+  transactionHash: string;
+
+  constructor(
+    private _ngZone: NgZone,
+    ) {
+    this.onReady();
+  }
+
+  onReady = () => {
+  };
+
+
+  setStatus = message => {
+    this.status = message;
+  };
+
+// This function is used to send transaction to deployed contract
+  send = () => {
+    this.setStatus('Initiating transaction... (please wait)');
+
+  }
+}
+----
+
+- Let's now create couple of webservices in angular.
+     -TransferToFriends  //Service to interact with TransferToFriends contract
+     -web3              //Service to interact with web3
+
+ ----
+ $ ng g service services/TransferToFriends --module=app.module
+  create src/app/services/transfer-to-friends-service.spec.ts (485 bytes)
+  create src/app/services/transfer-to-friends-service.ts (130 bytes)
+  update src/app/app.module.ts (704 bytes)
+ $ ng g service services/Web3 --module=app.module
+  create src/app/services/web3.service.spec.ts (362 bytes)
+  create src/app/services/web3.service.ts (110 bytes)
+  update src/app/app.module.ts (772 bytes)
+----
+
+- First lets inject web3 into Web3Service. Once injected the code for `web3.service.ts`
+should look like below.
+
+----
+import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
+import { Observable } from 'rxjs/Observable';
+import { fromPromise } from 'rxjs/observable/fromPromise';
+
+
+
+const Web3 = require('web3');
+
+declare var window: any;
+
+@Injectable()
+export class Web3Service {
+
+	public web3: any;
+
+  constructor() { 
+  	this.checkAndInstantiateWeb3();
+  }
+
+  checkAndInstantiateWeb3 = () => {
+    // Check  if Web3 has been injected by the browser (Mist/MetaMask)
+    if (typeof window.web3 !== 'undefined') {
+        // Use Mist/MetaMask's provider
+      this.web3 = new Web3(window.web3.currentProvider);
+    } else {
+      console.warn(
+        'No web3 detected. Falling back to ${environment.HttpProvider}'
+      );
+         this.web3 = new Web3(
+        new Web3.providers.HttpProvider(environment.HttpProvider)
+      );
+    }
+  };
+
+  getAccounts(): Observable<any>{
+  	return Observable.create(observer => {
+  	  this.web3.eth.getAccounts((err, accs) => {
+  	    if (err != null) {
+  	      observer.error('There was an error fetching your accounts.')
+  	    }
+
+  	    if (accs.length === 0) {
+  	      observer.error('Couldn\'t get any accounts .Make sure your  client is configured correctly.')
+  	    }
+
+  	    observer.next(accs)
+  	    observer.complete()
+  	  });
+  	})
+  }
+
+}
+----
+- Install a truffle-contract library which we will make use of in TransferToFriends Service.
+
+----
+$ npm install truffle-contract
+
++ truffle-contract@3.0.4
+added 20 packages in 25.691s
+
+----
+
+- if the console running on `ng serve` errors out with below exception
+
+----
+ERROR in src/app/app.module.ts(25,25): error TS2304: Cannot find name 'TransferToFriendsServiceService'.
+src/app/services/transfer-to-friends-service.service.ts(6,36): error TS2304: Cannot find name 'require'.
+src/app/services/transfer-to-friends-service.service.ts(7,18): error TS2304: Cannot find name 'require'.
+src/app/services/web3.service.ts(8,14): error TS2304: Cannot find name 'require'.
+----
+
+- Edit tsconfig.app.js file to include types and below in place of `types:[]`
+
+----
+"types": [ "node" ],
+"typeRoots": [ "../node_modules/@types" ]
+-----
+
+
+- Now that we injected web3 lets plug in our deployed contract in `transfer-to-friends-service.ts`.
+
+----
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs/Observable';
+import { fromPromise } from 'rxjs/observable/fromPromise';
+import { Web3Service } from './web3.service'
+
+const TransferToFriendsArtifacts = require('../../../build/contracts/TransferToFriends.json');
+const contract = require('truffle-contract');
+
+@Injectable()
+export class TransferToFriendsService {
+
+	TransferToFriends = contract(TransferToFriendsArtifacts);
+
+  constructor(
+  	private web3Ser: Web3Service,
+  	) { 
+  	// Bootstrap the TransferToFriends abstraction for Use
+  	this.TransferToFriends.setProvider(web3Ser.web3.currentProvider);
+  }
+
+  send(from,amount,friend): Observable<any>{
+
+		let transfer;
+	
+  	return Observable.create(observer => {
+  	  this.TransferToFriends
+  	    .deployed()
+  	    .then(instance => {
+  	      transfer = instance;
+  	      return transfer.sendAmount( friend ,{
+						from: from,
+						value: amount
+  	      });
+  	    })
+  	    .then(value => {
+					console.log(value);
+  	      observer.next(value)
+  	      observer.complete()
+  	    })
+  	    .catch(e => {
+  	    	console.log(e);
+  	      observer.error(e)
+  	    });
+  	})
+  }
+
+}
+
+----
+
+
+    
+
+
