@@ -31,6 +31,95 @@ updated 9 packages in 51.889s
 ----
 
 
+=== Deep Dive into Project
+
+
+1. Create a folder named TransferToFriend.
+
+----
+$ mkdir TransferToFriend
+$ cd TransferToFriend
+----
+
+2. Intiate a truffle project and verify it contents.
+
+----
+$ truffle init
+
+Downloading...
+Unpacking...
+Setting up...
+Unbox successful. Sweet!
+
+Commands:
+
+  Compile:        truffle compile
+  Migrate:        truffle migrate
+  Test contracts: truffle test
+----
+
+3. Go to directory contracts and create a new file named `TransferToFriend.sol`.
+
+----
+$ cd contracts\
+$ touch TransferToFriend.sol
+----
+
+4. Replace the below solidity code into `TransferToFriend.sol`.
+
+----
+pragma solidity ^0.4.17;
+
+contract TransferToFriends {
+  
+ address public owner; 
+ //This map stores address and friend details.
+ mapping(address => uint) public amountFriendMap;
+ 
+//Set the owner address while creating a contract.
+  function TransferToFriends() public {
+      owner = msg.sender;
+  }
+
+//This event get dispatched once the amount is transfered
+  event LogSentAmount(address from, uint value, address friendAddress);
+  //This event get dispatched once the amount is withdrwan
+  event LogWithDrawal(address withdrawAddress,uint value);
+  
+
+  function sendAmount (address friendAddress)  public  payable {
+      
+      //Verify that amount sent and friendAddress are not blank.
+      require(msg.value>0 && friendAddress!=address(0));
+      
+      //Add the amount and friendAddress to map.
+      amountFriendMap[friendAddress] += msg.value;
+    
+    //Send a log event 
+     LogSentAmount(msg.sender, msg.value, friendAddress);
+          
+  }
+//Withraw Pull pattern
+  function withdraw() public {
+      //Check if the amount is present and greater than zero for the address who intiated this function.
+    require(amountFriendMap[msg.sender]>0);
+    
+    uint amount = amountFriendMap[msg.sender];
+
+    //Change state of contract before tranfser
+    amountFriendMap[msg.sender] = 0;
+    
+    //Send the amount
+    msg.sender.transfer(amount);
+    
+    //Emit event
+    LogWithDrawal(msg.sender,amount);
+
+  }
+
+}
+
+----
 
 
 
