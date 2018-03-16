@@ -1,7 +1,9 @@
 ![Mastering Ethereum Cover](images/cover_thumb.png)____________________**Watch a video tutorial on how to contribute ---->**[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/1.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
+<hr/>
 
-[![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
+Chat: [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
+Project Management: [![Waffle.io - Columns and their card count](https://badge.waffle.io/ethereumbook/ethereumbook.svg?columns=all)](https://waffle.io/ethereumbook/ethereumbook)
 <hr/>
 
 # Mastering Ethereum
@@ -21,10 +23,10 @@ Here's what is available now:
 | Section | Progress | Content Complete | Review Complete |
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
-| [Glossary](glossary.asciidoc) | #### |||
+| [Glossary](glossary.asciidoc) | ##### |||
 | [What is Ethereum](what-is.asciidoc) | ### |||
 | [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
-| [Ethereum Clients](clients.asciidoc) | ###### |||
+| [Ethereum Clients](clients.asciidoc) | ####### |||
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | # |||
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
@@ -32,12 +34,12 @@ Here's what is available now:
 | [Smart Contracts](smart-contracts.asciidoc) | ## |||
 | [Tokens](tokens.asciidoc) | ################## | :heavy_check_mark: ||
 | [Accounting & Gas](gas.asciidoc) | ### |||
-| [EVM](evm.asciidoc) | ## |||
-| [Consensus](consensus.asciidoc) | # |||
+| [EVM](evm.asciidoc) | ### |||
+| [Consensus](consensus.asciidoc) | ## |||
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |||
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
-| [Dapps](dapps.asciidoc) | ### |||
-| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | ## |||
+| [Dapps](dapps.asciidoc) | ## |||
+| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### |||
 
 
 Jump in! Review, comment, suggest and contribute...
