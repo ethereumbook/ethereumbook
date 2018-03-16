@@ -41,11 +41,36 @@ There are several commonly-used test frameworks (no particular order)
 
 Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in Javascript (Mocha based) or Solidity. These tests are run against TestRPC/Ganache. More details on writing these tests are located at <<truffle>>
 
-Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in Javascript. The tests are in turn run against contracts deployed on TestRPC/Ganache.
+Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in Javascript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts when truly needed. 
 
-Dapp:: Dapp uses native Solidity code (a library called ds-test) and a Parity built Rust library called Ethrun to execute Ethereum byte code and then assert correctness.
+Embark includes a testing lib to rapidly run and test your contracts in a EVM, with functions like ```assert.equal()```. ```embark test``` will run any test files under directory test/. 
 
-Populus:: Populus uses python and its own chain emulator to run contracts written in solidity. Unit tests are written in Python with the pytest library.
+Dapp:: Dapp uses native Solidity code (a library called ds-test) and a Parity built Rust library called Ethrun to execute Ethereum byte code and then assert correctness. The ds-test library provides assertion functions for validating correctness and events for logging data in the console. 
+
+Assertions Functions includes 
+....
+assert(bool condition)  
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)  
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+....
+
+Logging Events will log information to the console, making them useful for debugging.
+....
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+....
+
+Populus:: Populus uses python and its own chain emulator to run contracts written in solidity. Unit tests are written in Python with the pytest library. Populus supports writing contracts that are specifically for testing. These contract filenames should match the glob pattern ```Test*.sol``` and be located anywhere under the project tests directory ```./tests/```.
 
 |=======
 |Framework | Test Language(s)    | Testing Framework | Chain Emulator       | Website
