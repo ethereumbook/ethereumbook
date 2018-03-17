@@ -1,7 +1,7 @@
 == Introduction
 
-Let's build an end to end Application using truffle ,Angular JS 4 and finally complete with
-test cases.
+Let's build an end to end Application using truffle ,Angular JS 4 and finally we will see 
+everything in action.
 
 === Use case 
 
@@ -643,7 +643,75 @@ export class TransferToFriendsService {
 
 ----
 
+- Now that we plugged in our deployed contract into send function as show above lets go back to our
+`app.component.ts` and plumb in to use the above web service. Replace `app.component.ts` with below
+code.
 
-    
+----
+import { Component, HostListener, NgZone } from '@angular/core';
+import { TransferToFriendsService } from './services/transfer-to-friends-service.service';
+import { Web3Service } from './services/web3.service';
 
+declare var window: any;
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent {
+
+
+  account: any;
+  accounts: any;
+
+  balance: number;
+  sendingAmount: number;
+  friendAddress: string;
+  status: string;
+  transactionHash: string;
+
+  constructor(
+    private _ngZone: NgZone,
+   private web3Service: Web3Service,
+    private transferToFriendsService: TransferToFriendsService,
+    ) {
+    this.onReady();
+  }
+
+  onReady = () => {
+
+    // Get the initial account balance so it can be displayed.
+    this.web3Service.getAccounts().subscribe(accs => {
+     this.accounts = accs;
+      this.account = this.accounts[0];
+      console.log('Main Account:'+this.account);
+   }, err => alert(err))
+  };
+
+
+  setStatus = message => {
+    this.status = message;
+  };
+
+  send = () => {
+    this.setStatus('Initiating transaction... (please wait)');
+    //Open developer console to see these values populating
+    console.log('from:'+this.account);
+    console.log('Amount:'+this.sendingAmount);
+    console.log('Friend Address:'+this.friendAddress);
+    this.transferToFriendsService.send(this.account,this.sendingAmount,this.friendAddress)
+    .subscribe(transObj =>{
+      this.transactionHash = transObj.receipt.transactionHash;
+      this.setStatus('Transaction Complete!- Amount Sent'+this.transactionHash);
+    },e => this.setStatus('Error Transaction'))
+  }
+}
+
+----
+
+//TODO:While moving to DAPPS this needs to linked properly
+    image::/images/TransferToFriend.gif["Transfer To Friends In Action"]
+  
+
+ - Hurray !!! we completed our TransferToFriends project. 
 
