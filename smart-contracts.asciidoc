@@ -6,7 +6,7 @@ A Smart Contract is a computer logic that, given certain conditions, can enforce
 
 Bitcoin supports smart contracts in a limited way by _Turing incomplete_ Script language. On the other hand, the Ethereum blockchain uses a Turing complete virtual machine (the EVM) which makes the Smart Contracts essentially programs that run in a distributed way. In that sense, they are pieces of code that live on the blockchain and are executed when a corresponding transaction is sent and processed. They can read other contracts' data (if that second contract is designed for it), make decisions, send ether and execute other contracts' functions. Smart Contracts will exist and have the ability to run as long as the whole network exists, and will only stop if they run out of _gas_ or if they were programmed to self destruct.
 
-It is important to state that a Smart Contract is composed by different functions, and those functions will only be executed if triggered by a transaction for that purpose. Also, is relevant to mention that even if a contract's function can call another contract's function, the entire chain of execution has to start with a transaction signed by an EOA.
+In Ethereum, a smart contract is composed of different functions, and is completely reactive. This means that these functions are only executed in response to a transaction made to that specific contract, calling that specific function. It is possible for contracts to call other contracts while executing a function, but any chain of function calls must have originated with an EOA.
 
 [[high_level_languages]]
 === Introduction to Ethereum High-Level Languages
@@ -29,15 +29,382 @@ As you can see, there many languages to choose from. However, of all these Solid
 
 === Building a Smart Contract
 
+=== Ethereum Contract ABI
+In computer software, an application binary interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures and computational routines are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
+
+In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a *contract address*. The purpose of an ABI is to thus specify which functions in the contract to invoke and to get a guarantee that the function will return data in an expected format. 
+
+____
+If an account or a web application wants to interact with a published contract and use one of its functions, the account would first need to hash the function's definition through an ABI to create its *EVM bytecode*. Then, to call the function, the account would pass this bytecode to a transaction's data field so that the bytecode could be interpreted with code at the contract's address. Thus, the two necessary pieces of information for an external function call would be the *ABI* and the *address of the contract wherein the function is written*. We demontrate the use of an ABI in a detailed example below.
+____
+
+The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`. 
+
+The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for fields such as state variables or modifiers.
+
+
+==== Structure of Call Data
+The data for a function call is a concatenation of several values of bytes. We discuss these in steps below.
+
+*First Four Bytes*: The call data always begins with *four bytes* of the function signature. In specific, these are the first four bytes of the Keccak-256 hash of the *signature* of a function. In this context, the signature is simply the function name with a parenthesised list of parameter types split by a single comma. 
+
+Assume, as a running example, the brief contract `Test`: 
+
+[source,solidity]
+contract Test {
+  function foo(uint32 u, bool b) returns (bool b) { u > 2000 && b; }
+}
+
+.To encode function `foo(uint32 u, bool b)`:
+* The signature of `foo(uint32 u, bool b)` would be `foo(uint32,bool)`
+* Running `foo(uint32,bool)` through Keccak-256 outputs the hash `cc822237a37f9290b70dab4d640156d816bf8abdb959b5971d803a639dadef98`
+* The first four bytes of the hash are `cc822237`, which brings us to a Method ID of `0xcc822237`
+
+*5th Byte And On*: We continue our data by encoding the *arguments* of our function. Encoding a `uint32` means converting the number to hexadecimal form and padding it with 0's until it becomes 32 bytes long, while encoding a `bool` is equivalent to encoding a `uint` with values `1` for `true` and `0` for `false`. A full list of type encoding can be found at the link attached in the _Further Reading_ section.
+
+.To continue with our example above, we call our function `foo` with parameters `2345` and `true`:
+* The hexadecimal representation of `2345` is `0x929`, and so padded to 32 bytes the first argument `u` is encoded as `0x0000000000000000000000000000000000000000000000000000000000000929`
+* The hexadecimal representation of `true` is `1`, and so padded to 32 bytes the second argument `b` becomes `0x0000000000000000000000000000000000000000000000000000000000000001`
+
+*Result*: We concatenate the Method ID with our encoded arguments to reach the finished call data for our function call. In our case, the call data for function `foo(uint32 u, bool b)` with arguments `2345` and `true` is
+`0xcc82223700000000000000000000000000000000000000000000000000000000000009290000000000000000000000000000000000000000000000000000000000000001`
+
+____
+We notice that our function returns a single `bool` value. For our choices of `u` and `b`, `foo` returns `true`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000000`.
+____
+
+//TO-DO: Discuss Events vs. Functions
+
+==== Further Reading
+The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts they intend to call available at compile-time. 
+
+A more rigorous and in-depth explanation of the Ethereum ABI can be found at 
+`https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`. 
+The link includes details about the formal specification of encoding and various helpful examples.
+
+[[testing_frameworks]]
 === Testing Smart Contracts
 
 === Deploying Smart Contracts
 
 === Best Practices
 
+Two of the most important concepts to consider during smart contract creation are *gas* and *security*.
+
+*Gas* is described in more in detail in the <<Gas>> section, but is an incredibly important consideration in smart contract programming. Gas is a resource dictating the amount of computation power that a user will allot to a transaction. If the gas limit is exceeded during computation, the following series of events occurs:
+
+* An exception is thrown
+* The state of the contract prior to the function's execution is restored
+* The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded 
+
+Because gas is paid for by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call
+
+*Avoid dynamically-sized Arrays*:: Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
+
 ==== Development Style
 
 ==== Design Patterns
+
+Software developers of any programming paradigm generally experience reoccuring design challenges centered around the topics of behavior, structure, interaction, and creation. Often these problems can be generalized
+and re-applied to future problems of a similar nature. When given a formal structure, these generalizations are called *Design Patterns*. 
+Smart Contracts have their own set of reoccuring design problems that can be solved using some of the patterns described below. 
+
+There are an endless number of design problems in the development of smart contracts, making it impossible to discuss all of them
+here. For that reason, this section will focus on three of the most pervasive problem classifications in smart contract design: *access control*, *state flow*, and *fund dispersement*.
+
+Throughout this section, we will be working with a contract that will ultimately incorporate all three of these design patterns. This contract will run a voting system that
+allows users to vote on "truth". The contract will suggest a claim such as "The Cubs won the World Series." or "It is raining in New York City" and then users will have
+the opportunity to vote either true or false. The contract will consider the proposition as true if the majority of participants voted for true and likewise if the majority 
+of participants voted for false. To incentivize truthfulness, every vote must send 100 ether to the contract and the funds contributed by the losing minority will be split up amongst
+the majority. Every participant in the majority will receive their portion of winnings from the minority as well as their initial investment.
+
+This "truth voting" system is actually the foundation of Gnosis, a forcasting tool built on top of Ethereum. More information about Gnosis can be found here: https://gnosis.pm/
+
+===== Access Control
+
+Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote. 
+To accomplish this the contract must impose two access restrictions:
+
+. Only a owner of the contract may add new users to the list of "allowed voters"
+. Only allowed voters may cast a vote
+
+Solidity function modifers offer a concise way to implement these restrictions.
+
+----
+    contract TruthVote{
+
+        address public owner = msg.sender;
+
+        address[] true_votes;
+        address[] false_votes;
+        mapping (address => bool) voters;
+        mapping (address => bool) hasVoted;
+
+        uint VOTE_COST = 100;
+
+        modifier onlyOwner(){
+            require(msg.sender == owner);
+            _;
+        }
+
+        modifier onlyVoter(){
+            require(voters[msg.sender] != false);
+            _;
+        }
+
+         modifier hasNotVoted(){
+            require(hasVoted[msg.sender] == false);
+            _;
+        }
+
+        function addVoter(address voter)
+        public
+        onlyOwner(){
+            voters[voter] = true;
+        }
+
+        function vote(bool val)
+        public 
+        onlyVoter()
+        hasNotVoted(){
+            if(msg.value >= VOTE_COST){
+                if(val)
+                    true_votes.push(msg.sender);
+                else
+                    false_votes.push(msg.sender);
+            hasVoted[msg.sender] = true;
+            }
+        }
+    }
+----
+*Description of Modifiers and Functions:*
+
+- *onlyOwner*: this modifier can decorate a function such that the function will then only be callable by a sender with an address that matches that of *owner*.
+- *onlyVoter*: this modifer can decorate a function such that the function will then only be callable by a registered voter. 
+- *addVoter(voter)*: this function is used to add a voter to the list of voters. This function uses the *onlyOwner* modifier so only the owner of this contract may call it.
+- *vote(val)*: this function is used by a voter to vote either true or false to the presented proposition. It is decorated with the *onlyVoter* modifer so only registered voters may call it.
+
+===== State Flow
+
+Many contracts will require some notion of operation state. The state of a contract will determine how the contract will behave and what operations it offers
+at a given point in time. Let's return to our truth voting system for a more concrete example.
+
+The operation of our voting system can be broken down into 3 distinct states.
+
+. *Register*: The service has been created and the owner can now add voters. 
+. *Vote*:  All voters cast their votes. 
+. *Disperse*: Vote payments are divided and sent to the majority participants. 
+
+The following code continues to build on the access control code, but further restricts functionality to specific states.
+In Solidity, it is commonplace to use enumerated values to represent states.
+----
+    contract TruthVote{
+        enum States{
+            REGISTER,
+            VOTE,
+            DISPERSE
+        }
+
+        address public owner = msg.sender;
+
+        uint voteCost;
+
+        address[] trueVotes;
+        address[] falseVotes;
+        
+
+        mapping (address => bool) voters;
+        mapping (address => bool) hasVoted;
+
+        uint VOTE_COST = 100;
+        
+        States state;
+
+        modifier onlyOwner(){
+            require(msg.sender == owner);
+            _;
+        }
+
+        modifier onlyVoter(){
+            require(voters[msg.sender] != false);
+            _;
+        }
+
+        modifier isCurrentState(States _stage) {
+                require(state == _stage);
+                _;
+            }
+            
+        modifier hasNotVoted(){
+            require(hasVoted[msg.sender] == false);
+            _;
+        }
+
+        function startVote()
+        public
+        onlyOwner()
+        isCurrentState(States.REGISTER){
+            goToNextState();
+        }
+
+        function goToNextState() internal {
+            state = States(uint(state) + 1);
+        }
+
+        modifier pretransition(){
+            goToNextState();
+            _;
+        }
+
+        function addVoter(address voter)
+        public
+        onlyOwner()
+        isCurrentState(States.REGISTER){
+            voters[voter] = true;
+        }
+
+        function vote(bool val)
+        public 
+        isCurrentState(States.VOTE)
+        onlyVoter()
+        hasNotVoted(){
+            if(msg.value >= VOTE_COST){
+                if(val)
+                    trueVotes.push(msg.sender);
+                else
+                    falseVotes.push(msg.sender);
+                    
+                hasVoted[msg.sender] = true;
+            }
+        }
+
+        function disperse(bool val)
+        public
+        onlyOwner()
+        isCurrentState(States.VOTE)
+        pretransition(){
+            address[] storage winningGroup;
+            uint winningCompensation;
+            if(trueVotes.length > falseVotes.length){
+                winningGroup = trueVotes;
+                winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length; 
+            }
+            else if(trueVotes.length < falseVotes.length){
+                winningGroup = falseVotes;
+                winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length; 
+            }
+            else
+            {
+                winningGroup = trueVotes;
+                winningCompensation = VOTE_COST;
+                for(uint i =0; i < falseVotes.length; i++){
+                    falseVotes[i].send(winningCompensation);
+            }
+
+            for(uint j =0; j < winningGroup.length; j++){
+                winningGroup[j].send(winningCompensation);
+            }
+        }
+    }
+----
+
+*Description of Modifiers and Functions:*
+
+- *isCurrentState*: this modifer will require that the contract is in a specified state before cotinuing execution of the decorated function.
+- *pretransition*: this modifer will transition to the next state before executing the rest of the decorated function
+- *goToNextState*: function that transitions the contract to the next state
+- *disperse*: function that calculates the majority and disperses winnings accordingly. Only the owner may call this function to officially close voting.
+- *startVote*: function that the owner can use to start a vote.
+
+It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more geniune implemenation the voting period should close after a publicly understood period of time. For the sake of this example, this is fine. 
+
+The additions made now ensure that voting is only allowed when the owner decides to start the voting period, users can only be registered by the owner before the vote happens, and funds are only dispered after the vote closes. 
+
+===== Widthraw
+Many contracts will offer some way for a user to retrieve money from it. In our working example, users of the majority are sent money directly when the contract
+begins dispersing funds. Although this appears to work, it is an under-thought solution. The receiving address of the *addr.send()* call in *disperse* could be a contract that
+has a fallback function which fails and consequently breaks *disperse*. This effectively stops all further majority participants from receiving their earning.
+A better solution is to provide a withdraw function that a user can call to collect their earnings.
+
+----
+    ...
+
+    enum States{
+        REGISTER,
+        VOTE,
+        DETERMINE,
+        WITHDRAW
+    }
+
+    mapping (address => bool) votes;
+    uint trueCount;
+    uint falseCount;
+
+    bool winner;
+    uint winningCompensation;
+
+    modifier posttransition(){
+        _;
+        goToNextState();
+    }
+
+    function vote(bool val)
+    public 
+    onlyVoter()
+    isCurrentStage(State.VOTE){
+        if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
+            votes[msg.sender] = val;
+            if(val)
+                trueCount++;
+            else
+                falseCount++;
+        }
+    }
+
+    function determine(bool val)
+    public
+    onlyOwner()
+    isCurrentState(State.VOTE)
+    pretransition()
+    posttransition()
+    {
+        if(trueCount > falseCount){
+            winner = true;
+            winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length; 
+        }
+        else if(falseCount > trueCount){
+            winner = false;
+            winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length; 
+        }else{
+            winningCompensation = VOTE_COST;
+        }
+    }
+
+    function widthdraw()
+    public
+    onlyVoter()
+    isCurrentState(State.WITHDRAW){
+        if(votes[msg.sender] != address(0)){
+            if(votes[msg.sender] == winner){
+                msg.sender.send(winningCompensation);
+            }
+        }    
+    }
+
+    ...
+----
+
+*Description of Modifiers and (Updated) Functions:*
+
+- *posttransition*: transitions to the next state after the function call
+- *determine*: this function is very similar to the previous *disperse* function execpt it now just calculates the winner and winning compensation and does not actually send any funds. 
+- *vote*: votes are now added to the votes mapping and true/false counters are incremented.
+- *widthdraw*: allows a voter to collect winnings (if any).
+
+
+
+This way, if the send fails, it will only fail on the specific caller's case and not hinder all other user's ability to collect their winnings.
+
 
 ==== Modularity and Side Effects
 
