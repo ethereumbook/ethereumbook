@@ -105,6 +105,318 @@ Because gas is paid for by the user who creates that transaction, users are disc
 
 ==== Design Patterns
 
+Software developers of any programming paradigm generally experience reoccuring design challenges centered around the topics of behavior, structure, interaction, and creation. Often these problems can be generalized
+and re-applied to future problems of a similar nature. When given a formal structure, these generalizations are called *Design Patterns*. 
+Smart Contracts have their own set of reoccuring design problems that can be solved using some of the patterns described below. 
+
+There are an endless number of design problems in the development of smart contracts, making it impossible to discuss all of them
+here. For that reason, this section will focus on three of the most pervasive problem classifications in smart contract design: *access control*, *state flow*, and *fund dispersement*.
+
+Throughout this section, we will be working with a contract that will ultimately incorperate all three of these design patterns. This contract will run a voting system that
+allows users to vote on "truth". The contract will suggest a claim such as "The Cubs won the World Series." or "It is raining in New York City" and then users will have
+the opportunity to vote either true or false. The contract will consider the proposition as true if the majority of participants voted for true and and likewise if the majority 
+of participants voted for false. To incentivize truthfulness, every vote must send 100 ether to the contract and the funds contributed by the losing minority will be split up amongst
+the majority. Every participant in the majority will recieve their portion of winnings from the minority as well as their initial investment.
+
+This "truth voting" system is actually the foundation of Gnosis, a forcasting tool built on top of Ethereum. More information about Gnosis can be found here: https://gnosis.pm/
+
+===== Access Control
+
+
+Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote. 
+To accomplish this the contract must impose two access restrictions:
+
+. Only a owner of the contract may add new users to the list of "allowed voters"
+. Only allowed voters may cast a vote
+
+Solidity function modifers offer a concise way to implement these restrictions.
+
+_Note: The following example uses an underscore semicolon within the modifier bodies. This is  a Solidity feature used to tell the compiler when to run the modifed function's body. A developer can act as if the modifed function's body will be copied to the position of the underscore._
+[source,solidity]
+----
+contract TruthVote{
+
+    address public owner = msg.sender;
+
+    address[] true_votes;
+    address[] false_votes;
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
+
+    uint VOTE_COST = 100;
+
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
+
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
+
+        modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
+
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
+
+    function addVoter(address voter)
+    public
+    onlyOwner(){
+        voters[voter] = true;
+    }
+
+    function vote(bool val)
+    public 
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                true_votes.push(msg.sender);
+            else
+                false_votes.push(msg.sender);
+        hasVoted[msg.sender] = true;
+        }
+    }
+}
+----
+*Description of Modifiers and Functions:*
+
+- *onlyOwner*: this modifier can decorate a function such that the function will then only be callable by a sender with an address that matches that of *owner*.
+- *onlyVoter*: this modifer can decorate a function such that the function will then only be callable by a registered voter. 
+- *addVoter(voter)*: this function is used to add a voter to the list of voters. This function uses the *onlyOwner* modifier so only the owner of this contract may call it.
+- *vote(val)*: this function is used by a voter to vote either true or false to the presented proposition. It is decorated with the *onlyVoter* modifer so only registered voters may call it.
+
+===== State Flow
+
+Many contracts will require some notion of operation state. The state of a contract will determine how the contract will behave and what operations its offers
+at a given point in time. Lets return to our truth voting system for a more concrete example.
+
+The operation of our voting system can be broken down into 3 distinct states.
+
+. *Register*: The service has been created and the owner can now add voters. 
+. *Vote*:  All voters cast their votes. 
+. *Disperse*: Vote payments are divided and sent to the majority participants. 
+
+The following code continues to build on the access control code, but further restricts functionality to specific states.
+In Solidity, it is commonplace to use enumerated values to represent states.
+
+[source,solidity]
+----
+contract TruthVote{
+    enum States{
+        REGISTER,
+        VOTE,
+        DISPERSE
+    }
+
+    address public owner = msg.sender;
+
+    uint voteCost;
+
+    address[] trueVotes;
+    address[] falseVotes;
+    
+
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
+
+    uint VOTE_COST = 100;
+    
+    States state;
+
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
+
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
+
+    modifier isCurrentState(States _stage) {
+            require(state == _stage);
+            _;
+        }
+        
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
+
+    function startVote()
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        goToNextState();
+    }
+
+    function goToNextState() internal {
+        state = States(uint(state) + 1);
+    }
+
+    modifier pretransition(){
+        goToNextState();
+        _;
+    }
+
+    function addVoter(address voter)
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        voters[voter] = true;
+    }
+
+    function vote(bool val)
+    public 
+    isCurrentState(States.VOTE)
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                trueVotes.push(msg.sender);
+            else
+                falseVotes.push(msg.sender);
+                
+            hasVoted[msg.sender] = true;
+        }
+    }
+
+    function disperse(bool val)
+    public
+    onlyOwner()
+    isCurrentState(States.VOTE)
+    pretransition(){
+        address[] storage winningGroup;
+        uint winningCompensation;
+        if(trueVotes.length > falseVotes.length){
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length; 
+        }
+        else if(trueVotes.length < falseVotes.length){
+            winningGroup = falseVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length; 
+        }
+        else
+        {
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST;
+            for(uint i =0; i < falseVotes.length; i++){
+                falseVotes[i].send(winningCompensation);
+        }
+
+        for(uint j =0; j < winningGroup.length; j++){
+            winningGroup[j].send(winningCompensation);
+        }
+    }
+}
+----
+
+*Description of Modifiers and Functions:*
+
+- *isCurrentState*: this modifer will require that the contract is in a specified state before cotinuing execution of the decorated function.
+- *pretransition*: this modifer will tranistion to the next state before executing the rest of the decorated function
+- *goToNextState*: function that tranistions the contract to the next state
+- *disperse*: function that calculates the majority and disperses winnings accordingly. Only the owner may call this function to officially close voting.
+- *startVote*: function that the owner can use to start a vote.
+
+It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more geniune implemenation the voting period should close after a publicly understood period of time. For the sake of this example, this is fine. 
+
+The additions made now ensure that voting is only allowed when the owner decides to start the voting period, users can only be registered by the owner before the vote happens, and funds are only dispered after the vote closes. 
+
+===== Widthraw
+Many contracts will offer some way for a user to retrieve money from it. In our working example, users of the majority are sent money directly when the contract
+begins dispersing funds. Although this appears to work, it is an under-thought solution. The recieving address of the *addr.send()* call in *disperse* could be a contract that
+has a fallback function which fails and consequently breaks *disperse*. This effectively stops all further majority participants from recieving their earning.
+A better solution is to provide a withdraw function that a user can call to collect their earnings.
+
+[source,solidity]
+----
+...
+
+enum States{
+    REGISTER,
+    VOTE,
+    DETERMINE,
+    WITHDRAW
+}
+
+mapping (address => bool) votes;
+uint trueCount;
+uint falseCount;
+
+bool winner;
+uint winningCompensation;
+
+modifier posttransition(){
+    _;
+    goToNextState();
+}
+
+function vote(bool val)
+public 
+onlyVoter()
+isCurrentStage(State.VOTE){
+    if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
+        votes[msg.sender] = val;
+        if(val)
+            trueCount++;
+        else
+            falseCount++;
+    }
+}
+
+function determine(bool val)
+public
+onlyOwner()
+isCurrentState(State.VOTE)
+pretransition()
+posttransition()
+{
+    if(trueCount > falseCount){
+        winner = true;
+        winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length; 
+    }
+    else if(falseCount > trueCount){
+        winner = false;
+        winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length; 
+    }else{
+        winningCompensation = VOTE_COST;
+    }
+}
+
+function widthdraw()
+public
+onlyVoter()
+isCurrentState(State.WITHDRAW){
+    if(votes[msg.sender] != address(0)){
+        if(votes[msg.sender] == winner){
+            msg.sender.send(winningCompensation);
+        }
+    }    
+}
+
+...
+----
+
+*Description of Modifiers and (Updated) Functions:*
+
+- *posttransition*: transitions to the next state after the function call
+- *determine*: this function is very similar to the previous *disperse* function execpt it now just calculates the winner and winning compensation and does not actually send any funds. 
+- *vote*: votes are now added to the votes mapping and true/false counters are incremented.
+- *widthdraw*: allows a voter to collect winnings (if any).
+
+
+
+This way, if the send fails, it will only fail on the specific caller's case and not hinder all other user's ability to collect their winnings.
+
+
 ==== Modularity and Side Effects
 
 ==== Contract Libraries
