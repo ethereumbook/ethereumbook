@@ -326,6 +326,7 @@ This "truth voting" system is actually the foundation of Gnosis, a forcasting to
 
 ===== Access Control
 
+
 Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote. 
 To accomplish this the contract must impose two access restrictions:
 
@@ -334,52 +335,59 @@ To accomplish this the contract must impose two access restrictions:
 
 Solidity function modifers offer a concise way to implement these restrictions.
 
+_Note: The following example uses an underscore semicolon within the modifier bodies. This is  a Solidity feature used to tell the compiler when to run the modifed function's body. A developer can act as if the modifed function's body will be copied to the position of the underscore._
+[source,solidity]
 ----
-    contract TruthVote{
+contract TruthVote{
 
-        address public owner = msg.sender;
+    address public owner = msg.sender;
 
-        address[] true_votes;
-        address[] false_votes;
-        mapping (address => bool) voters;
-        mapping (address => bool) hasVoted;
+    address[] true_votes;
+    address[] false_votes;
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
 
-        uint VOTE_COST = 100;
+    uint VOTE_COST = 100;
 
-        modifier onlyOwner(){
-            require(msg.sender == owner);
-            _;
-        }
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
 
-        modifier onlyVoter(){
-            require(voters[msg.sender] != false);
-            _;
-        }
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
 
-         modifier hasNotVoted(){
-            require(hasVoted[msg.sender] == false);
-            _;
-        }
+        modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        function addVoter(address voter)
-        public
-        onlyOwner(){
-            voters[voter] = true;
-        }
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        function vote(bool val)
-        public 
-        onlyVoter()
-        hasNotVoted(){
-            if(msg.value >= VOTE_COST){
-                if(val)
-                    true_votes.push(msg.sender);
-                else
-                    false_votes.push(msg.sender);
-            hasVoted[msg.sender] = true;
-            }
+    function addVoter(address voter)
+    public
+    onlyOwner(){
+        voters[voter] = true;
+    }
+
+    function vote(bool val)
+    public 
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                true_votes.push(msg.sender);
+            else
+                false_votes.push(msg.sender);
+        hasVoted[msg.sender] = true;
         }
     }
+}
 ----
 *Description of Modifiers and Functions:*
 
@@ -401,115 +409,117 @@ The operation of our voting system can be broken down into 3 distinct states.
 
 The following code continues to build on the access control code, but further restricts functionality to specific states.
 In Solidity, it is commonplace to use enumerated values to represent states.
+
+[source,solidity]
 ----
-    contract TruthVote{
-        enum States{
-            REGISTER,
-            VOTE,
-            DISPERSE
+contract TruthVote{
+    enum States{
+        REGISTER,
+        VOTE,
+        DISPERSE
+    }
+
+    address public owner = msg.sender;
+
+    uint voteCost;
+
+    address[] trueVotes;
+    address[] falseVotes;
+    
+
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
+
+    uint VOTE_COST = 100;
+    
+    States state;
+
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
+
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
+
+    modifier isCurrentState(States _stage) {
+            require(state == _stage);
+            _;
         }
-
-        address public owner = msg.sender;
-
-        uint voteCost;
-
-        address[] trueVotes;
-        address[] falseVotes;
         
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        mapping (address => bool) voters;
-        mapping (address => bool) hasVoted;
+    function startVote()
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        goToNextState();
+    }
 
-        uint VOTE_COST = 100;
-        
-        States state;
+    function goToNextState() internal {
+        state = States(uint(state) + 1);
+    }
 
-        modifier onlyOwner(){
-            require(msg.sender == owner);
-            _;
-        }
+    modifier pretransition(){
+        goToNextState();
+        _;
+    }
 
-        modifier onlyVoter(){
-            require(voters[msg.sender] != false);
-            _;
-        }
+    function addVoter(address voter)
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        voters[voter] = true;
+    }
 
-        modifier isCurrentState(States _stage) {
-                require(state == _stage);
-                _;
-            }
-            
-        modifier hasNotVoted(){
-            require(hasVoted[msg.sender] == false);
-            _;
-        }
-
-        function startVote()
-        public
-        onlyOwner()
-        isCurrentState(States.REGISTER){
-            goToNextState();
-        }
-
-        function goToNextState() internal {
-            state = States(uint(state) + 1);
-        }
-
-        modifier pretransition(){
-            goToNextState();
-            _;
-        }
-
-        function addVoter(address voter)
-        public
-        onlyOwner()
-        isCurrentState(States.REGISTER){
-            voters[voter] = true;
-        }
-
-        function vote(bool val)
-        public 
-        isCurrentState(States.VOTE)
-        onlyVoter()
-        hasNotVoted(){
-            if(msg.value >= VOTE_COST){
-                if(val)
-                    trueVotes.push(msg.sender);
-                else
-                    falseVotes.push(msg.sender);
-                    
-                hasVoted[msg.sender] = true;
-            }
-        }
-
-        function disperse(bool val)
-        public
-        onlyOwner()
-        isCurrentState(States.VOTE)
-        pretransition(){
-            address[] storage winningGroup;
-            uint winningCompensation;
-            if(trueVotes.length > falseVotes.length){
-                winningGroup = trueVotes;
-                winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length; 
-            }
-            else if(trueVotes.length < falseVotes.length){
-                winningGroup = falseVotes;
-                winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length; 
-            }
+    function vote(bool val)
+    public 
+    isCurrentState(States.VOTE)
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                trueVotes.push(msg.sender);
             else
-            {
-                winningGroup = trueVotes;
-                winningCompensation = VOTE_COST;
-                for(uint i =0; i < falseVotes.length; i++){
-                    falseVotes[i].send(winningCompensation);
-            }
-
-            for(uint j =0; j < winningGroup.length; j++){
-                winningGroup[j].send(winningCompensation);
-            }
+                falseVotes.push(msg.sender);
+                
+            hasVoted[msg.sender] = true;
         }
     }
+
+    function disperse(bool val)
+    public
+    onlyOwner()
+    isCurrentState(States.VOTE)
+    pretransition(){
+        address[] storage winningGroup;
+        uint winningCompensation;
+        if(trueVotes.length > falseVotes.length){
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length; 
+        }
+        else if(trueVotes.length < falseVotes.length){
+            winningGroup = falseVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length; 
+        }
+        else
+        {
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST;
+            for(uint i =0; i < falseVotes.length; i++){
+                falseVotes[i].send(winningCompensation);
+        }
+
+        for(uint j =0; j < winningGroup.length; j++){
+            winningGroup[j].send(winningCompensation);
+        }
+    }
+}
 ----
 
 *Description of Modifiers and Functions:*
@@ -530,72 +540,73 @@ begins dispersing funds. Although this appears to work, it is an under-thought s
 has a fallback function which fails and consequently breaks *disperse*. This effectively stops all further majority participants from receiving their earning.
 A better solution is to provide a withdraw function that a user can call to collect their earnings.
 
+[source,solidity]
 ----
-    ...
+...
 
-    enum States{
-        REGISTER,
-        VOTE,
-        DETERMINE,
-        WITHDRAW
+enum States{
+    REGISTER,
+    VOTE,
+    DETERMINE,
+    WITHDRAW
+}
+
+mapping (address => bool) votes;
+uint trueCount;
+uint falseCount;
+
+bool winner;
+uint winningCompensation;
+
+modifier posttransition(){
+    _;
+    goToNextState();
+}
+
+function vote(bool val)
+public 
+onlyVoter()
+isCurrentStage(State.VOTE){
+    if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
+        votes[msg.sender] = val;
+        if(val)
+            trueCount++;
+        else
+            falseCount++;
     }
+}
 
-    mapping (address => bool) votes;
-    uint trueCount;
-    uint falseCount;
-
-    bool winner;
-    uint winningCompensation;
-
-    modifier posttransition(){
-        _;
-        goToNextState();
+function determine(bool val)
+public
+onlyOwner()
+isCurrentState(State.VOTE)
+pretransition()
+posttransition()
+{
+    if(trueCount > falseCount){
+        winner = true;
+        winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length; 
     }
+    else if(falseCount > trueCount){
+        winner = false;
+        winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length; 
+    }else{
+        winningCompensation = VOTE_COST;
+    }
+}
 
-    function vote(bool val)
-    public 
-    onlyVoter()
-    isCurrentStage(State.VOTE){
-        if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
-            votes[msg.sender] = val;
-            if(val)
-                trueCount++;
-            else
-                falseCount++;
+function widthdraw()
+public
+onlyVoter()
+isCurrentState(State.WITHDRAW){
+    if(votes[msg.sender] != address(0)){
+        if(votes[msg.sender] == winner){
+            msg.sender.send(winningCompensation);
         }
-    }
+    }    
+}
 
-    function determine(bool val)
-    public
-    onlyOwner()
-    isCurrentState(State.VOTE)
-    pretransition()
-    posttransition()
-    {
-        if(trueCount > falseCount){
-            winner = true;
-            winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length; 
-        }
-        else if(falseCount > trueCount){
-            winner = false;
-            winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length; 
-        }else{
-            winningCompensation = VOTE_COST;
-        }
-    }
-
-    function widthdraw()
-    public
-    onlyVoter()
-    isCurrentState(State.WITHDRAW){
-        if(votes[msg.sender] != address(0)){
-            if(votes[msg.sender] == winner){
-                msg.sender.send(winningCompensation);
-            }
-        }    
-    }
-
-    ...
+...
 ----
 
 *Description of Modifiers and (Updated) Functions:*
