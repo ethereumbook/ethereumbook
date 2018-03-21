@@ -1,0 +1,318 @@
+[[_anchor_setup_private_network]]
+== Setting up a private Ethereum network
+
+[[_anchor_node_setup]]
+=== Set up nodes for launch
+
+The nodes to be launched for this set-up will be for the topology shown in figure below.
+
+[[_image_aws_topology_simple_bootnode]]
+.AWS Topology - Simple Ethereum network with boot node 
+image::images/aws-topology-simple-bootnode.png["Simple topology of Ethereum nodes with bootnode"]
+
+In the table below, the nodes in the topology are described. These nodes will be referred to by the name as mentioned in this table.
+
+[[_table_aws_topology_nodes]]
+.AWS Topology - Nodes 
+|==================================================================================================================================
+|Name |Type |Remarks
+|Ethereum-Boot-Node |Boot node |Runs `bootnode` for other machines in network to discover peers.
+|Ethereum-RPC-Node |RPC node |Has an RPC port open for RPC clients such as `web3.js` to connect to.
+|Ethereum-Mining-Node |Mining node |Mines blocks and appends to Blockchain.
+|Ethereum-Standalone-Node |Stand-alone node |Runs a basic `geth` node.
+|==================================================================================================================================
+
+[[_anchor_launch_instances]]
+==== Launch instances
+To choose the right instance for launching an Ethereum node, the following points can help.
+
+* *Memory requirements*. For `geth`, this page on Metrics and Monitoring can help analyse the memory requirements of an instance running `geth`. https://github.com/ethereum/go-ethereum/wiki/Metrics-and-Monitoring
+* *Storage requiremens*. For `Parity`, this blog post has some excellent information on storage growth for Ethereum. https://dev.to/5chdn/the-ethereum-blockchain-size-will-not-exceed-1tb-anytime-soon-58a
+* *Network requirements*. Depending on the rate of submitting transactions, an instance with appropriate network bandwidth may be selected. This rate also has an implication on the size of blocks and therefore, storage requirements.
+* *CPU requirements*. The computation power is required especially for nodes set-up for mining. And, mining depends on hash rate and that in turn depends on the **difficulty level** setting for a network. Note that, the difficulty level also impacts the rate at which blocks are mined and therefore, impacts the network requirements.
+
+It should be clear that, the infra-structure requirements for a node are inter-dependent.
+
+The rest of this chapter assumes that, the nodes are launched on a `t2.micro` instance of AWS. When launching a `t2.micro` instance for Ethereum, accept the defaults that the wizard provides; unless, specific needs apply. For example, let the instance be launched in the default, public Virtual Private Cloud (VPC) in the chosen region. However, when applying securtiy groups, the following port numbers are suggested to be opened. 
+
+It is *recommended* that, the port be opened for only the IP address that accesses AWS. Later, more detailed access rules maybe applied.
+
+[[_table_AWS_instance_security_group]]
+.AWS instance security groups
+|==================================================================================================================================
+|Port number| Protocol type| Description
+|30303 | UDP | Default node discovery port.
+|30303 | TCP | Default node discovery port.
+|8545 | TCP | Default RPC port.
+|22 | TCP | Default `ssh` port.
+|==================================================================================================================================
+
+Refer this link for guidance on launching EC2 instances. https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html
+
+[[_anchor_install_ethereum_client]]
+==== Install Ethereum client
+Once the instance is launched and logged on to, the Ethereum client, `geth`, needs to be installed with the steps below.
+
+[source,bash]
+----
+sudo apt-get install software-properties-common
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install -y ethereum
+----
+
+To check for a successful installation, simply run `geth` on a command line. By default, `geth` will try to connect to the main network and start displaying messages immediately as shown below. 
+
+[source,bash]
+----
+geth
+WARN [03-19|22:44:10] No etherbase set and no accounts found as default 
+INFO [03-19|22:44:10] Starting peer-to-peer node               instance=Geth/v1.7.3-stable-4bb3c89d/linux-amd64/go1.9 // <1>
+INFO [03-19|22:44:10] Allocated cache and file handles         database=/home/ubuntu/.ethereum/geth/chaindata cache=128 handles=1024 // <2>
+INFO [03-19|22:44:10] Writing default main-net genesis block 
+INFO [03-19|22:44:11] Initialised chain configuration          config="{ChainID: 1 Homestead: 1150000 DAO: 1920000 DAOSupport: true EIP150: 2463000 EIP155: 2675000 EIP158: 2675000 Byzantium: 4370000 Engine: ethash}" <3>
+INFO [03-19|22:44:11] Disk storage enabled for ethash caches   dir=/home/ubuntu/.ethereum/geth/ethash count=3
+INFO [03-19|22:44:11] Disk storage enabled for ethash DAGs     dir=/home/ubuntu/.ethash               count=2
+INFO [03-19|22:44:11] Initialising Ethereum protocol           versions="[63 62]" network=1
+INFO [03-19|22:44:11] Loaded most recent local header          number=0 hash=d4e567…cb8fa3 td=17179869184
+INFO [03-19|22:44:11] Loaded most recent local full block      number=0 hash=d4e567…cb8fa3 td=17179869184
+INFO [03-19|22:44:11] Loaded most recent local fast block      number=0 hash=d4e567…cb8fa3 td=17179869184
+INFO [03-19|22:44:11] Regenerated local transaction journal    transactions=0 accounts=0
+INFO [03-19|22:44:11] Starting P2P networking <4>
+INFO [03-19|22:44:13] UDP listener up                          self=enode://bef3a6c9e44ec7ac7ae3ec5e38582ab113e0fbcdcc7255b6a7d4e5b09e7012ccadebd8352ee08ec600be21041ee65848fd7598d6640f066059b83d4c11e50a0a@[::]:30303
+INFO [03-19|22:44:13] RLPx listener up                         self=enode://bef3a6c9e44ec7ac7ae3ec5e38582ab113e0fbcdcc7255b6a7d4e5b09e7012ccadebd8352ee08ec600be21041ee65848fd7598d6640f066059b83d4c11e50a0a@[::]:30303
+INFO [03-19|22:44:13] IPC endpoint opened: /home/ubuntu/.ethereum/geth.ipc 
+INFO [03-19|22:44:23] Block synchronisation started <5>
+INFO [03-19|22:44:24] Imported new state entries               count=205 elapsed=6.545µs processed=205 pending=3281 retry=0 
+----
+
+<1> `geth` version information
+<2> Default location of database as no configuration was done
+<3> The value of `ChainId` is set to `1` because, by default `geth` connects to main network.
+<4> This `geth` node starts peering.
+<5> This `geth` node starts downloading blocks that have been confirmed so far. _This can run for quite a while (statistics here?)_
+
+If messages are visible, then `geth` has started successfully. To stop `geth`, simply hit `Ctrl-C`.
+
+By default, `geth` will run for main network, and uses the folder `$HOME/.geth` to store the downloaded blocks. To work with private nodes, `geth` needs to be configured for a new directory needs to be created - preferably under `$HOME`. Multiple such directories maybe created when working with multiple private networks.
+
+[source,bash]
+----
+mkdir eth-priv
+----
+
+[quote]
+When working with private networks, *always* refer the directory name in `geth` commands, via `--datadir` flag.
+
+Repeat the installation of Ethereum client steps for all the nodes in the topology (<<_table_aws_topology_nodes>>).
+
+
+[[_anchor_node_configuration]]
+=== Configuring genesis for nodes
+To configure genesis for all nodes in the topology, a common definition of genesis should exist. This definition is provided via a document named as `genesis.json` as described below.
+
+Create a JSON document, `genesis.json` in `eth-priv` folder for genesis block with the contents as shown here <<_code_genesis_json>>. This document should exist in the same format and values in all the machines of the topology.
+
+[[_code_genesis_json]]
+.genesis.json
+[source,json]
+----
+{
+    "config": {
+        "chainId": 15,     // <1>
+        "homesteadBlock": 0,
+        "eip155Block": 0,
+        "eip158Block": 0
+    },
+    "nonce": "0x0000000000000042",
+    "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "difficulty": "0x4000", // <2>
+    "alloc": {},
+    "coinbase": "0x0000000000000000000000000000000000000000", <3>
+    "timestamp": "0x00",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "gasLimit": "0xffffffff" <3>
+}
+----
+
+NOTES:
+The `genesis.json` shown above has the following settings for a simplified set-up.
+
+<1> `chainId` set to `15` to differentiate itself as a private Ethereum network. Any other positive integer may be used for `chainId` value.
+<2> `difficulty` is set to low so that, mining time is least.
+<3> `coinbase` is 160-bit address to which block mining rewards and contract execution is credited.
+<4> `gasLimit` is set to maximum so that, any contract maybe run successfully.
+
+For more details on all settings, see here: [https://ethereum.stackexchange.com/q/2376/3137]
+
+[[_anchor_node_init]]
+==== Initialize node
+With the configuration for genesis block ready, the nodes are initialized to build the genesis block. This is done by running the `geth` command for initialization. 
+
+[quote]
+This initialisation needs to be done on one node only e.g. the Ethereum-Standalone-Node. When the machines peer with each other, then the genesis block will be synchronized.
+
+[[_code_node_init]]
+[source,bash]
+----
+cd $HOME
+geth --datadir eth-priv/ init eth-priv/genesis.json 
+WARN [03-19|23:23:33] No etherbase set and no accounts found as default // <1>
+INFO [03-19|23:23:33] Allocated cache and file handles         database=/home/ubuntu/eth-priv/geth/chaindata cache=16 handles=16 // <2>
+INFO [03-19|23:23:33] Writing custom genesis block 
+INFO [03-19|23:23:33] Successfully wrote genesis state         database=chaindata                            hash=6e92f8…23a660
+INFO [03-19|23:23:33] Allocated cache and file handles         database=/home/ubuntu/eth-priv/geth/lightchaindata cache=16 handles=16
+INFO [03-19|23:23:33] Writing custom genesis block 
+INFO [03-19|23:23:33] Successfully wrote genesis state         database=lightchaindata                            hash=6e92f8…23a660
+----
+
+<1> An Ethereum account is not necessarily needed during initialisation. Initialisation will create a genesis block and the reward for same goes to the account `0x0000000000000000000000000000000000000000`.
+<2> Note the path of the database now points to the one set by `datadir` flag.
+
+Let us examine the result of initialisation. The `geth` command provides a JavaScript console to help explore the database amongst a range of other options. See here for more details: https://github.com/ethereum/go-ethereum/wiki/JavaScript-Console#javascript-console-api Using this console, let us examine the earliest the latest blocks that were created. Since at the moment, only genesis block exists, there should be only block in this private Ethereum network.
+
+[[_code_geth_console_node_init]]
+[source,bash]
+----
+geth --datadir eth-priv/ console      // <1>
+... trimmed output ...
+> eth.getBlock('latest')       // <2>
+{
+  difficulty: 16384,
+  extraData: "0x",
+  gasLimit: 4294967295,
+  gasUsed: 0,
+  hash: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",     // <3>
+  logsBloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  miner: "0x0000000000000000000000000000000000000000",
+  mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  nonce: "0x0000000000000042",
+  number: 0,
+  parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+  size: 507,
+  stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  timestamp: 0,
+  totalDifficulty: 16384,
+  transactions: [],  // <4>
+  transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  uncles: []
+}
+> eth.getBlock('earliest')      // <5>
+{
+  difficulty: 16384,
+  extraData: "0x",
+  gasLimit: 4294967295,
+  gasUsed: 0,
+  hash: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",       // <6>
+  logsBloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  miner: "0x0000000000000000000000000000000000000000",
+  mixHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  nonce: "0x0000000000000042",
+  number: 0,
+  parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  receiptsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  sha3Uncles: "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+  size: 507,
+  stateRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  timestamp: 0,
+  totalDifficulty: 16384,
+  transactions: [],     // <7>
+  transactionsRoot: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+  uncles: []
+}
+----
+
+<1> Launch JavaScript console for this private network.
+<2> Look for the most recent block in private network blockchain.
+<3> Note the hash of the block - `0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660`.
+<4> The number of transactions in this block is zero - as expected.
+<5> Look for the oldest block or the genesis block in the private blockchain.
+<6> Note the hash of the block - `0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660`.
+<7> The number of transactions in this block is zero - as expected.
+
+The genesis block has been created successfully with `genesis.json` document.
+
+__The following section will be moved to elsewhere.__
+
+[[_anchor_start_blockchain]]
+==== Start blockchain
+Start blockchain with the command below. Note that, the value of `--networkid` matches with the value of `chainId` in `genesis.json` file. Also, with the `--nodiscover` flag, this machine becomes a sort of host machine. Finally, this machine will listen of peering connections at port number `30333`.
+
+[[_code_start_blockchain]]
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 3  --port 30333 console
+----
+
+From the console, get the node value.
+
+[[_code_add_node]]
+[source,bash]
+----
+admin.nodeInfo.enode
+"enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@[::]:30333?discport=0"
+----
+
+[[_anchor_peering]]
+=== Peering
+
+==== Peering with `bootnode`
+When installing Ethereum (refer <<_anchor_install_ethereum_client>>), `bootnode`, and few other standalone tools, are also installed. With the genesis state (refer <<_anchor_node_configuration>>) defined for all machines, peer discovery via boot node is done with the following command.
+
+This command needs to be run on the Ethereum-Boot-Node machine only.
+
+https://github.com/ethereum/go-ethereum/wiki/Setting-up-private-network-or-local-cluster#setup-bootnode
+https://ethereum.stackexchange.com/a/8955/3137
+
+[source,bash]
+----
+bootnode --genkey=boot.key  // <1>
+bootnode --nodekey=boot.key // <2>
+----
+<1> Generate a key to derive `enode` identifier for the boot node and save it to `boot.key` file.
+<2> Start boot node with the node key as available in `boot.key` file.
+
+The `enode://` URI will be used in `geth` commands on other machines to locate peers automatically.
+
+[source,bash]
+----
+geth --bootnodes "enode://...@[::]:30301"
+---- 
+
+__Show `admin.peers()` result__
+
+==== Peering manually
+To set-up the peers manually, follow the steps below. These steps need to be run on each of the machine in the topology.
+
+1. Log on to second machine, create folder `eth-priv` and copy `genesis.json` (created above) here. Start Ethereum with command below.
+
+[source,bash]
+----
+geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --maxpeers 3  --port 30333 console
+----
+
+2. From the console, add peer.
+
+To add a peer, replace the `[::]` in the node information value (see step 3 in previous section) of the first machine with the public IP address of the first machine.
+
+[[_code_add_peer]]
+[source,bash]
+----
+admin.addPeer("enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333?discport=0")
+----
+
+3. Use `admin.peers` function to list connected peers.
+
+4. Repeat the above steps on the third machine.
+
+On the fourth machine, add a `static-nodes.json` file in the `eth-priv` folder with the node information of the first machine. For example,
+
+[[_code_connected_node]]
+[source,json]
+----
+[
+    "enode:///342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333"
+]
+----
