@@ -234,27 +234,6 @@ geth --datadir eth-priv/ console      // <1>
 
 The genesis block has been created successfully with `genesis.json` document.
 
-__The following section will be moved to elsewhere.__
-
-[[_anchor_start_blockchain]]
-==== Start blockchain
-Start blockchain with the command below. Note that, the value of `--networkid` matches with the value of `chainId` in `genesis.json` file. Also, with the `--nodiscover` flag, this machine becomes a sort of host machine. Finally, this machine will listen of peering connections at port number `30333`.
-
-[[_code_start_blockchain]]
-[source,bash]
-----
-geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --nodiscover --maxpeers 3  --port 30333 console
-----
-
-From the console, get the node value.
-
-[[_code_add_node]]
-[source,bash]
-----
-admin.nodeInfo.enode
-"enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@[::]:30333?discport=0"
-----
-
 [[_anchor_peering]]
 === Peering
 
@@ -266,53 +245,115 @@ This command needs to be run on the Ethereum-Boot-Node machine only.
 https://github.com/ethereum/go-ethereum/wiki/Setting-up-private-network-or-local-cluster#setup-bootnode
 https://ethereum.stackexchange.com/a/8955/3137
 
+[[_code_start_bootnode]]
 [source,bash]
 ----
-bootnode --genkey=boot.key  // <1>
-bootnode --nodekey=boot.key // <2>
+cd eth-priv // <1>
+bootnode --genkey=bootnode.key  // <2>
+bootnode --nodekey=bootnode.key // <3>
+INFO [03-21|22:43:51] UDP listener up                          self=enode://174a54af9c879a214185a86d685110a25f371d2af5f3d42afd8bfedc9bb53c1fbbe2d73f91e738a3621d6cb07ec0e1a76b3feae0083c039e692f9557f25e5fd8@[::]:30301  // <4>
 ----
-<1> Generate a key to derive `enode` identifier for the boot node and save it to `boot.key` file.
-<2> Start boot node with the node key as available in `boot.key` file.
+<1> Save the key in the folder for private network `eth-priv`.
+<2> Generate a key to derive `enode` identifier for the boot node and save it to `bootnode.key` file.
+<3> Start boot node with the node key as available in `bootnode.key` file.
+<4> The `[::]` part of the `enode://` URI should be changed to the IP address of this (boot node) machine and the resulting UIR string will be used in `--bootnodes` flag of `geth` commands on other machines to locate peers automatically.
 
-The `enode://` URI will be used in `geth` commands on other machines to locate peers automatically.
+To know the IP address of this machine run the command below.
 
+[[_code_show_machineip]]
 [source,bash]
 ----
-geth --bootnodes "enode://...@[::]:30301"
----- 
+curl http://checkip.amazonaws.com/
+----
 
-__Show `admin.peers()` result__
+Note that, this set-up had not considered a detailed topology of the machines to be used for the private network. Therefore, the IP address to be used has been chosen as the public IP address. Depending on the choice of topology, it could be IP address in a private subnet, etc. 
+
+To start the private network, log on to other machines in the network and run the following steps.
+
+1. Copy `genesis.json` (see <<_code_genesis_json>> here).
+2. Start `geth` with command as shown below.
+
+[[_code_start_with_boot_node]]
+[source,bash]
+----
+geth --bootnodes --datadir "eth-priv" --networkid "15" --maxpeers 3 --port 30303
+----
+
+3. Log on to any machine and check connected peer.
+
+[[_code_list_of_peers]]
+[source,bash]
+----
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30333 console // <1>
+admin.peers  // <2>
+----
+
+At this point, the private network has three machines peering with each other, via a boot node, in a private Ethereum network. 
 
 ==== Peering manually
-To set-up the peers manually, follow the steps below. These steps need to be run on each of the machine in the topology.
+To set-up the peers manually, the boot node machine is not considered.
 
-1. Log on to second machine, create folder `eth-priv` and copy `genesis.json` (created above) here. Start Ethereum with command below.
+1. Log on to Ethereum-Standalone-node and create folder `eth-priv`. 
+2. Copy `genesis.json` (see <<_code_genesis_json>> here).
+3. Start `geth` as shown below.
 
+[[_code_start_node_console]]
 [source,bash]
 ----
-geth --datadir "/home/ubuntu/eth-priv" --networkid 15 --maxpeers 3  --port 30333 console
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
 ----
 
-2. From the console, add peer.
+<1> Uses `--datadir` folder for private network with network id `15` and will listen for a maximum of `3` peers in the network on UDP port `30303`. It will also launch console to add peers.
 
-To add a peer, replace the `[::]` in the node information value (see step 3 in previous section) of the first machine with the public IP address of the first machine.
+4. From the console, show node information.
 
-[[_code_add_peer]]
+[[_code_show_nodeInfo]]
 [source,bash]
 ----
-admin.addPeer("enode://342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333?discport=0")
+admin.nodeInfo
+{
+  enode: "enode://f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493@[::]:30303",       // <1>
+  id: "f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493",
+  ip: "::",
+  listenAddr: "[::]:30303",
+  name: "Geth/v1.7.3-stable-4bb3c89d/linux-amd64/go1.9",
+  ports: {
+    discovery: 30303,
+    listener: 30303
+  },
+  protocols: {
+    eth: {
+      difficulty: 16384,
+      genesis: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+      head: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+      network: 15           // <2>
+    }
+  }
+}
 ----
 
-3. Use `admin.peers` function to list connected peers.
+<1> This `enode://` URI will have the `[::]` replaced with the IP address of this machine (see <<_code_show_machineip>>). The resulting `enode://` URI will be used in other machines for peering.
+<2> The network ID is `15` - our choice of network ID for setting up private network.
 
-4. Repeat the above steps on the third machine.
+5. Log on to Ethereum-Mining-Node.
+6. Copy `genesis.json` (see <<_code_genesis_json>> here).
+7. Start `geth` (see <<_code_start_node_console>> here).
+8. Add Ethereum-Standalone-Node as a peer. 
 
-On the fourth machine, add a `static-nodes.json` file in the `eth-priv` folder with the node information of the first machine. For example,
-
-[[_code_connected_node]]
-[source,json]
+[[_code_add_peer_1]]
+[source,bash]
 ----
-[
-    "enode:///342a11d352151b3dfeb78db02a4319e1255c9fb49bc9a1dc44485f7c1bca9cc638540833e4577016f9a6180d1e911d907280af9b3892c53120e1e30619594eba@18.0.0.0:30333"
-]
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30333 console // <1>
+admin.addPeer ("enode://f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493@ethereum-standalone-ip-address:30303")    // <2>
+true
+admin.peers  // <3>
 ----
+
+<1> Launch console
+<2> Add Ethereum-Standalone-node as a peer using its IP address.
+<3> Show list of connected peers.
+
+9. Repeat steps 5 to 8 for Ethereum-RPC-node also.
+10. Finally, log on to Ethereum-Standalone node again and check list of all connected peers. See <<_code_list_of_peers>>.
+
+At this point, the private network has three machines peering with each other in a private Ethereum network.
