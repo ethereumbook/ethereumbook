@@ -90,11 +90,11 @@ INFO [03-19|22:44:24] Imported new state entries               count=205 elapsed
 <2> Default location of database as no configuration was done
 <3> The value of `ChainId` is set to `1` because, by default `geth` connects to main network.
 <4> This `geth` node starts peering.
-<5> This `geth` node starts downloading blocks that have been confirmed so far. _This can run for quite a while (statistics here?)_
+<5> This `geth` node starts downloading blocks that have been confirmed so far.
 
 If messages are visible, then `geth` has started successfully. To stop `geth`, simply hit `Ctrl-C`.
 
-By default, `geth` will run for main network, and uses the folder `$HOME/.geth` to store the downloaded blocks. To work with private nodes, `geth` needs to be configured for a new directory needs to be created - preferably under `$HOME`. Multiple such directories maybe created when working with multiple private networks.
+By default, `geth` will run for main network, and uses the folder `$HOME/ethereum/.geth` to store the downloaded blocks. To work with private nodes, `geth` needs to be configured for a new directory needs to be created - preferably under `$HOME`. Multiple such directories maybe created when working with multiple private networks.
 
 [source,bash]
 ----
@@ -105,7 +105,6 @@ mkdir eth-priv
 When working with private networks, *always* refer the directory name in `geth` commands, via `--datadir` flag.
 
 Repeat the installation of Ethereum client steps for all the nodes in the topology (<<_table_aws_topology_nodes>>).
-
 
 [[_anchor_node_configuration]]
 === Configuring genesis for nodes
@@ -131,7 +130,7 @@ Create a JSON document, `genesis.json` in `eth-priv` folder for genesis block wi
     "coinbase": "0x0000000000000000000000000000000000000000", <3>
     "timestamp": "0x00",
     "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "gasLimit": "0xffffffff" <3>
+    "gasLimit": "0xffffffff" <4>
 }
 ----
 
@@ -149,8 +148,7 @@ For more details on all settings, see here: [https://ethereum.stackexchange.com/
 ==== Initialize node
 With the configuration for genesis block ready, the nodes are initialized to build the genesis block. This is done by running the `geth` command for initialization. 
 
-[quote]
-This initialisation needs to be done on one node only e.g. the Ethereum-Standalone-Node. When the machines peer with each other, then the genesis block will be synchronized.
+This step needs to be done for all machines in the network.
 
 [[_code_node_init]]
 [source,bash]
@@ -232,7 +230,7 @@ geth --datadir eth-priv/ console      // <1>
 <6> Note the hash of the block - `0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660`.
 <7> The number of transactions in this block is zero - as expected.
 
-The genesis block has been created successfully with `genesis.json` document.
+Note that, the block hash values are the same in 3 and 6 above. This means, currently, there is only one block - the genesis block.
 
 [[_anchor_peering]]
 === Peering
@@ -276,15 +274,17 @@ To start the private network, log on to other machines in the network and run th
 [[_code_start_with_boot_node]]
 [source,bash]
 ----
-geth --bootnodes --datadir "eth-priv" --networkid "15" --maxpeers 3 --port 30303
+geth --bootnodes "enode://" --datadir "eth-priv" --networkid "15" --maxpeers 3 --port 30303
 ----
+
+*NOTE* that, since this topology is exposed to the internet, it is quite likely that, many nodes that are _outside_ this topology will also try to connect to this boot node. Therefore, it may take a while to see the nodes of this topology connect to this boot node. 
 
 3. Log on to any machine and check connected peer.
 
 [[_code_list_of_peers]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30333 console // <1>
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
 admin.peers  // <2>
 ----
 
@@ -343,17 +343,85 @@ admin.nodeInfo
 [[_code_add_peer_1]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30333 console // <1>
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
 admin.addPeer ("enode://f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493@ethereum-standalone-ip-address:30303")    // <2>
 true
-admin.peers  // <3>
+admin.nodeInfo
+{
+  enode:    "enode://0d71be9c6849646c9882f7ddfa6a0c77a1097057cca8c2ec48d55eb62a86eeba6128b8b572cd8932b81cad2a7928e347e343d1be3832e9ce5e2afe6dc3cdd5ff@[::]:30303",    // <3>
+  id: "0d71be9c6849646c9882f7ddfa6a0c77a1097057cca8c2ec48d55eb62a86eeba6128b8b572cd8932b81cad2a7928e347e343d1be3832e9ce5e2afe6dc3cdd5ff",
+  ip: "::",
+  listenAddr: "[::]:30303",
+  name: "Geth/v1.7.3-stable-4bb3c89d/linux-amd64/go1.9",
+  ports: {
+    discovery: 30303,
+    listener: 30303
+  },
+  protocols: {
+    eth: {
+      difficulty: 16384,
+      genesis: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+      head: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+      network: 15
+    }
+  }
+}
+admin.peers  // <4>
+[{
+    caps: ["eth/63"],
+    id: "f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493",      // <5>
+    name: "Geth/v1.7.3-stable-4bb3c89d/linux-amd64/go1.9",
+    network: {       // <6>
+      localAddress: "ethereum-standalone-ip-address-local:45456",
+      remoteAddress: "ethereum-standalone-ip-address-remote:30303"       
+    },
+    protocols: {
+      eth: {
+        difficulty: 16384,
+        head: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+        version: 63
+      }
+    }
+}]
 ----
 
 <1> Launch console
 <2> Add Ethereum-Standalone-node as a peer using its IP address.
-<3> Show list of connected peers.
+<3> The `enode://` URI of this node.
+<4> Show list of connected peers.
+<5> The `enode://` URI of the connected peer.
+<6> IP address of the connected peer.
+
+This peering can be verified from other machine also. For example, launch the console for the Ethereum-Standalone-Node and look for connected peers as shown below.
+
+[[_code_show_connected_peer]]
+[source,bash]
+----
+geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
+admin.peers  // <2>
+[{
+    caps: ["eth/63"],
+    id: "0d71be9c6849646c9882f7ddfa6a0c77a1097057cca8c2ec48d55eb62a86eeba6128b8b572cd8932b81cad2a7928e347e343d1be3832e9ce5e2afe6dc3cdd5ff",       // <3>
+    name: "Geth/v1.7.3-stable-4bb3c89d/linux-amd64/go1.9",
+    network: {
+      localAddress: "172.31.62.70:30303",
+      remoteAddress: "52.23.211.78:45456"
+    },
+    protocols: {
+      eth: {
+        difficulty: 16384,
+        head: "0x6e92f8b23bcdfdf34dc813cfaf1d84b71beac80530506b5d63a2df10fe23a660",
+        version: 63
+      }
+    }
+}]
+----
+
+<1> Launch console
+<2> Show list of connected peers.
+<3> The `enode://` URI of the connected peer.
 
 9. Repeat steps 5 to 8 for Ethereum-RPC-node also.
-10. Finally, log on to Ethereum-Standalone node again and check list of all connected peers. See <<_code_list_of_peers>>.
+10. Finally, log on to Ethereum-Standalone node again and check list of all connected peers. See <<_code_show_connected_peer>>.
 
 At this point, the private network has three machines peering with each other in a private Ethereum network.
