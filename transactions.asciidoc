@@ -387,30 +387,31 @@ The signature verification algorithm takes the message (a hash of the transactio
 
 ((("public and private keys", "key pairs", "ephemeral")))The signature algorithm first generates an _ephemeral_ (temporary) private/public key pair. This temporary key pair is used in the calculation of the _R_ and _S_ values, after a transformation involving the signing private key and the transaction hash.
 
-The temporary key pair is based on a random number _p_, which is used as the temporary private key. From _p_, we generate the corresponding temporary public key _P_ (calculated as _P = p*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _P_.
+The temporary key pair is based on a random number _k~eph~_, which is used as the temporary private key. From _k~eph~_, we generate the corresponding temporary public key _P_ (calculated as _P = k~eph~*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _P_.
 
 From there, the algorithm calculates the _S_ value of the signature, such that:
 
-_S_ = __p__^-1^ (__Keccak256__(__m__) + __k__ * __R__) _mod p_
+_S_ ≡ __k~eph~__^-1^ (__Keccak256__(__m__) + __k~priv~__ * __R__)  {nbsp} {nbsp} (_mod p_)
 
 where:
 
-* _p_ is the ephemeral private key
+* _k~eph~_ is the ephemeral private key
 * _R_ is the x coordinate of the ephemeral public key
-* _k_ is the signing (EOA owner's) private key
+* _k~priv~_ is the signing (EOA owner's) private key
 * _m_ is the transaction data
 * _p_ is the prime order of the elliptic curve
 
 Verification is the inverse of the signature generation function, using the _R_, _S_ values and the public key to calculate a value _P_, which is a point on the elliptic curve (the ephemeral public key used in signature creation):
 
-_P_ = __S__^-1^ * __Keccak256__(__m__) * _G_ + __S__^-1^ * _R_ * _K_
+_P_ ≡ __S__^-1^ * __Keccak256__(__m__) * _G_ + __S__^-1^ * _R_ * _K~pub~_  {nbsp} {nbsp} (_mod p_)
 
 where:
 
 * _R_ and _S_ are the signature values
-* _K_ is the signer's (EOA owner's) public key
+* _K~pub~_ is the signer's (EOA owner's) public key
 * _m_ is the transaction data that was signed
 * _G_ is the elliptic curve generator point
+* _p_ is the prime order of the elliptic curve
 
 If the x coordinate of the calculated point _P_ is equal to _R_, then the verifier can conclude that the signature is valid.
 
