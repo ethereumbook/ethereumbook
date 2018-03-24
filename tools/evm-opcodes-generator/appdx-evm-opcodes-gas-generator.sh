@@ -4,6 +4,11 @@
 # https://raw.githubusercontent.com/trailofbits/evm-opcodes/master/README.md
 # from https://github.com/trailofbits/evm-opcodes
 
+# TODO - Change 
+# |`0x21` - `0x2f` |Unused |Unused
+# by
+# |`0x21` - `0x2f` |Unused |Unused |- |
+
 ORIGIN_FILE=https://raw.githubusercontent.com/trailofbits/evm-opcodes/master/README.md
 
 # OPCODES MARKER in the converted asciidoc file
