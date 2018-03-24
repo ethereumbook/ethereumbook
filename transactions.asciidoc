@@ -7,7 +7,7 @@ In this section we will dissect transactions, show how they work and understand 
 [[tx_struct]]
 === Structure of Transaction
 
-First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using its own internal data structure, perhaps embelished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
+First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using its own internal data structure, perhaps embellished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
 
 A transaction is a serialized binary message that contains the following data:
 
@@ -27,9 +27,9 @@ v,r,s:: The three components of an ECDSA signature of the originating EOA.
 
 The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme (see <<rlp>>), which was created specifically for accurate and byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded as big-endian integers, of lengths that are multiples of 8 bits.
 
-Note that the field labels ("to", "start gas", e.t.c.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, therefore, belongs to the next field in the structure.
+Note that the field labels ("to", "start gas", etc.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, therefore, belongs to the next field in the structure.
 
-While this is the actual transaction structure transmitted, most internal representations and user-interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
+While this is the actual transaction structure transmitted, most internal representations and user interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
 
 For example you may notice there is no "+from+" data in the address identifying the originator EOA. That EOA's public key can easily be derived from the +v,r,s+ components of the ECDSA signature. The address can, in turn, be easily derived from the public key. When you see a transaction showing a "from" field, that was added by the software used to visualize the transaction. Other metadata frequently added to the transaction by client software include the block number (once it is mined) and a transaction ID (calculated hash). Again, this data is derived from the transaction and not part of the transaction message itself.
 
@@ -54,7 +54,7 @@ web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")
 
 [TIP]
 ====
-The nonce is zero-based counter, meaning the first transaction has nonce 0. In <<nonce_getTransactionCount>>, we have a transaction count of 40, meaning nonces 0 through 39 have been seen. The next transaction's nonce will be 40.
+The nonce is a zero-based counter, meaning the first transaction has nonce 0. In <<nonce_getTransactionCount>>, we have a transaction count of 40, meaning nonces 0 through 39 have been seen. The next transaction's nonce will be 40.
 ====
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
@@ -93,7 +93,7 @@ curl --data '{"method":"parity_nextNonce","params":["0x9e713963a92c02317a681b9bb
 
 ===== Gaps in nonces, duplicate nonces, and confirmation
 
-It is important to keep track of nonces if you are creating transactions programmaticaly, especially if you are doing so from multiple independent processes simultaneously.
+It is important to keep track of nonces if you are creating transactions programmatically, especially if you are doing so from multiple independent processes simultaneously.
 
 The Ethereum network processes transactions sequentially, based on the nonce. That means that if you transmit a transaction with nonce +0+ and then transmit a transaction with nonce +2+, the second transaction will not be mined. It will be stored in the mempool, while the Ethereum network waits for the missing nonce to appear. All nodes will assume that the missing nonce has simply been delayed and that the transaction with nonce +2+ was received out-of-sequence.
 
@@ -168,10 +168,10 @@ Ethereum does no further validation of this field. Any 20-byte value is consider
 
 [WARNING]
 ====
-Ethereum cannot and does not validate recipient addresses in transaction. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user-interface level.
+Ethereum cannot and does not validate recipient addresses in transaction. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user interface level.
 ====
 
-Sending a transaction to an invalid address will _burn_ the ether sent, rendering it forever inaccessible (unspendable), since no signature can be generated to spend it. It is assumed that validation of the address happens at the user-interface level (see <<eip-55>> or <<icap>>). In fact, there are a number of valid reasons for burning ether, including as a game-theory disincentive to cheating in payment channels and other smart contracts.
+Sending a transaction to an invalid address will _burn_ the ether sent, rendering it forever inaccessible (unspendable), since no signature can be generated to spend it. It is assumed that validation of the address happens at the user interface level (see <<eip-55>> or <<icap>>). In fact, there are a number of valid reasons for burning ether, including as a game-theory disincentive to cheating in payment channels and other smart contracts.
 
 === Transaction value and data
 
@@ -290,7 +290,7 @@ web3.sha3("withdraw(uint256)");
 '0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
 ----
 
-The first 4 bytes of the hash are +0x2e1a7d4d+. That's our "function selector" value, which will tell the EMV which function we want to call.
+The first 4 bytes of the hash are +0x2e1a7d4d+. That's our "function selector" value, which will tell the EVM which function we want to call.
 
 Next, let's calculate a value to pass as the argument +withdraw_amount+. We want to withdraw 0.01 ether. Let's encode that to a hex-serialized big-endian unsigned 256-bit integer, denominated in wei:
 
@@ -311,7 +311,7 @@ That's the +data+ payload for our transaction, invoking the +withdraw+ function 
 
 === Special transaction: Contract registration
 
-There is one special case of a transaction with a data payload and no value. This is a transaction the _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
+There is one special case of a transaction with a data payload and no value. This is a transaction that _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
 
 A contract registration transaction should contain no ether value, only a data payload that contains the compiled bytecode of the contract. The only effect of this transaction is to register the contract.
 
@@ -387,23 +387,23 @@ The signature verification algorithm takes the message (a hash of the transactio
 
 ((("public and private keys", "key pairs", "ephemeral")))The signature algorithm first generates an _ephemeral_ (temporary) private/public key pair. This temporary key pair is used in the calculation of the _R_ and _S_ values, after a transformation involving the signing private key and the transaction hash.
 
-The temporary key pair is based on a random number _p_, which is used as the temporary private key. From _p_, we generate the corresponding temporary public key _P_ (calculated as _P = p*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _P_.
+The temporary key pair is based on a random number _q_, which is used as the temporary private key. From _q_, we generate the corresponding temporary public key _Q_ (calculated as _Q = q*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _Q_.
 
 From there, the algorithm calculates the _S_ value of the signature, such that:
 
-_S_ = __p__^-1^ (__Keccak256__(__m__) + __k__ * __R__) _mod p_
+_S_ &#8801; __q__^-1^ (__Keccak256__(__m__) + __k__ * __R__)  {nbsp} {nbsp} (_mod p_)
 
 where:
 
-* _p_ is the ephemeral private key
+* _q_ is the ephemeral private key
 * _R_ is the x coordinate of the ephemeral public key
 * _k_ is the signing (EOA owner's) private key
 * _m_ is the transaction data
 * _p_ is the prime order of the elliptic curve
 
-Verification is the inverse of the signature generation function, using the _R_, _S_ values and the public key to calculate a value _P_, which is a point on the elliptic curve (the ephemeral public key used in signature creation):
+Verification is the inverse of the signature generation function, using the _R_, _S_ values and the public key to calculate a value _Q_, which is a point on the elliptic curve (the ephemeral public key used in signature creation):
 
-_P_ = __S__^-1^ * __Keccak256__(__m__) * _G_ + __S__^-1^ * _R_ * _K_
+_Q_ &#8801; __S__^-1^ * __Keccak256__(__m__) * _G_ + __S__^-1^ * _R_ * _K_  {nbsp} {nbsp} (_mod p_)
 
 where:
 
@@ -411,8 +411,9 @@ where:
 * _K_ is the signer's (EOA owner's) public key
 * _m_ is the transaction data that was signed
 * _G_ is the elliptic curve generator point
+* _p_ is the prime order of the elliptic curve
 
-If the x coordinate of the calculated point _P_ is equal to _R_, then the verifier can conclude that the signature is valid.
+If the x coordinate of the calculated point _Q_ is equal to _R_, then the verifier can conclude that the signature is valid.
 
 Note that in verifying the signature, the private key is neither known nor revealed.
 
@@ -489,7 +490,7 @@ https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
 
 === The signature prefix value (v) and public key recovery
 
-As mentioned in <<tx_struct>>, the transaction message doesn't include any "from" field. That's because the originator's public key can be computed directly from the ECDSA signature. Once you have the public key, you can compute the address easily. The process of recovering the signer's public key is called a _Publik Key Recovery_.
+As mentioned in <<tx_struct>>, the transaction message doesn't include any "from" field. That's because the originator's public key can be computed directly from the ECDSA signature. Once you have the public key, you can compute the address easily. The process of recovering the signer's public key is called a _Public Key Recovery_.
 
 Given the values +r+ and +s+, that were computed in <<ecdsa_math>>, we can compute two possible public keys, only one of which will produce a valid +P+ result in our ECDSA verification function. The one that produces a valid +P+ is the correct public key.
 

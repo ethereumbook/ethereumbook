@@ -2,11 +2,13 @@
 
 === What is a Smart Contract?
 
-A Smart Contract is a computer logic that, given certain conditions, can enforce the execution of one or more transactions in an irreversible and decentralized way without the need for third parties. The term was first used by Nick Szabo in 1994.
+A Smart Contract is a computer program that, given certain conditions, can enforce the execution of a set of instructions without third party interference. The concept, introduced by Nick Szabo in 1994, can be seen as the cryptographic equivalent of a vending machine.
 
-Bitcoin supports smart contracts in a limited way by _Turing incomplete_ Script language. On the other hand, the Ethereum blockchain uses a Turing complete virtual machine (the EVM) which makes the Smart Contracts essentially programs that run in a distributed way. In that sense, they are pieces of code that live on the blockchain and are executed when a corresponding transaction is sent and processed. They can read other contracts' data (if that second contract is designed for it), make decisions, send ether and execute other contracts' functions. Smart Contracts will exist and have the ability to run as long as the whole network exists, and will only stop if they run out of _gas_ or if they were programmed to self destruct.
+On Ethereum, smart contracts are accessed via an Ethereum address. They can receive and transfer funds, call other contracts, store variables and do any internal computation using a Turing complete virtual machine (the EVM). It is a key feature of the Ethereum protocol, extending the smart contract capabilities of the Bitcoin Script language.
 
-In Ethereum, a smart contract is composed of different functions, and is completely reactive. This means that these functions are only executed in response to a transaction made to that specific contract, calling that specific function. It is possible for contracts to call other contracts while executing a function, but any chain of function calls must have originated with an EOA.
+Once compiled, a smart contract is deployed via an initial transaction. Each of its functions can then be triggered by an EOA, directly or via another smart contract. The complete transaction, including direct and indirect calls, will either run completely or fail. Computation is constrained by the transaction gas limit. A failed transaction is still stored on the blockchain but has no effects on funds and variables.
+
+A deployed smart contract, and each of its calls, are traced on the blockchain and therefore can't be deleted. It is yet possible to plan in the code the alteration of its functionalities upon certain conditions, for example to end a sale after a certain date or to give an administrator the ability to “kill” the contract.
 
 [[high_level_languages]]
 === Introduction to Ethereum High-Level Languages
@@ -25,20 +27,20 @@ Vyper:: A more recently developed language, similar to Serpent and with Python-l
 
 Bamboo:: A newly developed language, influenced by Erlang with explicit state transitions and without iterative flows (loops). Intended to reduce side-effects and increase auditability. Very new and rarely used.
 
-As you can see, there many languages to choose from. However, of all these Solidity is by far the most popular, to the point of being the de-facto high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages, to gain an understanding of their different philosophies.
+As you can see, there are many languages to choose from. However, of all these Solidity is by far the most popular, to the point of being the de-facto high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages, to gain an understanding of their different philosophies.
 
 === Building a Smart Contract
 
 === Ethereum Contract ABI
 In computer software, an application binary interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures and computational routines are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
 
-In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a *contract address*. The purpose of an ABI is to thus specify which functions in the contract to invoke and to get a guarantee that the function will return data in an expected format. 
+In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a *contract address*. The purpose of an ABI is to thus specify which functions in the contract to invoke and to get a guarantee that the function will return data in an expected format.
 
 ____
 If an account or a web application wants to interact with a published contract and use one of its functions, the account would first need to hash the function's definition through an ABI to create its *EVM bytecode*. Then, to call the function, the account would pass this bytecode to a transaction's data field so that the bytecode could be interpreted with code at the contract's address. Thus, the two necessary pieces of information for an external function call would be the *ABI* and the *address of the contract wherein the function is written*. We demontrate the use of an ABI in a detailed example below.
 ____
 
-The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`. 
+The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`.
 
 The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for fields such as state variables or modifiers.
 
@@ -46,9 +48,9 @@ The ABI thus specifies information about functions in a smart contract, relaying
 ==== Structure of Call Data
 The data for a function call is a concatenation of several values of bytes. We discuss these in steps below.
 
-*First Four Bytes*: The call data always begins with *four bytes* of the function signature. In specific, these are the first four bytes of the Keccak-256 hash of the *signature* of a function. In this context, the signature is simply the function name with a parenthesised list of parameter types split by a single comma. 
+*First Four Bytes*: The call data always begins with *four bytes* of the function signature. In specific, these are the first four bytes of the Keccak-256 hash of the *signature* of a function. In this context, the signature is simply the function name with a parenthesised list of parameter types split by a single comma.
 
-Assume, as a running example, the brief contract `Test`: 
+Assume, as a running example, the brief contract `Test`:
 
 [source,solidity]
 contract Test {
@@ -76,45 +78,250 @@ ____
 //TO-DO: Discuss Events vs. Functions
 
 ==== Further Reading
-The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts they intend to call available at compile-time. 
+The Application Binary Interface (ABI) is strongly typed, known at compilation time and static. All contracts have the interface definitions of any contracts they intend to call available at compile-time.
 
-A more rigorous and in-depth explanation of the Ethereum ABI can be found at 
-`https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`. 
+A more rigorous and in-depth explanation of the Ethereum ABI can be found at
+`https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI`.
 The link includes details about the formal specification of encoding and various helpful examples.
 
 [[testing_frameworks]]
 === Testing Smart Contracts
 
 === Deploying Smart Contracts
+After you've typed up your smart contract, you'll want to deploy it to the main ethereum network.
+The process is as follows:
+
+1. Compile your source solidity code to EVM bytecode
+2. Sign the bytecode into a transaction
+3. Send the code to an Ethereum node to be mined into the network
+4. Then you can interact with the contract by sending it transactions
+
+
+We'll now go through the deployment process using the Go Ethereum client (geth).
+First you'll want to install the Solidity compilier (solc).
+----
+npm install -g solc
+----
+You'll also want to have Geth (Go-ethereum) installed (with homebrew installed)
+----
+brew tap ethereum/ethereum
+brew install ethereum
+----
+Now compile your solidity file into an interface (abi) and bytecode (bin)
+----
+solcjs --abi foo.sol
+solcjs --bin foo.sol
+----
+Now display the contents of these two files with:
+----
+more foo_sol_foo.abi
+more foo_sol_foo.bin
+----
+
+After this you'll want to start up a geth node in a new terminal window with:
+----
+geth console
+----
+You should see something like:
+----
+Welcome to the Geth JavaScript console!
+
+instance: Geth/v1.8.1-stable/darwin-amd64/go1.10
+INFO [03-14|18:34:37] Etherbase automatically configured       address=0x6e6A1eFF05ba3a16c3A3E5a274B288b10490C428
+coinbase: 0x6e6a1eff05ba3a16c3a3e5a274b288b10490c428
+at block: 4535991 (Sat, 11 Nov 2017 21:17:37 EST)
+ datadir: /Users/brianleffew/Library/Ethereum
+ modules: admin:1.0 debug:1.0 eth:1.0 miner:1.0 net:1.0 personal:1.0 rpc:1.0 txpool:1.0 web3:1.0
+----
+
+
+==== Infura
+Infura is a free to use hosted Ethereum cluster that allows users to run an application without the need to run a full Ethereum node or a wallet. Infura is the same Ethereum provider that powers Metamask.
+
+In order to use Infura for smart contract deployment, you must first get an Infura Access Token. To do so, visit the Infura Registration page and fill out the form. Once registered, the information will be sent to your email. It is important to save this token and keep it private.
+
+To gain some exposure into contract deployment with Infura, we will go through the steps of deploying a Smart Contract to the Ethereum Ropsten testnet using Truffle. For the purposes of this example we will assume that Truffle has already been installed and that you have already created a Truffle project with your smart contract. Refer to the Development Tools section for more information on installing and using Truffle.
+
+Because Infura does not manage your private keys, Infura cannot sign transactions on your behalf. To deal with this, we will take advantage of Truffle’s HDWalletProvider which can handle both transaction signing and connection to the Ethereum network.
+
+	npm install truffle-hdwallet-provider
+
+After installation of the provider, we will want to edit our project’s truffle.js file . Add this line at the top:
+
+	var HDWalletProvider = require(“truffle-hdwallet-provider”);
+
+We must then provide a reference to the mnemonic that generates your accounts:
+
+	var mnemonic = “<your mnemonic>“;
+
+
+
+Now let’s make use of our newly acquired Infura Access Token to add a Ropsten network definition:
+
+[source, JavaScript]
+module.exports = {
+	    networks: {
+	        ropsten: {
+		provider: function() {
+		    return new HDWalletProvider (mnemonic, “https://ropsten.infura.io/<INFURA_Access_Token>”)
+		},
+		network_id: 3
+	       }
+	    }
+};
+
+In the above code, make sure to replace <INFURA_Access_Token> with your provided Access Token. Also, although the above HDWalletProvider is being returned with Ropsten as the desired network, it can be made to work with any of the Infura-supported networks, a list of which can be found on the Infura homepage.
+
+The account in charge of deployment will be the first one generated by the mnemonic. To specify an account, add an integer input after the network declaration string. For example, to specify the second account:
+[source, JavaScript]
+return new HDWalletProvider (mnemonic, “https://ropsten.infura.io/<INFURA_Access_Token>”, 1)
+
+Now we are ready to actually deploy our contract. First, make sure that your account has enough ether to deploy the contract. Now compile the project:
+
+	truffle compile
+
+Finally, deploy it to the network!
+
+	truffle migrate --network ropsten
+
+//TODO use the example from the intro, incorporate infura, truffle deployment?, and expand on intro
+
+
+==== Testing Frameworks
+There are several commonly-used test frameworks (no particular order)
+
+Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in Javascript (Mocha based) or Solidity. These tests are run against TestRPC/Ganache. More details on writing these tests are located at <<truffle>>
+
+Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in Javascript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts when truly needed. Embark includes a testing lib to rapidly run and test your contracts in a EVM, with functions like ```assert.equal()```. ```embark test``` will run any test files under directory test/.
+
+Dapp:: Dapp uses native Solidity code (a library called ds-test) and a Parity built Rust library called Ethrun to execute Ethereum byte code and then assert correctness. The ds-test library provides assertion functions for validating correctness and events for logging data in the console.
+
+Assertions Functions includes
+....
+assert(bool condition)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+....
+
+Logging Events will log information to the console, making them useful for debugging.
+....
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+....
+
+Populus:: Populus uses python and its own chain emulator to run contracts written in solidity. Unit tests are written in Python with the pytest library. Populus supports writing contracts that are specifically for testing. These contract filenames should match the glob pattern ```Test*.sol``` and be located anywhere under the project tests directory ```./tests/```.
+
+|=======
+|Framework | Test Language(s)    | Testing Framework | Chain Emulator       | Website
+|Truffle   | Javascript/Solidity | Mocha             | TestRPC/Ganache      | truffleframework.com
+|Embark    | Javascript          | Mocha             | TestRPC/Ganache      | embark.readthedocs.io
+|Dapp      | Solidity            | ds-test (custom)  | Ethrun (Parity)      | dapp.readthedocs.io
+|Populus   | Python              | Pytes             | Python chain emulator| populus.readthedocs.io
+|=======
+
+=======
+If you this is your first time using geth, it might take a while to sync up to the network.
+Then set up your variables with:
+----
+> var foo = eth(<CONTENTS_OF_ABI_FILE>)
+> var byteCode = '0x<CONTENTS_OF_BIN_FILE>)
+----
+Fill in the parameters with the outputs from the more commands above.
+Then finally deploy your contract with:
+----
+> var deploy = {from eth.coinbase, data:byteCode, gas:2000000}
+> var fooInstance = foo(bar, baz)
+----
+=======
+
+==== On-Blockchain Testing
+Although most testing shouldn't occur on deployed contracts, a contract's behavior can be checked via Ethereum clients.  The following commands can be used to assess a smart comtract's state. These commands should be typed at the '+geth+' terminal, although any web3 calls will also support these commands.
+
+....
+eth.getTransactionReceipt(txhash);
+....
+Can be used to get the address of a contract at `+txhash+`.
+....
+eth.getCode(contractaddress)
+....
+Gets the code of a contract deployed at `+contractadress+`. This can be used to verify proper deployment.
+....
+eth.getPastLogs(options)
+....
+Gets the full logs of the contract located at address specified in options. This is helpful for viewing the history of a contract's calls.
+....
+eth.getStorageAt(address, position)
+....
+Gets the storage located at `+address+` with an offset of `+position+` shows the data stored in that contract.
 
 === Best Practices
 
 Two of the most important concepts to consider during smart contract creation are *gas* and *security*.
 
+==== Gas
+
 *Gas* is described in more in detail in the <<Gas>> section, but is an incredibly important consideration in smart contract programming. Gas is a resource dictating the amount of computation power that a user will allot to a transaction. If the gas limit is exceeded during computation, the following series of events occurs:
 
 * An exception is thrown
 * The state of the contract prior to the function's execution is restored
-* The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded 
+* The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded
 
-Because gas is paid for by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call
+Because gas is paid by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call.
 
-*Avoid dynamically-sized Arrays*:: Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
+*Avoid dynamically-sized Arrays*
+
+* Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
+
+==== Security
+
+With blockchain being in its early stages, *security* is one of the most important considerations when writing smart contracts. As with other programs, a smart contract will execute exactly what is written, which is not always equivalent to the intentions of the programmer. To this end, a programmer must understand common security exploits and proper ways to safeguard against these exploits. Here is a list of some of the security issues that have arisen in the past.
+
+*Re-entrancy*
+
+Re-entrancy is a phenomenon in programming in which a function or program is interrupted, and then called again before its previous invocations have finished. In the context of smart contract programming, re-entrancy can occur when contract A calls a function in contract B, which in turn calls the same function in contract A, leading to a recursive execution. This can be particularly dangerous in a situation where the state of the contract is not updated until after the critical call is finished.
+
+To understand this, imagine a withdrawal by a user calling a bank contract. User A calls the withdraw function in bank B, which executes the following actions:
+
+. Checks if A has the available balance
+. Calls A's default function, paying A in Ether
+. Updates user A's balance within the contract
+
+As a side note, the reason that the default function of A is called during a payout is because contract B allows A to execute code during this payout. For instance, if contract A kept count of the money it was being paid, it might need to change a variable called "balance," setting "balance" equal to its previous amount, plus what it was just paid.
+
+However, malicious attackers can take advantage of this execution. Imagine that in A's default function, user A calls bank B's withdraw function once again. B will first check if A has the available balance, but since step 3 (which updates A's balance) has yet to be executed, it will appear to bank B that user A still has the available funds to withdraw, no matter how many times this function is re-invoked. Thus, "withdraw" can be called as long as there is gas available for execution.
+
+This exploit is particularly famous because of its relevance in the DAO attack. A user took advantage of the fact that the balance in a contract was changed after a call to transfer funds was made, and withdrew millions of dollars worth of ether.
+
+To guard against re-entrancy, http://solidity.readthedocs.io/en/v0.4.21/security-considerations.html[Solidity] recommends that a programmer adhere to the Checks-Effects-Interactions pattern, wherein the effects of a function call (such as decreasing the balance) occur before making the call. In our example, this would mean switching steps 3 and 2: updating a user's balance before paying them out. In ethereum, this is perfectly okay, because all effects of a transaction are atomic, meaning it is impossible for the balance to update without the user also being paid out. Either both occur, or an exception is thrown and neither occurs. This guards against re-entrancy attacks because all subsequent calls into the original contract will encounter the correct modified state.
+
+*Delegate Call*:: //todo
+
+
 
 ==== Development Style
 
 ==== Design Patterns
 
 Software developers of any programming paradigm generally experience reoccuring design challenges centered around the topics of behavior, structure, interaction, and creation. Often these problems can be generalized
-and re-applied to future problems of a similar nature. When given a formal structure, these generalizations are called *Design Patterns*. 
-Smart Contracts have their own set of reoccuring design problems that can be solved using some of the patterns described below. 
+and re-applied to future problems of a similar nature. When given a formal structure, these generalizations are called *Design Patterns*.
+Smart Contracts have their own set of reoccuring design problems that can be solved using some of the patterns described below.
 
 There are an endless number of design problems in the development of smart contracts, making it impossible to discuss all of them
 here. For that reason, this section will focus on three of the most pervasive problem classifications in smart contract design: *access control*, *state flow*, and *fund dispersement*.
 
 Throughout this section, we will be working with a contract that will ultimately incorporate all three of these design patterns. This contract will run a voting system that
 allows users to vote on "truth". The contract will suggest a claim such as "The Cubs won the World Series." or "It is raining in New York City" and then users will have
-the opportunity to vote either true or false. The contract will consider the proposition as true if the majority of participants voted for true and likewise if the majority 
+the opportunity to vote either true or false. The contract will consider the proposition as true if the majority of participants voted for true and likewise if the majority
 of participants voted for false. To incentivize truthfulness, every vote must send 100 ether to the contract and the funds contributed by the losing minority will be split up amongst
 the majority. Every participant in the majority will receive their portion of winnings from the minority as well as their initial investment.
 
@@ -122,7 +329,8 @@ This "truth voting" system is actually the foundation of Gnosis, a forcasting to
 
 ===== Access Control
 
-Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote. 
+
+Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote.
 To accomplish this the contract must impose two access restrictions:
 
 . Only a owner of the contract may add new users to the list of "allowed voters"
@@ -130,57 +338,64 @@ To accomplish this the contract must impose two access restrictions:
 
 Solidity function modifers offer a concise way to implement these restrictions.
 
+_Note: The following example uses an underscore semicolon within the modifier bodies. This is  a Solidity feature used to tell the compiler when to run the modifed function's body. A developer can act as if the modifed function's body will be copied to the position of the underscore._
+[source,solidity]
 ----
-    contract TruthVote{
+contract TruthVote{
 
-        address public owner = msg.sender;
+    address public owner = msg.sender;
 
-        address[] true_votes;
-        address[] false_votes;
-        mapping (address => bool) voters;
-        mapping (address => bool) hasVoted;
+    address[] true_votes;
+    address[] false_votes;
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
 
-        uint VOTE_COST = 100;
+    uint VOTE_COST = 100;
 
-        modifier onlyOwner(){
-            require(msg.sender == owner);
-            _;
-        }
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
 
-        modifier onlyVoter(){
-            require(voters[msg.sender] != false);
-            _;
-        }
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
 
-         modifier hasNotVoted(){
-            require(hasVoted[msg.sender] == false);
-            _;
-        }
+        modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        function addVoter(address voter)
-        public
-        onlyOwner(){
-            voters[voter] = true;
-        }
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        function vote(bool val)
-        public 
-        onlyVoter()
-        hasNotVoted(){
-            if(msg.value >= VOTE_COST){
-                if(val)
-                    true_votes.push(msg.sender);
-                else
-                    false_votes.push(msg.sender);
-            hasVoted[msg.sender] = true;
-            }
+    function addVoter(address voter)
+    public
+    onlyOwner(){
+        voters[voter] = true;
+    }
+
+    function vote(bool val)
+    public
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                true_votes.push(msg.sender);
+            else
+                false_votes.push(msg.sender);
+        hasVoted[msg.sender] = true;
         }
     }
+}
 ----
 *Description of Modifiers and Functions:*
 
 - *onlyOwner*: this modifier can decorate a function such that the function will then only be callable by a sender with an address that matches that of *owner*.
-- *onlyVoter*: this modifer can decorate a function such that the function will then only be callable by a registered voter. 
+- *onlyVoter*: this modifer can decorate a function such that the function will then only be callable by a registered voter.
 - *addVoter(voter)*: this function is used to add a voter to the list of voters. This function uses the *onlyOwner* modifier so only the owner of this contract may call it.
 - *vote(val)*: this function is used by a voter to vote either true or false to the presented proposition. It is decorated with the *onlyVoter* modifer so only registered voters may call it.
 
@@ -191,121 +406,123 @@ at a given point in time. Let's return to our truth voting system for a more con
 
 The operation of our voting system can be broken down into 3 distinct states.
 
-. *Register*: The service has been created and the owner can now add voters. 
-. *Vote*:  All voters cast their votes. 
-. *Disperse*: Vote payments are divided and sent to the majority participants. 
+. *Register*: The service has been created and the owner can now add voters.
+. *Vote*:  All voters cast their votes.
+. *Disperse*: Vote payments are divided and sent to the majority participants.
 
 The following code continues to build on the access control code, but further restricts functionality to specific states.
 In Solidity, it is commonplace to use enumerated values to represent states.
+
+[source,solidity]
 ----
-    contract TruthVote{
-        enum States{
-            REGISTER,
-            VOTE,
-            DISPERSE
-        }
+contract TruthVote{
+    enum States{
+        REGISTER,
+        VOTE,
+        DISPERSE
+    }
 
-        address public owner = msg.sender;
+    address public owner = msg.sender;
 
-        uint voteCost;
+    uint voteCost;
 
-        address[] trueVotes;
-        address[] falseVotes;
-        
+    address[] trueVotes;
+    address[] falseVotes;
 
-        mapping (address => bool) voters;
-        mapping (address => bool) hasVoted;
 
-        uint VOTE_COST = 100;
-        
-        States state;
+    mapping (address => bool) voters;
+    mapping (address => bool) hasVoted;
 
-        modifier onlyOwner(){
-            require(msg.sender == owner);
+    uint VOTE_COST = 100;
+
+    States state;
+
+    modifier onlyOwner(){
+        require(msg.sender == owner);
+        _;
+    }
+
+    modifier onlyVoter(){
+        require(voters[msg.sender] != false);
+        _;
+    }
+
+    modifier isCurrentState(States _stage) {
+            require(state == _stage);
             _;
         }
 
-        modifier onlyVoter(){
-            require(voters[msg.sender] != false);
-            _;
-        }
+    modifier hasNotVoted(){
+        require(hasVoted[msg.sender] == false);
+        _;
+    }
 
-        modifier isCurrentState(States _stage) {
-                require(state == _stage);
-                _;
-            }
-            
-        modifier hasNotVoted(){
-            require(hasVoted[msg.sender] == false);
-            _;
-        }
+    function startVote()
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        goToNextState();
+    }
 
-        function startVote()
-        public
-        onlyOwner()
-        isCurrentState(States.REGISTER){
-            goToNextState();
-        }
+    function goToNextState() internal {
+        state = States(uint(state) + 1);
+    }
 
-        function goToNextState() internal {
-            state = States(uint(state) + 1);
-        }
+    modifier pretransition(){
+        goToNextState();
+        _;
+    }
 
-        modifier pretransition(){
-            goToNextState();
-            _;
-        }
+    function addVoter(address voter)
+    public
+    onlyOwner()
+    isCurrentState(States.REGISTER){
+        voters[voter] = true;
+    }
 
-        function addVoter(address voter)
-        public
-        onlyOwner()
-        isCurrentState(States.REGISTER){
-            voters[voter] = true;
-        }
-
-        function vote(bool val)
-        public 
-        isCurrentState(States.VOTE)
-        onlyVoter()
-        hasNotVoted(){
-            if(msg.value >= VOTE_COST){
-                if(val)
-                    trueVotes.push(msg.sender);
-                else
-                    falseVotes.push(msg.sender);
-                    
-                hasVoted[msg.sender] = true;
-            }
-        }
-
-        function disperse(bool val)
-        public
-        onlyOwner()
-        isCurrentState(States.VOTE)
-        pretransition(){
-            address[] storage winningGroup;
-            uint winningCompensation;
-            if(trueVotes.length > falseVotes.length){
-                winningGroup = trueVotes;
-                winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length; 
-            }
-            else if(trueVotes.length < falseVotes.length){
-                winningGroup = falseVotes;
-                winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length; 
-            }
+    function vote(bool val)
+    public
+    isCurrentState(States.VOTE)
+    onlyVoter()
+    hasNotVoted(){
+        if(msg.value >= VOTE_COST){
+            if(val)
+                trueVotes.push(msg.sender);
             else
-            {
-                winningGroup = trueVotes;
-                winningCompensation = VOTE_COST;
-                for(uint i =0; i < falseVotes.length; i++){
-                    falseVotes[i].send(winningCompensation);
-            }
+                falseVotes.push(msg.sender);
 
-            for(uint j =0; j < winningGroup.length; j++){
-                winningGroup[j].send(winningCompensation);
-            }
+            hasVoted[msg.sender] = true;
         }
     }
+
+    function disperse(bool val)
+    public
+    onlyOwner()
+    isCurrentState(States.VOTE)
+    pretransition(){
+        address[] storage winningGroup;
+        uint winningCompensation;
+        if(trueVotes.length > falseVotes.length){
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*falseVotes.length) / trueVotes.length;
+        }
+        else if(trueVotes.length < falseVotes.length){
+            winningGroup = falseVotes;
+            winningCompensation = VOTE_COST + (VOTE_COST*trueVotes.length) / falseVotes.length;
+        }
+        else
+        {
+            winningGroup = trueVotes;
+            winningCompensation = VOTE_COST;
+            for(uint i =0; i < falseVotes.length; i++){
+                falseVotes[i].send(winningCompensation);
+        }
+
+        for(uint j =0; j < winningGroup.length; j++){
+            winningGroup[j].send(winningCompensation);
+        }
+    }
+}
 ----
 
 *Description of Modifiers and Functions:*
@@ -316,9 +533,9 @@ In Solidity, it is commonplace to use enumerated values to represent states.
 - *disperse*: function that calculates the majority and disperses winnings accordingly. Only the owner may call this function to officially close voting.
 - *startVote*: function that the owner can use to start a vote.
 
-It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more geniune implemenation the voting period should close after a publicly understood period of time. For the sake of this example, this is fine. 
+It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more geniune implemenation the voting period should close after a publicly understood period of time. For the sake of this example, this is fine.
 
-The additions made now ensure that voting is only allowed when the owner decides to start the voting period, users can only be registered by the owner before the vote happens, and funds are only dispered after the vote closes. 
+The additions made now ensure that voting is only allowed when the owner decides to start the voting period, users can only be registered by the owner before the vote happens, and funds are only dispered after the vote closes.
 
 ===== Widthraw
 Many contracts will offer some way for a user to retrieve money from it. In our working example, users of the majority are sent money directly when the contract
@@ -326,78 +543,79 @@ begins dispersing funds. Although this appears to work, it is an under-thought s
 has a fallback function which fails and consequently breaks *disperse*. This effectively stops all further majority participants from receiving their earning.
 A better solution is to provide a withdraw function that a user can call to collect their earnings.
 
+[source,solidity]
 ----
-    ...
+...
 
-    enum States{
-        REGISTER,
-        VOTE,
-        DETERMINE,
-        WITHDRAW
+enum States{
+    REGISTER,
+    VOTE,
+    DETERMINE,
+    WITHDRAW
+}
+
+mapping (address => bool) votes;
+uint trueCount;
+uint falseCount;
+
+bool winner;
+uint winningCompensation;
+
+modifier posttransition(){
+    _;
+    goToNextState();
+}
+
+function vote(bool val)
+public
+onlyVoter()
+isCurrentStage(State.VOTE){
+    if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
+        votes[msg.sender] = val;
+        if(val)
+            trueCount++;
+        else
+            falseCount++;
     }
+}
 
-    mapping (address => bool) votes;
-    uint trueCount;
-    uint falseCount;
-
-    bool winner;
-    uint winningCompensation;
-
-    modifier posttransition(){
-        _;
-        goToNextState();
+function determine(bool val)
+public
+onlyOwner()
+isCurrentState(State.VOTE)
+pretransition()
+posttransition()
+{
+    if(trueCount > falseCount){
+        winner = true;
+        winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length;
     }
+    else if(falseCount > trueCount){
+        winner = false;
+        winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length;
+    }else{
+        winningCompensation = VOTE_COST;
+    }
+}
 
-    function vote(bool val)
-    public 
-    onlyVoter()
-    isCurrentStage(State.VOTE){
-        if(votes[msg.sender] == address(0) && msg.value >= VOTE_COST){
-            votes[msg.sender] = val;
-            if(val)
-                trueCount++;
-            else
-                falseCount++;
+function widthdraw()
+public
+onlyVoter()
+isCurrentState(State.WITHDRAW){
+    if(votes[msg.sender] != address(0)){
+        if(votes[msg.sender] == winner){
+            msg.sender.send(winningCompensation);
         }
     }
+}
 
-    function determine(bool val)
-    public
-    onlyOwner()
-    isCurrentState(State.VOTE)
-    pretransition()
-    posttransition()
-    {
-        if(trueCount > falseCount){
-            winner = true;
-            winningCompensation = VOTE_COST + (VOTE_COST*false_votes.length) / true_votes.length; 
-        }
-        else if(falseCount > trueCount){
-            winner = false;
-            winningCompensation = VOTE_COST + (VOTE_COST*true_votes.length) / false_votes.length; 
-        }else{
-            winningCompensation = VOTE_COST;
-        }
-    }
-
-    function widthdraw()
-    public
-    onlyVoter()
-    isCurrentState(State.WITHDRAW){
-        if(votes[msg.sender] != address(0)){
-            if(votes[msg.sender] == winner){
-                msg.sender.send(winningCompensation);
-            }
-        }    
-    }
-
-    ...
+...
 ----
 
 *Description of Modifiers and (Updated) Functions:*
 
 - *posttransition*: transitions to the next state after the function call
-- *determine*: this function is very similar to the previous *disperse* function execpt it now just calculates the winner and winning compensation and does not actually send any funds. 
+- *determine*: this function is very similar to the previous *disperse* function execpt it now just calculates the winner and winning compensation and does not actually send any funds.
 - *vote*: votes are now added to the votes mapping and true/false counters are incremented.
 - *widthdraw*: allows a voter to collect winnings (if any).
 

@@ -6,23 +6,127 @@ changes to that state.
 
 In simpler terms, Ethereum is an open-source, globally decentralized computing infrastructure that executes programs called _smart contracts_. It uses a blockchain to synchronize and store the system _state_ along with a cryptocurrency called _ether_ to meter and constrain execution resource cost.
 
-The Ethereum platform enables developers to build powerful decentralized applications with built-in economic functions. While providing continuous uptime, it also reduces or eliminates censorship, third-party interface, and counterparty risk. 
+The Ethereum platform enables developers to build powerful decentralized applications with built-in economic functions. While providing continuous uptime, it also reduces or eliminates censorship, third-party interface, and counterparty risk.
 
 === Compared to bitcoin
 
-Many people will come to Ethereum with some prior experience of cryptocurrencies, specifically bitcoin. Ethereum shares many common elements with other open blockchains: a peer-to-peer network connecting participants, a consensus algorithm for synchronization of state, a digital currency (ether) and a global ledger (the blockchain).
+Many people will come to Ethereum with some prior experience of cryptocurrencies, specifically bitcoin. Ethereum shares many common elements with other open blockchains: a peer-to-peer network connecting participants, a consensus algorithm for synchronization of state (Proof-of-Work), a digital currency (ether) and a global ledger (the blockchain).
 
 In many ways however, both the purpose and construction of Ethereum are strikingly different from the open blockchains that preceded it, including Bitcoin.
 
-Ethereum's purpose is not primarily a digital currency payment network. While the digital currency _ether_ is both integral and necessary for the operation of Ethereum, ether is intended as a _utility currency_ to pay for use of the Ethereum platform. Unlike bitcoin, which has a very limited scripting language, Ethereum is designed to be a general purpose programmable blockchain that runs a _virtual machine_ capable of executing code of arbitrary and unbounded complexity. Where bitcoin's Script language is constrained to simple TRUE/FALSE evaluation of spending conditions, Ethereum's language is _Turing Complete_, meaning that it is equivalent to a general purpose computer that can run any computation a theoretical Turing Machine can run.
+Ethereum's purpose is not primarily a digital currency payment network. While the digital currency _ether_ is both integral and necessary for the operation of Ethereum, ether is intended as a _utility currency_ to pay for use of the Ethereum platform.
 
-During the initial development of Ethereum, the cryptocurrency space was rapidly expanding beyond the scope of digital currency with several projects building secondary layers on top of bitcoin or separate blockchains for various purposes. Most of these projects had a single purpose and were attempting to bootstrap all the infrastructure of a blockchain for that single purpose. This fragmentation prompted Vitalik Buterin, Ethereum's inventor, to start thinking about a blockchain that didn't aim for a specific purpose, but instead could support a broad variety of applications by being _programmed_. The idea is that with a general purpose blockchain like Ethereum, a developer can program their particular application without having to worry about the underlying mechanism of peer-to-peer networks, blockchains, consensus algorithms e.t.c. Instead, the Ethereum platform abstracts these details and provides a deterministic and secure programming environment for decentralized blockchain applications.
+Unlike bitcoin, which has a very limited scripting language, Ethereum is designed to be a general purpose programmable blockchain that runs a _virtual machine_ capable of executing code of arbitrary and unbounded complexity. Where bitcoin's Script language is constrained to simple TRUE/FALSE evaluation of spending conditions, Ethereum's language is _Turing Complete_, meaning that it is equivalent to a general purpose computer that can run any computation a theoretical Turing Machine can run.
 
-The connundrum that most developers faced in 2013 and 2014 was "build on top of bitcoin, or start a new blockchain". Each choice had its pros and cons. Building on top of bitcoin necessarily limited the funtionality of a project. But starting a new blockchain came with a very big burden of security and infrastructure, and a high risk of failure. Ethereum resolved this conundrum by offering a general purpose blockchain platform.
+During the initial development of Ethereum, the cryptocurrency space was rapidly expanding beyond the scope of digital currency with several projects building secondary layers on top of bitcoin or separate blockchains for various purposes. Most of these projects had a single purpose and were attempting to bootstrap all the infrastructure of a blockchain for that single purpose.
 
-=== How Ethereum delivers a general purpose blockchain
+This fragmentation prompted Vitalik Buterin, Ethereum's inventor, to start thinking about a blockchain that didn't aim for a specific purpose, but instead could support a broad variety of applications by being _programmed_. The idea is that with a general purpose blockchain like Ethereum, a developer can program their particular application without having to worry about the underlying mechanism of peer-to-peer networks, blockchains, consensus algorithms etc. Instead, the Ethereum platform abstracts these details and provides a deterministic and secure programming environment for decentralized blockchain applications.
 
-High level, expressive flexible language that abstracts the details of the security model, the blockchain mechanism, the consensus algorithm.
+The conundrum that most developers faced in 2013 and 2014 was "build on top of bitcoin, or start a new blockchain". Each choice had its pros and cons. Building on top of bitcoin necessarily limited the functionality of a project. But starting a new blockchain came with a very big burden of security and infrastructure, and a high risk of failure. Ethereum resolved this conundrum by offering a general purpose blockchain platform, flexible enough to build applications without having to bootstrap a new blockchain infrastructure.
+
+[[blockchain_components]]
+=== Components of a blockchain
+
+The components of an open, public, blockchain are (usually):
+
+* A peer-to-peer network connecting participants and propagating transactions and blocks, based on a standardized "gossip" protocol.
+* A set of consensus rules, implemented in the state machine.
+* Messages, in the form of transactions, representing state transitions.
+* A state machine that processes transactions according to the consensus rules.
+* A distributed database, the blockchain, that records a journal of all the state transitions.
+* A consensus algorithm (e.g. Proof-of-Work) that decentralizes control over the blockchain, by forcing participants to compete and constraining them by the consensus rules.
+* One or more open-source software implementations of the above.
+
+All or most of these components are usually combined in a single software client. For example, in bitcoin, the reference implementation is developed by the _Bitcoin Core_ open source project, implemented as the +bitcoind+ client.
+
+Many different things are called a "blockchain" nowadays, because that word magically builds hype and unrealistic valuations for startups. A "blockchain" is just one component of the system described here. To better understand it, we enumerate the components listed above. Furthermore, we use the qualifiers _open, public, global, decentralized, neutral, and censorship-resistant_ to identify the important emergent characteristics of a "blockchain" system that these components allow. Not all blockchains are created equal. When you are told that something is a blockchain, you have not received an answer, rather you need to start asking a lot of questions to clarify what "blockchain" means. Start by asking for a description of the components above, then ask about whether this "blockchain" exhibits the _open, public, etc._ characteristics.
+
+=== Ethereum: A general purpose blockchain
+
+The "original" blockchain, bitcoin's blockchain, tracks the state of units of bitcoin and their ownership. You can think of bitcoin as a distributed consensus _state machine_, where transactions cause a global _state transition_, altering the ownership of coins. The state transitions are constrained by the rules of consensus, allowing all participants to (eventually) converge on a common (consensus) state of the system, after several blocks are mined.
+
+Ethereum is also a distributed state machine. But instead of tracking only the state of currency ownership, Ethereum tracks the state transitions of a general-purpose data store. By general purpose we mean any data that can be expressed as a _key-value tuple_. In some ways, this resembles the data storage model of _Random Access Memory (RAM)_ used by a general purpose computer. Ethereum has _memory_ that stores both code and data and it uses the blockchain to track how this memory changes over time. Like a general-purpose stored-program computer, Ethereum can load code into its state machine and _run_ that code, storing the resulting state changes in the blockchain. Ethereum answers the question: "What if we could track any arbitrary state and program the state machine?".
+
+==== Ethereum's components
+
+In Ethereum, the components of a blockchain described in <<blockchain_components>> are, more specifically:
+
+
+P2P Network:: Ethereum runs on the _Ethereum Main Network_, which is addressable on TCP port 30303, and runs a protocol called _ÐΞVp2p_.
+
+Consensus rules:: Ethereum's consensus rules, are defined in the <<yellowpaper>>.
+
+Transactions:: Ethereum transactions (see <<transactions>>) are network messages, that include (among other things) a sender, recipient, value and data payload.
+
+State Machine:: Ethereum state transitions are processed by the _Ethereum Virtual Machine (EVM)_, a stack-based virtual machine that  executes _bytecode_ (machine-language instructions). EVM programs called "smart contracts" are written in high-level languages (e.g. Solidity) and compiled to bytecode for execution on the EVM.
+
+Blockchain:: Ethereum's blockchain is stored locally on each node as a _database_ (usually Google's LevelDB), which contains the transactions and system state in a serialized hashed data structure called a _Merkle Patricia Tree_.
+
+Consensus Algorithm:: Ethereum currently uses a Proof-of-Work algorithm called _Ethash_, but there are plans to transition to a Proof-of-State system codenamed _Casper_ in the near future.
+
+Clients:: Ethereum has several interoperable implementations of the client software, the most prominent of which are _Go-Ethereum (Geth)_ and _Parity_.
+
+===== Further references
+
+The Ethereum Yellow Paper:
+https://ethereum.github.io/yellowpaper/paper.pdf
+
+The "Beige Paper": a rewrite of the "Yellow Paper" for a broader audience in less formal language:
+https://github.com/chronaeon/beigepaper
+
+ÐΞVp2p network protocol:
+https://github.com/ethereum/wiki/wiki/%C3%90%CE%9EVp2p-Wire-Protocol
+
+Ethereum Virtual Machine - a list of "Awesome" resources:
+https://github.com/ethereum/wiki/wiki/Ethereum-Virtual-Machine-(EVM)-Awesome-List
+
+LevelDB Database (used most often to store the local copy of the blockchain):
+http://leveldb.org
+
+Merkle Patricia Trees:
+https://github.com/ethereum/wiki/wiki/Patricia-Tree
+
+Ethash Proof-of-Work Consensus Algorithm:
+https://github.com/ethereum/wiki/wiki/Ethash
+
+Casper Proof-of-State v1 Implementation Guide:
+https://github.com/ethereum/research/wiki/Casper-Version-1-Implementation-Guide
+
+Go-Ethereum (Geth) Client:
+https://geth.ethereum.org/
+
+Parity Ethereum Client:
+https://parity.io/
+
+==== Ethereum and Turing Completeness
+
+As soon as you start reading about Ethereum, you will immediately hear the term "Turing Complete". Ethereum, they say, unlike bitcoin, is "Turing Complete". What exactly does that mean?
+
+The term "Turing Complete" is named after English mathematician Alan Turing who is considered the father of computer science. In 1936 he created a mathematical model of a computer consisting of a state machine that manipulates symbols, by reading and writing them on sequential memory (resembling an infinite-length magnetic tape). With this construct, Alan Turing went on to provide a mathematical foundation to answer (in the negative) questions about _universal computability_, meaning whether all problems are solvable. He proved that there are classes of problems that are uncomputable. He also created a mathematical foundation for the analysis of computing and ushered in the modern world of programmable computers, long before anyone could actually build one. His ideas influenced John Von Neumann, who built the first stored-program digital computer _EDVAC_ in 1945.
+
+Alan Turing further defined a system to be _Turing Complete_, if it can be used to simulate any Turing Machine. Such a system is called a _Universal Turing Machine (UTM)_.
+
+Ethereum's ability to execute a stored program, in a state machine called the Ethereum Virtual Machine, while reading and writing data to memory makes it a Turing Complete system and therefore a Universal Turing Machine. Ethereum can compute any algorithm that can be computed by any Turing Machine, given the limitations of finite memory.
+
+Ethereum's groundbreaking innovation is to combine the general-purpose computing architecture of a stored-program computer with a decentralized blockchain, thereby creating a distributed single-state (singleton) world computer. Ethereum programs run "everywhere", yet produce a common (consensus) state that is secured by the rules of consensus.
+
+==== Turing Completeness as a "feature"
+
+Hearing that Ethereum is Turing Complete, you might arrive at the conclusion that this is a _feature_ that is somehow lacking in a system that is not Turing Complete. Rather, it is the opposite. It takes a very focused effort to constrain a system so that it is *not* Turing Complete. Turing completeness arises in even the simples state machines. In fact the simplest Turing Complete state machine known (Rogozhin, 1996) has 4 states and uses 6 symbols, with a state definition that is only 22 instructions long.
+
+Not only is Turing completeness achievable in the simplest of systems, but systems that are designed to be constrained so that they are  _Turing Incomplete_, are found to be "Accidentally Turing Complete". A constrained system that is Turing Incomplete is harder to design and must be carefully maintained so that it remains Turing Incomplete.
+
+A fun reference of systems that are "Accidentally Turing Complete" can be found here:
+http://beza1e1.tuxen.de/articles/accidentally_turing_complete.html
+
+
+==== Implications of Turing Completeness
+
+Security
+
+Termination/computability and gas
+
+
 
 === History of Ethereum
 
@@ -55,6 +159,9 @@ You can read it at
 http://vitalik.ca/general/2017/09/14/prehistory.html
 ****
 
+
+=== Web3: Beyond "blockchain"
+
 === Smart contracts
 ////
 Perhaps a reference to the "Smart Contract" chapter can be added here, showing that all of these concepts will be expanded
@@ -70,10 +177,12 @@ Ethereum offers programing languages, development frameworks and execution platf
 
 Double edged sword - language appears simple and aims to abstract the platforms security consideration. In practice, writing secure code in this language is very difficult and requires awareness of security design patterns involving concurrency, re-entrancy and distributed systems. Moves quickly and is not well understood. False sense of security leads to losses.
 
-[WARNING]
+[TIP]
 ====
-"Attack surface" is a concept that means the different attack vectors a software can suffer. Given the turing completeness and flexibility of the Ethereum programming capabilities, in constrast with the very specific smart contracts of Bitcoin, the attack surface is expanded and need to be considered when developing on the platform.
+"Attack surface" refers to the breadth of possible attack "vectors" (ways to attack) exposed by a system. It is an imprecise term, as there is no way to conduct a quantitative analysis or produce a metric of "attack surface". It is meant more as a visual metaphor.  
 ====
+
+
 
 ==== Solidity
 Solidity is a programming language for smart contracts and it was influenced by C++, Python and JavaScript and is designed to target the Ethereum Virtual Machine (EVM).
