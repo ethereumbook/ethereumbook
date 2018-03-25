@@ -27,7 +27,7 @@ Vyper:: A more recently developed language, similar to Serpent and with Python-l
 
 Bamboo:: A newly developed language, influenced by Erlang with explicit state transitions and without iterative flows (loops). Intended to reduce side-effects and increase auditability. Very new and rarely used.
 
-As you can see, there many languages to choose from. However, of all these Solidity is by far the most popular, to the point of being the de-facto high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages, to gain an understanding of their different philosophies.
+As you can see, there are many languages to choose from. However, of all these Solidity is by far the most popular, to the point of being the de-facto high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages, to gain an understanding of their different philosophies.
 
 === Building a Smart Contract
 
@@ -276,11 +276,66 @@ Two of the most important concepts to consider during smart contract creation ar
 * The state of the contract prior to the function's execution is restored
 * The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded
 
-Because gas is paid for by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call.
+Because gas is paid by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call.
 
 *Avoid dynamically-sized Arrays*
 
 * Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
+
+*How do I estimate gas for a contract method?*
+
+In case that you need to estimate the gas necessary to execute a certain method of a contract considering its call arguments, you can use for instance the following procedure;
+
+[source, JavaScript]
+var contract = web3.eth.contract(abi).at(address);
+var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2, {from: account});
+
+*gasEstimate* will tell us the number of gas units needed for its execution.
+
+To obtain the *gas price* from the network you can use;
+
+[source, JavaScript]
+var gasPrice = web3.eth.getGasPrice();
+
+And from there, estimate de *gas cost*;
+
+[source, JavaScript]
+var gasCostInEther = web3.fromWei((gasEstimate * gasPrice), 'ether');
+
+In *Truffle* this can be achieved as follows,
+
+[source, JavaScript]
+....
+var METokenContract = artifacts.require("./METoken.sol");
+
+METokenContract.web3.eth.getGasPrice(function(error, result){ 
+    var gasPrice = Number(result);
+    console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
+
+    // Get the contract instance
+    METokenContract.deployed().then(function(METokenContractInstance) {
+
+        // Use the keyword 'estimateGas' after the function name to get the gas estimation for this particular function (aprove) 
+        return METokenContractInstance.aprove.estimateGas(_address, 100);
+
+    }).then(function(result) {
+        var gas = Number(result);
+
+        console.log("gas estimation = " + gas + " units");
+        console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
+        console.log("gas cost estimation = " + METokenContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+    });
+});
+....
+
+Which could have an output similar to;
+
+....
+Gas Price is 20000000000 wei
+gas estimation = 26794 units
+gas cost estimation = 535880000000000 wei
+gas cost estimation = 0.00053588 ether
+....
 
 ==== Security
 
