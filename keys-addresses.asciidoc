@@ -333,7 +333,7 @@ However, during the period when Ethereum was developed, NIST standardization was
 While you may see "SHA3" mentioned throughout Ethereum documents and code, many if not all of those instances actually refer to Keccak-256, not the finalized FIPS-202 SHA-3 standard. The implementation differences are slight, having to do with padding parameters, but they are significant in that Keccak-256 produces different hash output than FIPS-202 SHA-3 given the same input.
 ====
 
-Due to confusion created by the difference between the hash function used in Ethereum (Keccak-256) and the finalized standard (FIP-202 SHA-3), there is an effort underway to rename all instances of +sha3+ in all code, opcodes and libraries to +keccak256+. See https://github.com/ethereum/EIPs/issues/59[ERC-59] for details.
+Due to the confusion created by the difference between the hash function used in Ethereum (Keccak-256) and the finalized standard (FIP-202 SHA-3), there is an effort underway to rename all instances of +sha3+ in all code, opcodes and libraries to +keccak256+. See https://github.com/ethereum/EIPs/issues/59[ERC-59] for details.
 
 ==== Which Hash Function Am I Using?
 
@@ -420,7 +420,7 @@ Direct:: Up to 30 alphanumeric character big-endian base-36 integer representing
 
 Basic:: Same as the "Direct" encoding except that it is 31 characters long. This allows it to encode any Ethereum address, but makes it incompatible with IBAN field validation. Example: +XE18CHDJBPLTBCJ03FE9 O2NS0BPOJVQCU2P+ (35 characters long)
 
-Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. Uses 16 alphanumeric characters, composed of an _asset identifier_ (e.g. ETH), a name service (e.g. XREG) and a 9 character name (e.g. KITTYCATS), which is a human readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
+Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. Uses 16 alphanumeric characters, composed of an _asset identifier_ (e.g. ETH), a name service (e.g. XREG) and a 9 character name (e.g. KITTYCATS), which is a human-readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
 
 We can use the +helpeth+ command-line tool to create ICAP addresses. Let's try with our example private key (prefixed with 0x and passed as a parameter to helpeth):
 
@@ -438,7 +438,7 @@ The +helpeth+ command constructs a hexadecimal Ethereum address as well as an IC
 XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
 ----
 
-Because our example Ethereum address happens to start with a zero byte, it can be encoded using the "Direct" ICAP encoding method that is a valid in an IBAN format. You can tell because it is 33 characters long.
+Because our example Ethereum address happens to start with a zero byte, it can be encoded using the "Direct" ICAP encoding method that is valid in an IBAN format. You can tell because it is 33 characters long.
 
 If our address did not start with a zero, it would be encoded with the "Basic" encoding, which would be 35 characters long and invalid as an IBAN format.
 
@@ -455,7 +455,7 @@ Due to the slow deployment of ICAP or name services, a new standard was proposed
 
 https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
 
-EIP-55 offers a backwards compatible checksum for Ethereum addresses by modifying the capitalization of the hexadecimal address. The idea is that Ethereum addresses are case-insensitive and all wallets are supposed to accept Ethereum addresses expressed in capital or lower-case characters, without any difference in interpretation.
+EIP-55 offers a backward compatible checksum for Ethereum addresses by modifying the capitalization of the hexadecimal address. The idea is that Ethereum addresses are case-insensitive and all wallets are supposed to accept Ethereum addresses expressed in capital or lower-case characters, without any difference in interpretation.
 
 By modifying the capitalization of the alphabetic characters in the address, we can convey a checksum that can be used to protect the integrity of the address against typing or reading mistakes. Wallets that do not support EIP-55 checksums simply ignore the fact that the address contains mixed capitalization. But those that do support it, can validate it and detect errors with a 99.986% accuracy.
 
@@ -471,7 +471,7 @@ with an EIP-55 mixed-capitalization checksum it becomes:
 0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
 ----
 
-Can you tell the difference? Some of the alphabetic (A-F) characters from the hexadecimal encoding alphabet are now capital, while others are lower case. You might not even notice the difference, unless you looked carefully.
+Can you tell the difference? Some of the alphabetic (A-F) characters from the hexadecimal encoding alphabet are now capital, while others are lower case. You might not even have noticed the difference unless you looked carefully.
 
 EIP-55 is quite simple to implement. We take the Keccak-256 hash of the lower-case hexadecimal address. This hash acts as a digital fingerprint of the address, giving us a convenient checksum. Any small change in the input (the address) should cause a big change in the resulting hash (the checksum), allowing us to detect errors effectively. The hash of our address is then encoded in the capitalization of the address itself. Let's break it down, step-by-step:
 
@@ -529,6 +529,6 @@ Now, let's line up the two and check the capitalization:
 5429b5d9460122fb4b11af9cb88b7bb76d892886...
 ----
 
-It's all wrong! Several of the alphabetic characters are incorrectly capitalized. Now remember, the capitalization is the encoding of the _correct_ checksum.
+It's all wrong! Several of the alphabetic characters are incorrectly capitalized. Remember that the capitalization is the encoding of the _correct_ checksum.
 
-The capitalization of the address we input doesn't match the checksum just calculated, meaning something has changed in the address, some error has been introduced.
+The capitalization of the address we input doesn't match the checksum just calculated, meaning something has changed in the address, and an error has been introduced.
