@@ -4,10 +4,7 @@
 # https://raw.githubusercontent.com/trailofbits/evm-opcodes/master/README.md
 # from https://github.com/trailofbits/evm-opcodes
 
-# TODO - Change 
-# |`0x21` - `0x2f` |Unused |Unused
-# by
-# |`0x21` - `0x2f` |Unused |Unused |- |
+# ^[^|]*(\|[^|]*){3}$
 
 ORIGIN_FILE=https://raw.githubusercontent.com/trailofbits/evm-opcodes/master/README.md
 
@@ -19,7 +16,7 @@ OPCODES_END_MARKER=instruction-details
 echo "The OPCODES_END_MARKER is $OPCODES_END_MARKER."
 
 echo "Getting the origin file, converting it and spliting it ..."
-wget -q -O - $ORIGIN_FILE | pandoc -t asciidoc | csplit - -q --prefix=appdx-evm-opcodes-gas- -b "%02d.asciidoc" /$OPCODES_BEGIN_MARKER/ /$OPCODES_END_MARKER/
+wget -q -O - $ORIGIN_FILE | pandoc --columns=200 -t asciidoc | csplit - -q --prefix=appdx-evm-opcodes-gas- -b "%02d.asciidoc" /$OPCODES_BEGIN_MARKER/ /$OPCODES_END_MARKER/
 
 echo "Concatenating header OPCODES and footer ..."
 cat appdx-evm-opcodes-gas-header.asciidoc appdx-evm-opcodes-gas-01.asciidoc appdx-evm-opcodes-gas-footer.asciidoc > appdx-evm-opcodes-gas.asciidoc
