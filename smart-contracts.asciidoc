@@ -282,6 +282,63 @@ Because gas is paid by the user who creates that transaction, users are discoura
 
 * Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
 
+*How do I estimate gas for a contract method?*
+
+In case that you need to estimate the gas necessary to execute a certain method of a contract considering its call arguments, you can use for instance the following procedure;
+
+....
+var contract = web3.eth.contract(abi).at(address);
+var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2, {from: account});
+....
+
+*gasEstimate* will tell us the number of gas units needed for its execution.
+
+To obtain the *gas price* from the network you can use;
+
+....
+var gasPrice = web3.eth.getGasPrice();
+....
+
+And from there, estimate de *gas cost*;
+
+....
+var gasCostInEther = web3.fromWei((gasEstimate * gasPrice), 'ether');
+....
+
+In *Truffle* this can be achieved as follows,
+
+....
+var METokenContract = artifacts.require("./METoken.sol");
+
+METokenContract.web3.eth.getGasPrice(function(error, result){ 
+    var gasPrice = Number(result);
+    console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
+
+    // Get the contract instance
+    METokenContract.deployed().then(function(METokenContractInstance) {
+
+        // Use the keyword 'estimateGas' after the function name to get the gas estimation for this particular function (aprove) 
+        return METokenContractInstance.aprove.estimateGas(_address, 100);
+
+    }).then(function(result) {
+        var gas = Number(result);
+
+        console.log("gas estimation = " + gas + " units");
+        console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
+        console.log("gas cost estimation = " + METokenContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+    });
+});
+....
+
+Which could have an output similar to;
+
+....
+Gas Price is 20000000000 wei
+gas estimation = 26794 units
+gas cost estimation = 535880000000000 wei
+gas cost estimation = 0.00053588 ether
+....
+
 ==== Security
 
 With blockchain being in its early stages, *security* is one of the most important considerations when writing smart contracts. As with other programs, a smart contract will execute exactly what is written, which is not always equivalent to the intentions of the programmer. To this end, a programmer must understand common security exploits and proper ways to safeguard against these exploits. Here is a list of some of the security issues that have arisen in the past.
