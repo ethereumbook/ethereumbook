@@ -24,7 +24,7 @@ Here's what is available now:
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
 | [Glossary](glossary.asciidoc) | ##### |||
-| [What is Ethereum](what-is.asciidoc) | ### |||
+| [What is Ethereum](what-is.asciidoc) | ######## | :heavy_check_mark: ||
 | [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
 | [Ethereum Clients](clients.asciidoc) | ####### |||
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | ## |||
