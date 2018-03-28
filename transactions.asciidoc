@@ -1,13 +1,13 @@
 == Transactions
 
-Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network and recorded (mined) on the Ethereum blockchain. Behind that basic definition, there are a lot of surprising and fascinating details. Another way to look at transactions is that they are the only thing that can trigger a change of state or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are the only thing that can make that state machine "tick", changing its state. Contracts don't run on their own. Ethereum doesn't run "in the background". Everything starts with a transaction.
+Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network, and recorded (mined) on the Ethereum blockchain. Behind that basic definition, there are a lot of surprising and fascinating details. Another way to look at transactions is that they are the only thing that can trigger a change of state or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are the only thing that can make that state machine "tick", changing its state. Contracts don't run on their own. Ethereum doesn't run "in the background". Everything starts with a transaction.
 
-In this section we will dissect transactions, show how they work and understand the details.
+In this section, we will dissect transactions, show how they work, and understand the details.
 
 [[tx_struct]]
 === Structure of Transaction
 
-First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using its own internal data structure, perhaps embellished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is therefore the only common standard of a transaction's structure.
+First let's take a look at the basic structure of a transaction, as it is serialized and transmitted on the Ethereum network. Each client and application that receives a serialized transaction will store it in-memory using its own internal data structure, perhaps embellished with metadata that doesn't exist in the network serialized transaction itself. The network serialization of a transaction is, therefore, the only common standard of a transaction's structure.
 
 A transaction is a serialized binary message that contains the following data:
 
@@ -19,7 +19,7 @@ start gas:: The maximum amount of gas the originator is willing to pay.
 
 to:: Destination Ethereum address.
 
-value:: Amount of ether to send to destination.
+value:: Amount of ether to send to the destination.
 
 data:: Variable length binary data payload.
 
@@ -31,7 +31,7 @@ Note that the field labels ("to", "start gas", etc.) are shown here for clarity,
 
 While this is the actual transaction structure transmitted, most internal representations and user interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
 
-For example you may notice there is no "+from+" data in the address identifying the originator EOA. That EOA's public key can easily be derived from the +v,r,s+ components of the ECDSA signature. The address can, in turn, be easily derived from the public key. When you see a transaction showing a "from" field, that was added by the software used to visualize the transaction. Other metadata frequently added to the transaction by client software include the block number (once it is mined) and a transaction ID (calculated hash). Again, this data is derived from the transaction and not part of the transaction message itself.
+For example, you may notice there is no "+from+" data in the address identifying the originator EOA. That EOA's public key can easily be derived from the +v,r,s+ components of the ECDSA signature. The address can, in turn, be easily derived from the public key. When you see a transaction showing a "from" field, that was added by the software used to visualize the transaction. Other metadata frequently added to the transaction by client software include the block number (once it is mined) and a transaction ID (calculated hash). Again, this data is derived from the transaction and not part of the transaction message itself.
 
 ==== The transaction nonce
 
@@ -115,7 +115,7 @@ Now, imagine that we have multiple independent wallet applications that are gene
 
 You could use a single computer to assign nonces, on a first-come first-served basis to computers signing transactions. However, this computer is now a single-point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all of the subsequent ones get stuck.
 
-You could generate the transactions, but don't sign them or assign a nonce to them. Then queue them to a single node that signs them and also keeps track of nonces. Again, you have a single point of failure. The signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of unsigned transaction is the part you don't really need to parallelize. You have concurrency, but you don't have it in any useful part of the process.
+You could generate the transactions, but don't sign them or assign a nonce to them. Then queue them to a single node that signs them and also keeps track of nonces. Again, you have a single point of failure. The signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of the unsigned transaction is the part you don't really need to parallelize. You have concurrency, but you don't have it in any useful part of the process.
 
 In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmation in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange.
 
@@ -125,7 +125,7 @@ We discuss _gas_ in detail in <<gas>>. However, let's cover some basics about th
 
 Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with an exchange rate vis-a-vis ether. Ethereum uses gas to control the amount of resources that a transaction can spend, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertent resource-devouring transactions.
 
-Gas is separate from ether, in order to protect the system from volatility that might arise from rapid changes in the value of ether.
+Gas is separate from ether in order to protect the system from the volatility that might arise along with rapid changes in the value of ether.
 
 The +gasPrice+ field in a transaction allows the transaction originator to set the exchange rate of each unit of gas. Gas price is measured in +wei+ per gas unit. For example, in a transaction we recently created for an example in this book, our wallet had set the +gasPrice+ to +3 Gwei+ (3 Giga-wei, 3 billion wei).
 
@@ -168,7 +168,7 @@ Ethereum does no further validation of this field. Any 20-byte value is consider
 
 [WARNING]
 ====
-Ethereum cannot and does not validate recipient addresses in transaction. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user interface level.
+Ethereum cannot and does not validate recipient addresses in a transaction. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user interface level.
 ====
 
 Sending a transaction to an invalid address will _burn_ the ether sent, rendering it forever inaccessible (unspendable), since no signature can be generated to spend it. It is assumed that validation of the address happens at the user interface level (see <<eip-55>> or <<icap>>). In fact, there are a number of valid reasons for burning ether, including as a game-theory disincentive to cheating in payment channels and other smart contracts.
@@ -251,7 +251,7 @@ image::images/parity_txdemo_novalue_nodata.png["Parity wallet showing a transact
 
 === Transmitting value to EOAs and contracts
 
-When you construct an Ethereum transaction that contains +value+, in other words a _payment_, it will behave differently depending on whether the destination address is a contract, or not.
+When you construct an Ethereum transaction that contains +value+, it is the equivalent of a _payment_. These transactions will behave differently depending on whether the destination address is a contract or not.
 
 For EOA addresses, or rather for any address that isn't registered as a contract on the blockchain, Ethereum will record a state change, adding the value you sent to the balance of the address. If the address has not been seen before, it will be created and its balance initialized to the +value+ of your payment.
 
@@ -332,29 +332,29 @@ Any ether sent to the contract registration address +0x0+ or the designated burn
 
 === Digital signatures
 
-((("transactions", "digital signatures and")))So far, we have not delved into any detail about "digital signatures." In this section we look at how digital signatures work and how they can present proof of ownership of a private key without revealing that private key.
+((("transactions", "digital signatures and")))So far, we have not delved into any detail about "digital signatures." In this section, we look at how digital signatures work and how they can present proof of ownership of a private key without revealing that private key.
 
 ==== Elliptic Curve Digital Signature Algorithm (ECDSA)
 
 ((("digital signatures", "algorithm used")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)")))The digital signature algorithm used in Ethereum is the _Elliptic Curve Digital Signature Algorithm_, or _ECDSA_. ECDSA is the algorithm used for digital signatures based on elliptic curve private/public key pairs, as described in <<elliptic_curve>>.
 
-((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see the following sidebar). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (nonrepudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
+((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see the following sidebar). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (non-repudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
 
 [[digital_signature_definition]]
 .Wikipedia's Definition of a "Digital Signature"
 ****
-((("digital signatures", "defined")))A digital signature is a mathematical scheme for demonstrating the authenticity of a digital message or documents. A valid digital signature gives a recipient reason to believe that the message was created by a known sender (authentication), that the sender cannot deny having sent the message (nonrepudiation), and that the message was not altered in transit (integrity).
+((("digital signatures", "defined")))A digital signature is a mathematical scheme for demonstrating the authenticity of a digital message or documents. A valid digital signature gives a recipient reason to believe that the message was created by a known sender (authentication), that the sender cannot deny having sent the message (non-repudiation), and that the message was not altered in transit (integrity).
 
 _Source: https://en.wikipedia.org/wiki/Digital_signature_
 ****
 
 ==== How Digital Signatures Work
 
-((("digital signatures", "how they work")))A digital signature is a _mathematical scheme_ that consists of two parts. The first part is an algorithm for creating a signature, using a private key (the signing key), from a message (the transaction). The second part is an algorithm that allows anyone to verify the signature, given also the message and a public key.
+((("digital signatures", "how they work")))A digital signature is a _mathematical scheme_ that consists of two parts. The first part is an algorithm for creating a signature, using a private key (the signing key) from a message (the transaction). The second part is an algorithm that allows anyone to verify the signature by only using the message and a public key.
 
 ===== Creating a digital signature
 
-In Ethereum's implementation of the ECDSA algorithm, the "message" being signed is the transaction, or more accurately the Keccak256 hash of the RLP-encoded data from the transaction. The signing key is the EOA's private key. The result is the signature:
+In Ethereum's implementation of ECDSA, the "message" being signed is the transaction, or more accurately, the Keccak256 hash of the RLP-encoded data from the transaction. The signing key is the EOA's private key. The result is the signature:
 
 latexmath:[\(Sig = F_{sig}(F_{keccak256}(m), k)\)]
 
@@ -387,7 +387,12 @@ The signature verification algorithm takes the message (a hash of the transactio
 
 ((("public and private keys", "key pairs", "ephemeral")))The signature algorithm first generates an _ephemeral_ (temporary) private/public key pair. This temporary key pair is used in the calculation of the _R_ and _S_ values, after a transformation involving the signing private key and the transaction hash.
 
-The temporary key pair is based on a random number _q_, which is used as the temporary private key. From _q_, we generate the corresponding temporary public key _Q_ (calculated as _Q = q*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _Q_.
+The temporary key pair is generated by two input values:
+
+1. A random number _q_, which is used as the temporary private key
+1. and the elliptic curve generator point _G_
+
+From _q_ and _G_, we generate the corresponding temporary public key _Q_ (calculated as _Q = q*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _Q_.
 
 From there, the algorithm calculates the _S_ value of the signature, such that:
 
@@ -494,9 +499,9 @@ As mentioned in <<tx_struct>>, the transaction message doesn't include any "from
 
 Given the values +r+ and +s+, that were computed in <<ecdsa_math>>, we can compute two possible public keys, only one of which will produce a valid +P+ result in our ECDSA verification function. The one that produces a valid +P+ is the correct public key.
 
-First, we compute two elliptic curve points R and R^'^, from the x-coordinate +r+ value that is in the signature. There are two points, because the elliptic curve is symmetric across the x-axis, so that for any value +x+, there are two possible values that fit the curve, on either side of the x-axis.
+First, we compute two elliptic curve points R and R^'^, from the x coordinate +r+ value that is in the signature. There are two points, because the elliptic curve is symmetric across the x-axis, so that for any value +x+, there are two possible values that fit the curve, on either side of the x-axis.
 
-From +r+, we also calculate +r^-1^+ which is the multiplicative-inverse of +r+.
+From +r+, we also calculate r^-1^ which is the multiplicative inverse of +r+.
 
 Finally we calculate +z+, which is the n-lowest bits of the message hash, where n is the order of the elliptic curve.
 
@@ -509,16 +514,17 @@ and
 K~2~ = r^-1^ (sR^'^ - zG)
 
 where:
+
 * K~1~ and K~2~ are the two possibilities for the signer's public key
-* r^-1^ is the multiplicative-inverse of signature's +r+ value
+* r^-1^ is the multiplicative inverse of signature's +r+ value
 * s is the signature's +s+ value
-* R and R^'^ are the two possibilities for the ephemeral public key
+* R and R^'^ are the two possibilities for the ephemeral public key _Q_
 * z are the n-lowest bits of the message hash
-* G is the generator point
+* G is the elliptic curve generator point
 
 Plug each of the two possible K values into the signature verification function and one will verify - that's the owner's public key.
 
-To make things even easier, the transaction signature includes a prefix value +v+, which tells us which of the two possible R values are the ephemeral public key. If +v+ is even, then R is the correct value. If +v+ is odd, then R^'^. That way, we need to calculate only one value for R and only one value for K, making the process a bit simpler.
+To make things more efficient, the transaction signature includes a prefix value +v+, which tells us which of the two possible R values are the ephemeral public key. If +v+ is even, then R is the correct value. If +v+ is odd, then R^'^. That way, we need to calculate only one value for R and only one value for K.
 
 === Separating signing and transmission (offline signing)
 
@@ -532,9 +538,9 @@ While not many environments can utilize a fully air-gapped system, even a small 
 
 === Transaction propagation
 
-The Ethereum network uses a "flood" routing protocol. Each Ethereum client, acts as a _node_ in a _Peer-to-Peer (P2P)_, which (ideally) forms a _mesh_ network. No network node is "special", they all act as equal peers. We will use the term "node" to refer to an Ethereum client that is connected to and participating in the P2P network.
+The Ethereum network uses a "flood" routing protocol. Each Ethereum client, acts as a _node_ in a _Peer-to-Peer (P2P)_, which (ideally) forms a _mesh_ network. No network node is "special", they all act as equal peers. We will use the term "node" to refer to an Ethereum client that is connected to and participates in the P2P network.
 
-Transaction propagation starts with the originating Ethereum node creating (or receiving from offline) a signed transaction. The transaction is validated and then transmitted to all the other Ethereum nodes that are _directly_ connected to the originating node. On average, each Ethereum node maintains connections to at least 13 other nodes, called its _neighbors_. Each neighbor node validates the transaction as soon as they receive it. If they agree that it is valid, they store a copy and then they propagate it to all their neighbors (except the one it came from). As a result, the transaction ripples outwards from the originating node, _flooding_ across the network, until all nodes in the network have a copy of the transaction.
+Transaction propagation starts with the originating Ethereum node creating (or receiving from offline) a signed transaction. The transaction is validated and then transmitted to all the other Ethereum nodes that are _directly_ connected to the originating node. On average, each Ethereum node maintains connections to at least 13 other nodes, called its _neighbors_. Each neighbor node validates the transaction as soon as they receive it. If they agree that it is valid, they store a copy and propagate it to all their neighbors (except the one it came from). As a result, the transaction ripples outwards from the originating node, _flooding_ across the network, until all nodes in the network have a copy of the transaction.
 
 Within just a few seconds, an Ethereum transaction propagates to all the Ethereum nodes around the globe. From the perspective of each node, it is not possible to discern the origin of the transaction. The neighbor that sent it to our node may be the originator of the transaction or may have received it from one of its neighbors. To be able to track the origin of transactions, or interfere with propagation, an attacker would have to control a significant percentage of all nodes. This is part of the security and privacy design of P2P networks, especially as applied to blockchains.
 

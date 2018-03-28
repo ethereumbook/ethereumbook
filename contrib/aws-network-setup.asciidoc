@@ -1,9 +1,14 @@
 [[_anchor_setup_private_network]]
 == Setting up a private Ethereum network
 
+This section describes the steps to be followed to launch a private Ethereum network. Broadly, the steps are as follows:
+
+. Node set-up <<_anchor_node_setup>>
+. Configuring genesis <<_anchor_node_configuration>>
+. Peering <<_anchor_peering>>
+
 [[_anchor_node_setup]]
 === Set up nodes for launch
-
 The nodes to be launched for this set-up will be for the topology shown in figure below.
 
 [[_image_aws_topology_simple_bootnode]]
@@ -35,7 +40,10 @@ It should be clear that, the infra-structure requirements for a node are inter-d
 
 The rest of this chapter assumes that, the nodes are launched on a `t2.micro` instance of AWS. When launching a `t2.micro` instance for Ethereum, accept the defaults that the wizard provides; unless, specific needs apply. For example, let the instance be launched in the default, public Virtual Private Cloud (VPC) in the chosen region. However, when applying securtiy groups, the following port numbers are suggested to be opened. 
 
+[TIP]
+====
 It is *recommended* that, the port be opened for only the IP address that accesses AWS. Later, more detailed access rules maybe applied.
+====
 
 [[_table_AWS_instance_security_group]]
 .AWS instance security groups
@@ -43,6 +51,7 @@ It is *recommended* that, the port be opened for only the IP address that access
 |Port number| Protocol type| Description
 |30303 | UDP | Default node discovery port.
 |30303 | TCP | Default node discovery port.
+|30301 | UDP | Default boot node discovery port.
 |8545 | TCP | Default RPC port.
 |22 | TCP | Default `ssh` port.
 |==================================================================================================================================
@@ -53,6 +62,7 @@ Refer this link for guidance on launching EC2 instances. https://docs.aws.amazon
 ==== Install Ethereum client
 Once the instance is launched and logged on to, the Ethereum client, `geth`, needs to be installed with the steps below.
 
+[[_code_ubuntu_ethereum_install]]
 [source,bash]
 ----
 sudo apt-get install software-properties-common
@@ -101,8 +111,10 @@ By default, `geth` will run for main network, and uses the folder `$HOME/ethereu
 mkdir eth-priv
 ----
 
-[quote]
+[TIP]
+====
 When working with private networks, *always* refer the directory name in `geth` commands, via `--datadir` flag.
+====
 
 Repeat the installation of Ethereum client steps for all the nodes in the topology (<<_table_aws_topology_nodes>>).
 
@@ -110,10 +122,10 @@ Repeat the installation of Ethereum client steps for all the nodes in the topolo
 === Configuring genesis for nodes
 To configure genesis for all nodes in the topology, a common definition of genesis should exist. This definition is provided via a document named as `genesis.json` as described below.
 
-Create a JSON document, `genesis.json` in `eth-priv` folder for genesis block with the contents as shown here <<_code_genesis_json>>. This document should exist in the same format and values in all the machines of the topology.
+Create a JSON document, `genesis.json` in `eth-priv` folder for genesis block with the contents as provided in the link:../code/genesis.json[genesis.json]. The description of the values are shown at <<_code_genesis_json>>. This document should exist in the same format and values in all the machines of the topology.
 
 [[_code_genesis_json]]
-.genesis.json
+.Genesis JSON description
 [source,json]
 ----
 {
@@ -234,7 +246,13 @@ Note that, the block hash values are the same in 3 and 6 above. This means, curr
 
 [[_anchor_peering]]
 === Peering
+The nodes of an Ethereum network communicate with each other to exchange transactions and newly mined blocks. For effective communication, the nodes should know about each other. This is called as _peering_ and can be acheived in three ways:
 
+. Boot node - <<_anchor_peering_bootnode>>
+. Static nodes - <<_anchor_peering_static_nodes>>
+. Manual - <<_anchor_peering_manual>>
+
+[[_anchor_peering_bootnode]]
 ==== Peering with `bootnode`
 When installing Ethereum (refer <<_anchor_install_ethereum_client>>), `bootnode`, and few other standalone tools, are also installed. With the genesis state (refer <<_anchor_node_configuration>>) defined for all machines, peer discovery via boot node is done with the following command.
 
@@ -244,14 +262,14 @@ https://github.com/ethereum/go-ethereum/wiki/Setting-up-private-network-or-local
 https://ethereum.stackexchange.com/a/8955/3137
 
 [[_code_start_bootnode]]
-[source,bash]
 ----
+[source,bash]
 cd eth-priv // <1>
 bootnode --genkey=bootnode.key  // <2>
 bootnode --nodekey=bootnode.key // <3>
 INFO [03-21|22:43:51] UDP listener up                          self=enode://174a54af9c879a214185a86d685110a25f371d2af5f3d42afd8bfedc9bb53c1fbbe2d73f91e738a3621d6cb07ec0e1a76b3feae0083c039e692f9557f25e5fd8@[::]:30301  // <4>
 ----
-<1> Save the key in the folder for private network `eth-priv`.
+<1> Save the key in the folder for private network `eth-priv` with name as `bootnode.key`.
 <2> Generate a key to derive `enode` identifier for the boot node and save it to `bootnode.key` file.
 <3> Start boot node with the node key as available in `bootnode.key` file.
 <4> The `[::]` part of the `enode://` URI should be changed to the IP address of this (boot node) machine and the resulting UIR string will be used in `--bootnodes` flag of `geth` commands on other machines to locate peers automatically.
@@ -268,14 +286,25 @@ Note that, this set-up had not considered a detailed topology of the machines to
 
 To start the private network, log on to other machines in the network and run the following steps.
 
-1. Copy `genesis.json` (see <<_code_genesis_json>> here).
+1. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
 2. Start `geth` with command as shown below.
 
 [[_code_start_with_boot_node]]
 [source,bash]
 ----
-geth --bootnodes "enode://" --datadir "eth-priv" --networkid "15" --maxpeers 3 --port 30303
+geth --bootnodes "enode://" --datadir "eth-priv"         // 1
+geth --bootnodes "enode://" --datadir "eth-priv" --rpc --rpcapi "web3,eth" --rpcaddr "0.0.0.0" --rpccorsdomain "*"        // 2
+geth --bootnodes "enode://" --datadir "eth-priv" --mine       // 3
 ----
+
+<1> Running `geth` in stand alone mode with boot node.
+<2> Running `geth` with RPC port exposed with boot node.
+<3> Running `geth` with mining mode with boot node.
+
+[TIP]
+====
+Running RPC node with `--rpcaddr "0.0.0.0" --rpccorsdomain "\*"` is *discouraged*. These values have been shown for demonstration purposes only.
+====
 
 *NOTE* that, since this topology is exposed to the internet, it is quite likely that, many nodes that are _outside_ this topology will also try to connect to this boot node. Therefore, it may take a while to see the nodes of this topology connect to this boot node. 
 
@@ -284,26 +313,34 @@ geth --bootnodes "enode://" --datadir "eth-priv" --networkid "15" --maxpeers 3 -
 [[_code_list_of_peers]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
+geth --bootnodes "enode://" --datadir "eth-priv" console // <1>
 admin.peers  // <2>
 ----
 
 At this point, the private network has three machines peering with each other, via a boot node, in a private Ethereum network. 
 
+[[_anchor_peering_static_nodes]]
+==== Peering with static nodes
+
+[[_anchor_peering_manual]]
 ==== Peering manually
 To set-up the peers manually, the boot node machine is not considered.
 
 1. Log on to Ethereum-Standalone-node and create folder `eth-priv`. 
-2. Copy `genesis.json` (see <<_code_genesis_json>> here).
-3. Start `geth` as shown below.
+2. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
+3. Launch `geth` with console as shown below.
 
 [[_code_start_node_console]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
+geth --datadir "eth-priv" console // <1>
+geth --datadir "eth-priv" console --rpc --rpcapi "web3,eth" --rpcaddr "0.0.0.0" --rpccorsdomain "*" consoled   // 2
+geth --datadir "eth-priv" console --mine console <3>
 ----
 
-<1> Uses `--datadir` folder for private network with network id `15` and will listen for a maximum of `3` peers in the network on UDP port `30303`. It will also launch console to add peers.
+<1> On stand alone node.
+<2> On node with RPC port exposed.
+<3> On node set-up for mining. 
 
 4. From the console, show node information.
 
@@ -343,7 +380,7 @@ admin.nodeInfo
 [[_code_add_peer_1]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
+geth --datadir "eth-priv" --mine console // <1>
 admin.addPeer ("enode://f67795e81e63ad852979905ff76813caeb64d7294d953b2d28b3c13d780a4d03bd11e3e69ae063c8ce36271b4d33e8c3de809362acc975402565b80cc31f3493@ethereum-standalone-ip-address:30303")    // <2>
 true
 admin.nodeInfo
@@ -397,7 +434,7 @@ This peering can be verified from other machine also. For example, launch the co
 [[_code_show_connected_peer]]
 [source,bash]
 ----
-geth --datadir "eth-priv" --networkid 15 --maxpeers 3  --port 30303 console // <1>
+geth --datadir "eth-priv" console // <1>
 admin.peers  // <2>
 [{
     caps: ["eth/63"],
@@ -425,3 +462,12 @@ admin.peers  // <2>
 10. Finally, log on to Ethereum-Standalone node again and check list of all connected peers. See <<_code_show_connected_peer>>.
 
 At this point, the private network has three machines peering with each other in a private Ethereum network.
+
+[[_anchor_summary_aws_setup]]
+== Summary
+To summarise the set-up, the following steps exist.
+
+. Launch four AWS EC2 instances e.g. `t2.micro` in the default VPC of a region. Refer <<_table_aws_topology_nodes>>.
+. Install Ethereum client on all of the instances. Refer <<_code_ubuntu_ethereum_install>>.
+. Copy `genesis.json` on all instances and initialise. Refer <<_code_node_init>>.
+. Set-up peering with other machines in one of the three ways. Refer <<_anchor_peering>>.
