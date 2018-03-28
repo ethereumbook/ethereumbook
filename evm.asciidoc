@@ -124,6 +124,17 @@ Generating the raw opcode stream of a Solidity source file is easily achieved wi
 $ solc -o BytecodeOutputDir --opcodes Example.sol
 ----
 
+or
+
+----
+$ solc -o BytecodeOutputDir --asm Example.sol
+----
+
+The following command will produce the bytecode binary for our example program:
+
+----
+$ solc -o BytecodeOutputDir --bin Example.sol
+----
 The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ has only one contract named "example".
 
 ----
@@ -139,11 +150,76 @@ contract example {
 }
 ----
 
-If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ which contains the EVM machine language instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
+If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ which contains the EVM machine language opcode instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
 
 ----
-PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1
-/*snip*/
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1 0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP 0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5 0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27 EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
+----
+
+Compiling the example with the _--asm_ option produces a file labed _example.evm_ in our _BytecodeDir_ directory. This contains the detailed EVM machine language instructions:
+
+----
+/* "Example.sol":26:132  contract example {... */
+  mstore(0x40, 0x60)
+    /* "Example.sol":74:130  function example() {... */
+  jumpi(tag_1, iszero(callvalue))
+  0x0
+  dup1
+  revert
+tag_1:
+    /* "Example.sol":115:125  msg.sender */
+  caller
+    /* "Example.sol":99:112  contractOwner */
+  0x0
+  dup1
+    /* "Example.sol":99:125  contractOwner = msg.sender */
+  0x100
+  exp
+  dup2
+  sload
+  dup2
+  0xffffffffffffffffffffffffffffffffffffffff
+  mul
+  not
+  and
+  swap1
+  dup4
+  0xffffffffffffffffffffffffffffffffffffffff
+  and
+  mul
+  or
+  swap1
+  sstore
+  pop
+    /* "Example.sol":26:132  contract example {... */
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x0
+  codecopy
+  0x0
+  return
+stop
+
+sub_0: assembly {
+        /* "Example.sol":26:132  contract example {... */
+      mstore(0x40, 0x60)
+      0x0
+      dup1
+      revert
+
+    auxdata: 0xa165627a7a7230582056b99dcb1edd3eece01f27c9649c5abcc14a435efe3bdbcf3b273be2b899eda90029
+}
+----
+
+The _--bin_ option produces the following:
+
+----
+60606040523415600e57600080fd5b336000806101000a81548173
+ffffffffffffffffffffffffffffffffffffffff
+021916908373
+ffffffffffffffffffffffffffffffffffffffff
+160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b99dcb1e
 ----
 
 Let's examine the first two instructions:
