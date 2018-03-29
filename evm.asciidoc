@@ -1,7 +1,10 @@
+[[evm_chapter]]
 == Ethereum Virtual Machine
 
+[[evm_description]]
 === What is it?
 
+[[evm_comparison]]
 ==== Compare to
 
 * Virtual Machine (Virtualbox, QEMU, cloud computing)
@@ -12,10 +15,11 @@ Virtual Machine technologies such as Virtualbox and QEMU/KVM differ from the EVM
 
 Certain aspects of the Java VM (JVM) specification however, do contain similarities to the EVM. From a high-level overview, the JVM is designed to provide a runtime environment that is irrespective of the underlying host OS or hardware, enabling compatibility across a wide variety of systems. High level program languages such as Java or Scala that run on the JVM are compiled into the respective instruction set bytecode. This is comparable to compiling a Solidity source file to run on the EVM.
 
+[[evm_bytecode_overview]]
 ==== EVM Machine Language (Bytecode Operations)
 
 The EVM Machine Language is divided into specific instruction set groups, such as arithmetic operations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
-
+[[common_stack_opcodes]]
 Common Stack Operations:: Opcode instructions for stack and memory management:
 
 ----
@@ -31,20 +35,22 @@ DUP     //Stack item duplication
 SWAP    //Stack item exchange operation
 ----
 
+[[common_system_opcodes]]
 Common System Operations:: Opcode instructions for the system executing the program:
 
 ----
-CREATE  //Create a new account 
+CREATE  //Create a new account
 CALL    //Instruction for message passing between accounts
 RETURN  //Execution halt
 REVERT  //Execution halt, reverting state changes
 SELFDESTRUCT //Execution halt, and flag account for deletion
 ----
 
+[[common_arithmetic_opcodes]]
 Arithmetic Operations:: Common arithmetic opcode instructions:
 
 ----
-ADD      //Add 
+ADD      //Add
 MUL      //Multiplication
 SUB      //Subtraction
 DIV      //Integer division
@@ -57,6 +63,22 @@ EXP      //Exponent operation
 STOP     //Halt operation
 ----
 
+[[common_environment_opcodes]]
+Environmental Opcodes:: Common opcodes dealing with execution environment information:
+
+----
+ADDRESS        //Address of current execution account
+BALANCE        //Account balance
+CALLVALUE      //Transaction value for execution environment
+ORIGIN         //Origin address of execution environment
+CALLER         //Address of execution caller
+CODESIZE       //Execution environment code size
+GASPRICE       //Gas price state
+EXTCODESIZE    //An account's code size
+RETURNDATACOPY //Copy of data output from previous memory call
+----
+
+[[evm_state_descriptions]]
 ==== State
 
 As with any computing system, the concept of state is an important one. Just like a CPU keeping track of a process in execution, the EVM must keep track of the status of various components in order to support a transaction. The status or _state_ of these components ultimately drives the level of change in the overarching blockchain. This aspect leads to the description of Ethereum as a _transaction-based state machine_ containing the following components:
@@ -109,15 +131,17 @@ Block Finalization State Transition Function:: Used to determine the state of a 
 
 Block Level State Transition Function:: The resulting state of the Block Finalization State Transition Function when applied to a transaction state.
 
-
+[[compiling_solidity_to_evm]]
 ==== Compiling Solidity to EVM bytecode
 
+[[solc_help]]
 Compiling a Solidity source file to EVM bytecode can be accomplished via the command line. For a list of additional compile options, simply run the following command:
 
 ----
 $ solc --help
 ----
 
+[[solc_opcodes_option]]
 Generating the raw opcode stream of a Solidity source file is easily achieved with the _--opcodes_ command line option. This opcode stream leaves out some information (the _--asm_ option produces the full information), but is sufficient for this first introduction. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
 
 ----
@@ -126,17 +150,21 @@ $ solc -o BytecodeOutputDir --opcodes Example.sol
 
 or
 
+[[solc_asm_option]]
 ----
 $ solc -o BytecodeOutputDir --asm Example.sol
 ----
 
+[[solc_bin_option]]
 The following command will produce the bytecode binary for our example program:
 
 ----
 $ solc -o BytecodeOutputDir --bin Example.sol
 ----
-The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ has only one contract named "example".
 
+The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ <<simple_solidity_example>> has only one contract named "example".
+
+[[simple_solidity_example]]
 ----
 pragma solidity ^0.4.19;
 
@@ -150,14 +178,17 @@ contract example {
 }
 ----
 
-If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ which contains the EVM machine language opcode instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
 
+If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ (see <<simple_solidity_example>>) which contains the EVM machine language opcode instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
+
+[[opcode_output]]
 ----
 PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1 0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP 0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5 0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27 EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
 ----
 
 Compiling the example with the _--asm_ option produces a file labed _example.evm_ in our _BytecodeDir_ directory. This contains the detailed EVM machine language instructions:
 
+[[asm_output]]
 ----
 /* "Example.sol":26:132  contract example {... */
   mstore(0x40, 0x60)
@@ -214,6 +245,7 @@ sub_0: assembly {
 
 The _--bin_ option produces the following:
 
+[[bin_output]]
 ----
 60606040523415600e57600080fd5b336000806101000a81548173
 ffffffffffffffffffffffffffffffffffffffff
@@ -222,14 +254,16 @@ ffffffffffffffffffffffffffffffffffffffff
 160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b99dcb1e
 ----
 
-Let's examine the first two instructions:
+Let's examine the first two instructions (reference <<common_stack_opcodes>>):
 
+[[opcode_analysis_1]]
 ----
 PUSH1 0x60 PUSH1 0x40
 ----
 
 Here we have the _mnemonic_ "PUSH1" followed with a raw byte of value "0x60". This corresponds to the EVM instruction of interpreting the single byte following the opcode as a literal value and pushing it onto the stack. It is possible to push values of size up to 32 bytes onto the stack. For example, the following bytecode pushes a 4 byte value onto the stack:
 
+[[opcode_analysis_2]]
 ----
 PUSH4 0x7f1baa12
 ----
@@ -238,17 +272,20 @@ The second push opcode stores "0x40" onto the stack (on top of "0x60" already pr
 
 Moving on to the next two instructions:
 
+[[opcode_analysis_3]]
 ----
 MSTORE CALLVALUE
 ----
 
-MSTORE is a stack/memory operation that saves a value to memory, while CALLVALUE is an opcode that returns the deposited value of the executing message call.
+MSTORE is a stack/memory operation (see <<common_stack_opcodes>>) that saves a value to memory, while CALLVALUE is an environmental opcode (see <<common_environment_opcodes>>) that returns the deposited value of the executing message call.
 
-
+[[evm_bytecode_execution]]
 ==== Execution of EVM bytecode
 
+[[gas_accounting_execution]]
 ==== Gas, Accounting
 
 For every transaction, there is an associated _gas-limit_ and _gas-price_ which make up the fees of an EVM execution. These fees are used to facilitate the necessary resources of a transaction, such as computation and memory. Gas is also used for the creation of accounts and smart-contracts.
 
+[[turing_completeness_and_gas]]
 ==== Turing Completeness and Gas
