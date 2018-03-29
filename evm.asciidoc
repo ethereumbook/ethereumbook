@@ -289,3 +289,100 @@ For every transaction, there is an associated _gas-limit_ and _gas-price_ which 
 
 [[turing_completeness_and_gas]]
 ==== Turing Completeness and Gas
+
+In simple terms, a system or programming language is _Turing complete_ if it can solve any problem you feed into it. This is discussed in the Ethereum Yellow Paper:
+
+[quote, Gavin Wood, ETHEREUM: A SECURE DECENTRALISED GENERALISED TRANSACTION LEDGER]
+____________________________________________________________________
+It is a _quasi_-Turing complete machine; the quasi qualification comes from the fact that the computation is intrinsically bounded through a parameter, gas, which limits the total amount of computation done.
+____________________________________________________________________
+
+We refer to the EVM as a _quasi_-Turing complete machine because while the EVM can theoretically solve any problem it receives, it is bound by gas. This occurs in a few ways:
+
+1) Blocks that get mined in Ethereum have a gas limit associated with them; that is, the total gas used by all the transactions inside the block can not exceed a certain limit.
+2) Since gas and gas price go hand-in-hand, even if the gas limit restrictions were lifted, highly complex transactions may be economically infeasible.
+
+For the majority of use cases, however, the EVM can solve any problem provided to it.
+
+==== Bytecode vs. Runtime Bytecode
+
+When compiling a contract, you can either get the _contract bytecode_ or the _runtime bytecode_.
+
+The contract bytecode contains the bytecode of what will actually end up sitting on the blockchain _plus_ the bytecode needed to place that bytecode on the blockchain and run the contract's constructor.
+
+The runtime bytecode, on the other hand, is _only the bytecode that ends up sitting on the blockchain_. This does not include the bytecode needed to initialize the contract and place it on the blockchain.
+
+Let's take the simple `Faucet.sol` contract we created earlier as an example.
+
+----
+// Version of Solidity compiler this program was written for
+pragma solidity ^0.4.19;
+
+// Our first contract is a faucet!
+contract Faucet {
+
+  // Give out ether to anyone who asks
+  function withdraw(uint withdraw_amount) public {
+
+      // Limit withdrawal amount
+      require(withdraw_amount <= 100000000000000000);
+
+      // Send the amount to the address that requested it
+      msg.sender.transfer(withdraw_amount);
+    }
+
+  // Accept any incoming amount
+  function () public payable {}
+
+}
+----
+
+To get the contract bytecode, we would run `solc --bin Faucet.sol`. If we instead wanted just the runtime bytecode, we would run `solc --bin-runtime Faucet.sol`.
+
+If you compare the output of these commands, you will see that the runtime bytecode is a subset of the contract bytecode. In other words, the runtime bytecode is entirely contained within the contract bytecode.
+
+==== Disassembling the Bytecode
+
+After getting the runtime bytecode of Faucet.sol, we can enter it into Binary Ninja using the Ethersplay plugin to see what the EVM instructions look like.
+
+[[Faucet_disassembled]]
+.Disassembling the Faucet runtime bytecode
+image::images/Faucet_disassembly.png["Faucet.sol runtime bytecode disassembled"]
+
+
+When you direct a transaction to a smart contract, the first piece of code your transaction interacts with is that contract’s **dispatcher**. The dispatcher takes the transaction data and sends it to the appropriate function. 
+
+After the familiar MSTORE instruction, we see:
+
+----
+PUSH1 0x4
+CALLDATASIZE
+LT
+PUSH1 0x3f
+JUMPI
+----
+
+"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size, in bytes, of the calldata of the transaction sent to the contract and pushes it onto the stack. 
+
+This next instruction is LT, short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes. 
+
+Why does the EVM check to see that the calldata of the transaction is at least 4 bytes? Because of how function identifiers work. Each function is identified by the first four bytes of its keccak256 hash. By placing the function's name and what arguments it takes into a keccak256 hash function, you can extract its function identifier. In our contract, we have:
+
+```
+keccak256("withdraw(uint)") = 0x2e1a7d4d...
+```
+
+Thus, the function identifier for the "withdraw" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire message you send the smart contract is less than 4 bytes, then there’s no function you could possibly be communicating with. Because we implemented a _fallback function_ in Faucet.sol, code execution will jump to this function when the calldata is less than 4 bytes. 
+
+If the msg.data field is less than 4 bytes, LT pushes 1 onto the stack after popping off the two values it compared. The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. "JUMPI" stands for "jump if", and it works like so:
+
+----
+jumpi(label, cond) // Jump to "label" if "cond" is true
+----
+
+In our case, "label" is offset 0x3f, where our fallback function lives, and "cond" is 1 from the result of the LT instruction. The contract thus jumps to offset 0x3f, where only a "STOP" instruction follows, because our fallback function does not contain anything inside of it. Had we not implemented a fallback function, the contract would have thrown an exception at this point instead.
+
+
+[[Faucet_jumpi_instruction]]
+.JUMPI instruction leading to fallback function
+image::images/Faucet_jumpi_instruction.png["JUMPI instruction leading to fallback function"]
