@@ -316,7 +316,7 @@ $
 
 Great! Now that Parity is installed, we can sync the blockchain and get started with some basic command-line options.
 
-
+[[json_rpc]]
 ==== JSON-RPC Interface
 
 Ethereum clients offer an Application Programming Interface (API), offering a set of Remote Procedure Call (RPC) commands, which are encoded as JavaScript Object Notation (JSON). You will see this referred to as the _JSON-RPC API_. Essentially, the JSON-RPC API is an interface that allows us to write programs that use the Ethereum client as a _gateway_ into the Ethereum network and blockchain.
@@ -334,15 +334,30 @@ $ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","met
 In this example, we use +curl+ to make an HTTP connection to address +http://localhost:8545+. We are already running +geth+ and it is offering the JSON-RPC API as an HTTP service on port 8545. We instruct +curl+ to use the HTTP +POST+ command, and to identify the content as +Content-Type: application/json+. Finally, we pass a JSON-encoded request as the +data+ component of our HTTP request. Most of our command line is just setting up +curl+ to make the HTTP connection correctly. The interesting part is the actual JSON-RPC command we issue:
 
 ----
-{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}
+{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":4192}
 ----
 
-This request says that we want to use the +2.0+ version of the JSON-RPC, to call the method +web3_clientVersion+ with no parameters and with network id +1+ (the Ethereum mainnet).
+The JSON-RPC request is formatted according to the JSON-RPC 2.0 specification, which you can see here:
+http://www.jsonrpc.org/specification
+
+Each request contains 4 elements:
+
+jsonrpc:: Version of the JSON-RPC protocol. Here MUST be exactly "2.0".
+
+method:: The name of the method to be invoked.
+
+params:: A structured value that holds the parameter values to be used during the invocation of the method. This member MAY be omitted.
+
+id:: An identifier established by the Client that MUST contain a String, Number, or NULL value if included. The Server MUST reply with the same value in the Response object if included. This member is used to correlate the context between the two objects.
+
+[TIP]
+====
+The +id+ parameter is used primarily when you are making multiple requests in a single JSON-RPC call, a practice called _batching_. Batching is used to avoid the overhead of a new HTTP and TCP connection for every request. In the Ethereum context for example, we would use batching if we wanted to retrieve thousands of transactions in one HTTP connection. When batching, you set a different +id+ for each request and then match it to the +id+ in each response from the JSON-RPC server. The easiest way to implement this is to maintain a counter and increment the value for each request.
+====
 
 The response we receive is:
-
 ----
-{"jsonrpc":"2.0","id":1,"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+{"jsonrpc":"2.0","id":4192,"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
 ----
 
 This tells us that the JSON-RPC API is being served by Geth client version 1.8.0.
@@ -350,12 +365,12 @@ This tells us that the JSON-RPC API is being served by Geth client version 1.8.0
 Let's try something a bit more interesting. In the next example, we ask the JSON-RPC API for the current price of gas in wei:
 
 ----
-$ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}' http://localhost:8545
+$ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' http://localhost:8545
 
-{"jsonrpc":"2.0","id":1,"result":"0x430e23400"}
+{"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
 ----
 
-The response, +0x430e23400+, tells us that the current gas price on mainnet is 1.8 Gwei (gigawei or billion wei).
+The response, +0x430e23400+, tells us that the current gas price is 1.8 Gwei (gigawei or billion wei).
 
 You can find more information about the available JSON-RPC methods and what parameteres they expect on the Ethereum Wiki:
 
@@ -386,38 +401,3 @@ Ethereum clients include an option to perform a "fast" synchronization that skip
 =====
 Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
 =====
-
-=== Light Clients
-
-==== MyEtherWallet
-
-==== MyCrypto
-
-==== BlockCypher
-
-https://www.blockcypher.com/dev/ethereum
-
-==== Trust Wallet
-
-https://trustwalletapp.com/
-
-Secure mobile Ethereum wallet that supports Ethereum and ERC20, ERC223 tokens.
-
-=== Browsers and RPC Gateways
-
-==== Parity Browser
-
-==== Mist
-The official browser by the Ethereum Foundation
-
-==== MetaMask
-Another take on what an Ethereum browser is. Instead of building a full new browser like Mist and Parity, MetaMask hooks into standard web browsers as an extension. The supported browsers are: Chrome, Firefox, Opera and Brave Browser.
-
-==== Status
-Mobile browser in alpha. Decentralized all the way. Light client.
-
-==== Token
-Mobile browser in alpha. Pretty much the same as Status. A little more centralized to make operations easier for the user.
-
-==== Trust DApp Browser
-Fully functioning Web3 browser that allows you to interact with decentralized applications (DApps) directly from the Trust Wallet.
