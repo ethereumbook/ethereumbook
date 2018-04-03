@@ -38,7 +38,7 @@ Here's what is available now:
 | [Consensus](consensus.asciidoc) | ### |||
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |||
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
-| [Dapps](dapps.asciidoc) | ## |||
+| [DApps](dapps.asciidoc) | ## |||
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### |||
 
 
