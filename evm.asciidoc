@@ -304,6 +304,7 @@ While the EVM can theoretically solve any problem it receives, gas is what might
 
 For the majority of use cases, however, the EVM can solve any problem provided to it.
 
+[[bytecode_vs_runtime_bytecode]]
 ==== Bytecode vs. Runtime Bytecode
 
 When compiling a contract, you can either get the _contract bytecode_ or the _runtime bytecode_.
@@ -314,6 +315,7 @@ The runtime bytecode, on the other hand, is _only the bytecode that ends up sitt
 
 Let's take the simple `Faucet.sol` contract we created earlier as an example.
 
+[[faucet_example]]
 ----
 // Version of Solidity compiler this program was written for
 pragma solidity ^0.4.19;
@@ -341,6 +343,7 @@ To get the contract bytecode, we would run `solc --bin Faucet.sol`. If we instea
 
 If you compare the output of these commands, you will see that the runtime bytecode is a subset of the contract bytecode. In other words, the runtime bytecode is entirely contained within the contract bytecode.
 
+[[disassembling_the_bytecode]]
 ==== Disassembling the Bytecode
 
 After getting the runtime bytecode of Faucet.sol, we can enter it into Binary Ninja using the Ethersplay plugin to see what the EVM instructions look like.
@@ -350,10 +353,11 @@ After getting the runtime bytecode of Faucet.sol, we can enter it into Binary Ni
 image::images/Faucet_disassembled.png["Faucet.sol runtime bytecode disassembled"]
 
 
-When you direct a transaction to a smart contract, the first piece of code your transaction interacts with is that contract’s **dispatcher**. The dispatcher takes the transaction data and sends it to the appropriate function. 
+When you direct a transaction to a smart contract, the first piece of code your transaction interacts with is that contract’s **dispatcher**. The dispatcher takes the transaction data and sends it to the appropriate function.
 
 After the familiar MSTORE instruction, we see:
 
+[[faucet_instructions]]
 ----
 PUSH1 0x4
 CALLDATASIZE
@@ -362,20 +366,22 @@ PUSH1 0x3f
 JUMPI
 ----
 
-"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size, in bytes, of the calldata of the transaction sent to the contract and pushes it onto the stack. 
+"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size, in bytes, of the calldata of the transaction sent to the contract and pushes it onto the stack.
 
-This next instruction is LT, short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes. 
+This next instruction is LT, short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes.
 
 Why does the EVM check to see that the calldata of the transaction is at least 4 bytes? Because of how function identifiers work. Each function is identified by the first four bytes of its keccak256 hash. By placing the function's name and what arguments it takes into a keccak256 hash function, you can extract its function identifier. In our contract, we have:
 
+[[faucet_function_identifier]]
 ```
 keccak256("withdraw(uint)") = 0x2e1a7d4d...
 ```
 
-Thus, the function identifier for the "withdraw" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire message you send the smart contract is less than 4 bytes, then there’s no function you could possibly be communicating with. Because we implemented a _fallback function_ in Faucet.sol, code execution will jump to this function when the calldata is less than 4 bytes. 
+Thus, the function identifier for the "withdraw" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire message you send the smart contract is less than 4 bytes, then there’s no function you could possibly be communicating with. Because we implemented a _fallback function_ in Faucet.sol, code execution will jump to this function when the calldata is less than 4 bytes.
 
 If the msg.data field is less than 4 bytes, LT pushes 1 onto the stack after popping off the two values it compared. The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. "JUMPI" stands for "jump if", and it works like so:
 
+[[faucet_jump_instruction_text]]
 ----
 jumpi(label, cond) // Jump to "label" if "cond" is true
 ----
