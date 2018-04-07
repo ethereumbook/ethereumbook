@@ -1,3 +1,4 @@
+[[wallets_chapter]]
 == Wallets
 
 ((("wallets", "defined")))The word "wallet" is used to describe a few different things in Ethereum.
@@ -8,6 +9,7 @@ More narrowly, from a programmer's perspective, the word "wallet" refers to the 
 
 In this section we will look at wallets as containers for private keys, and as systems for managing keys.
 
+[[wallet_tech_overview]]
 === Wallet Technology Overview
 
 In this section we summarize the various technologies used to construct user-friendly, secure, and flexible Ethereum wallets.
@@ -74,6 +76,7 @@ https://github.com/ethereumjs/keythereum
 The use of nondeterministic wallets is discouraged for anything other than simple tests. They are simply too cumbersome to back up and use. Instead, use an industry-standard&#x2013;based _HD wallet_ with a _mnemonic_ seed for backup.
 ====
 
+[[deterministic_wallets]]
 ==== Deterministic (Seeded) Wallets
 
 ((("wallets", "types of", "deterministic (seeded) wallets")))Deterministic, or "seeded," wallets are wallets that contain private keys that are all derived from a common seed, through the use of a one-way hash function. The seed is a randomly generated number that is combined with other data, such as an index number or "chain code" (see <<hd_wallets>>) to derive the private keys. In a deterministic wallet, the seed is sufficient to recover all the derived keys, and therefore a single backup, at creation time, is sufficient. The seed is also sufficient for a wallet export or import, allowing for easy migration of all the user's keys between different wallet implementations.
@@ -81,9 +84,9 @@ The use of nondeterministic wallets is discouraged for anything other than simpl
 [[hd_wallets]]
 ==== HD Wallets (BIP-32/BIP-44)
 
-((("wallets", "types of", "hierarchical deterministic (HD) wallets")))((("hierarchical deterministic (HD) wallets")))((("bitcoin improvement proposals", "Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))Deterministic wallets were developed to make it easy to derive many keys from a single "seed." The most advanced form of deterministic wallets is the HD wallet defined by bitcoin's BIP-32 standard. HD wallets contain keys derived in a tree structure, such that a parent key can derive a sequence of children keys, each of which can derive a sequence of grandchildren keys, and so on, to an infinite depth. This tree structure is illustrated in <<hd_wallet>>.
+((("wallets", "types of", "hierarchical deterministic (HD) wallets")))((("hierarchical deterministic (HD) wallets")))((("bitcoin improvement proposals", "Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))Deterministic wallets were developed to make it easy to derive many keys from a single "seed." The most advanced form of deterministic wallets is the HD wallet defined by bitcoin's BIP-32 standard. HD wallets contain keys derived in a tree structure, such that a parent key can derive a sequence of children keys, each of which can derive a sequence of grandchildren keys, and so on, to an infinite depth. This tree structure is illustrated in <<hd_wallet_figure>>.
 
-[[hd_wallet]]
+[[hd_wallets_figure]]
 .HD wallet: a tree of keys generated from a single seed
 image::images/hd_wallet.png["HD wallet"]
 
@@ -91,6 +94,7 @@ HD wallets offer two major advantages over random (nondeterministic) keys. First
 
 The second advantage of HD wallets is that users can create a sequence of public keys without having access to the corresponding private keys. This allows HD wallets to be used on an insecure server or in a watch-only or receive-only capacity, where the wallet doesn't have the private keys that can spend the funds.
 
+[[mnemonic_codes]]
 ==== Seeds and Mnemonic Codes (BIP-39)
 
 ((("wallets", "technology of", "seeds and mnemonic codes")))((("mnemonic code words")))((("Bitcoin improvement proposals", "Mnemonic Code Words (BIP-39)")))HD wallets are a very powerful mechanism for managing many keys and addresses. They are even more useful if they are combined with a standardized way of creating seeds from a sequence of English words (or words in another language) that are easy to transcribe, export, and import across wallets. This is known as a _mnemonic_ and the standard is defined by BIP-39. Today, many Ethereum wallets (as well as wallets for other cryptocurrencies) use this standard and can import and export seeds for backup and recovery using interoperable mnemonics.
@@ -108,6 +112,7 @@ wolf juice proud gown wool unfair
 wall cliff insect more detail hub
 ----
 
+[[wallet_best_practices]]
 ==== Wallet Best Practices
 
 ((("wallets", "best practices for")))((("Bitcoin improvement proposals", "Multipurpose HD Wallet Structure (BIP-43)")))As cryptocurrency wallet technology has matured, certain common industry standards have emerged that make wallets broadly interoperable, easy to use, secure, and flexible. These standards also allow wallets to derive keys for multiple different cryptocurrencies, all from a single mnemonic. These common standards are:
@@ -275,6 +280,7 @@ However, it is important to note that the use of a passphrase also introduces th
 
 While passphrases are very useful, they should only be used in combination with a carefully planned process for backup and recovery, considering the possibility of surviving the owner and allowing his or her family to recover the cryptocurrency estate.
 
+[[working_mnemonic_codes]]
 ===== Working with mnemonic codes
 
 BIP-39 is implemented as a library in many different programming languages:
@@ -293,12 +299,14 @@ image::images/bip39_web.png["BIP-39 generator web-page"]
 
 ((("", startref="mnemonic05")))((("", startref="BIP3905")))The page (https://iancoleman.github.io/bip39/) can be used offline in a browser, or accessed online.
 
+[[create_hd_wallet]]
 ==== Creating an HD Wallet from the Seed
 
 ((("wallets", "technology of", "creating HD wallets from root seed")))((("root seeds")))((("hierarchical deterministic (HD) wallets")))HD wallets are created from a single _root seed_, which is a 128-, 256-, or 512-bit random number. Most commonly, this seed is generated from a _mnemonic_ as detailed in the previous section.
 
 Every key in the HD wallet is deterministically derived from this root seed, which makes it possible to re-create the entire HD wallet from that seed in any compatible HD wallet. This makes it easy to back up, restore, export, and import HD wallets containing thousands or even millions of keys by simply transferring only the mnemonic that the root seed is derived from.
 
+[[bip32_bip43/44]]
 ==== Hierarchical Deterministic Wallets (BIP-32) and paths (BIP-43/44)
 
 Most HD wallets follow the BIP-32 standard, which has become a de-facto industry standard for deterministic key generation. You can read the detailed specification in:
@@ -318,6 +326,7 @@ http://bip32.org/
 The standalone BIP-32 generator is not an HTTPS site. That's to remind you that the use of this tool is not secure. It is only for testing. You should not use the keys produced by this site in production (with real funds).
 ====
 
+[[extended_keys]]
 ===== Extended public and private keys
 
 In BIP-32 terminology, a parent key that can be extended to produce "children," is called an _extended key_. If it is a private key, it is an _extended private key_ distinguished by the prefix _xprv_:
@@ -343,6 +352,7 @@ One common application of this solution is to install an extended public key on 
 
 ((("cold storage")))((("storage", "cold storage")))((("hardware wallets")))Another common application of this solution is for cold-storage or hardware wallets. In that scenario, the extended private key can be stored on a hardware wallet, while the extended public key can be kept online. The user can create "receive" addresses at will, while the private keys are safely stored offline. To spend the funds, the user can use the extended private key on an offline signing Ethereum client or sign transactions on the hardware wallet device.
 
+[[hardened_child_key]]
 ===== Hardened child key derivation
 
 ((("public and private keys", "hardened child key derivation")))((("hardened derivation")))The ability to derive a branch of public keys from an xpub is very useful, but it comes with a potential risk. Access to an xpub does not give access to child private keys. However, because the xpub contains the chain code, if a child private key is known, or somehow leaked, it can be used with the chain code to derive all the other child private keys. A single leaked child private key, together with a parent chain code, reveals all the private keys of all the children. Worse, the child private key together with a parent chain code can be used to deduce the parent private key.
@@ -351,12 +361,14 @@ To counter this risk, HD wallets use an alternative derivation function called _
 
 In simple terms, if you want to use the convenience of an xpub to derive branches of public keys, without exposing yourself to the risk of a leaked chain code, you should derive it from a hardened parent, rather than a normal parent. As a best practice, the level-1 children of the master keys are always derived through the hardened derivation, to prevent compromise of the master keys.
 
+[[index_number]]
 ===== Index numbers for normal and hardened derivation
 
 The index number used in the BIP-32 derivation function is a 32-bit integer. To easily distinguish between keys derived through the normal derivation function versus keys derived through hardened derivation, this index number is split into two ranges. Index numbers between 0 and 2^31^&#x2013;1 (0x0 to 0x7FFFFFFF) are used _only_ for normal derivation. Index numbers between 2^31^ and 2^32^&#x2013;1 (0x80000000 to 0xFFFFFFFF) are used _only_ for hardened derivation. Therefore, if the index number is less than 2^31^, the child is normal, whereas if the index number is equal or above 2^31^, the child is hardened.
 
 To make the index number easier to read and display, the index number for hardened children is displayed starting from zero, but with a prime symbol. The first normal child key is therefore displayed as 0, whereas the first hardened child (index 0x80000000) is displayed as 0++&#x27;++. In sequence then, the second hardened key would have index 0x80000001 and would be displayed as 1++&#x27;++, and so on. When you see an HD wallet index i++&#x27;++, that means 2^31^+i.
 
+[[hd_wallet_path]]
 ===== HD wallet key identifier (path)
 
 ((("hierarchical deterministic (HD) wallets")))Keys in an HD wallet are identified using a "path" naming convention, with each level of the tree separated by a slash (/) character (see <<hd_path_table>>). Private keys derived from the master private key start with "m." Public keys derived from the master public key start with "M." Therefore, the first child private key of the master private key is m/0. The first child public key is M/0. The second grandchild of the first child is m/0/1, and so on.
@@ -375,6 +387,7 @@ The "ancestry" of a key is read from right to left, until you reach the master k
 | M/23/17/0/0 | The first great-great-grandchild public key of the first great-grandchild of the 18th grandchild of the 24th child
 |=======
 
+[[navigating_hd_wallet_tree]]
 ===== Navigating the HD wallet tree structure
 
 The HD wallet tree structure offers tremendous flexibility. Each parent extended key can have 4 billion children: 2 billion normal children and 2 billion hardened children. Each of those children can have another 4 billion children, and so on. The tree can be as deep as you want, with an infinite number of generations. With all that flexibility, however, it becomes quite difficult to navigate this infinite tree. It is especially difficult to transfer HD wallets between implementations, because the possibilities for internal organization into branches and subbranches are endless.
