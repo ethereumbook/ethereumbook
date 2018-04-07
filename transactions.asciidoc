@@ -109,7 +109,7 @@ As you can see, keeping track of nonces is necessary and if your application doe
 
 Concurrency is a complex aspect of computer science, and it crops up unexpectedly sometimes, especially in decentralized/distributed real-time systems like Ethereum.
 
-In simple terms, concurrency is when you have simultaneous computation by multiple independent systems. These can be in the same program (e.g. threading), on the same CPU (e.g. multi-processing), or on different computers (i.e. distributed systems). Ethereum, by definition, is a system that allows concurrency of operations (nodes, clients, dapps), but enforces a singleton state (e.g. there is only one common/shared state of the system at each mined block).
+In simple terms, concurrency is when you have simultaneous computation by multiple independent systems. These can be in the same program (e.g. threading), on the same CPU (e.g. multi-processing), or on different computers (i.e. distributed systems). Ethereum, by definition, is a system that allows concurrency of operations (nodes, clients, DApps), but enforces a singleton state (e.g. there is only one common/shared state of the system at each mined block).
 
 Now, imagine that we have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals for a hot wallet. Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing and broadcasting transactions from the same hot wallet account coordinate?
 
@@ -338,7 +338,7 @@ Any ether sent to the contract registration address +0x0+ or the designated burn
 
 ((("digital signatures", "algorithm used")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)")))The digital signature algorithm used in Ethereum is the _Elliptic Curve Digital Signature Algorithm_, or _ECDSA_. ECDSA is the algorithm used for digital signatures based on elliptic curve private/public key pairs, as described in <<elliptic_curve>>.
 
-((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see the following sidebar). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (nonrepudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
+((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see the following sidebar). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (non-repudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
 
 [[digital_signature_definition]]
 .Wikipedia's Definition of a "Digital Signature"
@@ -350,11 +350,11 @@ _Source: https://en.wikipedia.org/wiki/Digital_signature_
 
 ==== How Digital Signatures Work
 
-((("digital signatures", "how they work")))A digital signature is a _mathematical scheme_ that consists of two parts. The first part is an algorithm for creating a signature, using a private key (the signing key) from a message (the transaction). The second part is an algorithm that allows anyone to verify the signature, given also the message and a public key.
+((("digital signatures", "how they work")))A digital signature is a _mathematical scheme_ that consists of two parts. The first part is an algorithm for creating a signature, using a private key (the signing key) from a message (the transaction). The second part is an algorithm that allows anyone to verify the signature by only using the message and a public key.
 
 ===== Creating a digital signature
 
-In Ethereum's implementation of the ECDSA algorithm, the "message" being signed is the transaction, or more accurately, the Keccak256 hash of the RLP-encoded data from the transaction. The signing key is the EOA's private key. The result is the signature:
+In Ethereum's implementation of ECDSA, the "message" being signed is the transaction, or more accurately, the Keccak256 hash of the RLP-encoded data from the transaction. The signing key is the EOA's private key. The result is the signature:
 
 latexmath:[\(Sig = F_{sig}(F_{keccak256}(m), k)\)]
 
@@ -387,7 +387,12 @@ The signature verification algorithm takes the message (a hash of the transactio
 
 ((("public and private keys", "key pairs", "ephemeral")))The signature algorithm first generates an _ephemeral_ (temporary) private/public key pair. This temporary key pair is used in the calculation of the _R_ and _S_ values, after a transformation involving the signing private key and the transaction hash.
 
-The temporary key pair is based on a random number _q_, which is used as the temporary private key. From _q_, we generate the corresponding temporary public key _Q_ (calculated as _Q = q*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _Q_.
+The temporary key pair is generated by two input values:
+
+1. A random number _q_, which is used as the temporary private key
+1. and the elliptic curve generator point _G_
+
+From _q_ and _G_, we generate the corresponding temporary public key _Q_ (calculated as _Q = q*G_, in the same way Ethereum public keys are derived; see <<pubkey>>). The _R_ value of the digital signature is then the x coordinate of the ephemeral public key _Q_.
 
 From there, the algorithm calculates the _S_ value of the signature, such that:
 
@@ -492,11 +497,11 @@ https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md
 
 As mentioned in <<tx_struct>>, the transaction message doesn't include any "from" field. That's because the originator's public key can be computed directly from the ECDSA signature. Once you have the public key, you can compute the address easily. The process of recovering the signer's public key is called a _Public Key Recovery_.
 
-Given the values +r+ and +s+, that were computed in <<ecdsa_math>>, we can compute two possible public keys, only one of which will produce a valid +P+ result in our ECDSA verification function. The one that produces a valid +P+ is the correct public key.
+Given the values +r+ and +s+, that were computed in <<ecdsa_math>>, we can compute two possible public keys.
 
-First, we compute two elliptic curve points R and R^'^, from the x-coordinate +r+ value that is in the signature. There are two points, because the elliptic curve is symmetric across the x-axis, so that for any value +x+, there are two possible values that fit the curve, on either side of the x-axis.
+First, we compute two elliptic curve points R and R^'^, from the x coordinate +r+ value that is in the signature. There are two points, because the elliptic curve is symmetric across the x-axis, so that for any value +x+, there are two possible values that fit the curve, on either side of the x-axis.
 
-From +r+, we also calculate +r^-1^+ which is the multiplicative-inverse of +r+.
+From +r+, we also calculate r^-1^ which is the multiplicative inverse of +r+.
 
 Finally we calculate +z+, which is the n-lowest bits of the message hash, where n is the order of the elliptic curve.
 
@@ -509,16 +514,15 @@ and
 K~2~ = r^-1^ (sR^'^ - zG)
 
 where:
+
 * K~1~ and K~2~ are the two possibilities for the signer's public key
-* r^-1^ is the multiplicative-inverse of signature's +r+ value
+* r^-1^ is the multiplicative inverse of signature's +r+ value
 * s is the signature's +s+ value
-* R and R^'^ are the two possibilities for the ephemeral public key
+* R and R^'^ are the two possibilities for the ephemeral public key _Q_
 * z are the n-lowest bits of the message hash
-* G is the generator point
+* G is the elliptic curve generator point
 
-Plug each of the two possible K values into the signature verification function and one will verify - that's the owner's public key.
-
-To make things even easier, the transaction signature includes a prefix value +v+, which tells us which of the two possible R values are the ephemeral public key. If +v+ is even, then R is the correct value. If +v+ is odd, then R^'^. That way, we need to calculate only one value for R and only one value for K, making the process a bit simpler.
+To make things more efficient, the transaction signature includes a prefix value +v+, which tells us which of the two possible R values are the ephemeral public key. If +v+ is even, then R is the correct value. If +v+ is odd, then R^'^. That way, we need to calculate only one value for R and only one value for K.
 
 === Separating signing and transmission (offline signing)
 
@@ -528,13 +532,13 @@ Why would you want to separate the signing and transmission of transactions? The
 
 Depending on the level of security you need, your "offline signing" computer can have varying degrees of separation from the online computer, ranging from an isolated and firewalled subnet (online but segregated) to a completely offline system known as an _air-gapped_ system. In an air-gapped system there is no network connectivity at all - the computer is separated from the online environment by a gap of "air". To sign transactions you transfer them to and from the air-gapped computer using data storage media or (better) a webcam and QR code. Of course, this means you must manually transfer every transaction you want signed, and this doesn't scale.
 
-While not many environments can utilize a fully air-gapped system, even a small degree of isolation has significant security benefits. For example, an isolated subnet with a firewall that only allows a message-queue protocol through, can offer a much reduced attack surface and much higher security than signing on the online system. Many companies use a protocol such as ZeroMQ (0MQ), as it offers a reduced attack surface for the signing computer. With a setup like that, transactions are serialized and queued for signing. The queuing protocol transmits the serialized message, in a way similar to a TCP socket, to the signing computer. The signing computer reads the serialized transactions from the queue (carefully), applies a signature with the appropriate key, and places them on an outgoing queue. The outgoing queue transmits the signed transactions to a computer with an Ethereum client that de-queues them and transmits them.
+While not many environments can utilize a fully air-gapped system, even a small degree of isolation has significant security benefits. For example, an isolated subnet with a firewall that only allows a message-queue protocol through, can offer a much-reduced attack surface and much higher security than signing on the online system. Many companies use a protocol such as ZeroMQ (0MQ), as it offers a reduced attack surface for the signing computer. With a setup like that, transactions are serialized and queued for signing. The queuing protocol transmits the serialized message, in a way similar to a TCP socket, to the signing computer. The signing computer reads the serialized transactions from the queue (carefully), applies a signature with the appropriate key, and places them on an outgoing queue. The outgoing queue transmits the signed transactions to a computer with an Ethereum client that de-queues them and transmits them.
 
 === Transaction propagation
 
-The Ethereum network uses a "flood" routing protocol. Each Ethereum client, acts as a _node_ in a _Peer-to-Peer (P2P)_, which (ideally) forms a _mesh_ network. No network node is "special", they all act as equal peers. We will use the term "node" to refer to an Ethereum client that is connected to and participating in the P2P network.
+The Ethereum network uses a "flood" routing protocol. Each Ethereum client, acts as a _node_ in a _Peer-to-Peer (P2P)_, which (ideally) forms a _mesh_ network. No network node is "special", they all act as equal peers. We will use the term "node" to refer to an Ethereum client that is connected to and participates in the P2P network.
 
-Transaction propagation starts with the originating Ethereum node creating (or receiving from offline) a signed transaction. The transaction is validated and then transmitted to all the other Ethereum nodes that are _directly_ connected to the originating node. On average, each Ethereum node maintains connections to at least 13 other nodes, called its _neighbors_. Each neighbor node validates the transaction as soon as they receive it. If they agree that it is valid, they store a copy and then they propagate it to all their neighbors (except the one it came from). As a result, the transaction ripples outwards from the originating node, _flooding_ across the network, until all nodes in the network have a copy of the transaction.
+Transaction propagation starts with the originating Ethereum node creating (or receiving from offline) a signed transaction. The transaction is validated and then transmitted to all the other Ethereum nodes that are _directly_ connected to the originating node. On average, each Ethereum node maintains connections to at least 13 other nodes, called its _neighbors_. Each neighbor node validates the transaction as soon as they receive it. If they agree that it is valid, they store a copy and propagate it to all their neighbors (except the one it came from). As a result, the transaction ripples outwards from the originating node, _flooding_ across the network, until all nodes in the network have a copy of the transaction.
 
 Within just a few seconds, an Ethereum transaction propagates to all the Ethereum nodes around the globe. From the perspective of each node, it is not possible to discern the origin of the transaction. The neighbor that sent it to our node may be the originator of the transaction or may have received it from one of its neighbors. To be able to track the origin of transactions, or interfere with propagation, an attacker would have to control a significant percentage of all nodes. This is part of the security and privacy design of P2P networks, especially as applied to blockchains.
 
@@ -542,6 +546,6 @@ Within just a few seconds, an Ethereum transaction propagates to all the Ethereu
 
 While all the nodes in Ethereum are equal peers, some of them are operated by _miners_ and are feeding transactions and blocks to _mining farms_, which are computers with high-performance Graphical Processing Units (GPUs). The mining computers add transactions to a candidate block and attempt to find a _Proof-of-Work_ that makes the candidate block valid. We will discuss this in more detail in <<consensus>>.
 
-Without going into too much detail, valid transactions will eventually be included in a block of transactions and, thus, recorded in the Ethereum blockchain. Once mined into a block, transactions also modify the state of the Ethereum singleton, either by modifying the balance of an account (in the case of a simple payment), or by invoking contracts that change their internal state. These changes are recorded along side the transaction, in the form of a transaction _receipt_, which may also include _events_. We will examine all this in much more detail in <<evm>>
+Without going into too much detail, valid transactions will eventually be included in a block of transactions and, thus, recorded in the Ethereum blockchain. Once mined into a block, transactions also modify the state of the Ethereum singleton, either by modifying the balance of an account (in the case of a simple payment), or by invoking contracts that change their internal state. These changes are recorded alongside the transaction, in the form of a transaction _receipt_, which may also include _events_. We will examine all this in much more detail in <<evm>>
 
 Our transaction has completed its journey from creation to signing by an EOA, propagation, and finally mining. It has changed the state of the singleton and left an indelible mark on the blockchain.

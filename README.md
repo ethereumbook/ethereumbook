@@ -24,21 +24,21 @@ Here's what is available now:
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
 | [Glossary](glossary.asciidoc) | ##### |||
-| [What is Ethereum](what-is.asciidoc) | ### |||
+| [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: ||
 | [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
-| [Ethereum Clients](clients.asciidoc) | ####### |||
+| [Ethereum Clients](clients.asciidoc) | ########## |||
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | ## |||
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
 | [Transactions](transactions.asciidoc) | ############## | :heavy_check_mark: ||
-| [Smart Contracts](smart-contracts.asciidoc) | ########## |||
+| [Smart Contracts](smart-contracts.asciidoc) | ########### |||
 | [Tokens](tokens.asciidoc) | ################## | :heavy_check_mark: ||
 | [Accounting & Gas](gas.asciidoc) | ### |||
-| [EVM](evm.asciidoc) | ### |||
+| [EVM](evm.asciidoc) | ##### |||
 | [Consensus](consensus.asciidoc) | ### |||
-| [DevP2P Protocol](devp2p-protocol.asciidoc) | ## |||
+| [DevP2P Protocol](devp2p-protocol.asciidoc) | ### |||
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
-| [Dapps](dapps.asciidoc) | ## |||
+| [DApps](dapps.asciidoc) | ### |||
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### |||
 
 
