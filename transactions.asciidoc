@@ -39,9 +39,11 @@ The nonce is one of the most important and least understood components of a tran
 
  nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
-Strictly speaking, the nonce is an attribute of the originating address, but nonces are seen only in transactions.
+Strictly speaking, the nonce is an attribute of the originating address (it only has meaning in the context of the sending address). However, the nonce is not stored explicitly as part of an account's state on the blockchain. Instead it is calculated dynamically, by counting the number of confirmed transactions that have originated from an address. 
 
-nonce is also used to prevent double spending, by checking if the nonce is not set to the same as another transaction it will be avoided as the previous transaction has not been confirmed yet and hence the nonce is invalid, if the nonce is set to the same only one of the transactions will be mined, no double spend will happen as only one transaction will take place.
+The nonce value is also used to prevent erroneous calculations of an account balance. For example, let's say an account has a balance of 10 ether and signs two transactions spending 6 ether each, with nonce 1 and nonce 2 respectively. Which of these two transaction is valid? In a distributed system like Ethereum, nodes may receive the transactions out of sequence. The nonce forces transactions from any address to be processed sequentially, without gaps, regardless of the sequence in which they were received by a node. That way, all nodes calculate the same balance. The transaction paying 6 ether with nonce 1 will be processed successfully, reducing the balance of the account to 4 ether. The transaction paying 6 ether with the nonce 2, will be seen as invalid by all nodes, regardless of when it was received. If the  nonce 2 transaction is received first, a node will hold it and not validate it until it has seen, and processed, the nonce 1 transaction. 
+
+The use of the nonce to ensure that all nodes calculate the same balance, and sequence transactions properly, is equivalent to the mechanism used to prevent "double spending" in Bitcoin. However, because Ethereum tracks account balances and does not track coins individually (called UTXO in Bitcoin), "double spending" can only happen if the account balance is calculated erroneously. The nonce mechanism prevents that from happening. 
 
 ===== Keeping track of nonces
 
