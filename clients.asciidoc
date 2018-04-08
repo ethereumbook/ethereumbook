@@ -62,7 +62,7 @@ Disadvantages:
 
 * You can't use "real" money on Ropsten, it runs on test ether.
 * Consequently, you can't test security against real adversaries, as there is nothing at stake.
-* There are some aspects of a public blockchain that you cannot test realistically on Ropsten. For example, transaction fees are not a consideration on testnet.
+* There are some aspects of a public blockchain that you cannot test realistically on Ropsten. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet since gas is free.
 
 ==== Local Instance (TestRPC) Advantages and Disadvantages
 
@@ -328,8 +328,12 @@ To access the JSON-RPC API, you can use a specialized library, written in the pr
 
 .Using curl to call the web3_clientVersion function over JSON-RPC
 ----
-$ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' http://localhost:8545
-{"jsonrpc":"2.0","id":1,"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+$ curl -X POST -H "Content-Type: application/json" --data \
+'{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+http://localhost:8545
+
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
 ----
 
 In this example, we use +curl+ to make an HTTP connection to address +http://localhost:8545+. We are already running +geth+ and it is offering the JSON-RPC API as an HTTP service on port 8545. We instruct +curl+ to use the HTTP +POST+ command, and to identify the content as +Content-Type: application/json+. Finally, we pass a JSON-encoded request as the +data+ component of our HTTP request. Most of our command line is just setting up +curl+ to make the HTTP connection correctly. The interesting part is the actual JSON-RPC command we issue:
@@ -358,7 +362,8 @@ The +id+ parameter is used primarily when you are making multiple requests in a 
 
 The response we receive is:
 ----
-{"jsonrpc":"2.0","id":4192,"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+{"jsonrpc":"2.0","id":4192,
+"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
 ----
 
 This tells us that the JSON-RPC API is being served by Geth client version 1.8.0.
@@ -366,7 +371,9 @@ This tells us that the JSON-RPC API is being served by Geth client version 1.8.0
 Let's try something a bit more interesting. In the next example, we ask the JSON-RPC API for the current price of gas in wei:
 
 ----
-$ curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' http://localhost:8545
+$ curl -X POST -H "Content-Type: application/json" --data \
+'{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
+http://localhost:8545
 
 {"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
 ----
@@ -439,7 +446,21 @@ Cipher Browser:: a full-featured Ethereum-enabled mobile DApp browser and wallet
 
 A variety of wallets and DApp browsers are available as plugins or extensions of web browsers such as Chrome and Firefox: lightweight clients that run inside your browser.
 
-Some of the more popular ones include MyEtherWallet/MyCrypto and MetaMask.
+Some of the more popular ones include MetaMask, Jaxx and MyEtherWallet/MyCrypto
+
+==== MetaMask
+
+MetaMask was introduced in <<intro>>, and is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera and Brave Browser. Find MetaMask at:
+
+https://metamask.io
+
+At first glance, MetaMask is a browser-based wallet. But, unlike other browser wallets, MetaMask injects a web3 instance into the browser, acting as an RPC client that connects to a variety of Ethereum blockchains (eg. mainnet, Ropsten testnet, Kovan testnet, local RPC node, etc.). The ability to inject a web3 instance and act as a gateway to external RPC services, makes MetaMask a very powerful tool for developers and users alike. It can be combined, for example, with MyEtherWallet or MyCrypto, acting as an web3 provider and RPC gateway for those tools.
+
+==== Jaxx
+
+Jaxx, which was introduced as a mobile wallet in <<mobile_wallets>>, is also available as a Chrome and Firefox extension. Find it at:
+
+https://jaxx.io
 
 ==== MyEtherWallet (MEW)
 
@@ -459,7 +480,7 @@ https://MyEtherWallet.com
 
 ==== MyCrypto
 
-Just prior to publication of the first edition of this book, the  MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork" as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and MyCrypto. At the time of the split, MyCrypto offered identical functionality as MyEtherWallet. It is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
+Just prior to publication of the first edition of this book, the MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork" as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and MyCrypto. At the time of the split, MyCrypto offered identical functionality as MyEtherWallet. It is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
 
 As with MyEtherWallet, you must be very careful when accessing MyCrypto in your browser. Always use a bookmark, or type the URL very carefully (then bookmark it for future use).
 
@@ -467,12 +488,8 @@ MyCrypto can be found at:
 
 https://MyCrypto.com
 
-==== MetaMask
-
-MetaMask was introduced in <<intro>>, and is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera and Brave Browser. Find MetaMask at https://metamask.io
-
-At first glance, MetaMask is a browser-based wallet. But, unlike other browser wallets, MetaMask injects a web3 instance into the browser, acting as an RPC client that connects to a variety of Ethereum blockchains (eg. mainnet, Ropsten testnet, Kovan testnet, local RPC node, etc.). The ability to inject a web3 instance and act as a gateway to external RPC services, makes MetaMask a very powerful tool for developers and users alike. It can be combined, for example, with MyEtherWallet or MyCrypto, acting as an web3 provider and RPC gateway for those tools.
-
 ==== Mist
 
-Mist is the first ever Ethereum enabled browser, built by the Ethereum Foundation. It also contains a browser based wallet that was the first ever implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer in Mist), the camelcase checksum. It runs a full node, supports swarm based storage and ENS addresses.
+Mist is the first ever Ethereum enabled browser, built by the Ethereum Foundation. It also contains a browser-based wallet that was the first ever implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer in Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-155, see <<eip-155>>). Mist runs a full node, and offers a full DApp browser with support for Swarm based storage and ENS addresses. Find it at:
+
+https://github.com/ethereum/mist
