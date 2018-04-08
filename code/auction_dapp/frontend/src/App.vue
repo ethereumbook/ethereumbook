@@ -113,7 +113,7 @@
                                             <v-progress-linear v-bind:indeterminate="true"></v-progress-linear>
                                         </div>
                                         <v-btn v-show="!createAssetSuccess" :disabled="deed.deedURI.length==0 || creatingAsset" color="teal" outline @click.native="registerDeed()">Create Deed/Token</v-btn>
-                                        <v-btn v-show="!createAssetSuccess" outline color="teal" @click="stepperIndex++">Skip</v-btn>
+                                        <!-- <v-btn v-show="!createAssetSuccess" outline color="teal" @click="stepperIndex++">Skip</v-btn> -->
                                     </v-flex>
                                 </v-layout>
                             </v-card>
@@ -141,8 +141,7 @@
                                         </div>
                                         <v-btn :disabled="selectedDeed==null || transferDeedSuccess || transferingDeed " @click="transferTo()" outline color="teal">Transfer Ownership</v-btn>
                                         <v-btn v-show="transferDeedSuccess" outline color="primary" @click="stepperIndex++">Next</v-btn>
-                                        <v-btn outline color="teal" @click="stepperIndex++">Skip</v-btn>
-                                        <!-- <v-btn v-show="!createAssetSuccess" :disabled="deed.deedURI.length==0 || creatingAsset" color="teal" outline @click.native="registerDeed()">Create Deed/Token</v-btn> -->
+                                        <!-- <v-btn outline color="teal" @click="stepperIndex++">Skip</v-btn> -->
                                     </v-flex>
                                 </v-layout>
                             </v-card>
@@ -169,7 +168,7 @@
                                     </v-flex>
 
                                     <v-flex  style="height:100%; padding-bottom:20px;" xs12 sm12 md12>
-                                        <input  type="file" @change="fileSelectionEvent($event)">
+                                        <b style="color:red;">Image(png/jpg):</b> <input  type="file" @change="fileSelectionEvent($event)">
                                     </v-flex>
 
                                     <v-flex  style="height:100%; padding-bottom:20px;" xs12 sm12 md12>
@@ -422,10 +421,10 @@ export default {
                     if(!error) {
                         this.loadingModal = false
                         this.dialog = false
+                        location.reload()
                     }
                 })
 
-                console.log(transaction)
 
             } catch(e) {
                 this.error = e.message

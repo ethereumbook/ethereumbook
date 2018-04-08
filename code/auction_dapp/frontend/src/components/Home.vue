@@ -37,8 +37,8 @@
 
             <v-flex :key="index" v-for="(auction, index) in auctions" style="height:100%; padding:30px;" xs12 sm4 md4>
                 <v-card>
-                    <v-card-media>
-                        <img height="300px" :src="auction.image" />
+                    <v-card-media :src="auction.image" height="300px">
+                        <!-- <img height="300px" :src="auction.image" /> -->
                     </v-card-media>
                     <v-card-title style="text-align:left;" primary-title>
                         <div>
