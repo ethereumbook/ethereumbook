@@ -33,7 +33,7 @@ Collectible:: A token can represent a digital (e.g. CryptoPunks) or physical col
 
 Identity:: A token can represent a digital (e.g. avatar) or legal identity (e.g. national ID).
 
-Attestation:: A token can represent a certification or attestation of fact by some authority or by a decentralized reputation system.
+Attestation:: A token can represent a certification or attestation of fact by some authority or by a decentralized reputation system (e.g. marriage record, birth certificate, college degree).
 
 Often, a single token encompasses several of these functions. Sometimes it is hard to discern between them, as the physical equivalents have always been inextricably linked. For example, in the physical world, a driver's license (attestation) is also an identity document (identity) and the two cannot be separated. In the digital realm, previously commingled functions can be separated and developed independently (e.g. an anonymous attestation).
 
@@ -48,7 +48,7 @@ Tokens are fungible when we can substitute any single unit of the token for anot
 
 Strictly speaking, if a token's historical provenance can be tracked, then it is not entirely fungible. The ability to track provenance can lead to blacklisting and whitelisting, reducing or eliminating fungibility. We will examine this further in <<privacy>>.
 
-Non-fungible tokens are tokens that each represent a unique tangible or intangible item and therefore are not interchangeable. For example, a token that represents ownership of a _specific_ Van Gogh painting is not equivalent to another token that represents a Picasso. Similarly, a token representing a _specific_ digital collectible such as a specific CryptoKitty (see <<cryptoKitties>>) is not interchangeable with any other CryptoKitty.
+Non-fungible tokens are tokens that each represent a unique tangible or intangible item and therefore are not interchangeable. For example, a token that represents ownership of a _specific_ Van Gogh painting is not equivalent to another token that represents a Picasso. Similarly, a token representing a _specific_ digital collectible such as a specific CryptoKitty (see <<cryptoKitties>>) is not interchangeable with any other CryptoKitty. Each non-fungible token is associated with an unique identifier, such as a serial number.
 
 We will see examples of both fungible and non-fungible tokens later in this section.
 
@@ -64,7 +64,7 @@ The word "intrinsic" derives from the Latin "intra", meaning "from within".
 
 Some tokens represent digital items that are _intrinsic_ to the blockchain. Those digital assets are governed by consensus rules, just like the tokens themselves. This has an important implication: tokens that represent intrinsic assets do not carry additional counterparty risk. If you hold the keys to 1 ether, there is no other party holding that ether for you. The blockchain consensus rules apply and your ownership (control) of the private keys is equivalent to ownership of the asset, without any intermediary.
 
-Conversely, many tokens are used to represent _extrinsic_ things, like real-estate, corporate voting shares, trademarks, gold bars. The ownership of these items, which are not "within" the blockchain, is governed by law, custom and policy that are separate from the consensus rules that govern the token. As a result, these extrinsic assets carry additional counterparty risk because they are held by custodians, recorded in external registries, or controlled by laws and policies outside the blockchain environment.
+Conversely, many tokens are used to represent _extrinsic_ things, like real-estate, corporate voting shares, trademarks, gold bars. The ownership of these items, which are not "within" the blockchain, is governed by law, custom and policy that are separate from the consensus rules that govern the token. In toher words, token issuers and owners may still depend on real world non-smart contracts. As a result, these extrinsic assets carry additional counterparty risk because they are held by custodians, recorded in external registries, or controlled by laws and policies outside the blockchain environment.
 
 One of the most important ramifications of blockchain-based tokens is the ability to replace extrinsic assets into intrinsic assets and thereby remove counterparty risk. A good example is moving from equity in a corporation (extrinsic) to an equity or voting token in a _decentralized autonomous organization_ or similar (intrinsic) organization.
 
@@ -99,7 +99,11 @@ For a startup, each innovation introduces risks that increase the chance of fail
 
 Advocates of "tokenize all the things" will likely counter that by adopting tokens, they are also inheriting the market enthusiasm, early adopters, technology, innovation and liquidity of the entire token economy. That is true too. The question is whether the benefits and enthusiasm outweigh the risks and uncertainties.
 
+Nevertheless, some of the most innovative business ideas are indeed taking place in the crypto realm. If regulators are not quick enough to adapt laws and support new business models, talents and entrepreneurs will seek to operate in other jurisdictions which are more crypto-firendly. This is actually happening right now.
+
 Finally, at the beginning of this chapter, when introducing tokens we discuss the colloquial meaning of token as "something of insignificant value". The underlying reason for the insignificant value of most tokens is because they can only be used in a very narrow context: one bus company, one laundromat, one arcade, one hotel, one company store. Limited liquidity, limited applicability, and high conversion costs reduce the value of tokens all the way down until it is only a "token" value. So when you add a utility token to your platform, but the token can only be used on your own one platform with a small market, you are re-creating the conditions that made physical tokens worthless. If in order to use your platform, a user has to convert something into your utility token, use it and then convert the remainder back into something more generally useful, you've created company scrip. The switching costs of a digital token are orders of magnitude lower than a physical token without a market. But the switching costs are not zero. Utility tokens that work across an entire industry sector will be very interesting and probably quite valuable. But if you set up your startup to have to bootstrap an entire industry standard in order to succeed, you may have already failed.
+
+One of the benefits of deployng services on general-purpose platforms like Ethereum is exactly being able to connect smart contracts, increasing the potential for liquidity and utility of tokens.
 
 Make this decision for the right reasons. Adopt a token because your application _cannot work without a token_ (e.g. Ethereum). Adopt it because the token solves a fundamental market barrier or access problem. Don't introduce a utility token because it is the only way you can raise money fast and you need to pretend it's not a public securities offering.
 
@@ -109,6 +113,9 @@ Make this decision for the right reasons. Adopt a token because your application
 Blockchain tokens have existed before Ethereum. In some ways, the first blockchain currency, bitcoin, is a token itself. Many token platforms were also developed on bitcoin and other cryptocurrencies before Ethereum. However, the introduction of the first token standard on Ethereum led to an explosion of tokens.
 
 Vitalik Buterin suggested tokens as one of the most obvious and useful applications of a generalized programmable blockchain such as Ethereum. In fact, in the first year of Ethereum, it was common to see Vitalik and others wearing t-shirts emblazoned with the Ethereum logo and a smart contract sample on the back. There were several variations of this t-shirt, but the most common showed an implementation of a token.
+
+
+//When first exposed to the token concept, readers might assume that tokens are owned and transferred between Ethereum accounts (addresses) just like ether, through value transactions, without using a smart contract. I see there's mention to this later in the chapter.  Should we introduce avoid this misconception here, before presenting standards, functions and events? Or this will actually complicate matters?
 
 [[ERC20_std]]
 ==== ERC20 Token Standard
@@ -200,6 +207,8 @@ ERC20 allows two different workflows. The first is a single-transaction, straigh
 Executing the transfer contract is very simple. If Alice wants to send 10 tokens to Bob, her wallet sends a transaction to the token contract's address, calling the +transfer+ function with Bob's address and "10" as the arguments. The token contract adjusts Alice's balance (-10) and Bob's balance (+10) and issues a +Transfer+ event.
 
 The second workflow is a two-transaction workflow that uses +approve+, followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token.
+
+//Probably the first time "ICO" is mentioned in the book. Link to a reference? Add a brief explanation?
 
 [[approve_transferFrom_workflow]]
 .The two-step approve & transferFrom workflow of ERC20 tokens
