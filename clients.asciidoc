@@ -1,3 +1,4 @@
+[[ethereum_clients_chapter]]
 == Ethereum Clients
 
 An Ethereum client is a software application that implements the Ethereum specification and communicates over the peer-to-peer network with other Ethereum clients. Different Ethereum clients _interoperate_ if they comply with the reference specification and the standardized communications protocols. While these different clients are implemented by different teams and in different programming languages, they all "speak" the same protocol and follow the same rules.
@@ -14,6 +15,7 @@ The vast majority of the Ethereum network runs one of the two dominant implement
 
 In this section, we will look at the two most common clients, Geth and Parity. We'll learn to set up a node using each of them and explore some of their command-line and application programming interfaces (APIs).
 
+[[full_node_importance]]
 === Should I run a full node?
 
 The health, resilience and censorship resistance of Ethereum depends on having many independently operated and geographically dispersed full nodes. Each full node can help other new nodes obtain the block data to bootstrap their operation, as well as offer the operator an authoritative and independent verification of all transactions and contracts.
@@ -28,6 +30,7 @@ Do not confuse the concept of a lightweight wallet in Ethereum with that of a Si
 
 Each of the options for running a node has advantages and disadvantages:
 
+[[full_node_adv_disadv]]
 ==== Full Node Advantages and Disadvantages
 
 Choosing to run a full node helps the Ethereum network, but also incurs costs for you. Let's look at some of the advantages and disadvantages.
@@ -47,6 +50,7 @@ Disadvantages:
 * Must be maintained, upgraded and kept online to remain synced
 * Deploying test contracts to the public blockchain will cost ETH for gas
 
+[[pub_test_adv_disadv]]
 ==== Public Testnet Advantages and Disadvantages
 
 Whether you choose to run a full node or not, you will probably want to also run a public testnet node. Let's look at some of the advantages and disadvantages of using a public testnet. The current public testnet is called _Ropsten_. We will refer to a node that is synced with Ropsten as a _Ropsten node_.
@@ -64,6 +68,7 @@ Disadvantages:
 * Consequently, you can't test security against real adversaries, as there is nothing at stake.
 * There are some aspects of a public blockchain that you cannot test realistically on Ropsten. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet since gas is free.
 
+[[testRPC_adv_disadv]]
 ==== Local Instance (TestRPC) Advantages and Disadvantages
 
 For many testing purposes, the best option is to launch a single instance private blockchain, using the +testrpc+ node. TestRPC creates a local-only, private blockchain that you can interact with, without any other participants. It shares many of the advantages and disadvantages of the public testnet, but also has some differences.
@@ -147,6 +152,7 @@ Parity requires Rust version 1.24 or greater.
 
 Parity also requires some software libraries, such as OpenSSL and libudev. To install these on a Linux (Debian) compatible system:
 
+[[install_parity_dependencies]]
 ----
 $ sudo apt-get install openssl libssl-dev libudev-dev
 ----
@@ -160,12 +166,14 @@ Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's g
 
 There are three original implementations of the Ethereum client written in three different languages: C++, Python, and Go. Geth is the Go language implementation, which is actively developed and considered the "official" implementation of the Ethereum client. There is some debate on the meaning of the title "official client" in a decentralized system such as Ethereum, but suffice it to say that Geth is supported by the Ethereum Foundation, a Swiss non-profit organization founded by Ethereum's creator, Vitalik Buterin.
 
+[[getting_geth]]
 ===== Getting Geth
 
 Geth's home is https://geth.ethereum.org/. On this site, you will find instructions to download and install Geth for your operating system. Since this book is aimed at developers, we will be building Geth from the source code.
 
 You can also skip these instructions and install a precompiled binary for your platform of choice. But where's the fun and learning in that?
 
+[[cloning_repo]]
 ===== Cloning the repository
 
 Our first step is to clone the git repository, so as to get a copy of the source code.
@@ -176,12 +184,14 @@ https://github.com/ethereum/go-ethereum
 
 To make a local clone of this repository, use the +git+ command as follows, in your home directory or under any directory you use for development:
 
+[[git_clone_geth]]
 ----
 $ git clone https://github.com/ethereum/go-ethereum.git
 ----
 
 You should see a progress report as the repository is copied to your local system:
 
+[[cloning_status]]
 ----
 Cloning into 'go-ethereum'...
 remote: Counting objects: 62587, done.
@@ -194,9 +204,12 @@ Checking connectivity... done.
 
 Great! Now we have a local copy of Geth, we can compile an executable for our platform.
 
+[[build_geth_src]]
 ===== Building Geth from Source Code
 
 To build Geth, change to the directory where the source code was downloaded and use the +make+ command:
+
+[[making_geth]]
 ----
 $ cd go-ethereum
 $ make geth
@@ -204,6 +217,7 @@ $ make geth
 
 If all goes well, you will see the Go compiler building each component until it produces the +geth+ executable:
 
+[[making_geth_status]]
 ----
 build/env.sh go run build/ci.go install ./cmd/geth
 >>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c -v ./cmd/geth
@@ -223,6 +237,7 @@ $
 
 Let's run +geth+ to make sure it works:
 
+[[run_geth]]
 ----
 $ ./build/bin/geth version
 
@@ -243,11 +258,13 @@ Your +geth version+ command may show slightly different information, but you sho
 
 As the last step, we may want to copy the +geth+ command to our operating systems application directory (or a directory on the command-line execution path). On Linux, we'd use the following command:
 
+[[copy_geth_binary]]
 ----
 $ sudo cp ./build/bin/geth /usr/local/bin
 ----
 Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
 
+[[parity]]
 ==== Parity
 
 Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a highly modular, very secure and scalable Ethereum client. Parity is developed by Parity Tech, a UK company and is released under a GPLv3 open source license.
@@ -259,6 +276,7 @@ Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parit
 
 To install Parity, you can use the Rust package manager +cargo+ or download the source code from GitHub. The package manager also downloads the source code, so there's not much difference between the two options. In the next section, we will show you how to download and compile it yourself.
 
+[[install_parity]]
 ===== Installing Parity
 
 The Parity Wiki offers instructions for building Parity in different environments and containers:
@@ -269,12 +287,14 @@ We'll build Parity from source. This assumes you have already installed Rust usi
 
 First, let's get the source code from GitHub:
 
+[[git_clone_parity]]
 ----
 $ git clone https://github.com/paritytech/parity
 ----
 
 Now, let's change to the +parity+ directory and use +cargo+ to build the executable:
 
+[[parity_build]]
 ----
 $ cd parity
 $ cargo build
@@ -282,6 +302,7 @@ $ cargo build
 
 If all goes well, you should see something like:
 
+[[parity_build_status]]
 ----
 $ cargo build
     Updating git repository `https://github.com/paritytech/js-precompiled.git`
@@ -301,6 +322,7 @@ $
 
 Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
 
+[[run_parity]]
 ----
 $ parity --version
 Parity
@@ -326,6 +348,7 @@ Usually, the RPC interface is offered over as an HTTP service on port +8545+. Fo
 
 To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RCP interface. Let's try that:
 
+[[curl_web3]]
 .Using curl to call the web3_clientVersion function over JSON-RPC
 ----
 $ curl -X POST -H "Content-Type: application/json" --data \
@@ -338,6 +361,7 @@ http://localhost:8545
 
 In this example, we use +curl+ to make an HTTP connection to address +http://localhost:8545+. We are already running +geth+ and it is offering the JSON-RPC API as an HTTP service on port 8545. We instruct +curl+ to use the HTTP +POST+ command, and to identify the content as +Content-Type: application/json+. Finally, we pass a JSON-encoded request as the +data+ component of our HTTP request. Most of our command line is just setting up +curl+ to make the HTTP connection correctly. The interesting part is the actual JSON-RPC command we issue:
 
+[[JSON_RPC_command]]
 ----
 {"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":4192}
 ----
@@ -360,6 +384,7 @@ id:: An identifier established by the Client that MUST contain a String, Number,
 The +id+ parameter is used primarily when you are making multiple requests in a single JSON-RPC call, a practice called _batching_. Batching is used to avoid the overhead of a new HTTP and TCP connection for every request. In the Ethereum context for example, we would use batching if we wanted to retrieve thousands of transactions in one HTTP connection. When batching, you set a different +id+ for each request and then match it to the +id+ in each response from the JSON-RPC server. The easiest way to implement this is to maintain a counter and increment the value for each request.
 ====
 
+[[JSON_RPC_response]]
 The response we receive is:
 ----
 {"jsonrpc":"2.0","id":4192,
@@ -370,6 +395,7 @@ This tells us that the JSON-RPC API is being served by Geth client version 1.8.0
 
 Let's try something a bit more interesting. In the next example, we ask the JSON-RPC API for the current price of gas in wei:
 
+[[curl_current_gas_price]]
 ----
 $ curl -X POST -H "Content-Type: application/json" --data \
 '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
@@ -381,10 +407,12 @@ The response, +0x430e23400+, tells us that the current gas price is 1.8 Gwei (gi
 
 https://github.com/ethereum/wiki/wiki/JSON-RPC
 
+[[parity_compatibility_mode]]
 ===== Parity's Geth Compatibility Mode
 
 Parity has a special "Geth Compatibility Mode", where it offers a JSON-RPC API that is identical to that offered by +geth+. To run Parity in Geth Compatibility Mode, use the +--geth+ switch:
 
+[[parity_geth]]
 ----
 $ parity --geth
 ----
@@ -407,6 +435,7 @@ Ethereum clients include an option to perform a "fast" synchronization that skip
 Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
 =====
 
+[[lw_eth_clients]]
 === Lightweight Ethereum Clients
 
 Lightweight Ethereum clients are clients that offer a subset of the functionality of a full client. They do not store the full Ethereum blockchain, so they are faster to setup and require far less data storage.
@@ -427,6 +456,7 @@ Some lightweight clients, for example mobile (smartphone) wallets, offer only ba
 
 Let's look at some of the most popular lightweight clients and the functions they offer.
 
+[[mobile_wallets]]
 === Mobile (Smartphone) Wallets
 
 All mobile wallets are lightweight clients, because smartphones do not have adequate resources to run a full Ethereum client.
@@ -441,13 +471,14 @@ Trust Wallet:: A mobile Ethereum, Ethereum Classic wallet that supports ERC20, a
 
 Cipher Browser:: a full-featured Ethereum-enabled mobile DApp browser and wallet. Allows integration with ethereum apps and tokens.
 
-
+[[browser_wallets]]
 === Browser wallets
 
 A variety of wallets and DApp browsers are available as plugins or extensions of web browsers such as Chrome and Firefox: lightweight clients that run inside your browser.
 
 Some of the more popular ones include MetaMask, Jaxx and MyEtherWallet/MyCrypto
 
+[[MetaMask]]
 ==== MetaMask
 
 MetaMask was introduced in <<intro>>, and is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera and Brave Browser. Find MetaMask at:
@@ -456,12 +487,14 @@ https://metamask.io
 
 At first glance, MetaMask is a browser-based wallet. But, unlike other browser wallets, MetaMask injects a web3 instance into the browser, acting as an RPC client that connects to a variety of Ethereum blockchains (eg. mainnet, Ropsten testnet, Kovan testnet, local RPC node, etc.). The ability to inject a web3 instance and act as a gateway to external RPC services, makes MetaMask a very powerful tool for developers and users alike. It can be combined, for example, with MyEtherWallet or MyCrypto, acting as an web3 provider and RPC gateway for those tools.
 
+[[Jaxx]]
 ==== Jaxx
 
 Jaxx, which was introduced as a mobile wallet in <<mobile_wallets>>, is also available as a Chrome and Firefox extension. Find it at:
 
 https://jaxx.io
 
+[[MEW]]
 ==== MyEtherWallet (MEW)
 
 MyEtherWallet is a browser-based JavaScript lightweight client that offers:
@@ -478,6 +511,7 @@ You must be very careful when accessing MyEtherWallet and other browser-based Ja
 
 https://MyEtherWallet.com
 
+[[MyCrypto]]
 ==== MyCrypto
 
 Just prior to publication of the first edition of this book, the MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork" as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and MyCrypto. At the time of the split, MyCrypto offered identical functionality as MyEtherWallet. It is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
@@ -488,6 +522,7 @@ MyCrypto can be found at:
 
 https://MyCrypto.com
 
+[[Mist]]
 ==== Mist
 
 Mist is the first ever Ethereum enabled browser, built by the Ethereum Foundation. It also contains a browser-based wallet that was the first ever implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer in Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-155, see <<eip-155>>). Mist runs a full node, and offers a full DApp browser with support for Swarm based storage and ENS addresses. Find it at:
