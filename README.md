@@ -23,16 +23,18 @@ Here's what is available now:
 | Section | Progress | Content Complete | Review Complete |
 |-------|------|:------:|:------:|
 | [Preface](preface.asciidoc) | ### |||
-| [Glossary](glossary.asciidoc) | ##### |||
+| [Glossary](glossary.asciidoc) | ####### |||
 | [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: ||
 | [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
 | [Ethereum Clients](clients.asciidoc) | ########## |||
-| [Ethereum Testnets](ethereum-testnets.asciidoc) | ## |||
+| [Ethereum Testnets](ethereum-testnets.asciidoc) | ### |||
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
-| [Transactions](transactions.asciidoc) | ############## | :heavy_check_mark: ||
+| [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: ||
 | [Smart Contracts](smart-contracts.asciidoc) | ########### |||
-| [Tokens](tokens.asciidoc) | ################## | :heavy_check_mark: ||
+| [Vyper](vyper.asciidoc) | ### |||
+| [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: ||
+| [Oracles](oracles.asciidoc) | ####### |||
 | [Accounting & Gas](gas.asciidoc) | ### |||
 | [EVM](evm.asciidoc) | ##### |||
 | [Consensus](consensus.asciidoc) | ### |||
