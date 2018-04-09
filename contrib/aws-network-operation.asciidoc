@@ -23,16 +23,17 @@ Now, the network is ready for deployment of smart contracts. The steps to be fol
 
 [[_anchor_account_set_up]]
 === Account set-up
-While account could be set-up on any node, for this section, accounts will be created for mining node and RPC node to store the mining reward and end-point activities only. To create an account, log on to the nodes and run this command.
+While account could be set-up on any node, for this section, accounts will be created for mining node and RPC node to store the mining reward and end-point activities only. To create an account, log on to the mining node and run this command.
 
 [[_code_new_account]]
+.Account creation 
 [source,bash]
 ----
 geth --datadir eth-priv account new      // 1
 ----
-<1> Note the `datadir` flag; it indicates that, the account is for a private network. Running this account will prompt for password.
+<1> Note the `datadir` flag; it indicates that, the account is for a private network. Note the generated address. Running this account will prompt for password.
 
-[TIP]
+[NOTE]
 ====
 *There is no 'Forgot password' option for your account. Therefore, keep your password at a safe place!*
 ====
@@ -40,16 +41,23 @@ geth --datadir eth-priv account new      // 1
 
 [[_anchor_deploy_contract]]
 === Deploy contract
-For this section, we will deploy the `METoken` contract as described in the link:tokens.asciidoc[Tokens] section. Once the contract has been developed and compiled successfully, we will migrate to the private network. 
 
 [TIP]
 ====
 This chapter uses `truffle` for contract development and deployment. 
 ====
 
-To migrate the contract, `truffle` needs to know about the network. This information will be provided in the `truffle.js` configuration file as provided link:../code/aws/truffle.js[here]. Basically, another network with name as `aws` is added to the array of `networks` shown as an example below.
+For this section, we will deploy the `METoken` contract as described in the link:tokens.asciidoc[Tokens] section. Once the contract has been developed and compiled successfully, we will migrate to the private network. A quick introduction to set-up is provided here.
+
+. Install `truffle`, run `npm install -g truffle`.
+. Clone repository `https://github.com/chainhead/MET`
+. In the cloned repository, go to `MET/METtoken` and run `npm install` to install dependencies.
+. At `MET/METtoken`, run `truffle compile` to compile the contracts.
+
+To migrate the contract, `truffle` needs to know about the network. This information will be provided in the `truffle.js` configuration file. A sample file is provided link:../code/aws/truffle.js[here]. The information is provided via another network, with name as `aws`, added to the array of `networks` shown as an example below.
 
 [[_code_truffle_config_private_network]]
+.Truffle configuration
 [source,json]
 ----
 		aws: { // Private network on AWS
@@ -63,12 +71,13 @@ To migrate the contract, `truffle` needs to know about the network. This informa
 
 <1> The `network_id` as defined in `genesis.json` document.
 <2> The public IP address of the EC2 instance node running `geth` with RPC node exposed.
-<3> The RPC port number of the EC2 instance. Default is `8545`
-<4> ?
-<5> An account with sufficient ether to pay gas for contract interactions.
+<3> The RPC port number of the EC2 instance hosting Ethereum RPC node. Default is `8545`.
+<4> Gas limit used for deploys. Default is `4712388`.
+<5> An account with sufficient ether to pay gas for contract interactions. This will be the address generated at <<_code_new_account>>.
 
 To deploy the contract with `truffle`, run the command below.
 [[_code_deploy_contract]]
+.Truffle network migration 
 [source,bash]
 ----
 truffle migrate --network aws       // 1
@@ -98,6 +107,11 @@ truffle console --network aws // 1
 ---- 
 
 <1> The `--network` flag is set to the value of `aws` as defined in `truffle.js` file.
+
+
+==== Use faucet
+
+==== Buy MET 
 
 [[_anchor_operation_summary]]
 == Summary 
