@@ -1,6 +1,6 @@
 [Vyper]
 
-= Vyper: A contract-oriented programming language
+== Vyper: A contract-oriented programming language
 :revnumber: v1.0
 :revdate: 2018-04-08 (yyyy-mm-dd)
 :revremark: There are sections in this document labelled with TODO. The TODO tag identifies pending points which are still being researched
@@ -13,15 +13,18 @@ Added by: @tpmccallum
 
 Vyper is an experimental, contract-oriented programming language which targets the Ethereum Virtual Machine (EVM). Vyper strives to simplify the human readable code and in doing so provide superior auditability. One of the principles and goals of Vyper is to make it near impossible (very difficult) for developers, who use Vyper, to write misleading code. This is done in a number of ways, which we will describe below.
 
-== The difference between Solidity and Vyper
+== Comparison to Solidity
 
-=== Compiler
+This section is added to be used as reference for those considering moving to development with Vyper
+Main examples of what Vyper does NOT include, and the reason for those:
 
-Solidity compiler C++
-Vyper compiler Python
+* Modifiers - e.g. in Solidity you can do function foo() mod1 { ... }, where mod1 can be defined elsewhere in the code to include a check that is done before execution, a check that is done after execution, some state changes, or possibly other things. Vyper does not have this, because it makes it too easy to write misleading code. mod1 just looks too innocuous for something that could add arbitrary pre-conditions, post-conditions or state changes. Also, it encourages people to write code where the execution jumps around the file, harming auditability. The usual use case for a modifier is something that performs a single check before execution of a program; our recommendation is to simply inline these checks as asserts.
 
-=== Syntax
-Syntax is simplified in Vyper. For example in Solidity value can be transferred using two different functions a) receiver.transfer and b) receiver.send whereas in Vyper there is only one way to transfer value. By using the send(receiver, amount) function.
+* Class inheritance - requires people to jump between multiple files to understand what a program is doing, and requires people to understand the rules of precedence in case of conflicts (which class's function X is the one that's actually used?). Hence, it makes code too complicated to understand.
+
+* Inline assembly - adding inline assembly would make it no longer possible to Ctrl+F for a variable name to find all instances where that variable is read or modified.
+
+* Function overloading - This can cause lots of confusion on which function is called at any given time. Thus it's easier to write missleading code (foo("hello") logs "hello" but foo("hello", "world") steals you funds). Another problem with function overloading is that it makes the code much harder to search through as you have to keep track on which call refers to which function.
 
 :revnumber: v1.0
 :revdate: 2018-04-08 (yyyy-mm-dd)
@@ -30,40 +33,11 @@ Syntax is simplified in Vyper. For example in Solidity value can be transferred 
 Variable typecasting:: Typecasting is a mechanism which allows programmers to convert a variable from one data type to another data type.
 
 Pre-conditions and post-conditions::
-pre-conditions as well as post-conditions and state changes are handled explicitly, Whilst this does produce redundant code it allows for maximal readability, auditability and less confusion. The process of writing a function should include the following three steps (in this order)
-1) Condition - What is the current state/condition of the state variables
-2) Effects - What effects will the following code have on the state variables once executed
-3) Interaction - The actual execution of logic now that the first two steps have been exhaustively dealt with
+pre-conditions as well as post-conditions and state changes are handled explicitly, Whilst this does produce redundant code it allows for maximal readability, The process of writing a function should include the following three reflections
 
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain class inheritance and why Vyper does not support it
-:revstatus: TODO
-Class inheritance:: Classes and class inheritance underpin Object Oriented Programming (OOP). 
-
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain operator overloading and why Vyper does not support it
-:revstatus: TODO
-Operator overloading:: Operator overloading allows programmers to force operators, like plus (+) or equals (=), to behave differently during code execution.
-
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain dynamic loops vs static loops and why Vyper only supports static loops
-:revstatus: TODO
-Fixed loops:: Dynamic loops are a powerful control flow component of modern programming. They allow for the repeated execution of code.
-
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain global variables and perhaps touch on state trie (account key values) and storage trie (smart contract data)
-:revstatus: TODO
-Global variables:: Global variables
-
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain how constructors are implemented in Vyper and contrast with Solidity implementation
-:revstatus: TODO
-Constructors:: Constructors
+* Condition - What is the current state/condition of the state variables
+* Effects - What effects will the following code have on the state variables once executed
+* Interaction - The actual execution of logic now that the first two steps have been exhaustively dealt with
 
 === Decorators 
 Decorators like @public @constant @payable are declared at the start of each function.
@@ -90,9 +64,11 @@ The human readable ABI code (in JSON format) can be obtained by then running the
 vyper -f json ~/hello_world.v.py
 
 === Reading and writing data
-Ethereum smart contracts can write data to two places. Ethereum's global state trie or Ethereum's chain data. While it is costly to store, read and modify data, these storage operations are a necessary component of most smart contracts. 
+smart contracts can write data to two places, ethereum's global state trie or Ethereum's chain data, while this is costly to store, read and modify data. These storage operations are a necessary component of most smart contracts. 
 
-Global state:: The state variables in a given Ethereum smart contract are stored in Ethereum's global state trie. A given smart contract can only store, read and modify data specifically in relation to that contract's address (i.e. smart contracts can not read or write to other smart contracts). TODO continue with more information about this in relation to Vyper
+Global state:: The state variables in a given smart contract are stored in Ethereum's global state trie, a given smart contract can only store, read and modify data specifically in relation to that contract's address (i.e. smart contracts can not read or write to other smart contracts). 
+
+TODO continue with more information about Global state in relation to Vyper
 
 Log:: As previously mentioned, a smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes <= 3)}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes <= 3)}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
 
