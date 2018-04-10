@@ -17,39 +17,40 @@ There are a large variety of Ethereum-based networks which largely conform to th
 
 Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, and many others. While largely compatible on a protocol-level these networks often feature attributes that require maintainers of Ethereum client software to make small changes in order to support each network. Due to this, not every version of Ethereum client software runs on every network.
 
-The vast majority of the Ethereum network runs one of the two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
+The vast majority of the Ethereum-based networks run one of two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
 
 In this section, we will look at the two most common clients, Geth and Parity. We'll learn to set up a node using each of them and explore some of their command-line and application programming interfaces (APIs).
 
 [[full_node_importance]]
 === Should I run a full node?
 
-The health, resilience and censorship resistance of Ethereum depends on having many independently operated and geographically dispersed full nodes. Each full node can help other new nodes obtain the block data to bootstrap their operation, as well as offer the operator an authoritative and independent verification of all transactions and contracts.
+The health, resilience and censorship resistance of blockchains depend on having many independently operated and geographically dispersed full nodes. Each full node can help other new nodes obtain the block data to bootstrap their operation, as well as offer the operator an authoritative and independent verification of all transactions and contracts.
 
-However, to run a full node you will incur a significant cost in hardware resources and bandwidth. A full node must download more than 50GB of data (as of Feb 2018) and store it on a local hard drive. This data burden increases quite rapidly every day as new transactions and blocks are added. More on this topic in <<requirements>>.
+However, to run a full node you will incur a significant cost in hardware resources and bandwidth. A full node must download more than 25 to 50GB of data (as of Feb 2018; depending on client) and store it on a local hard drive. This data burden increases quite rapidly every day as new transactions and blocks are added. More on this topic in <<requirements>>.
 
-A full node running on the Ethereum Main Network (mainnet) is not necessary for Ethereum development. You can do almost everything you need to do with a _testnet_ node (which stores a copy of the smaller public test blockchain), or with a local private blockchain. You can also develop Ethereum applications with a local private blockchain (see <<ganache>>), or use a cloud-based Ethereum client offered by a service provider (see <<infura>>).
+A full node running on an Ethereum Main Network (mainnet) is not necessary for Ethereum development. You can do almost everything you need to do with a _testnet_ node (which stores a copy of the smaller public test blockchain), or with a local private blockchain (see <<ganache>>), or use a cloud-based Ethereum client offered by a service provider (see <<infura>>).
 
-A lightweight client is an Ethereum client that does not store a local copy of the blockchain, or validate blocks and transactions. It offers the functions of a wallet and can create and broadcast transactions. A lightweight client can be used to connect to existing networks, such as your own full node, the public Ethereum blockchain, the public testnet, or a local test blockchain. In practice, you will likely use a lightweight client such as MetaMask as a convenient way to switch between all of the different node options. The terms "lightweight client" and "wallet" are used interchangeably, though there are some differences. Usually, a lightweight client offers an API (such as the web3js API), in addition to the function of a wallet.
+A lightweight client is an Ethereum client that does not store a local copy of the blockchain, or validate blocks and transactions. It offers the functions of a wallet and can create and broadcast transactions. A lightweight client can be used to connect to existing networks, such as your own full node, a public blockchain, a public or permissioned (PoA) testnet, or a local test blockchain. In practice, you will likely use a lightweight client such as MetaMask, Emerald Wallet, or My Ether Wallet as a convenient way to switch between all of the different node options. The terms "lightweight client" and "wallet" are used interchangeably, though there are some differences. Usually, a lightweight client offers an API (such as the web3js API), in addition to the function of a wallet.
 
-Do not confuse the concept of a lightweight wallet in Ethereum with that of a Simplified Payment Verification (SPV) client in bitcoin. SPV clients validate block headers and use merkle proofs to validate the inclusion of transactions in the blockchain. Ethereum lightweight clients, generally, do not validate block headers or transactions. They rely on, and trust entirely, a full Ethereum client to give them RPC access to the Ethereum blockchain.
+Do not confuse the concept of a lightweight wallet in Ethereum with that of a Simplified Payment Verification (SPV) client in bitcoin. SPV clients validate block headers and use merkle proofs to validate the inclusion of transactions in the blockchain. Ethereum lightweight clients, generally, do not validate block headers or transactions. They rely on, and trust entirely, a full client operated by a third party to give them RPC access to the blockchain.
 
 Each of the options for running a node has advantages and disadvantages:
 
 [[full_node_adv_disadv]]
 ==== Full Node Advantages and Disadvantages
 
-Choosing to run a full node helps the Ethereum network, but also incurs costs for you. Let's look at some of the advantages and disadvantages.
+Choosing to run a full node helps the various Ethereum networks, but also incurs costs for you. Let's look at some of the advantages and disadvantages.
 
-Advantages:
+*Advantages:*
 
-* Supports the resilience and censorship resistance of the Ethereum network
+* Supports the resilience and censorship resistance of the Ethereum networks
 * Authoritatively validates all transactions
 * Can interact with any contract on the public blockchain (without requiring a middleman)
 * Can query (read-only) the blockchain status (accounts, contracts, etc.) offline, if necessary
+* Can query the blockchain without letting a third party know the information you're reading
 * Can directly deploy your own contracts into the public blockchain (without requiring a middleman)
 
-Disadvantages:
+*Disadvantages:*
 
 * Requires significant and growing hardware and bandwidth resources
 * Requires several hours or days to fully sync
@@ -59,34 +60,34 @@ Disadvantages:
 [[pub_test_adv_disadv]]
 ==== Public Testnet Advantages and Disadvantages
 
-Whether you choose to run a full node or not, you will probably want to also run a public testnet node. Let's look at some of the advantages and disadvantages of using a public testnet. The current public testnet is called _Ropsten_. We will refer to a node that is synced with Ropsten as a _Ropsten node_.
+Whether you choose to run a full node or not, you will probably want to also run a public testnet node. Let's look at some of the advantages and disadvantages of using a public testnet.
 
-Advantages:
+*Advantages:*
 
-* A Ropsten node needs to sync and store much less data, about 10GB.
-* A Ropsten node can sync fully in a few hours.
+* A testnet node needs to sync and store much less data, ~10GB depending on the network.
+* A testnet node can sync fully in a few hours.
 * To deploy contracts or make transactions you need test ether, which has no value and can be acquired for free from several sources.
-* Ropsten is a public blockchain with many other users and contracts, running "live".
+* Testnets are public blockchains with many other users and contracts, running "live".
 
-Disadvantages:
+*Disadvantages:*
 
-* You can't use "real" money on Ropsten, it runs on test ether.
+* You can't use "real" money on a testnet, it runs on test ether.
 * Consequently, you can't test security against real adversaries, as there is nothing at stake.
-* There are some aspects of a public blockchain that you cannot test realistically on Ropsten. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet since gas is free.
+* There are some aspects of a public blockchain that you cannot test realistically on testnet. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet since gas is free.
 
 [[testRPC_adv_disadv]]
 ==== Local Instance (TestRPC) Advantages and Disadvantages
 
 For many testing purposes, the best option is to launch a single instance private blockchain, using the +testrpc+ node. TestRPC creates a local-only, private blockchain that you can interact with, without any other participants. It shares many of the advantages and disadvantages of the public testnet, but also has some differences.
 
-Advantages:
+*Advantages:*
 
 * No syncing and almost no data on disk. You mine the first block yourself.
 * No need to find test ether, you "award" yourself mining rewards that you can use for testing.
 * No other users, just you.
 * No other contracts, just the ones you deploy after you launch it.
 
-Disadvantages:
+*Disadvantages:*
 
 * Having no other users means that it doesn't behave the same as a public blockchain. There's no competition for transaction space or sequencing of transactions
 * No miners other than you means that mining is more predictable, therefore you can't test some scenarios that occur on a public blockchain
