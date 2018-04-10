@@ -1,18 +1,18 @@
 == Introduction
 
-Let's build an end to end Application using truffle ,Angular JS 4 and finally we will see 
+Let's build an end to end Application using Truffle, Angular JS 4 and finally we will see
 everything in action.
 
-=== Use case 
+=== Use case
 
-We will create a smart Contract named `TransferToFriend` whereby:
+We will create a smart contract named `TransferToFriend` whereby:
 
-1. There are 2 friends named John and Ram.
-2. We can see balance of the person(lets say John) sending money to other(lets say Ram) in Web UI.
-3. Web UI should be able to have fields like the amount to be sent and address of the recipient along with Send Button.
+1. There are two friends named John and Ram.
+2. We can see the balance of the person (lets say John), sending money to the other (lets say Ram) in the Web UI.
+3. The Web UI should be able to have fields like the amount to be sent and address of the recipient along with a Send Button.
 
 
-=== Environment Pre-Requisites
+=== Environment Prerequisites
 
 1. Install latest Node version.
 2. Install Truffle.
@@ -51,7 +51,7 @@ $ mkdir TransferToFriend
 $ cd TransferToFriend
 ----
 
-- Intiate a truffle project and verify it contents.
+- Initiate a Truffle project and verify it contents.
 
 ----
 $ truffle init
@@ -75,17 +75,17 @@ $ cd contracts\
 $ touch TransferToFriend.sol
 ----
 
-- Replace the below solidity code into `TransferToFriend.sol`.
+- Place the below Solidity code into `TransferToFriend.sol`.
 
 ----
 pragma solidity ^0.4.17;
 
 contract TransferToFriends {
-  
- address public owner; 
+
+ address public owner;
  //This map stores address and friend details.
  mapping(address => uint) public amountFriendMap;
- 
+
 //Set the owner address while creating a contract.
   function TransferToFriends() public {
       owner = msg.sender;
@@ -95,33 +95,33 @@ contract TransferToFriends {
   event LogSentAmount(address from, uint value, address friendAddress);
   //This event get dispatched once the amount is withdrwan
   event LogWithDrawal(address withdrawAddress,uint value);
-  
+
 
   function sendAmount (address friendAddress)  public  payable {
-      
+
       //Verify that amount sent and friendAddress are not blank.
       require(msg.value>0 && friendAddress!=address(0));
-      
+
       //Add the amount and friendAddress to map.
       amountFriendMap[friendAddress] += msg.value;
-    
-    //Send a log event 
+
+    //Send a log event
      LogSentAmount(msg.sender, msg.value, friendAddress);
-          
+
   }
 //Withraw Pull pattern
   function withdraw() public {
       //Check if the amount is present and greater than zero for the address who intiated this function.
     require(amountFriendMap[msg.sender]>0);
-    
+
     uint amount = amountFriendMap[msg.sender];
 
     //Change state of contract before tranfser
     amountFriendMap[msg.sender] = 0;
-    
+
     //Send the amount
     msg.sender.transfer(amount);
-    
+
     //Emit event
     LogWithDrawal(msg.sender,amount);
 
@@ -131,8 +131,8 @@ contract TransferToFriends {
 
 ----
 
-- Now that our smart contract is completed. we need to write a migration script so that we can migrate it 
-using truffle. Go to migrations folder. Create a new migration script named `2_initial_migration.js`
+- Now that our smart contract is completed, we need to write a migration script so that we can migrate it
+using Truffle. Go to migrations folder. Create a new migration script named `2_initial_migration.js`
 
 ----
 $ pwd
@@ -147,14 +147,14 @@ $touch 2_initial_migration.js
 //Importing the contract
 var TransferToFriends = artifacts.require("./TransferToFriends.sol");
 
-//while we use truffle migrate we are letting it know to deploy this contract as well.
+//while we use Truffle migrate we are letting it know to deploy this contract as well.
 module.exports = function(deployer) {
   deployer.deploy(TransferToFriends);
 };
 ----
 
 
-- Now that we wrote our contract and migration script. We are ready to deploy it into testnet or private chain.
+- Now that we wrote our contract and migration script, we are ready to deploy it into testnet or private chain.
 Open truffle.js and replace it with below content.
 
 ----
@@ -168,8 +168,8 @@ module.exports = {
   // to customize your Truffle configuration!
   networks: {
     development: {
-      host: "0.0.0.0",//If your using truffle testnet or ganache then replace it with local ip or localhost.
-      port: 8545, // Port number on which the private or test net is hosted on.
+      host: "0.0.0.0",//If your using Truffle testnet or ganache then replace it with local ip or localhost.
+      port: 8545, // Port number on which the private or testnet is hosted on.
       gas: 550000, //Provide necessary gas
       network_id: "*" // Match any network id
     }
@@ -187,8 +187,8 @@ Compiling ./contracts/TransferToFriends.sol...
 Writing artifacts to ./build/contracts
 ----
 
-- Now deploy the contract . In this case we will use truffle test net.Feel free to deploy to
-any private or test net of your choice.
+- Now deploy the contract. In this case we will use Truffle test net. Feel free to deploy to
+any private or testnet of your choice.
 
 ----
 $ truffle developer
@@ -220,14 +220,14 @@ Private Keys:
 
 Mnemonic: candy maple cake sugar pudding cream honey rich smooth crumble sweet treat
 
-truffle(develop)> 
+truffle(develop)>
 ----
 
-- Truffle opens a developer console and gives us a test net at http://localhost:9545/ .Go back
-and verify the host and port number in truffle.js if truffle test net is used for deploy.
+- Truffle opens a developer console and gives us a testnet at http://localhost:9545. Go back
+and verify the host and port number in truffle.js if Truffle testnet is used for deploy.
 
-- Now we will deploy the contract in test net using `migrate --reset` command.A successful 
-deploy should look like below.
+- Now we will deploy the contract in testnet using `migrate --reset` command. A successful
+deployment should look as follows:
 
 ----
 truffle(develop)> migrate --reset
@@ -251,9 +251,9 @@ Saving artifacts...
 
 - Give yourself a pat as we successfully wrote and deployed our contract.
 
-- Let's quickly test our deployed contract. 
+- Let's quickly test our deployed contract.
 
-- Create three variables namely in truffle testnet and verify.
+- Create three variables namely in Truffle testnet and verify.
      `fromAddress`  - address used to transfer ether/
      `friendAddress` -  destination account.
      `etherToSent` - value intended to be sent.
@@ -274,15 +274,15 @@ truffle(develop)> etherToSpent
 ----
 
 - Invoke the sendAmount function and send 10 ether to friendAddress and verify the LogSentAmount
-that event got generated. 
-   NOTE:The transaction object can be verified as well. 
+that event got generated.
+   NOTE: The transaction object can be verified as well.
 
 ----
 truffle(develop)> TransferToFriends.deployed().then(ins => ins.sendAmount(friendAddress,{from:fromAddress,value:etherToSpent})).then(transaction => transaction.logs[0].args)
 { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
   value: BigNumber { s: 1, e: 19, c: [ 100000 ] },
   friendAddress: '0xf17f52151ebef6c7334fad080c5704d77216b732' }
----- 
+----
 
 - Invoke the withdraw function from friendAddress and verify LogWithDrawal event.
 
@@ -294,7 +294,7 @@ truffle(develop)> TransferToFriends.deployed().then(ins => ins.withdraw({from:fr
 
 - Now that we verified the functionality is working fine we will switch to angular to create UI.
 
-- Exit from the truffle developer console. (UNIX : Press `Ctrl+C` for two times to exit)
+- Exit from the Truffle developer console. (UNIX : Press `Ctrl+C` for two times to exit)
 
 - Go Back to folder where our `TransferToFriends` folder exists. In this case it is present
  under `DAPPS` folder and create a new angular app with same name `TransferToFriends`.
@@ -302,7 +302,7 @@ truffle(develop)> TransferToFriends.deployed().then(ins => ins.withdraw({from:fr
 ----
 
  $ cd ..
- $ ls 
+ $ ls
  $ TransferToFriends
  $ ng new TransferToFriends
  // Successful log
@@ -326,7 +326,7 @@ contracts  karma.conf.js  node_modules  package-lock.json  README.md           t
 
 ----
 $ ng serve
-** NG Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/ 
+** NG Live Development Server is listening on localhost:4200, open your browser on http://localhost:4200/
 
 webpack: Compiled successfully.
 ----
@@ -335,9 +335,9 @@ webpack: Compiled successfully.
 
 - Open a new terminal in current path and go to `src/app` folder and open `app.component.html`.
 - Create two input text boxes.
-    - Amount  
+    - Amount
     - Friend Address
-- Create a form to wrap up above parameters along with `send()` function attached Send button.    
+- Create a form to wrap up above parameters along with `send()` function attached Send button.
 - Once done the  code  for `app.component.html` should look something similar to below.
 
 ----
@@ -384,7 +384,7 @@ webpack: Compiled successfully.
         >
       </p>
     </div>
-   
+
     <div class="field is-grouped">
       <p class="control">
         <button
@@ -443,7 +443,7 @@ the below css link.
 
 - Wait for the browser to refresh and now you have some css look.
 
-- Let's plumb in some type script to make our HTML functional. Open `app.component.ts` 
+- Let's plumb in some type script to make our HTML functional. Open `app.component.ts`
 and code to receive the fields and functionality to `send()` function created.
 
 ----
@@ -464,7 +464,7 @@ export class AppComponent {
 
   balance: number;
   sendingAmount: number;
-  
+
   status: string;
   transactionHash: string;
 
@@ -525,7 +525,7 @@ export class Web3Service {
 
 	public web3: any;
 
-  constructor() { 
+  constructor() {
   	this.checkAndInstantiateWeb3();
   }
 
@@ -608,7 +608,7 @@ export class TransferToFriendsService {
 
   constructor(
   	private web3Ser: Web3Service,
-  	) { 
+  	) {
   	// Bootstrap the TransferToFriends abstraction for Use
   	this.TransferToFriends.setProvider(web3Ser.web3.currentProvider);
   }
@@ -616,7 +616,7 @@ export class TransferToFriendsService {
   send(from,amount,friend): Observable<any>{
 
 		let transfer;
-	
+
   	return Observable.create(observer => {
   	  this.TransferToFriends
   	    .deployed()
@@ -711,7 +711,6 @@ export class AppComponent {
 
 //TODO:While moving to DAPPS this needs to linked properly
     image::/images/TransferToFriend.gif["Transfer To Friends In Action"]
-  
 
- - Hurray !!! we completed our TransferToFriends project. 
 
+ - Hurray !!! we completed our TransferToFriends project.
