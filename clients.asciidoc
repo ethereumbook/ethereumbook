@@ -15,7 +15,9 @@ As a result of having a clear formal specification, there are a number of indepe
 
 There are a large variety of Ethereum-based networks which largely conform to the formal specification defined in the Ethereum "Yellow Paper" but which may or may not interoperate with each other.
 
-Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, and many others. While largely compatible on a protocol-level these networks often feature attributes that require maintainers of Ethereum client software to make small changes in order to support each network. Due to this, not every version of Ethereum client software runs on every network.
+Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, and many others. While largely compatible on a protocol-level these networks often have features or attributes that require maintainers of Ethereum client software to make small changes in order to support each network. Due to this, not every version of Ethereum client software runs on every Ethereum-based blockchain.
+
+In total there are five different implementations of the Ethereum protocol written in five different languages: Go (geth), Rust (parity), C++ (cpp-ethereum), Python (pyethereum), Scala (mantis).
 
 The vast majority of the Ethereum-based networks run one of two dominant implementations: Geth and Parity. Geth is an implementation of Ethereum written in the Go programming language. Parity is a competing implementation written in Rust.
 
@@ -26,24 +28,26 @@ In this section, we will look at the two most common clients, Geth and Parity. W
 
 The health, resilience and censorship resistance of blockchains depend on having many independently operated and geographically dispersed full nodes. Each full node can help other new nodes obtain the block data to bootstrap their operation, as well as offer the operator an authoritative and independent verification of all transactions and contracts.
 
-However, to run a full node you will incur a significant cost in hardware resources and bandwidth. A full node must download more than 25 to 50GB of data (as of Feb 2018; depending on client) and store it on a local hard drive. This data burden increases quite rapidly every day as new transactions and blocks are added. More on this topic in <<requirements>>.
+However, to run a full node you will incur a significant cost in hardware resources and bandwidth. A full node must download more than 50GB of data (as of Feb 2018; depending on client) and store it on a local hard drive. This data burden increases quite rapidly every day as new transactions and blocks are added. More on this topic in <<requirements>>.
 
-A full node running on an Ethereum Main Network (mainnet) is not necessary for Ethereum development. You can do almost everything you need to do with a _testnet_ node (which stores a copy of the smaller public test blockchain), or with a local private blockchain (see <<ganache>>), or use a cloud-based Ethereum client offered by a service provider (see <<infura>>).
+A full node running on a live network (mainnet) is not necessary for Ethereum development. You can do almost everything you need to do with a _testnet_ node (which stores a copy of the smaller public test blockchain), or with a local private blockchain (see <<ganache>>), or use a cloud-based Ethereum client offered by a service provider (see <<infura>>).
 
-A lightweight client is an Ethereum client that does not store a local copy of the blockchain, or validate blocks and transactions. It offers the functions of a wallet and can create and broadcast transactions. A lightweight client can be used to connect to existing networks, such as your own full node, a public blockchain, a public or permissioned (PoA) testnet, or a local test blockchain. In practice, you will likely use a lightweight client such as MetaMask, Emerald Wallet, or My Ether Wallet as a convenient way to switch between all of the different node options. The terms "lightweight client" and "wallet" are used interchangeably, though there are some differences. Usually, a lightweight client offers an API (such as the web3js API), in addition to the function of a wallet.
+You also have the option of running a lightweight client which does not store a local copy of the blockchain, or validate blocks and transactions. These clients offer the functions of a wallet and can create and broadcast transactions. 
 
-Do not confuse the concept of a lightweight wallet in Ethereum with that of a Simplified Payment Verification (SPV) client in bitcoin. SPV clients validate block headers and use merkle proofs to validate the inclusion of transactions in the blockchain. Ethereum lightweight clients, generally, do not validate block headers or transactions. They rely on, and trust entirely, a full client operated by a third party to give them RPC access to the blockchain.
+Lightweight clients can be used to connect to existing networks, such as your own full node, a public blockchain, a public or permissioned (PoA) testnet, or a private local blockchain. In practice, you will likely use a lightweight client such as MetaMask, Emerald Wallet, or My Ether Wallet as a convenient way to switch between all of the different node options. 
 
-Each of the options for running a node has advantages and disadvantages:
+The terms "lightweight client" and "wallet" are used interchangeably, though there are some differences. Usually, a lightweight client offers an API (such as the web3js API), in addition to the transaction function of a wallet.
+
+Do not confuse the concept of a lightweight wallet in Ethereum with that of a Simplified Payment Verification (SPV) client in bitcoin. SPV clients validate block headers and use merkle proofs to validate the inclusion of transactions in the blockchain. Ethereum lightweight clients, generally, do not validate block headers or transactions. They entirely trust a full client operated by a third party to give them RPC access to the blockchain.
 
 [[full_node_adv_disadv]]
 ==== Full Node Advantages and Disadvantages
 
-Choosing to run a full node helps the various Ethereum networks, but also incurs costs for you. Let's look at some of the advantages and disadvantages.
+Choosing to run a full node helps the various Ethereum-based networks, but also incurs some mild to moderate costs for you. Let's look at some of the advantages and disadvantages.
 
 *Advantages:*
 
-* Supports the resilience and censorship resistance of the Ethereum networks
+* Supports the resilience and censorship resistance of Ethereum-based networks
 * Authoritatively validates all transactions
 * Can interact with any contract on the public blockchain (without requiring a middleman)
 * Can query (read-only) the blockchain status (accounts, contracts, etc.) offline, if necessary
@@ -64,7 +68,7 @@ Whether you choose to run a full node or not, you will probably want to also run
 
 *Advantages:*
 
-* A testnet node needs to sync and store much less data, ~10GB depending on the network.
+* A testnet node needs to sync and store much less data, ~10GB depending on the network (as of April 2018).
 * A testnet node can sync fully in a few hours.
 * To deploy contracts or make transactions you need test ether, which has no value and can be acquired for free from several sources.
 * Testnets are public blockchains with many other users and contracts, running "live".
@@ -114,7 +118,7 @@ Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best
 * 4GB RAM minimum, 8GB+ if you have an HDD and not SSD
 * 8 MBit/sec download Internet service
 
-These are the minimum requirements to sync the Ethereum blockchain, without storing a complete copy (pruned blockchain). 
+These are the minimum requirements to sync a full (but pruned) copy of an Ethereum-based blockchain.
 
 At the time of writing (April 2018) the Parity codebase tends to be lighter on resources, if you're running with limited hardware you'll likely see the best results using Parity.
 
@@ -127,17 +131,16 @@ If you want to sync in a reasonable amount of time and store all the development
 * Fast SSD with at least 500GB free space
 * 25+ MBit/sec download Internet service
 
-It’s difficult to predict how fast the blockchain size will increase and when more disk space will be required, so it’s recommended to check its latest size:
+It’s difficult to predict how fast a blockchain's size will increase and when more disk space will be required, so it’s recommended to check its their latest size before you start syncing.
 
-Ethereum: https://bitinfocharts.com/ethereum/
-Ethereum Classic: https://bitinfocharts.com/ethereum%20classic/
+*Ethereum:* https://bitinfocharts.com/ethereum/
+
+*Ethereum Classic:* https://bitinfocharts.com/ethereum%20classic/
 
 [[sw_reqs]]
-==== Software Requirements for Building and Running a Node
+==== Software Requirements for Building and Running a Client (Node)
 
-There are five original implementations of the Ethereum client written in five different languages: Go (geth), Rust (parity), C++ (cpp-ethereum), Python (pyethereum), Scala (mantis).
-
-This section covers Geth and Parity. It also assumes you are using a Unix-like command-line environment. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
+This section covers Geth and Parity client software. It also assumes you are using a Unix-like command-line environment. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
 
 Typically every blockchain will have their own version of Geth, while Parity provides support for multiple Ethereum-based blockchains (Ethereum, Ethereum Classic, Ellaism, Expanse, Musicoin).
 
@@ -156,7 +159,9 @@ https://golang.org/
 
 [NOTE]
 =====
-Geth requirements vary but if you stick with Go version 1.10 or greater you'll be able to compile any version of Geth you want. The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org.
+Geth requirements vary but if you stick with Go version 1.10 or greater you should be able to compile any version of Geth you want. Of course you should always refer to the documentation for your chosen flavor of Geth. 
+
+The golang that is installed on your operating system or is available from your system's package manager may be an older version. If so, remove it and install the latest version from golang.org.
 =====
 
 Rust can be installed by following the instructions here:
@@ -197,7 +202,10 @@ Geth is the Go language implementation, which is actively developed and consider
 
 *Ubiq:* https://github.com/ubiq/go-ubiq
 
-You can also skip these instructions and install a precompiled binary for your platform of choice. The precompiled releases can be found at the "release" section of the repositories above. However you may more by downloading and compiling the software yourself.
+[NOTE]
+=====
+You can also skip these instructions and install a precompiled binary for your platform of choice. The precompiled releases are much easier to install and can be found at the "release" section of the repositories above. However you may learn more by downloading and compiling the software yourself.
+=====
 
 [[cloning_repo]]
 ===== Cloning the repository
@@ -442,7 +450,7 @@ $ parity --geth
 [[first_sync]]
 === The First Synchronization of Ethereum-based Blockchains
 
-Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the genesis block.
+Normally, when syncing an Ethereum blockchain your client will download and validate every block and every transaction since the genesis block.
 
 While it is possible to fully sync the blockchain this way, it is not practical, as it will take a very long time and has higher computing resource requirements (much more RAM and faster storage).
 
@@ -452,7 +460,7 @@ For example, on Ethereum, a new client will make rapid progress until it reaches
 
 If you are syncing with full validation, your client will slow down and may take several days or longer to validate any blocks affected by this DoS attack.
 
-Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. 
+Most Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation. 
 
 For Geth, the option to enable fast synchronization is typically called +--fast+. Although you may need to refer to the specific instructions for your chosen Ethereum chain. 
 
