@@ -81,6 +81,28 @@ Block gas limits are the maximum amount of gas allowed in a block to determine h
 
 Miners on the network decide what the block gas limit is. Individuals who want to mine on the Ethereum network use a mining program, such as ethminer, which connects to a geth or Parity Ethereum client. The Ethereum protocol has a built in mechanism where miners can vote on the gas limit so capacity can be increased without having to coordinate on a hard fork. The miner of a block is able to adjust the block gas limit by a factor of 1/1024 (0.0976%) in either direction. The result of this is an adjustable block size based on the needs of the network at the time. This mechanism is coupled with a default mining strategy where miners would vote on a gas limit which is at least 4.7 million, but which would target 150% of the recent (1024-block exponential moving) average gas used if that amount is higher, allowing capacity to organically increase. Miners can choose to change this, but many of them do not and leave the default.
 
+=== Gas refund
+Ethereum encourages deleting storage variables by refunding up to half the amount of the gas cost.
+There are 2 operations in the EVM with negative gas:
+
+Clearing a contract is -24,000 (SELFDESTRUCT)
+Clearing storage is -15,000 (SSTORE[x] = 0)
+
+==== GasToken
+GasToken is an ERC20 compliant token that allows anyone to "bank" gas when the gasPrice is low and uses it when gasPrice is high. By making it a tradeable asset, it essentially creates a gas market.
+It works by taking advantage of the gas refund mechanism described earlier.
+
+You can learn about the maths involved in calculating the profitability and how to use the released gas at https://gastoken.io/
+
+=== Rent fee 
+There is currently a proposal in the Ethereum community about charging smart contracts a "rent fee" to be kept alive. 
+
+In the case the rent would not be paid, the smart contract would be put to "sleep" making it and it's data inaccessible even for a simple read. Contract put into sleep would need to be awakened by paying rent and submitting a Merkle proof.
+
+https://github.com/ethereum/EIPs/issues/35
+https://ethresear.ch/t/a-simple-and-principled-way-to-compute-rent-fees/1455
+https://ethresear.ch/t/improving-the-ux-of-rent-with-a-sleeping-waking-mechanism/1480
+
 === Questions that need to be answered in this section
 
 * x What is Gas
