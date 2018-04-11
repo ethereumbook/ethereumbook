@@ -49,9 +49,9 @@ Create a [new Issue](https://github.com/ethereumbook/ethereumbook/issues/new) no
 
 Adjust heading style in each section as follows:
 
-1. Top level heading is level 2 (level 1 is the book title itself). Each asciidoc file should start with a "==" heading.
+1. Only the chapter/section should be level 2, everything else should be level 3 and below (level 1 is the book title itself). Each asciidoc file should start with a "==" heading.
 2. All lower case, except for first letter, proper nouns and acronyms. "What is this thing?", "What is the Ethereum sprocket?" "Who created the Ethereum Name Service (ENS)"
-3. Acronyms are spelled out, capitalized, with the acronym in parentheses.
+3. Acronyms are spelled out, capitalized, with the acronym in parentheses. Once you have spelled out an acronym in one heading, we can keep it as an acronym in subsequent headings.
 4. No period at the end. Question mark if it is a question (generally avoid question headings, unless really appropriate)
 5. Should include a unique anchor (see #279), all lower case, underscore separated.
 6. Headings should be followed by a blank line.
