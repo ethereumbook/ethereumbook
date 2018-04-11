@@ -1,5 +1,5 @@
 [Vyper]
-
+[[viper_chap]]
 == Vyper: A contract-oriented programming language
 :revnumber: v1.1
 :revdate: 2018-04-10 (yyyy-mm-dd)
@@ -13,7 +13,8 @@ Added by: @tpmccallum
 
 Vyper is an experimental, contract-oriented programming language which targets the Ethereum Virtual Machine (EVM). Vyper strives to simplify the human readable code, and in doing so provides superior auditability. One of the principles and key goals of Vyper is to make it near impossible (very difficult) for developers, who use Vyper, to write misleading code. This is done in a number of ways, which we will describe below.
 
-== Comparison to Solidity
+[[comparison_to_solidity_sec]]
+=== Comparison to Solidity
 
 This section is a reference for those who are considering developing smart contracts using the Vyper programming language. The section mainly compares and contrasts Vyper against Solidity; outlining, with sound reasoning, why Vyper does NOT include the following traditional Object Oriented Programming (OOP) concepts:
 
@@ -38,6 +39,7 @@ pre-conditions as well as post-conditions and state changes are handled explicit
 * Effects - What effects will the following code have on the state variables once executed
 * Interaction - The actual execution of logic now that the first two steps have been exhaustively dealt with
 
+[[decorators_sec]]
 === Decorators
 Decorators like @public @constant @payable are declared at the start of each function.
 
@@ -49,9 +51,11 @@ Payable decorator:: Only functions which declare the @payable decorator at the s
 
 Vyper implements the logic of decorators explicitly. For example, the Vyper code compilation process will fail if a function is preceeded with both a payable decorator and a constant decorator. Of course this makes sense because a constant function (one which only reads from the global state) should never need to partake in a transfer of value. Also, each Vyper function must be preceeded with either the @public or the @private decorator to avoid compilation failure. Preceeding a Vyper function with both a @public decorator and a @private decorator will also result in a compilation failure.
 
+[[online_code_editor_and_compiler_sec]]
 === Online code editor and compiler
 Vyper has its own online code editor and compiler at the following URL < https://vyper.online >. This Vyper online compiler allows you to write and then compile your smart contracts into Bytecode, ABI and LLL using only your web browser. The Vyper online compiler has a variety of pre written smart contracts for your convenience. These include a simple open auction, safe remote purchases, ERC20 token and more.
 
+[[compiling_using_the_command_line_sec]]
 === Compiling using the command line
 Each Vyper contract is saved in a single file with the .v.py extension.
 Once installed Vyper can compile and provide bytecode by running the following command
@@ -62,12 +66,15 @@ The human readable ABI code (in JSON format) can be obtained by then running the
 
 vyper -f json ~/hello_world.v.py
 
+[[reading_and_writing_data_sec]]
 === Reading and writing data
 smart contracts can write data to two places, ethereum's global state trie or Ethereum's chain data, while this is costly to store, read and modify data. These storage operations are a necessary component of most smart contracts.
 
 Global state:: The state variables in a given smart contract are stored in Ethereum's global state trie, a given smart contract can only store, read and modify data specifically in relation to that contract's address (i.e. smart contracts can not read or write to other smart contracts).
 
-TODO continue with more information about Global state in relation to Vyper
+////
+TODO: continue with more information about Global state in relation to Vyper
+////
 
 Log:: As previously mentioned, a smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes <= 3)}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes <= 3)}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
 
@@ -77,6 +84,8 @@ While smart contracts can write to the Ethereum's chain data (through log events
 :revdate: 2018-04-08 (yyyy-mm-dd)
 :revremark: Just want to keep an eye on the development in Vyper GitHub in order to compare and contrast the differences between Vyper and Solidity's ERC20 Token Interface Implementation closer to ethereumbook being published.
 :revstatus: TODO
+
+[[erc20_token_interface_implementation_sec]]
 === ERC20 Token Interface Implementation
 The name, symbol, total supply and decimals variables of ERC20 tokens are publicly available using Vyper.
 
@@ -84,5 +93,7 @@ The name, symbol, total supply and decimals variables of ERC20 tokens are public
 :revdate: 2018-04-08 (yyyy-mm-dd)
 :revremark: There is a pending question in the Vyper GitHub repo < https://github.com/ethereum/vyper/issues/745 >. Whilst sharding opcodes have been implemented on a branch, the Vyper code base is yet to have sharding opcodes merged into a release. It would be nice to include updated information for the book as soon as Vyper has implemented sharding opcodes. @jacqueswww and @NIC619 have provided URLs in relation to opcodes, specifically the sharding roadmap < https://github.com/ethereum/py-evm/issues/190 > and Vitalik's Account Abstraction Proposals information < https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263 >. Details will be added as soon as possible.
 :revstatus: TODO
+
+[[opcodes_sec]]
 === OPCODES
 The code for smart contracts is mainly written in high-level languages like Solidity and now potentially Vyper. The compiler is responsible for taking the high level code and creating the lower level interpretation of the code, which is then able to be executed on the Ethereum Virtual Machine (EVM). The lowest representation which the compiler can distille the code to (prior to execution by the EVM) is opcodes. This being the case, each implementation of a high-level language (like Vyper) is required to provide an appropriate compilation mechanism (a compiler) to allow (among other things) the high level code to be compiled into the universally predetermined and predefined EVM opcodes. A good example of this is Vyper's implementation of Ethereum's sharding opcodes.
