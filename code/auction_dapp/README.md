@@ -13,7 +13,7 @@ The application should be decentralized and utilize Ethereum's stack:
 3. Whisper for a peer-to-peer messaging(chatrooms)
 
 ### Deed Repository
-Manage non-fungible tokens by implementing an asset/token/deed repository which hold unique asset/token/deed.
+Manage non-fungible tokens by implementing an asset/token/deed repository which holds unique asset/token/deed.
 
 #### ERC: Non-fungible Token Standard #721 (NFT)
 See following link: 
@@ -24,16 +24,16 @@ https://github.com/ethereum/eips/issues/721
 Auction repository MUST act as an auction house which does the following:
 
 - Holds asset/token/deed that is to be auctioned(ERC721 Ownership by smart contract)
-- Allow users bid on auctions
-- Keep track of auctions/bids/ownership
-- Transfer ownership of asset/token/deed to winder
-- Transfer Funds to auction creator if auction is ended and there is at least one winner
-- Cancel auction and deal with refunds
+- Allows users bid on auctions
+- Keeps track of auctions/bids/ownership
+- Transfers ownership of asset/token/deed to winder
+- Transfers Funds to auction creator if auction is ended and there is at least one winner
+- Cancels auction and deal with refunds
 - UI to interact with the above functionality
 
 ### Front-end: Vuejs2.x + Vuetify
 
-The front-end is developed using a reactive UI framework with integration of Vuetify, a google's material design implementation.
+The front-end is developed using a reactive UI framework with integration of Vuetify, a Google's Material Design implementation.
 
 ## Implementation/Data flow
 
