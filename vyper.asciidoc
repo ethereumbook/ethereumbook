@@ -70,7 +70,9 @@ It seems that Vyper is not full aligned with either the OOP paradigm or the func
 
 [[decorators_sec]]
 === Decorators
-Decorators like @public @constant @payable are declared at the start of each function.
+Decorators like @private @public @constant @payable are declared at the start of each function.
+
+Private decorator:: The private decorator makes the function inaccessible from outside the contract.
 
 Public decorator:: The public decorator makes the function both visible and executable publicly. For example the Ethereum wallet will even display the public functions when viewing the contract.
 
@@ -114,7 +116,7 @@ Smart contracts can write data to two places, Ethereum's global state trie or Et
 
 Global state:: The state variables in a given smart contract are stored in Ethereum's global state trie, a given smart contract can only store, read and modify data specifically in relation to that contract's address (i.e. smart contracts can not read or write to other smart contracts).
 
-Log:: A smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes <= 3)}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes <= 3)}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
+Log:: As previously mentioned, a smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes[3])}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes[3])}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
 
 While smart contracts can write to the Ethereum's chain data (through log events), smart contracts are unable to read the on-chain log events, which they created. Notwithstanding, one of the advantages of writing to Ethereum's chain data via log events is that logs can be discovered and read, on the public chain, by light clients. For example, the logsBloom value in a mined block can indicate whether or not a log event was present. Once this has been established the log data can be obtained through the path of logs -> data inside a given transaction receipt.
 
@@ -125,7 +127,9 @@ While smart contracts can write to the Ethereum's chain data (through log events
 
 [[erc20_token_interface_implementation_sec]]
 === ERC20 token interface implementation
-The name, symbol, total supply and decimals variables of ERC20 tokens are publicly available using Vyper.
+Vyper has implemented ERC20 as a precompiled contract and allows to use it by default.
+Contracts in Vyper must be declared as global variables. An example for declaring the ERC20 variable can be
+token: address(ERC20).
 
 :revnumber: v1.0
 :revdate: 2018-04-10 (yyyy-mm-dd)
