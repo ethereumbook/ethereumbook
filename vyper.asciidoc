@@ -2,8 +2,8 @@
 [[viper_chap]]
 == Vyper: A contract-oriented programming language
 :revnumber: v1.1
-:revdate: 2018-04-10 (yyyy-mm-dd)
-:revremark: There are sections in this document labelled with TODO. The TODO tag identifies pending points which are still being researched
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: There are sections in this chapter labelled with TODO. The TODO tag identifies pending points which are still being researched and need to be completed.
 
 ////
 Source: https://github.com/ethereum/vyper/blob/master/README.md
@@ -11,33 +11,62 @@ License: The MIT License (MIT)
 Added by: @tpmccallum
 ////
 
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: This paragraph is complete and has been merged < https://github.com/ethereumbook/ethereumbook/pull/456 >
+
 Vyper is an experimental, contract-oriented programming language which targets the Ethereum Virtual Machine (EVM). Vyper strives to simplify the human readable code, and in doing so provides superior auditability. One of the principles and key goals of Vyper is to make it near impossible (very difficult) for developers, who use Vyper, to write misleading code. This is done in a number of ways, which we will describe below.
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: This paragraph is complete and has been merged < https://github.com/ethereumbook/ethereumbook/pull/456 >
 
 [[comparison_to_solidity_sec]]
 === Comparison to Solidity
 
 This section is a reference for those who are considering developing smart contracts using the Vyper programming language. The section mainly compares and contrasts Vyper against Solidity; outlining, with sound reasoning, why Vyper does NOT include the following traditional Object Oriented Programming (OOP) concepts:
 
-* Modifiers - e.g. in Solidity you can do function foo() mod1 { ... }, where mod1 can be defined elsewhere in the code to include a check that is done before execution, a check that is done after execution, some state changes, or possibly other things. Vyper does not have this, because it makes it too easy to write misleading code. mod1 just looks too innocuous for something that could add arbitrary pre-conditions, post-conditions or state changes. Also, it encourages people to write code where the execution jumps around the file, harming auditability. The usual use case for a modifier is something that performs a single check before execution of a program; our recommendation is to simply inline these checks as asserts.
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: TODO - The Modifiers, Class inheritance, Inline assembly, Function overloading and Variable typecasting sections listed below have to be re-worded. They are, by and large, just a cut and paste of the original documentation and also contain TODOs
 
-* Class inheritance - requires people to jump between multiple files to understand what a program is doing, and requires people to understand the rules of precedence in case of conflicts (which class's function X is the one that's actually used?). Hence, it makes code too complicated to understand.
+Modifiers:: In Solidity you can do function foo() mod1 { ... }, where mod1 can be defined elsewhere in the code to include a check that is done before execution, a check that is done after execution, some state changes, or possibly other things. Vyper does not have this, because it makes it too easy to write misleading code. mod1 just looks too innocuous for something that could add arbitrary pre-conditions, post-conditions or state changes. Also, it encourages people to write code where the execution jumps around the file, harming auditability. The usual use case for a modifier is something that performs a single check before execution of a program; our recommendation is to simply inline these checks as asserts.
 
-* Inline assembly - adding inline assembly would make it no longer possible to Ctrl+F for a variable name to find all instances where that variable is read or modified.
+Class inheritance:: TODO explain class inheritance and then paraphrase the following ... "requires people to jump between multiple files to understand what a program is doing, and requires people to understand the rules of precedence in case of conflicts (which class's function X is the one that's actually used?). Hence, it makes code too complicated to understand."
 
-* Function overloading - This can cause lots of confusion on which function is called at any given time. Thus it's easier to write missleading code (foo("hello") logs "hello" but foo("hello", "world") steals you funds). Another problem with function overloading is that it makes the code much harder to search through as you have to keep track on which call refers to which function.
+Inline assembly:: TODO explain inline assembly and then paraphrase the following ... "adding inline assembly would make it no longer possible to Ctrl+F for a variable name to find all instances where that variable is read or modified."
 
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
-:revremark: Explain Variable typecasting and how this has been simplified in Vyper
-:revstatus: TODO
-Variable typecasting:: Typecasting is a mechanism which allows programmers to convert a variable from one data type to another data type.
+Function overloading:: TODO explain function overloading and then paraphrase the following ... "This can cause lots of confusion on which function is called at any given time. Thus it's easier to write missleading code (foo("hello") logs "hello" but foo("hello", "world") steals you funds). Another problem with function overloading is that it makes the code much harder to search through as you have to keep track on which call refers to which function."
+
+Variable typecasting:: Typecasting is a mechanism which allows programmers to convert a variable from one data type to another data type. TODO explain how this has been handled in Vyper.
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following pre-conditions, post-conditions and sub-points condition, effects and interaction are complete
 
 Pre-conditions and post-conditions::
-pre-conditions as well as post-conditions and state changes are handled explicitly, Whilst this does produce redundant code it allows for maximal readability, The process of writing a function should include the following three reflections
+Vyper handles pre-conditions, post-conditions and state changes explicitly. Whilst this produces redundant code, it also allows for maximal readability and safety. When writing a smart contract in Vyper, a developer should observe the following 3 points. Ideally, each of the 3 points should be carefully considered and then thorougly documented in the code. Doing so will improve code design, through enforced diligence, and in addition will provide superior readability and auditability.
 
-* Condition - What is the current state/condition of the state variables
-* Effects - What effects will the following code have on the state variables once executed
-* Interaction - The actual execution of logic now that the first two steps have been exhaustively dealt with
+* Condition - What is the current state/condition of the Ethereum state variables
+* Effects - What effects will this smart contract code have on the state variables upon execution i.e. what WILL be affected, what WILL NOT be affected? Are these effects congruent with the smart contract's intentions?
+* Interaction - Now that the first two steps have been exhaustively dealt with, it is time to run the code. Before deployment, logically step through the code and consider all of the possible permanent outcomes, consequences and scenarios of executing the code
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following programming paradigm section is complete 
+
+[[a_new_programming_paradigm_sec]]
+=== A new programming paradigm
+
+Vyper's creation opens the door to a new programming paradigm. For example, Vyper is removing class inheritance, as well as other functionality, and therefore it can be said that Vyper is leaning away from the traditional Object Oriented Programming (OOP) paradigm, which is fine. 
+
+Historically OOP has provided a mechanism for representing real world objects. For example, OOP allows the instantiation of an employee object which can inherit from a person class. However, from a value-transfer and/or smart-contract perspective, those who aspire to the functional programming paradigm would concur that transactional programming in no way lends itself to the aforementioned traditional OOP paradigm. Put simply, transactional computations are worlds apart from real world objects. For example, when was the last time you held a transaction or a forward chaining business rule in your hand?
+
+It seems that Vyper is not full aligned with either the OOP paradigm or the functional programming paradigm (the full list of reasons is beyond the scope of this chapter). For this reason, could we be so bold, at this early stage of development, to coin a new software development paradigm? One which endevours to future proof blockchain executible code. One which prevents the catastrophic loss of funds in an immutable setting. Past events experienced in the blockchain revolution are organically creating new opportunities for further research and development in this space. Perhaps the outcomes of such research and development could eventually result in a new immutability paradigm classification for software development.
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following decorators section is complete
 
 [[decorators_sec]]
 === Decorators
@@ -49,11 +78,19 @@ Constant decorator:: Functions which start with the constant decorator are not a
 
 Payable decorator:: Only functions which declare the @payable decorator at the start will be allowed to transfer value.
 
-Vyper implements the logic of decorators explicitly. For example, the Vyper code compilation process will fail if a function is preceeded with both a payable decorator and a constant decorator. Of course this makes sense because a constant function (one which only reads from the global state) should never need to partake in a transfer of value. Also, each Vyper function must be preceeded with either the @public or the @private decorator to avoid compilation failure. Preceeding a Vyper function with both a @public decorator and a @private decorator will also result in a compilation failure.
+Vyper implements the logic of decorators explicitly. For example, the Vyper code compilation process will fail if a function is preceded with both a payable decorator and a constant decorator. Of course this makes sense because a constant function (one which only reads from the global state) should never need to partake in a transfer of value. Also, each Vyper function must be preceded with either the @public or the @private decorator to avoid compilation failure. Preceding a Vyper function with both a @public decorator and a @private decorator will also result in a compilation failure.
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following online code editor and compiler section is complete
 
 [[online_code_editor_and_compiler_sec]]
 === Online code editor and compiler
 Vyper has its own online code editor and compiler at the following URL < https://vyper.online >. This Vyper online compiler allows you to write and then compile your smart contracts into Bytecode, ABI and LLL using only your web browser. The Vyper online compiler has a variety of pre written smart contracts for your convenience. These include a simple open auction, safe remote purchases, ERC20 token and more.
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following compiling using the command line section is complete
 
 [[compiling_using_the_command_line_sec]]
 === Compiling using the command line
@@ -66,22 +103,23 @@ The human readable ABI code (in JSON format) can be obtained by then running the
 
 vyper -f json ~/hello_world.v.py
 
+
+:revnumber: v1.1
+:revdate: 2018-04-11 (yyyy-mm-dd)
+:revremark: The following reading and writing data section is complete
+
 [[reading_and_writing_data_sec]]
 === Reading and writing data
-smart contracts can write data to two places, ethereum's global state trie or Ethereum's chain data, while this is costly to store, read and modify data. These storage operations are a necessary component of most smart contracts.
+Smart contracts can write data to two places, Ethereum's global state trie or Ethereum's chain data. While it is costly to store, read and modify data, these storage operations are a necessary component of most smart contracts.
 
 Global state:: The state variables in a given smart contract are stored in Ethereum's global state trie, a given smart contract can only store, read and modify data specifically in relation to that contract's address (i.e. smart contracts can not read or write to other smart contracts).
 
-////
-TODO: continue with more information about Global state in relation to Vyper
-////
-
-Log:: As previously mentioned, a smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes <= 3)}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes <= 3)}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
+Log:: A smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[__]logpass:[__] syntax for declaring these events, an update has been made which brings Vyper's event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called MyLog was originally MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes <= 3)}) Vyper's syntax has now become MyLog: event({arg1: indexed(bytes <= 3)}). It is important to note that the execution of the log event in Vyper was and still is as follows log.MyLog("123").
 
 While smart contracts can write to the Ethereum's chain data (through log events), smart contracts are unable to read the on-chain log events, which they created. Notwithstanding, one of the advantages of writing to Ethereum's chain data via log events is that logs can be discovered and read, on the public chain, by light clients. For example, the logsBloom value in a mined block can indicate whether or not a log event was present. Once this has been established the log data can be obtained through the path of logs -> data inside a given transaction receipt.
 
-:revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
+:revnumber: v1.1
+:revdate: 2018-04-10 (yyyy-mm-dd)
 :revremark: Just want to keep an eye on the development in Vyper GitHub in order to compare and contrast the differences between Vyper and Solidity's ERC20 Token Interface Implementation closer to ethereumbook being published.
 :revstatus: TODO
 
@@ -90,10 +128,14 @@ While smart contracts can write to the Ethereum's chain data (through log events
 The name, symbol, total supply and decimals variables of ERC20 tokens are publicly available using Vyper.
 
 :revnumber: v1.0
-:revdate: 2018-04-08 (yyyy-mm-dd)
+:revdate: 2018-04-10 (yyyy-mm-dd)
 :revremark: There is a pending question in the Vyper GitHub repo < https://github.com/ethereum/vyper/issues/745 >. Whilst sharding opcodes have been implemented on a branch, the Vyper code base is yet to have sharding opcodes merged into a release. It would be nice to include updated information for the book as soon as Vyper has implemented sharding opcodes. @jacqueswww and @NIC619 have provided URLs in relation to opcodes, specifically the sharding roadmap < https://github.com/ethereum/py-evm/issues/190 > and Vitalik's Account Abstraction Proposals information < https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263 >. Details will be added as soon as possible.
 :revstatus: TODO
 
+:revnumber: v1.1
+:revdate: 2018-04-10 (yyyy-mm-dd)
+:revremark: Just want to keep an eye on the development in Vyper GitHub in order to compare and contrast the differences between Vyper and Solidity's ERC20 Token Interface Implementation closer to ethereumbook being published.
+:revstatus: TODO
 [[opcodes_sec]]
 === OPCODES
 The code for smart contracts is mainly written in high-level languages like Solidity and now potentially Vyper. The compiler is responsible for taking the high level code and creating the lower level interpretation of the code, which is then able to be executed on the Ethereum Virtual Machine (EVM). The lowest representation which the compiler can distille the code to (prior to execution by the EVM) is opcodes. This being the case, each implementation of a high-level language (like Vyper) is required to provide an appropriate compilation mechanism (a compiler) to allow (among other things) the high level code to be compiled into the universally predetermined and predefined EVM opcodes. A good example of this is Vyper's implementation of Ethereum's sharding opcodes.
