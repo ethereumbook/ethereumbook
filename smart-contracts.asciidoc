@@ -55,11 +55,84 @@ Bamboo:: A newly developed language, influenced by Erlang with explicit state tr
 As you can see, there are many languages to choose from. However, of all these Solidity is by far the most popular, to the point of being the de-facto high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages, to gain an understanding of their different philosophies.
 
 [[building_a_smart_contract_sec]]
-=== Building a smart contract
+=== Building a smart contract with Solidity
 
-////
-TODO: add paragraph
-////
+From Wikipedia:
+
+[quote, "Wikipedia entry for Solidity"]
+Solidity is a "contract-oriented" programming language for writing smart contracts. It is used for implementing smart contracts on various blockchain platforms. It was developed by Gavin Wood, Christian Reitwiessner, Alex Beregszaszi, Liana Husikyan, Yoichi Hirai and several former Ethereum core contributors to enable writing smart contracts on blockchain platforms such as Ethereum.
+
+Solidity was proposed in 2014 by Gavin Wood, who is also on of the two authors of this book. It was further developed and currently maintained by a team of developers as the Solidity project on GitHub:
+
+https://github.com/ethereum/solidity
+
+The main "product" of the Solidity project is the _Solidity Compiler (solc)_ which converts programs written in the Solidity language to EVM bytecode (as well as producing other artefacts such as an Application Binary Interface). Each version of the Solidity compiler corresponds to and compiles a specific version of the Solidity language.
+
+To use Solidity, you write your program using any text editor and then compile it using the Solidity compiler +solc+. The resulting binary contract (EVM bytecode) can be deployed to the Ethereum blockchain with a specially constructed contract-creation transaction.
+
+To get started, we will download a binary executable of the Solidity compiler. Then we will write and compile a simple contract.
+
+==== Selecting a version of Solidity
+
+Solidity follows a versioning model called _semantic versioning_ (https://semver.org/), which specifies version numbers structured as three numbers separated by dots: +MAJOR.MINOR.PATCH+. The "major" number is incremented for major and _backwards incompatible_ changes, the "minor" number is incremented as backwards compatible features are added in between major releases, and the "patch" number is incremented for bug-fix and security related changes.
+
+Currently, Solidity is at version 0.4.21, with the 0.5 release anticipated imminently.
+
+As we saw in <<intro>>, your Solidity programs can contain a +pragma+ directive that specifies the minimum and maximum version of Solidity that is compatible with, and can be used to compile, your contract.
+
+Since Solidity is rapidly evolving, it is best to always use the latest release of Solidity when your write Solidity code.
+
+==== Download/install
+
+There are a number of methods you can use to download and install Solidity, either as a binary release or to compile from source code. You can find detailed instruction in the Solidity documentation at:
+
+https://solidity.readthedocs.io/en/latest/installing-solidity.html
+
+In <<install_solidity_ubuntu>>, we will install the latest binary release of Solidity on an Ubuntu/Debian operating system, using the +apt+ package manager:
+
+[[install_solidity_ubuntu]]
+.Installing solc on Ubuntu/Debian with apt package manager
+[source, bash]
+----
+$ sudo add-apt-repository ppa:ethereum/ethereum
+$ sudo apt update
+$ sudo apt install solc
+----
+
+Once you have +solc+ installed, check the version by running:
+
+----
+$ solc --version
+solc, the solidity compiler commandline interface
+Version: 0.4.21+commit.dfe3193c.Linux.g++
+----
+
+==== Development environment
+
+To develop using Solidity, you can use any text editor and +solc+ on the command-line. However, you might find that some text editors designed for development, such as Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
+
+There are also web-based development environments, such as Remix, which we saw in <<intro>>.
+
+Use the tools that make you productive. In the end, Solidity programs are just plain-text files. While fancy editors and development environments can make things a bit easier, you don't need anything more than a simple text editor, such as vim (Linux/Unix), TextEdit (MacOS) or even NotePad (Windows).
+
+==== Writing a simple Solidity program
+
+In <<intro>> we wrote our first Solidity program, called +Faucet+. We will revisit, improve and embellish +Faucet+ in this section.
+
+Our first attempt looked like this:
+
+.Faucet.sol : A Solidity contract implementing a faucet
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet.sol[]
+----
+
+==== Compiling with the Solidity compiler (solc)
+
+----
+solcjs --bin foo.sol
+----
+
 
 [[eth_contract_abi_sec]]
 === Ethereum contract Application Binary Interface (ABI)
@@ -75,6 +148,10 @@ ____
 The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`.
 
 The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for fields such as state variables or modifiers.
+
+----
+solcjs --abi foo.sol
+----
 
 [[structure_of_call_data_sec]]
 ==== Structure of call data
