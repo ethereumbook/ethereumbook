@@ -76,7 +76,7 @@ To get started, we will download a binary executable of the Solidity compiler. T
 
 Solidity follows a versioning model called _semantic versioning_ (https://semver.org/), which specifies version numbers structured as three numbers separated by dots: +MAJOR.MINOR.PATCH+. The "major" number is incremented for major and _backwards incompatible_ changes, the "minor" number is incremented as backwards compatible features are added in between major releases, and the "patch" number is incremented for bug-fix and security related changes.
 
-Currently, Solidity is at version 0.4.21, with the 0.5 release anticipated imminently.
+Currently, Solidity is at version +0.4.21+, where +0.4+ is the major version, 21 is the minor verion and anything specified afte that is a patch release.  The 0.5 major version release of Solidity is anticipated imminently.
 
 As we saw in <<intro>>, your Solidity programs can contain a +pragma+ directive that specifies the minimum and maximum version of Solidity that is compatible with, and can be used to compile, your contract.
 
@@ -113,11 +113,11 @@ To develop in Solidity, you can use any text editor and +solc+ on the command-li
 
 There are also web-based development environments, such as Remix, which we saw in <<intro>>.
 
-Use the tools that make you productive. In the end, Solidity programs are just plain-text files. While fancy editors and development environments can make things a bit easier, you don't need anything more than a simple text editor, such as vim (Linux/Unix), TextEdit (MacOS) or even NotePad (Windows).
+Use the tools that make you productive. In the end, Solidity programs are just plain-text files. While fancy editors and development environments can make things a bit easier, you don't need anything more than a simple text editor, such as vim (Linux/Unix), TextEdit (MacOS) or even NotePad (Windows). Simply save your program source code with a +.sol+ extension and it will be recognized by the Solidity compiler as a Solidity program.
 
 ==== Writing a simple Solidity program
 
-In <<intro>> we wrote our first Solidity program, called +Faucet+. We will revisit, improve and embellish +Faucet+ in this section.
+In <<intro>> we wrote our first Solidity program, called +Faucet+.  When we first built the +Faucet+, we used the Remix IDE to compile and deploy the contract. In this section, we will revisit, improve, and embellish +Faucet+.
 
 Our first attempt looked like this:
 
@@ -129,10 +129,12 @@ include::code/Solidity/Faucet.sol[]
 
 ==== Compiling with the Solidity compiler (solc)
 
-The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument. When we first built the +Faucet+ contract in <<intro>>, we used the Remix IDE to compile and deploy the contract. Now, we will use the Solidity compiler on the command-line to compile our contract directly.
+The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument. Now, we will use the Solidity compiler on the command-line to compile our contract directly.
 
 We use the +--bin+ and +--optimize+ arguments of +solc+ to produce an optimized binary of our example contract:
 
+[[compile_Faucet_with_solc]]
+.Compiling Faucet.sol with solc
 ----
 $ solc --optimize --bin Faucet.sol
 ======= Faucet.sol:Faucet =======
@@ -141,6 +143,29 @@ Binary:
 ----
 
 The result that +solc+ produces is a hex serialized binary that can be submitted to the Ethereum blockchain.
+
+[[solidity_pragma]]
+==== Selecting Solidity compiler and language version
+
+As we see in <<compile_Faucet_with_solc>> our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version +0.4.19+ and we tried to compile it with +0.4.18+?
+
+To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
+
+[[compiler_version]]
+----
+pragma solidity ^0.4.19;
+----
+
+The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version +0.4.19+. The symbol ^ states, however, that we allow compilation of any _minor revisions_ above that +0.4.19+, e.g., +0.4.20+, but not +0.5.0+ (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
+
+Let’s add a pragma directive to our +Faucet+ contract. We will name the new file +Faucet2.sol+, to keep track of our changes as we proceed through these examples:
+
+.Faucet2.sol : Adding the version pragma to Faucet
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet2.sol[]
+----
+
 
 [[eth_contract_abi_sec]]
 === Ethereum contract Application Binary Interface (ABI)
