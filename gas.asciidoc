@@ -1,12 +1,12 @@
 [[gas]]
 == Gas
 
-As computational "work" is required for programs to perform an action or set of actions, there is a cost associated with executing smart contract code and transacting on the Ethereum blockchain. This cost is related to the type and number of computational steps that are being executed. In contrast to Bitcoin transaction fees which only take into account the size of a transaction (kB), Ethereum transaction fees must account for an arbitrary number of computational steps that can be performed by smart contract code. The higher the number of operations a program performs, the higher the cost to run it to completion. **Gas** is Ethereum's unit for measuring how much computational "work" a program takes to perform an action or set of actions. Every operation performed by a transaction or contract costs a certain number of gas.
+As computational "work" is required for programs to perform an action or set of actions, there is a cost associated with executing smart contract code and transacting on the Ethereum blockchain. This cost is related to the type and number of computational steps that are being executed. In contrast to Bitcoin transaction fees, which only take into account the size of a transaction (kB), Ethereum transaction fees must account for an arbitrary number of computational steps that can be performed by smart contract code. The higher the number of operations a program performs, the higher the cost to run it to completion. **Gas** is Ethereum's unit for measuring how much computational "work" a program takes to perform an action or a set of actions. Every operation performed by a transaction or contract costs a certain number of gas.
 
 To each operation, a fixed amount of gas is assigned. Some examples from the Ethereum yellow paper:
 
 * Adding two numbers costs 3 gas
-* Calculating a <<Keccak256>> hash costs 30 gas + 6 more gas for every 256 bits of data being hashed
+* Calculating a Keccak256 hash costs 30 gas + 6 more gas for every 256 bits of data being hashed
 * Sending a transaction costs 21000 gas
 
 Gas is a crucial component of Ethereum's defense against denial of service attacks. In order to prevent accidental or malicious infinite loops or other computational wastage in the network, the initiator of each transaction is required to set a limit to the amount they are willing to spend on gas. The gas system therefore disincentivizes attackers from sending spam transactions, as they must pay proportionately for the computational, bandwidth, and storage resources that they consume.
@@ -65,7 +65,7 @@ In which case:
 
 `(gas limit - excess gas) * gas price` ether goes to the miner as a block reward
 
-`excess gas * gasprice` ether is refunded to the sender
+`excess gas * gas price` ether is refunded to the sender
 
 === Gas price and transaction prioritization
 
@@ -75,7 +75,7 @@ Miners can also decide the order in which transactions are included in a block. 
 
 === Block gas limit
 
-Block gas limits are the maximum amount of gas allowed in a block to determine how many transactions can fit into a block. For example, let’s say we have 5 transactions where each transaction has a gas limit of 10, 20, 30, 40, and 50. If the block gas limit is 100, then the first four transactions can fit in the block, while transaction 5 has to wait for a future block. As previously discussed, miners decide which transactions to include in a block. A different miner could try including the last 2 transactions in the block (50+40), and they only have space to include the first transaction (10). If you try to include a transaction that requires more gas than the current block gas limit, it will be rejected by the network and your Ethereum client will give you the message “Transaction exceeds block gas limit”. The block gas limit is currently around 5 million gas at the time of writing according to https://etherscan.io, meaning around 238 transactions that each consume 2100 gas can fit in 1 block.
+Block gas limits are the maximum amount of gas allowed in a block to determine how many transactions can fit into a block. For example, let’s say we have 5 transactions where each transaction has a gas limit of 10, 20, 30, 40, and 50. If the block gas limit is 100, then the first four transactions can fit in the block, while transaction 5 has to wait for a future block. As previously discussed, miners decide which transactions to include in a block. A different miner could try including the last 2 transactions in the block (50+40), and they only have space to include the first transaction (10). If you try to include a transaction that requires more gas than the current block gas limit, it will be rejected by the network and your Ethereum client will give you the message “Transaction exceeds block gas limit.” The block gas limit is currently around 5 million gas at the time of writing according to https://etherscan.io, meaning around 238 transactions that each consume 2100 gas can fit in 1 block.
 
 === Who decides what the block gas limit is?
 
@@ -89,7 +89,8 @@ Clearing a contract is -24,000 (SELFDESTRUCT)
 Clearing storage is -15,000 (SSTORE[x] = 0)
 
 ==== GasToken
-GasToken is an ERC20 compliant token that allows anyone to "bank" gas when the gasPrice is low and uses it when gasPrice is high. By making it a tradeable asset, it essentially creates a gas market.
+
+GasToken is an ERC20 compliant token that allows anyone to "bank" gas when the gas price is low and uses it when gas price is high. By making it a tradeable asset, it essentially creates a gas market.
 It works by taking advantage of the gas refund mechanism described earlier.
 
 You can learn about the maths involved in calculating the profitability and how to use the released gas at https://gastoken.io/
@@ -97,26 +98,8 @@ You can learn about the maths involved in calculating the profitability and how 
 === Rent fee
 There is currently a proposal in the Ethereum community about charging smart contracts a "rent fee" to be kept alive.
 
-In the case the rent would not be paid, the smart contract would be put to "sleep" making it and it's data inaccessible even for a simple read. Contract put into sleep would need to be awakened by paying rent and submitting a Merkle proof.
+In the case the rent would not be paid, the smart contract would be put to "sleep" making it and it's data inaccessible even for a simple read. A contract put into sleep would need to be awakened by paying rent and submitting a Merkle proof.
 
 https://github.com/ethereum/EIPs/issues/35
 https://ethresear.ch/t/a-simple-and-principled-way-to-compute-rent-fees/1455
 https://ethresear.ch/t/improving-the-ux-of-rent-with-a-sleeping-waking-mechanism/1480
-
-=== Questions that need to be answered in this section
-
-* x What is Gas
-* x What is gas cost
-* x What is the gas limit
-* x How is gas counted
-* x Who pays gas
-* x What happens if there's not enough gas
-* x Is gas paid if there's not enough?
-* x Who pays for contract calls if intiated by EOA
-* x Who pays if the contract initiates the message?
-* How are contracts funded
-* x Can you set the gas limit above the balance you have?
-* x When is gas actually charged
-* x Can you double spend gas? Why not?
-* x how are transactions sequenced when sent concurrently (same block), in terms of gas and balance?
-* x How can a contract run out of gas?
