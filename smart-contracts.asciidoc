@@ -32,9 +32,11 @@ A contract’s code cannot be changed. However a contract can be “deleted”, 
 
 The EVM is an emulated computer that runs a special form of _machine code_ called _EVM bytecode_, just like your computer's CPU, which runs machine code such as x86_64. We will examine the operation and language of the EVM in much more detail in <<evm>>. In this section we will look at how smart contracts are written to run on the EVM.
 
-While it is possible to program smart contracts directly in bytecode, a low-level language like EVM bytecode is unwieldy and very difficult for programmers to read, understand, and collaborate. Instead, most Ethereum developers use a high-level symbolic language to write programs and a compiler to convert them into bytecode.
+While it is possible to program smart contracts directly in bytecode.  EVM bytecode is unwieldy and very difficult for programmers to read and understand. Instead, most Ethereum developers use a high-level symbolic language to write programs and a compiler to convert them into bytecode.
 
-Ethereum has several high-level languages, with the compilers needed to produce EVM-executable bytecode. In general, programming languages can be classified in two broad programming paradigms: declarative and imperative, also known as “functional” and “procedural”, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include, for example, Haskell, SQL and HTML. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include, for example, BASIC, C, C++, and Java. Some languages are “hybrid”, meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, Erlang, Prolog, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in innellegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables”_.
+While any high-level language could be adapted to write smart contracts, that is quite a cumbersome exercise. Smart contracts operate in a highly constrained and minimalistic execution environment (the EVM), where almost all of the usual user interfaces, operating system interfaces and hardware interfaces are missing. It is easier to build a minimalistic smart-contract language, from scratch, than it is to constrain a general-purpose language and make it suitable for writing smart contracts. As a result, a number of special-purpose languages have emerged for programming smart contracts. Ethereum has several such languages, together with the compilers needed to produce EVM-executable bytecode.
+
+In general, programming languages can be classified in two broad programming paradigms: declarative and imperative, also known as “functional” and “procedural”, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include, for example, Haskell, SQL and HTML. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include, for example, BASIC, C, C++, and Java. Some languages are “hybrid”, meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, Erlang, Prolog, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in innellegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables”_.
 
 While imperative programming is easier to write and read, and is more commonly used by programmers, it can be very difficult to write programs that execute _exactly as expected_. The ability of any part of the program to change the state makes it difficult to reason about a program’s execution and introduces many opportunities for unintended side effects and bugs. Declarative programming by comparison is harder to write, but avoids side effects, making it easier to understand how a program will behave.
 
@@ -42,7 +44,7 @@ Smart contracts create a very high burden for programmers: bugs cost money. As a
 
 High-level programming languages for smart contracts include (ordered by approximate age):
 
-LLL:: A functional (declarative) programming language, with Lisp-like syntax. It was the first high-level language for Ethereum smart contracts, but it is rarely used.
+LLL:: A functional (declarative) programming language, with Lisp-like syntax. It was the first high-level language for Ethereum smart contracts, but it is rarely used today.
 
 Serpent:: A procedural (imperative) programming language with a syntax similar to Python. Can also be used to write functional (declarative) code, though it is not entirely free of side effects. Used sparsely. First created by Vitalik Buterin.
 
@@ -62,13 +64,11 @@ From Wikipedia:
 [quote, "Wikipedia entry for Solidity"]
 Solidity is a "contract-oriented" programming language for writing smart contracts. It is used for implementing smart contracts on various blockchain platforms. It was developed by Gavin Wood, Christian Reitwiessner, Alex Beregszaszi, Liana Husikyan, Yoichi Hirai and several former Ethereum core contributors to enable writing smart contracts on blockchain platforms such as Ethereum.
 
-Solidity was proposed in 2014 by Gavin Wood, who is also on of the two authors of this book. It was further developed and currently maintained by a team of developers as the Solidity project on GitHub:
+Solidity is developed and currently maintained by a team of developers as the Solidity project on GitHub:
 
 https://github.com/ethereum/solidity
 
-The main "product" of the Solidity project is the _Solidity Compiler (solc)_ which converts programs written in the Solidity language to EVM bytecode (as well as producing other artefacts such as an Application Binary Interface). Each version of the Solidity compiler corresponds to and compiles a specific version of the Solidity language.
-
-To use Solidity, you write your program using any text editor and then compile it using the Solidity compiler +solc+. The resulting binary contract (EVM bytecode) can be deployed to the Ethereum blockchain with a specially constructed contract-creation transaction.
+The main "product" of the Solidity project is the _Solidity Compiler (solc)_ which converts programs written in the Solidity language to EVM bytecode, as well as producing other artefacts such as an Application Binary Interface (ABI). Each version of the Solidity compiler corresponds to and compiles a specific version of the Solidity language.
 
 To get started, we will download a binary executable of the Solidity compiler. Then we will write and compile a simple contract.
 
@@ -109,7 +109,7 @@ Version: 0.4.21+commit.dfe3193c.Linux.g++
 
 ==== Development environment
 
-To develop using Solidity, you can use any text editor and +solc+ on the command-line. However, you might find that some text editors designed for development, such as Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
+To develop in Solidity, you can use any text editor and +solc+ on the command-line. However, you might find that some text editors designed for development, such as Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
 
 There are also web-based development environments, such as Remix, which we saw in <<intro>>.
 
@@ -129,10 +129,18 @@ include::code/Solidity/Faucet.sol[]
 
 ==== Compiling with the Solidity compiler (solc)
 
+The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument. When we first built the +Faucet+ contract in <<intro>>, we used the Remix IDE to compile and deploy the contract. Now, we will use the Solidity compiler on the command-line to compile our contract directly.
+
+We use the +--bin+ and +--optimize+ arguments of +solc+ to produce an optimized binary of our example contract:
+
 ----
-solcjs --bin foo.sol
+$ solc --optimize --bin Faucet.sol
+======= Faucet.sol:Faucet =======
+Binary:
+6060604052341561000f57600080fd5b60cf8061001d6000396000f300606060405260043610603e5763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416632e1a7d4d81146040575b005b3415604a57600080fd5b603e60043567016345785d8a0000811115606357600080fd5b73ffffffffffffffffffffffffffffffffffffffff331681156108fc0282604051600060405180830381858888f19350505050151560a057600080fd5b505600a165627a7a723058203556d79355f2da19e773a9551e95f1ca7457f2b5fbbf4eacf7748ab59d2532130029
 ----
 
+The result that +solc+ produces is a hex serialized binary that can be submitted to the Ethereum blockchain.
 
 [[eth_contract_abi_sec]]
 === Ethereum contract Application Binary Interface (ABI)
