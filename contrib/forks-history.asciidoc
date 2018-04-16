@@ -4,47 +4,49 @@ Most hard forks are planned as part of a roadmap and consist of updates that the
 === Ethereum Classic (ETC)
 Ethereum Classic came to be after members of the Ethereum community went ahead with a time-sensitive hard fork ("DAO Hard Fork"). On  July 20th 2016, at a block height of 1.92 million, Ethereum introduced an irregular state change via a hard-fork in an effort to return approximately 3.6 million Ether that had been taken from a smart contract known as The DAO.
 
-A number of people in the community disagreed with this change, believing it was as a violation of Ethereum's immutability; they elected to continue the original chain under the moniker of Ethereum Classic. While the split was initially ideological both chains have since evolved into their own separate entities.
+A number of people in the community disagreed with this change, believing it was as a violation of Ethereum's immutability; they elected to continue the original chain under the moniker of Ethereum Classic. While the split itself was initially ideological both chains have since evolved into their own separate entities.
 
-=== The Decentralized Autonomous Organization
-The DAO is an abbreviation for Decentralized Autonomous Organization. The DAO was created by Slock.It as a way to provide community funding for projects. The core idea of it being that proposals would be submitted, curators would manage proposals, funds would be raised from investors, and if the project proves successful then investors would receive a share of the profits.
+=== The Decentralized Autonomous Organization (The DAO)
+The DAO was created by Slock.It; a highly skilled team of developers including former founding members of Ethereum among their ranks. Slock.It conceived of The DAO as a way to provide community-based funding for projects. The core idea of it being that proposals would be submitted, curators would manage proposals, funds would be raised from investors within the Ethereum community, and if the project proves successful then investors would receive a share of the profits.
 
 The DAO was also one of the first experiments in an Ethereum token. Rather than funding projects directly with Ether, participants would trade their Ether for DAO tokens, use them to vote on project funding, and would later be able to trade them back for Ether.
 
 DAO tokens were able to be purchased in a crowdsale that ran from April 5th through April 30th, 2016 amassing nearly 14% <<[1]>> of the total Ether in existence which was worth ~$150 million USD at the time.
 
 === The Re-Entrancy Bug
-On June 9th, developer Peter Vessenes and Chriseth report that most Ethereum-based contracts which manage funds are potentially vulnerable to an exploit <<[2]>> that can empty contract funds. On June 12th, Stephen Tual (Founder of Slock.It), reports that The DAO is not vulnerable <<[3]>> to the bug described by Peter and Chriseth. On June 17th and unknown attacker ("the DAO Attacker") starts draining The DAO <<[4]>> which ultimately led to 3.6 Million Ether, approximately a third of it's assets, being drained by the DAO Attacker.
+On June 9th, developer Peter Vessenes and Chriseth report that most Ethereum-based contracts which manage funds are potentially vulnerable to an exploit <<[2]>> that can empty contract funds. A few days later (June 12th) Stephen Tual (Founder of Slock.It), reports that The DAO's code is not vulnerable <<[3]>> to the bug described by Peter and Chriseth. Worried DAO contributors temporarily breathe a sigh of relief until 5 days later (June 17th) when an unknown attacker ("the DAO Attacker") starts draining The DAO <<[4]>> using an exploit similar to the one described on June 9th. Ultimately the DAO Attacker siphons ~3.6 million Ether out of The DAO.
 
-Simultaneously an assemblage of volunteers calling themselves the Robinhood Group start using the same exploit to withdraw the remaining funds. One June 21st they announce <<[5]>> that they've secured the other 70% of The DAO, roughly 7.2 million Ether, with plans to return it to the community.
+Simultaneously an assemblage of volunteers calling themselves the Robinhood Group (RHG) start using the same exploit to withdraw the remaining funds. On June 21st RHG announces <<[5]>> that they've secured the other 70% of The DAO, ~7.2 million Ether, with plans to return it to the community. Much thanks and commendations are given to the RHG for their quick actions and thinking that helped secure the bulk of the community's Ether.
 
 ==== Re-Entrancy Technicals
-While a more detailed and thorough explanation of the bug is described by Phil Daian <<[6]>> the short explanation is that a Contract function can be called multiple times in parallel. This trick allowed the DAO Attacker to withdraw Ether repeatedly.
+While a more detailed and thorough explanation of the bug is described by Phil Daian <<[6]>> the short explanation is that a Contract function can be called multiple times simulatneously on the Ethereum Virtual Machine (EVM; the part of Ethereum that runs all Contract code). This allowed the DAO Attacker to request to withdraw Ether repeatedly, and before the Contract could record that the DAO Attacker had done so, the attacker withdrew again.
 
 ==== Re-Entrancy Attack Flow
-1. DAO Attacker asks contract to withdraw DAO tokens ("DAO").
+Imagine you had $100 in your bank account and you could bring your bank teller any number of withdrawal slips. The bank teller gives you money for each slip in order, and only at the end of all the slips do they record your withdrawal. What if you brought them three slips to each withdraw $100? What if you brought them three thousand?
+
+*Put another way, the flow was:*
+
+1. DAO Attacker asks the DAO Contract to withdraw DAO tokens (DAO).
 2. DAO Attacker asks the contract to withdraw DAO *again*. Before the contract updates its records that DAO was withdrawn.
 3. Repeat step two as much as possible.
 4. Contract finally logs a single DAO withdrawal, losing track of the withdrawals that happened in the interim.
 
 === The DAO Hard Fork
-One safety guard in The DAO was that all withdrawal requests were subject to a 28 day delay. This gave the community a short timeframe to discuss what to do about the exploit. From roughly June 17th to July 20th the DAO Attacker would be unable to convert the DAO tokens into Ether.
+One safety guard in The DAO was that all withdrawal requests were subject to a 28 day delay. This gave the community a short timeframe to discuss what to do about the exploit. From roughly June 17th to July 20th the DAO Attacker would be unable to convert their DAO tokens into Ether.
 
 Several developers focused on finding a viable solution and multiple avenues were explored in this short space of time. Among them was the DAO Soft Fork, announced on June 24th, to delay DAO withdrawals until consensus was reached <<[7]>>, and a DAO Hard Fork, announced July 15th, to reverse the effects of the DAO Attack with an irregular state change <<[8]>>.
 
-On June 28th developers discovered a DoS exploit in the DAO Soft Fork <<[9]>> and concluded that a hard fork would be the only option on the fork route. This hard fork would transfer all Ether that had been invested in the DAO into a new smart contract, allowing the original owners of the Ether to claim a full refund. This provied a solution for returning the hacked funds but also meant interfering with the balances of specific addresses on the network however isolated they were.
+On June 28th developers discovered a DoS exploit in the DAO Soft Fork <<[9]>> and concluded that the DAO Hard Fork would be the only viable option on the fork route. The DAO Hard Fork would transfer all Ether that had been invested in the DAO into a new refund smart contract, allowing the original owners of the Ether to claim a full refund. This provided a solution for returning the hacked funds but also meant interfering with the balances of specific addresses on the network; however isolated they were. There would also be some leftover Ether in portions of The DAO known as childDAOs <<[12]>>. A group of trustees would manually authorize the leftover Ether; worth ~$6-7 million at the time <<[8]>>.
 
-With time running out, multiple Ethereum development teams created clients that allowed a user to decide whether they wanted to enable this fork. However the client creators were attempting to decide on whether to make this choice opt-in (don't fork by default), or opt-out (fork by default). On July 15th and a vote was open on Carbonvote.com <<[10]>>. On July 16th, at block 1,894,000 <<[11]>> it was closed. Of the 5.5% of the total Ether supply votes, ~80% of the votes (~4.5% of the total Ether supply) voted for opt-out. One quarter of the opt-out vote came from a single address <<[12]>>.
+With time running out, multiple Ethereum development teams created clients that allowed a user to decide whether they wanted to enable this fork. However the client creators wanted to decide whether to make this choice opt-in (don't fork by default), or opt-out (fork by default). On July 15th a vote was open on Carbonvote.com <<[10]>>. On July 16th, at block 1,894,000 <<[11]>> it was closed. Of the 5.5% of the total Ether supply votes, ~80% of the votes (~4.5% of the total Ether supply) voted for opt-out. One quarter of the opt-out vote came from a single address <<[12]>>.
 
-Ultimately the decision became opt-out, and those who opposed the DAO Hard Fork would need to explicitly state that they did. 
+Ultimately the decision became opt-out, and those who opposed the DAO Hard Fork would need to explicitly state that they did by changing a configuration option in the software they were running. 
 
 On July 20th, at block 1,920,000 <<[13]>> Ethereum implemented the DAO Hard Fork <<[14]>> and thus two Ethereums were created, one supporting the irregular state change, and the other opposing it.
 
-When the Hard Forked Ethereum (present-day Ethereum) gained a majority of the mining power, many assumed that consensus was achieved and the minority chain would fade away as in previous forks. However some members of the community, including one of the original co-founders, Charles Hoskinson, vocally supported the original chain which came to be known as Ethereum Classic.
+When the Hard Forked Ethereum (present-day Ethereum) gained a majority of the mining power many assumed that consensus was achieved and the minority chain would fade away; as in previous forks. However a sizable portion of the Ethereum community started supporting the original chain which came to be known as Ethereum Classic.
 
 Within days several exchanges began to list both Ethereum ("ETH") and Ethereum Classic ("ETC"). Due to the nature of hard forks all Ethereum users holding Ether at the time of the split now held funds on both of the chains and a market value for ETC was soon established with Poloniex listing ETC on July 24th <<[15]>>.
-
-// TODO: Do we want an arguments section? Is it appropriate for this book or should we stick to solely history?
 
 ==== Hard Fork Arguments
 
