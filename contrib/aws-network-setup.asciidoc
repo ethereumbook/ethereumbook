@@ -286,10 +286,9 @@ curl http://checkip.amazonaws.com/
 
 Note that, this set-up has not considered a detailed topology of the machines to be used for a private network. Therefore, the IP address to be used has been chosen as the public IP address. Depending on the choice of topology, it could be IP address in a private subnet, etc. 
 
-To start the private network, log on to other machines in the network and run the following steps.
+To start the private network, log on to other machines in the network and do the following step.
 
-1. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
-2. Start `geth` with command as shown below.
+1. Start `geth` with command, on different machines, as shown below.
 
 [[_code_start_with_boot_node]]
 [source,bash]
@@ -310,7 +309,7 @@ Running RPC node with `--rpcaddr "0.0.0.0" --rpccorsdomain "\*"` is *discouraged
 
 *NOTE* that, since this topology is exposed to the internet, it is quite likely that, many nodes that are _outside_ this topology will also try to connect to this boot node. Therefore, it may take a while to see the nodes of this topology connect to this boot node. 
 
-3. Log on to any machine and check connected peer.
+2. Log on to any machine and check connected peer.
 
 [[_code_list_of_peers]]
 [source,bash]
@@ -330,9 +329,7 @@ __To do__
 ==== Peering manually
 To set-up the peers manually, the boot node machine is not considered.
 
-1. Log on to Ethereum-Standalone-node and create folder `eth-priv`. 
-2. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
-3. Launch `geth` with console as shown below.
+1. Launch `geth` with console, for different machines, as shown below.
 
 [[_code_start_node_console]]
 .Launch console for node 
@@ -347,7 +344,7 @@ geth --datadir "eth-priv" console --mine console <3>
 <2> On node with RPC port exposed.
 <3> On node set-up for mining. 
 
-4. From the console, show node information.
+2. From the console on standalone node, show node information.
 
 [[_code_show_nodeInfo]]
 .Show node information 
@@ -378,13 +375,12 @@ admin.nodeInfo
 <1> This `enode://` URI will have the `[::]` replaced with the IP address of this machine (see <<_code_show_machineip>>). The resulting `enode://` URI will be used in other machines for peering.
 <2> The network ID is `15` - our choice of network ID for setting up private network.
 
-5. Log on to Ethereum-Mining-Node.
-6. Copy `genesis.json` (see <<_code_genesis_json>> here).
-7. Start `geth` (see <<_code_start_node_console>> here).
-8. Add Ethereum-Standalone-Node as a peer. 
+3. Log on to Ethereum-Mining-Node.
+4. Start `geth` (see <<_code_start_node_console>> here).
+5. Add Ethereum-Standalone-Node as a peer using `enode://` URI for standalone node.
 
 [[_code_add_peer_1]]
-.Start node mining 
+.Start mining node
 [source,bash]
 ----
 geth --datadir "eth-priv" --mine console // <1>
@@ -436,7 +432,7 @@ admin.peers  // <4>
 <5> The `enode://` URI of the connected peer.
 <6> IP address of the connected peer.
 
-This peering can be verified from other machine also. For example, launch the console for the Ethereum-Standalone-Node and look for connected peers as shown below.
+This peering can be verified from the other machine also. For example, launch the console for the Ethereum-Standalone-Node and look for connected peers as shown below.
 
 [[_code_show_connected_peer]]
 .Show connected peer 
