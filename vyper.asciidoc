@@ -1,9 +1,9 @@
 [Vyper]
 [[viper_chap]]
 == Vyper: A contract-oriented programming language
-:revnumber: v1.1
-:revdate: 2018-04-11 (yyyy-mm-dd)
-:revremark: There are sections in this chapter labelled with TODO. The TODO tag identifies pending points which are still being researched and need to be completed.
+:revnumber: v1.2
+:revdate: 2018-04-17 (yyyy-mm-dd)
+:revremark: Updating this chapter with some how-to guides and code examples.Please note that there are still sections in this chapter labelled with TODO. The TODO tag identifies pending points which are still being researched and need to be completed.
 
 ////
 Source: https://github.com/ethereum/vyper/blob/master/README.md
@@ -11,11 +11,24 @@ License: The MIT License (MIT)
 Added by: @tpmccallum
 ////
 
+////
+Source: http://vyper.readthedocs.io/en/latest/
+License: The MIT License (MIT)
+Added by: @tpmccallum
+////
+
+////
+Source: http://solidity.readthedocs.io/en/v0.4.21/common-patterns.html
+License: The MIT License (MIT)
+Added by: @tpmccallum
+////
+
+
 :revnumber: v1.2
 :revdate: 2018-04-12 (yyyy-mm-dd)
 :revremark: This paragraph is complete and has been merged < https://github.com/ethereumbook/ethereumbook/pull/456 >
 
-Vyper is an experimental, contract-oriented programming language which targets the Ethereum Virtual Machine (EVM). Vyper strives to provide superior auditability by simplifying human readable code. One of the principles of Vyper is to make it near virtually impossible for developers to write misleading code. This is done in a number of ways, which we will describe below.
+Vyper is an experimental, contract-oriented programming language which targets the Ethereum Virtual Machine (EVM). Vyper strives to provide superior audit-ability by simplifying human readable code. One of the principles of Vyper is to make it near virtually impossible for developers to write misleading code. This is done in a number of ways, which we will describe below.
 
 :revnumber: v1.1
 :revdate: 2018-04-11 (yyyy-mm-dd)
@@ -26,11 +39,34 @@ Vyper is an experimental, contract-oriented programming language which targets t
 
 This section is a reference for those who are considering developing smart contracts using the Vyper programming language. The section mainly compares and contrasts Vyper against Solidity; outlining, with sound reasoning, why Vyper does NOT include the following traditional Object Oriented Programming (OOP) concepts:
 
-:revnumber: v1.2
-:revdate: 2018-04-12 (yyyy-mm-dd)
-:revremark: TODO - The Modifiers, Class inheritance, Inline assembly, Function overloading and Variable typecasting sections listed below have to be re-worded. They are, by and large, just a cut and paste of the original documentation and also contain TODOs
+:revnumber: v1.3
+:revdate: 2018-04-17 (yyyy-mm-dd)
+:revremark: TODO - The Class inheritance, Inline assembly, Function overloading and Variable typecasting sections listed below have to be re-worded. They are, by and large, just a cut and paste of the original documentation and also contain TODOs
 
-Modifiers:: In Solidity you can do function foo() mod1 { ... }, where mod1 can be defined elsewhere in the code to include a check that is done before execution, a check that is done after execution, some state changes, or possibly other things. Vyper does not have this, because it makes it too easy to write misleading code. mod1 just looks too innocuous for something that could add arbitrary pre-conditions, post-conditions or state changes. Also, it encourages people to write code where the execution jumps around the file, harming auditability. The usual use case for a modifier is something that performs a single check before execution of a program; our recommendation is to simply inline these checks as asserts.
+Modifiers:: In Solidity you can write a function using modifiers. For example, the following function called changeOwner will run the code in a modifier, called onlyBy, as part of its execution. 
+
+[source,javascript]
+----
+function changeOwner(address _newOwner)
+        public
+        onlyBy(owner)
+    {
+        owner = _newOwner;
+    }
+----
+
+As we can see below, the modifier called onlyBy enforces a rule in relation to ownership. Whilst modifiers are powerful (able to change what happens in the body of a function), they can also result in the misleading execution of code. For example, the only way to be sure of the changeOwner function's logic, is to inspect and test the onlyBy modifier every time our code is implemented. Obviously if a modifier is changed in the future, the function which calls it will potentially produce a different result, than originally intended.
+
+[source,javascript]
+----
+modifier onlyBy(address _account)
+{
+    require(msg.sender == _account);
+    _;
+}
+----
+
+By and large, the usual use case for a modifier, is to perform single checks before a function's execution. Given that this is the case, Vyper's recommendation is to do away with modifiers altogether and simply use in-line checks and asserts as part of a function. Doing this will improve audit-ability and readability, due to the fact that the Vyper function will follow a logical in-line sequence in pain sight, rather than having to reference modifier code which has been written elsewhere.
 
 Class inheritance:: TODO explain class inheritance and then paraphrase the following ... "requires people to jump between multiple files to understand what a program is doing, and understand the rules of precedence in case of conflicts (which class's function X is the one that's actually used?). Hence, it makes code too complicated to understand."
 
