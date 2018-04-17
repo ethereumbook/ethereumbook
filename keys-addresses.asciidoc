@@ -1,8 +1,9 @@
 [[keys_addresses]]
 == Keys, Addresses
 
-((("cryptography", "defined")))((("cryptography", see="also keys and addresses")))One of Ethereum's foundational technologies is _cryptography_, which is a branch of mathematics used extensively in computer security. Cryptography means "secret writing" in Greek, but the science of cryptography encompasses more than just secret writing, which is referred to as encryption. Cryptography can also be used to prove knowledge of a secret without revealing that secret (digital signature), or prove the authenticity of data (digital fingerprint). These types of cryptographic proofs are the mathematical tools critical to Ethereum and most blockchain systems and used extensively in Ethereum applications. ((("encryption")))((("encryption", see="also keys and addresses")))Ironically, encryption is not an important part of Ethereum, as its communications and transaction data are not encrypted and do not need to be encrypted to secure the system. In this chapter we will introduce some of the cryptography used in Ethereum to control ownership of funds, in the form of keys and addresses.
+((("cryptography", "defined")))((("cryptography", see="also keys and addresses")))One of Ethereum's foundational technologies is _cryptography_, which is a branch of mathematics used extensively in computer security. Cryptography means "secret writing" in Greek, but the science of cryptography encompasses more than just secret writing, which is referred to as encryption. Cryptography can also be used to prove knowledge of a secret without revealing that secret (digital signature), or prove the authenticity of data (digital fingerprint). These types of cryptographic proofs are the mathematical tools critical to Ethereum and most blockchain systems, being extensively used in Ethereum applications. ((("encryption")))((("encryption", see="also keys and addresses")))Ironically, encryption is not an important part of Ethereum, as its communications and transaction data are not encrypted and do not need to be encrypted to secure the system. In this chapter we will introduce some of the cryptography used in Ethereum to control ownership of funds, in the form of keys and addresses.
 
+[[keys_addresses_intro]]
 === Introduction
 
 Ethereum has two different types of accounts, which can own and control ether: _Externally Owned Accounts_ (EOA) and _Contracts_. In this section we will examine the use of cryptography to establish ownership of ether by externally owned accounts, i.e. private keys.
@@ -18,7 +19,7 @@ In the payment portion of an Ethereum transaction, the intended recipient is rep
 First, we will introduce cryptography and explain the mathematics used in Ethereum. Next, we will look at how keys are generated, stored, and managed.  Finally, we will review the various encoding formats used to represent private and public keys, and addresses.
 
 [[pkc]]
-==== Public Key Cryptography and Cryptocurrency
+=== Public key cryptography and cryptocurrency
 
 ((("keys and addresses", "overview of", "public key cryptography")))((("digital currencies", "cryptocurrency")))Public key cryptography was invented in the 1970s and is a mathematical foundation for computer and information security.
 
@@ -66,7 +67,7 @@ When spending ether, the current owner presents her public key and a signature (
 ****
 
 [[private_keys]]
-==== Private Keys
+=== Private keys
 
 ((("keys and addresses", "overview of", "private key generation")))((("warnings and cautions", "private key protection")))A private key is simply a number, picked at random. Ownership and control over the private key is the root of user control over all funds associated with the corresponding Ethereum address, as well as access to contracts that authorize that address. The private key is used to create signatures that are required to spend ether by proving ownership of funds used in a transaction. The private key must remain secret at all times, because revealing it to third parties is equivalent to giving them control over the ether and contracts secured by that key. The private key must also be backed up and protected from accidental loss. If it's lost, it cannot be recovered and the funds secured by it are lost forever too.
 
@@ -75,7 +76,8 @@ When spending ether, the current owner presents her public key and a signature (
 The Ethereum private key is just a number. You can pick your private keys randomly using just a coin, pencil, and paper: toss a coin 256 times and you have the binary digits of a random private key you can use in an Ethereum wallet. The public key and address can then be generated from the private key.
 ====
 
-===== Generating a private key from a random number
+[[generating_private_key]]
+=== Generating a private key from a random number
 
 The first and most important step in generating keys is to find a secure source of entropy, or randomness. Creating an Ethereum private key is essentially the same as "Pick a number between 1 and 2^256^." The exact method you use to pick that number does not matter as long as it is not predictable or repeatable. Ethereum software uses the underlying operating system's random number generator to produce 256 bits of entropy (randomness). Usually, the OS random number generator is initialized by a human source of randomness, which is why you may be asked to wiggle your mouse around for a few seconds, or press random keys on your keyboard.
 
@@ -88,6 +90,7 @@ More precisely, the range of possible private keys is slightly less than 2^256^.
 
 The following is a randomly generated private key (k) shown in hexadecimal format (256 bits shown as 64 hexadecimal digits, each 4 bits):
 
+[[prv_key_example]]
 ----
 f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
 ----
@@ -100,7 +103,7 @@ The size of Ethereum's private key space, (2^256^) is an unfathomably large numb
 
 
 [[pubkey]]
-==== Public Keys
+=== Public keys
 
 ((("keys and addresses", "overview of", "public key calculation")))((("generator point")))An Ethereum public key is a _point_ on an elliptic curve, meaning it is a set of X and Y coordinates that satisfy the elliptic curve equation.
 
@@ -124,7 +127,7 @@ Before we demonstrate how to generate a public key from a private key, let's loo
 
 
 [[elliptic_curve]]
-==== Elliptic Curve Cryptography Explained
+=== Elliptic curve cryptography explained
 
 ((("keys and addresses", "overview of", "elliptic curve cryptography")))((("elliptic curve cryptography", id="eliptic04")))((("cryptography", "elliptic curve cryptography", id="Celliptic04")))Elliptic curve cryptography is a type of asymmetric or public key cryptography based on the discrete logarithm problem as expressed by addition and multiplication on the points of an elliptic curve.
 
@@ -132,7 +135,7 @@ Before we demonstrate how to generate a public key from a private key, let's loo
 
 [TIP]
 ====
-Ethereum uses the exact same elliptic curve, called +secp256k1+, as bitcoin. That makes it possible to re-use many of the elliptic curve libraries and tools from bitcoin.
+Ethereum uses the exact same elliptic curve, called +secp256k1+, as Bitcoin. That makes it possible to re-use many of the elliptic curve libraries and tools from Bitcoin.
 ====
 
 [[ecc-curve]]
@@ -169,6 +172,7 @@ image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
 
 So, for example, the following is a point Q with coordinates (x,y) that is a point on the +secp256k1+ curve:
 
+[[coordinates_example]]
 ----
 Q = (49790390825249384486033144355916864607616083520101638681403973749255924539515, 59574132161899900045862086493921015780032175291755807399284007721050341297360)
 ----
@@ -191,8 +195,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 ----
 ====
 
-[[ec_math]]
-==== Elliptic Curve Arithmetic Operations
+[[EC_math]]
+=== Elliptic curve arithmetic operations
 
 A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of adding numbers is adding points on the curve. Once we have the addition operator, we can also define multiplication of a point and a whole number, such that it is equivalent to repeated addition.
 
@@ -213,7 +217,7 @@ It turns out that pass:[+] is associative, which means that (A pass:[+] B) pass:
 Now that we have defined addition, we can define multiplication in the standard way that extends addition. For a point P on the elliptic curve, if k is a whole number, then k pass:[*] P = P + P + P + ... + P (k times). Note that k is sometimes confusingly called an "exponent" in this case
 
 [[public_key_derivation]]
-==== Generating a Public Key
+=== Generating a public key
 
 ((("keys and addresses", "overview of", "public key generation")))((("generator point")))Starting with a private key in the form of a randomly generated number _k_, we multiply it by a predetermined point on the curve called the _generator point_ _G_ to produce another point somewhere else on the curve, which is the corresponding public key _K_. The generator point is specified as part of the +secp256k1+ standard and is always the same for all implementations of +secp256k1+ and all keys derived from that curve use the same point _G_:
 
@@ -226,7 +230,7 @@ Now that we have defined addition, we can define multiplication in the standard 
 
 where _k_ is the private key, _G_ is the generator point, and _K_ is the resulting public key, a point on the curve. Because the generator point is always the same for all Ethereum users, a private key _k_ multiplied with _G_ will always result in the same public key _K_. The relationship between _k_ and _K_ is fixed, but can only be calculated in one direction, from _k_ to _K_. That's why an Ethereum address (derived from _K_) can be shared with anyone and does not reveal the user's private key (_k_).
 
-As we described in <<ec_math>>, the multiplication of k * G is equivalent to repeated addition, so G + G + G + ... + G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
+As we described in <<EC_math>>, the multiplication of k * G is equivalent to repeated addition, so G + G + G + ... + G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
 
 [TIP]
 ====
@@ -257,6 +261,7 @@ y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
 
 In Ethereum you may see public keys represented as a hexadecimal serialization of 66 hexadecimal characters (33 bytes). This is adopted from a standard serialization format proposed by the industry consortium Standards for Efficient Cryptography Group (SECG), documented in http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. The standard defines four possible prefixes that can be used to identify points on an elliptic curve:
 
+[[EC_prefix_table]]
 |===
 | Prefix | Meaning | Length (bytes counting prefix) |
 |0x00| Point at Infinity | 1 |
@@ -267,17 +272,20 @@ In Ethereum you may see public keys represented as a hexadecimal serialization o
 
 Ethereum only uses uncompressed public keys, therefore the only prefix that is relevant is (hex) +04+. The serialization concatenated the X and Y coordinates of the public key:
 
+[[concat_coordinates]]
 ----
 04 + X-coordinate (32 bytes/64 hex) + Y coordinate (32 bytes/64 hex)
 ----
 
 Therefore, the public key we calculated in <<example_pubkey>> is serialized as:
 
+[[serialized_pubkey]]
 ----
 046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
 ----
 
-==== Elliptic Curve libraries
+[[EC_lib]]
+=== Elliptic curve libraries
 
 There are a couple of implementations of the secp256k1 elliptic curve that are used in cryptocurrency related projects:
 
@@ -286,7 +294,7 @@ There are a couple of implementations of the secp256k1 elliptic curve that are u
 ((("libsecp256k1 cryptographic library")))libsecp256k1:: Bitcoin Core's libsecp256k1, is a C-language implementation of the secp256k1 elliptic curve and other cryptographic primitives. The libsecp256 of elliptic curve cryptography was written from scratch to replace OpenSSL in Bitcoin Core software, and is considered superior in both performance and security. Find it at: https://github.com/bitcoin-core/secp256k1
 
 [[hash_functions]]
-=== Cryptographic Hash Functions
+=== Cryptographic hash functions
 
 ((("hash function")))Cryptographic hash functions are used throughout Ethereum. In fact, hash functions are used extensively in almost all cryptographic systems, a fact captured by cryptographer Bruce Schneier who said "Much more than encryption algorithms, one-way hash functions are the workhorses of modern cryptography."
 
@@ -322,7 +330,8 @@ The combination of these properties make cryptographic hash functions useful for
 
 We will find many of these in Ethereum, as we progress through the various layers of the system.
 
-==== Ethereum's Cryptographic Hash Function - Keccak-256
+[[keccak256]]
+=== Ethereum's cryptographic hash function - Keccak-256
 
 ((("SHA-3 Hash Function")))((("Keccak Hash Function")))((("Keccak-256")))Ethereum uses the _Keccak-256_ cryptographic hash function in many places. Keccak-256 was designed as a candidate for the SHA-3 Cryptographic Hash Function Competition held in 2007 by the ((("NIST")))National Institute of Science and Technology (NIST). Keccak was the winning algorithm that became standardized as ((("FIPS")))Federal Information Processing Standard (FIPS) ((("FIPS-202")))202 in 2015.
 
@@ -335,7 +344,8 @@ While you may see "SHA3" mentioned throughout Ethereum documents and code, many 
 
 Due to the confusion created by the difference between the hash function used in Ethereum (Keccak-256) and the finalized standard (FIP-202 SHA-3), there is an effort underway to rename all instances of +sha3+ in all code, opcodes and libraries to +keccak256+. See https://github.com/ethereum/EIPs/issues/59[ERC-59] for details.
 
-==== Which Hash Function Am I Using?
+[[which_hash]]
+=== Which hash function am I using?
 
 How can you tell if the software library you are using is FIPS-202 SHA-3 or Keccak-256, if both might be called "SHA3"?
 
@@ -355,7 +365,8 @@ So, regardless of what the function is called, you can test it to see whether it
 
 Next, let's examine the first application of Keccak-256 in Ethereum, which is to produce Ethereum addresses from public keys.
 
-=== Ethereum Addresses
+[[eth_address]]
+=== Ethereum addresses
 
 Ethereum addresses are _unique identifiers_ that are derived from public keys or contracts using a one-way hash function (specifically Keccak-256).
 
@@ -366,6 +377,7 @@ Private Key _k_:
 k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
 ----
 
+[[concat_pubkey]]
 Public Key _K_ (X and Y coordinates concatenated and shown as hex):
 ----
 K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
@@ -378,33 +390,38 @@ It is worth noting that the public key is not formatted with the prefix (hex) 04
 
 We use Keccak-256 to calculate the _hash_ of this public key:
 
+[[calculate_hash]]
 ----
 Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
 Then we keep only the last 20 bytes (the least significant bytes in big-endian), which is our Ethereum address:
 
+[[keep_last_20]]
 ----
 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
 Most often you will see Ethereum addresses with the prefix "0x" that indicates it is a hexadecimal encoding, like this:
 
+[[hex_prefix]]
 ----
 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 ----
 
-=== Ethereum Address Formats
+[[eth_address_format]]
+=== Ethereum address formats
 
 Ethereum addresses are hexadecimal numbers, identifiers derived from the last 20 bytes of the Keccak-256 hash of the public key.
 
-Unlike bitcoin addresses which are encoded in the user interface of all clients to include a built-in checksum to protect against mistyped addresses, Ethereum addresses are presented as raw hexadecimal without any checksum.
+Unlike Bitcoin addresses which are encoded in the user interface of all clients to include a built-in checksum to protect against mistyped addresses, Ethereum addresses are presented as raw hexadecimal without any checksum.
 
 The rationale behind that decision was that Ethereum addresses would eventually be hidden behind abstractions (such as name services) at higher layers of the system and that checksums should be added at higher layers if necessary.
 
 In retrospect, this design choice lead to a number of problems, including the loss of funds due to mistyped addresses and input validation errors. Ethereum name services were developed slower than initially expected and alternative encodings such as ICAP were adopted very slowly by wallet developers.
 
-==== Inter exchange Client Address Protocol (ICAP)
+[[ICAP]]
+==== Inter Exchange Client Address Protocol (ICAP)
 
 The _Inter exchange Client Address Protocol (ICAP)_ is an Ethereum Address encoding that is partly compatible with the International Bank Account Number (IBAN) encoding, offering a versatile, checksummed and interoperable encoding for Ethereum Addresses. ICAP addresses can encode Ethereum Addresses or common names registered with an Ethereum name registry.
 
@@ -418,12 +435,13 @@ ICAP uses the same structure by introducing a non-standard country code "XE" tha
 
 Direct:: Up to 30 alphanumeric character big-endian base-36 integer representing the least significant bits of an Ethereum address. Because this encoding fits less than 155 bits, it only works for Ethereum addresses that start with one or more zero bytes. The advantage is that it is compatible with IBAN, in terms of the field length and checksum. Example: +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 characters long)
 
-Basic:: Same as the "Direct" encoding except that it is 31 characters long. This allows it to encode any Ethereum address, but makes it incompatible with IBAN field validation. Example: +XE18CHDJBPLTBCJ03FE9 O2NS0BPOJVQCU2P+ (35 characters long)
+Basic:: Same as the "Direct" encoding except that it is 31 characters long. This allows it to encode any Ethereum address, but makes it incompatible with IBAN field validation. Example: +XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P+ (35 characters long)
 
 Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. Uses 16 alphanumeric characters, composed of an _asset identifier_ (e.g. ETH), a name service (e.g. XREG) and a 9-character name (e.g. KITTYCATS), which is a human-readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
 
 We can use the +helpeth+ command-line tool to create ICAP addresses. Let's try with our example private key (prefixed with 0x and passed as a parameter to helpeth):
 
+[[create_ICAP]]
 ----
 $ helpeth keyDetails -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
 
@@ -434,6 +452,7 @@ Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83
 
 The +helpeth+ command constructs a hexadecimal Ethereum address as well as an ICAP address for us. The ICAP address for our example key is:
 
+[[ICAP_example]]
 ----
 XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
 ----
@@ -449,7 +468,8 @@ The chances of any Ethereum address starting with a zero byte are 1 in 256. To g
 
 At this time, ICAP is unfortunately only supported by a few wallets.
 
-==== Hex Encoding with Checksum in Capitalization (EIP-55)
+[[EIP55]]
+==== Hex encoding with checksum in capitalization (EIP-55)
 
 Due to the slow deployment of ICAP or name services, a new standard was proposed with Ethereum Improvement Proposal 55 (EIP-55). You can read the details at:
 
@@ -467,6 +487,7 @@ The mixed-capitals encoding is subtle and you may not notice it at first. Our ex
 
 with an EIP-55 mixed-capitalization checksum it becomes:
 
+[[mixed_capitalization]]
 ----
 0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
 ----
@@ -477,6 +498,7 @@ EIP-55 is quite simple to implement. We take the Keccak-256 hash of the lower-ca
 
 1. Hash the lower-case address, without the +0x+ prefix:
 
+[[hash_lower_case_address]]
 ----
 Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
@@ -485,6 +507,7 @@ Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9")
 [start=2]
 1. Capitalize each alphabetic address character if the corresponding hex digit of the hash is greater than or equal to +0x8+. This is easier to show if we line up the address and the hash:
 
+[[capitalize_input]]
 ----
 Address: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
 Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
@@ -494,27 +517,32 @@ Our address contains an alphabetic character +d+ in the fourth position. The fou
 
 Check the resulting mixed-capitals address yourself and see if you can tell which characters were capitalized and which characters they correspond to in the address hash:
 
+[[capitalize_output]]
 ----
 Address: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
 Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
 ----
 
+[[EIP55_error]]
 ==== Detecting an error in an EIP-55 encoded address
 
 Now, let's look at how EIP-55 addresses will help us find an error. Let's assume we have printed out an Ethereum address, which is EIP-55 encoded:
 
+[[correct_address]]
 ----
 0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
 ----
 
 Now let's make a basic mistake in reading that address. The character before the last one is a capital "F". For this example let's assume we misread that as a capital "E". We type in the (incorrect address) into our wallet:
 
+[[incorrect_address]]
 ----
 0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
 ----
 
 Fortunately, our wallet is EIP-55 compliant! It notices the mixed capitalization and attempts to validate the address. It converts it to lower case, and calculates the checksum hash:
 
+[[hash_demo]]
 ----
 Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
 5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
@@ -524,6 +552,7 @@ As you can see, even though the address has only changed by one character (in fa
 
 Now, let's line up the two and check the capitalization:
 
+[[incorrect_capitalization]]
 ----
 001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
 5429b5d9460122fb4b11af9cb88b7bb76d892886...

@@ -3,6 +3,7 @@
 
 [[evm_description]]
 === What is it?
+The part of the protocol that actually handles internal state and computation is referred to as the Ethereum Virtual Machine (EVM). From a practical standpoint, the EVM can be thought of as a large decentralized computer containing millions of objects.
 
 [[evm_comparison]]
 ==== Compare to
@@ -89,7 +90,7 @@ Account State:: Contains the following four components:
 
 * _nonce_: A value representing the number of transactions sent from this respective account.
 
-* _balance_: The number of _Wei_ owned by the account address.
+* _balance_: The number of _wei_ owned by the account address.
 
 * _storageRoot_: A 256-bit hash of the Merkle Patricia Tree's root node.
 
@@ -304,6 +305,7 @@ While the EVM can theoretically solve any problem it receives, gas is what might
 
 For the majority of use cases, however, the EVM can solve any problem provided to it.
 
+[[bytecode_vs_runtime_bytecode]]
 ==== Bytecode vs. Runtime Bytecode
 
 When compiling a contract, you can either get the _contract bytecode_ or the _runtime bytecode_.
@@ -314,6 +316,7 @@ The runtime bytecode, on the other hand, is _only the bytecode that ends up sitt
 
 Let's take the simple `Faucet.sol` contract we created earlier as an example.
 
+[[faucet_example]]
 ----
 // Version of Solidity compiler this program was written for
 pragma solidity ^0.4.19;
@@ -341,19 +344,28 @@ To get the contract bytecode, we would run `solc --bin Faucet.sol`. If we instea
 
 If you compare the output of these commands, you will see that the runtime bytecode is a subset of the contract bytecode. In other words, the runtime bytecode is entirely contained within the contract bytecode.
 
+[[disassembling_the_bytecode]]
 ==== Disassembling the Bytecode
 
-After getting the runtime bytecode of Faucet.sol, we can enter it into Binary Ninja using the Ethersplay plugin to see what the EVM instructions look like.
+Disassembling EVM bytecode is a great way to understand how high-level Solidity acts in the EVM. There are a few disassemblers you can use to do this:
+
+- *Porosity* is a popular open-source decompiler: https://github.com/comaeio/porosity
+- *Ethersplay* is an EVM plugin for Binary Ninja, a disassembler: https://github.com/trailofbits/ethersplay
+- *IDA-Evm* is an EVM plugin for IDA, another disassembler: https://github.com/trailofbits/ida-evm
+
+In this section, we will be using the *Ethersplay* plugin for Binary Ninja.
+
+After getting the runtime bytecode of Faucet.sol, we can feed it into Binary Ninja (after importing the Ethersplay plugin) to see what the EVM instructions look like.
 
 [[Faucet_disassembled]]
 .Disassembling the Faucet runtime bytecode
 image::images/Faucet_disassembled.png["Faucet.sol runtime bytecode disassembled"]
 
+When you send a transaction to a smart contract, the transaction first interacts with that smart contract's **dispatcher**. The dispatcher reads in the data field of the transaction and sends it to the appropriate function.
 
-When you direct a transaction to a smart contract, the first piece of code your transaction interacts with is that contract’s **dispatcher**. The dispatcher takes the transaction data and sends it to the appropriate function. 
+After the familiar MSTORE instruction, we see the following insturctions in our compiled Faucet.sol contract:
 
-After the familiar MSTORE instruction, we see:
-
+[[faucet_instructions]]
 ----
 PUSH1 0x4
 CALLDATASIZE
@@ -362,27 +374,158 @@ PUSH1 0x3f
 JUMPI
 ----
 
-"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size, in bytes, of the calldata of the transaction sent to the contract and pushes it onto the stack. 
+"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size in bytes of the received transaction's calldata and pushes it onto the stack. The current stack looks like as follows:
 
-This next instruction is LT, short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes. 
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|0x4
+|length of calldata from tx (msg.data)
+|======================
 
-Why does the EVM check to see that the calldata of the transaction is at least 4 bytes? Because of how function identifiers work. Each function is identified by the first four bytes of its keccak256 hash. By placing the function's name and what arguments it takes into a keccak256 hash function, you can extract its function identifier. In our contract, we have:
+This next instruction is "LT", short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes.
 
+Why does the EVM check to see that the calldata of the transaction is at least 4 bytes? Because of how function identifiers work. Each function is identified by the first four bytes of its keccak256 hash. By placing the function's name and what arguments it takes into a keccak256 hash function, we can deduce its function identifier. In our contract, we have:
+
+[[faucet_function_identifier]]
 ```
-keccak256("withdraw(uint)") = 0x2e1a7d4d...
+keccak256("withdraw(uint256)") = 0x2e1a7d4d...
 ```
 
-Thus, the function identifier for the "withdraw" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire message you send the smart contract is less than 4 bytes, then there’s no function you could possibly be communicating with. Because we implemented a _fallback function_ in Faucet.sol, code execution will jump to this function when the calldata is less than 4 bytes. 
+Thus, the function identifier for the "withdraw(uint256)" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire data field of the transaction sent to the contract is less than 4 bytes, then there’s no function with which the transaction could possibly be communicating, unless a _fallback function_ is defined. Because we implemented such a fallback function in Faucet.sol, the EVM jumps to this function when the calldata's length is less than 4 bytes.
 
-If the msg.data field is less than 4 bytes, LT pushes 1 onto the stack after popping off the two values it compared. The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. "JUMPI" stands for "jump if", and it works like so:
+If the msg.data field is less than 4 bytes, LT pops off the top two values of the stack and pushes 1 onto it. Otherwise, it pushes 0. In our example, let's assume the msg.data field of the transaciton sent to our contract _was_ less than 4 bytes. 
 
+The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. After this instruction, the stack looks as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|1
+|0x3f
+|======================
+
+The next instruction is "JUMPI", which stands for "jump if". It works like so:
+
+[[faucet_jump_instruction_text]]
 ----
 jumpi(label, cond) // Jump to "label" if "cond" is true
 ----
 
-In our case, "label" is offset 0x3f, where our fallback function lives, and "cond" is 1 from the result of the LT instruction. The contract thus jumps to offset 0x3f, where only a "STOP" instruction follows, because our fallback function does not contain anything inside of it. Had we not implemented a fallback function, the contract would have thrown an exception at this point instead.
+In our case, "label" is 0x3f, which is where our fallback function lives in our smart contract. The "cond" argument is 1, which was from the result of the LT instruction earlier. To put this entire sequenece into words, the contract jumps to the fallback function if the transaction data is less than 4 bytes.
 
+At 0x3f, only a "STOP" instruction follows, because though we declared a fallback function, we kept it empty. Had we not implemented a fallback function, the contract would throw an exception instead.
 
 [[Faucet_jumpi_instruction]]
 .JUMPI instruction leading to fallback function
 image::images/Faucet_jumpi_instruction.png["JUMPI instruction leading to fallback function"]
+
+Let's examine the central block of the dispatcher. Assuming we received calldata that was greater than 4 bytes in length, the "JUMPI" instruction would not jump to the fallback function. Instead, code execution would follow with the next instructions:
+
+[[faucet_instructions]]
+----
+PUSH1 0x0
+CALLDATALOAD
+PUSH29 0x1000000...
+SWAP1
+DIV
+PUSH4 0xffffffff
+AND
+DUP1
+PUSH4 0x2e1a7d4d
+EQ
+PUSH1 0x41
+JUMPI
+----
+
+"PUSH1 0x0" pushes 0 onto the stack, which is otherwise empty. "CALLDATALOAD" accepts as an argument an index within the calldata sent to the smart contract and reads 32 bytes from that index, like so:
+
+[[faucet_calldataload_instruction_text]]
+----
+calldataload(p) // call data starting from position p (32 bytes)
+----
+
+Since 0 was the index passed to it from the PUSH1 0x0 command, CALLDATALOAD reads 32 bytes of calldata starting at byte 0, and then pushes it to the top of the stack (after popping the original 0x0). After the "PUSH29 0x1000000..." instruction, the stack looks as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|32 bytes of calldata starting at byte 0
+|0x1000000... (29 bytes in length)
+|======================
+
+"SWAP1" switches the top element on the stack with the _ith_ element after it. In this case, it swaps 0x1000000... with the calldata. The new stack looks as follows: 
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|0x1000000... (29 bytes in length)
+|32 bytes of calldata starting at byte 0
+|======================
+
+The next instruction is "DIV", which works as follows:
+
+[[faucet_div_instruction_text]]
+----
+div(x, y) // x / y
+----
+
+In this case, x = 32 bytes of calldata starting at byte 0, and y = 0x100000000... (29 bytes total). Can you think of why the dispatcher is doing the division? Here's a hint: we read 32 bytes from calldata earlier starting at index 0. The first four bytes of that calldata is the function identifier. 
+
+
+The 0x100000000.... we pushed earlier is 29 bytes long, consisting of a 1 at the beginning, followed by all 0s. Dividing our 32 bytes of calldata by this 0x100000000.... will leave us only the _topmost 4 bytes_ of our calldataload starting at index 0. These four bytes – the first four bytes in calldataload starting at index 0 – are the function identifier, and this is how the EVM extracts that field.
+
+If this part isn’t clear to you, think of it like this: in base~10~, 1234000 / 1000 = 1234. In base~16~, this is no different. Instead of every place being a multiple of 10, it is a multiple of 16. Just as dividing by 10^3^ (1000) in our smaller example kept only the topmost digits, dividing our 32 byte base~16~ value by 16^29^ does the same.
+
+The result of the DIV (the function identifier) gets pushed on the stack, and our new stack is as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|function identifier sent in msg.data
+|======================
+
+Since the "PUSH4 0xffffffff" and "AND" instructions are redundant, we can ignore them entirely, as the stack will remain the same after they are done. The "DUP1" instruction duplicates the 1^st^ item on the stack, which is the function identifier. The next instruction, "PUSH4 0x2e1a7d4d", pushes the calculated function identifier of the withdraw(uint256) function onto the stack. The stack now looks as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|function identifier sent in msg.data
+|function identifier sent in msg.data
+|0x2e1a7d4d
+|======================
+
+The next instruction, "EQ", pops off the top two items of the stack and compares them. This is where the dispatcher does its main job: it compares whether the function identifier sent in the msg.data field of the transaction matches that of withdraw(uint256). If they are equal, EQ pushes 1 onto the stack, which will ultimately get used to jump to the withdraw function. Otherwise, EQ pushes 0 onto the stack.
+
+Assuming the transaction sent to our contract indeed began with the function identifier for withdraw(uint256), our new stack looks as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|function identifier sent in msg.data
+|1
+|======================
+
+Next, we have "PUSH1 0x41", which is the address at which the withdraw(uint256) function lives in the contract. After this instruction, the stack looks as follows:
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|function identifier sent in msg.data
+|1
+|0x41
+|======================
+
+The JUMPI instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have "jumpi(0x41, 1)", which tells the EVM to execute the jump to the location of the withdraw(uint256) function.
+
+[[evm_tools_references]]
+=== EVM Tools References
+* [ByteCode To Opcode Disassembler](https://etherscan.io/opcode-tool) (Useful to check/debug if compilation ran with integrity and for reverse-engineering purposes if the source code wasn't published)
