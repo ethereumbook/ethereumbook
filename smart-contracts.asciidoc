@@ -129,7 +129,7 @@ include::code/Solidity/Faucet.sol[]
 
 ==== Compiling with the Solidity compiler (solc)
 
-The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument. Now, we will use the Solidity compiler on the command-line to compile our contract directly.
+Now, we will use the Solidity compiler on the command-line to compile our contract directly. The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument.
 
 We use the +--bin+ and +--optimize+ arguments of +solc+ to produce an optimized binary of our example contract:
 
@@ -168,26 +168,119 @@ include::code/Solidity/Faucet2.sol[]
 
 Adding a version pragma is a best practice, as it avoids problems with mismatched compiler and language versions. We will explore other best practices and continue to improve the +Faucet+ contract throughout this chapter.
 
-=== Exploring Solidity
+=== Using Solidity
 
-==== Organizing your code
+In this section, we will look at some of the capabilities of the Solidity language. As we mentioned in <<intro>> our first contract example was very simple and also flawed in many different ways. We'll gradually improve that example, while learning how to use Solidity. This won't be a comprehensive Solidity tutorial however, as Solidity is quite complex and rapidly evolving. We'll cover the basics and give you enough of a foundation to be able to explore the rest on your own. The complete documentation for Solidity can be found at:
 
-https://solidity.readthedocs.io/en/develop/style-guide.html
-
+https://solidity.readthedocs.io/en/latest/
 
 ==== Data types
 
+First, let's look at some of the basic data types offered in Solidity:
+
+boolean (bool):: Boolean value, +true+ or +false+, with logical operators pass:[! (not)], pass:[&& (and)], pass:[|| (or)], pass:[== (equal)], pass:[!= (not equal)].
+
+integers (int/uint):: Signed (int) and unsigned (uint) integers, defined in increments of 8 bits from u/int8 to u/int256. Without a size suffix, they are set to 256 bits.
+
+fixed point (fixed/ufixed):: Fixed point numbers, defined as u/fixedMxN where M is the size in bits (increments of 8) and N is the number of decimals after the point.
+
+address:: A 20-byte Ethereum address. The +address+ object has members +balance+ (returns the account balance) and +transfer+ (transfer ether to the account).
+
+byte arrays (fixed):: Fixed size arrays of bytes, defined as +bytes1+ through +bytes32+
+
+byte arrays (dynamic):: Dynamic size arrays of bytes, defined as +bytes+ or +string+
+
+enums:: User-defined type for enumerating discrete values.
+
+structs:: User-defines data containers for grouping variables.
+
+mappings:: Hash lookup tables for +key => value+ pairs.
+
+So far, in our +Faucet+ contract example, we used +uint+ (which is an alias for +uint256+), for the +withdraw_amount+ variable. We also indirectly used an +address+ variable, which is +msg.sender+. We will use some more of these data types in our examples, throughout this chapter.
+
 ==== Contract definition
 
-==== Function types
+Solidity's main data type is the _contract_ object, which is defined at the top of our +Faucet+ example. Similar to any object in an object-oriented language, the contract is a container that includes data and methods.
 
-==== Function returns
+Solidity's contract object supports _inheritance_, which is a mechanism for extending a base contract with additional functionality. To use inheritance, specify a parent contract with the keyword +is+:
+
+----
+contract Child is Parent {
+}
+----
+
+With this construct, the +Child+ contract inherits all the methods, functionality, and variables of +Parent+. Solidity also supports multiple inheritance, which can be specified by comma-separated contract names after the keyword +is+:
+
+----
+contract Child is Parent1, Parent2 {
+}
+----
+
+Solidity offers two other objects that are similar to +contract+:
+
+interface:: An interface definition is structured exactly a contract, except none of the functions are defined. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
+
+library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
+
+
+==== Functions
+
+Within a contract, we define functions that can be called by an EOA transaction or another contract. In our +Faucet+ example, we have two functions: +withdraw+ and the (unnamed) _fallback_ function.
+
+Functions are defined as follows:
+
+
+*function* +FunctionName+([_Parameters_])
+{nbsp}
+{*public*|*private*|*internal*|*external*}
+{nbsp}
+[*pure*|*constant*|*view*|*payable*]
+{nbsp}
+[*returns* (pass:[<]_return types_pass:[>])]
+
+Let's look at each of these components:
+
+FunctionName:: Defines the name of the function, which is used to call the function from a transaction (EOA), other contract, or from within the same contract. One function in each contract may be defined without a name, in which case it is the _fallback_ function, which is called when no other function is named. The fallback function cannot have any arguments or return anything.
+
+Parameters:: Following the name, we specify the arguments that must be passed to the function.
+
+The next set of keywords (public, private, internal, external) specify the function's _visibility_:
+
+public:: Public is the default and such functions can be called by other contracts, EOA transactions or from within the contract. In our +Faucet+ example, both functions are defined as public.
+
+external:: External functions are like public, except they cannot be called from within the contract, unless they are prefixed with the keyword +this+.
+
+internal:: Internal functions are only "visible" within the contract, cannot be called by another contract or EOA transaction. They can be called by derived contracts (those that inherit them).
+
+private:: Private functions are like internal functions but they cannot be called by derived contracts (that inherit them).
+
+Keep in mind, the terms +internal+ and +private+ are somewhat misleading. Any function or data inside a contract is always _visible_ on the public blockchain, meaning that anyone can see the code or data. The keywords above only affect how and when a function can be _called_.
+
+The next set of keywords (pure, constant, view, payable) affect the behavior of the function:
+
+constant/view:: A function marked as a _view_, promises not to modify any state. The term _constant_ is an alias for _view_ that will be deprecated. At this time, the compiler does not enforce the _view_ modifier, only producing a warning, but this is expected to become an enforced keyword in v0.5 of Solidity.
+
+pure:: A pure function is one that neither reads nor write any variables. It can only operate on arguments and return data, without reference to any stored data. Pure functions are intended to encourage declarative-style programming without side-effects or state.
+
+payable:: A payable function is one that can accept incoming payments. Functions without payable will reject incoming payments, unless they originate in a coinbase (mining income) or as the destination of +SELFDESTRUCT+ (contract termination). In those cases, a contract cannot prevent incoming payments, due to design decisions in the EVM.
+
+As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
+
 
 ==== Exceptions
 
 ==== Modifier functions
 
 ==== Events
+
+==== Organizing your code
+
+First, let's look at some stylistic conventions that will help you write Solidity programs that are consistent and easy to read. There's a style guide for Solidity here:
+
+https://solidity.readthedocs.io/en/develop/style-guide.html
+
+
+
 
 
 
