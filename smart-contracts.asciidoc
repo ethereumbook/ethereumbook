@@ -228,6 +228,54 @@ interface:: An interface definition is structured exactly a contract, except non
 
 library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
 
+==== Contract lifecycle (constructor and selfdstruct)
+
+Contracts can be created with a transaction from an EOA, or from another contract. When a contract is created, it also runs the _constructor_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional. In fact, our +Faucet+ example has no constructor function.
+
+Constructors can be specified in two ways. Up to Solidity v.0.4.21, the constructor is a function whose name matches the name of the contract:
+
+[[old_constructor_style]]
+.Constructor function prior to Solidity v0.4.22
+----
+contract MEContract {
+	function MEContract() {
+		// This is the constructor
+	}
+}
+----
+
+The difficulty with this format is that if the contract name is changed and the constructor function name is not changed, it is no longer a constructor. This can cause some pretty nasty, unexpected and difficult to notice bugs. Imagine for example if the constructor is setting the "owner" of the contract for purposes of control. Not only will it not set the owner at the time of contract creation, but may also be "callable" like a normal function, allowing any third party to hijack the contract and become the "owner" after contract creation.
+
+To address the potential problems with constructor functions being based on having an identical name as the contract, Solidity v0.4.22 introduces a +constructor+ keyword that operates like a constructor function but does not have a name. Renaming the contract does not affect the constructor at all. Also, it is easier to identify which function is the constructor. It looks like this:
+
+----
+pragma ^0.4.22
+contract MEContract {
+	constructor () {
+		// This is the constructor
+	}
+}
+----
+
+So, to summarize, a contract's lifecycle starts with a creation transaction from an EOA or other contract. If there is a constructor, it is called from the same creation transaction and can initialize the state of the contract as it is being created.
+
+The other end of the contract's lifecycle is _contract destruction_. contracts are destroyed by a special EVM opcode called +SEFDESTRUCT+. It used to be name +SUICIDE+, but that name was deprecated due to the negative associations of the word. In Solidity, this opcode is exposed as a high level built-in function called +selfdestruct+, which takes one argument: the address to receive any balance remaining in the contract account. It looks like this:
+
+----
+selfdestruct(address recipient);
+----
+
+==== Adding a constructor and selfdestruct to our +Faucet+ example
+
+The +Faucet+ example contract we introduced in <<intro>> does not have any constructor or selfdestruct functions. It is an eternal contract that cannot be removed from the blockchain. Let's change that, by adding a constructor and selfdestruct function. We probably want the selfdestruct to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable, called +owner+. Our constructor sets the owner variable and the selfdestruct function will first check that the owner called it.
+
+First our constructor:
+
+----
+
+----
+
+
 ==== Functions
 
 Within a contract, we define functions that can be called by an EOA transaction or another contract. In our +Faucet+ example, we have two functions: +withdraw+ and the (unnamed) _fallback_ function.
