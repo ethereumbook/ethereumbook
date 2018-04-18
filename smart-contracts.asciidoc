@@ -107,11 +107,15 @@ solc, the solidity compiler commandline interface
 Version: 0.4.21+commit.dfe3193c.Linux.g++
 ----
 
+There are a number of other ways to install Solidity, depending on your Operating System and requirements, including compiling from the source code directly. For more information see:
+
+https://github.com/ethereum/solidity
+
 ==== Development environment
 
 To develop in Solidity, you can use any text editor and +solc+ on the command-line. However, you might find that some text editors designed for development, such as Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
 
-There are also web-based development environments, such as Remix, which we saw in <<intro>>.
+There are also web-based development environments, such as Remix IDE (https://remix.ethereum.org/), and EthFiddle (https://ethfiddle.com/).
 
 Use the tools that make you productive. In the end, Solidity programs are just plain-text files. While fancy editors and development environments can make things a bit easier, you don't need anything more than a simple text editor, such as vim (Linux/Unix), TextEdit (MacOS) or even NotePad (Windows). Simply save your program source code with a +.sol+ extension and it will be recognized by the Solidity compiler as a Solidity program.
 
@@ -126,6 +130,8 @@ Our first attempt looked like this:
 ----
 include::code/Solidity/Faucet.sol[]
 ----
+
+We will build on this first example, starting in <<make_it_better>>.
 
 ==== Compiling with the Solidity compiler (solc)
 
@@ -216,33 +222,29 @@ contract Child is Parent1, Parent2 {
 }
 ----
 
-Solidity offers two other objects that are similar to +contract+:
+Solidity offers two other objects that are similar to a contract:
 
-interface:: An interface definition is structured exactly a contract, except none of the functions are defined. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
+interface:: An interface definition is structured exactly a contract, except none of the functions are defined, they are only declared. This type of function declaration is often called a _stub_, as it tells you about the arguments and return types of all the functions, without any implementation. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
 
 library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
-
 
 ==== Functions
 
 Within a contract, we define functions that can be called by an EOA transaction or another contract. In our +Faucet+ example, we have two functions: +withdraw+ and the (unnamed) _fallback_ function.
 
-Functions are defined as follows:
+Functions are defined with the following syntax:
 
-
-*function* +FunctionName+([_Parameters_])
-{nbsp}
+*function*{nbsp}FunctionName([_parameters_])
 {*public*|*private*|*internal*|*external*}
-{nbsp}
 [*pure*|*constant*|*view*|*payable*]
-{nbsp}
-[*returns* (pass:[<]_return types_pass:[>])]
+pass:[[]_modifiers_]
+[*returns*{nbsp}(pass:[<]_return types_pass:[>])]
 
 Let's look at each of these components:
 
 FunctionName:: Defines the name of the function, which is used to call the function from a transaction (EOA), other contract, or from within the same contract. One function in each contract may be defined without a name, in which case it is the _fallback_ function, which is called when no other function is named. The fallback function cannot have any arguments or return anything.
 
-Parameters:: Following the name, we specify the arguments that must be passed to the function.
+parameters:: Following the name, we specify the arguments that must be passed to the function, with their names and types. In our +Faucet+ example we defined +uint withdraw_amount+ as the only argument to the +withdraw+ function.
 
 The next set of keywords (public, private, internal, external) specify the function's _visibility_:
 
@@ -266,10 +268,48 @@ payable:: A payable function is one that can accept incoming payments. Functions
 
 As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
 
+==== Function modifiers
+
+Solidity offers a special type of function which is called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier functions are most often used to create conditions that apply to many functions withing a contract. Let's look at a simple example:
+
+[[function_modifier_onlyowner]]
+.onlyOwner function modifier
+----
+modifier onlyOwner {
+    require(msg.sender == owner);
+    _;
+}
+----
+
+In <<function_modifier_onlyowner>> we see the declaration of a function modifier, named +onlyOwner+. This function modifier sets a condition on any function that it modifies, requiring that the address stored as the +owner+ of the contract is the same as the address of the transaction's +msg.sender+. This is the basic design patter for access control, allowing only the owner of a contract to execute any function that has the +onlyOwner+ modifier.
+
+You may have noticed that our function modifier has a peculiar syntactic "placeholder" in it, an underscore followed by a semicolon (+pass:[_;]+). This placeholder is replaced by the function that is being modified. Essentially, the modifier is "wrapped around" the modified function, placing its code in the location identified by the underscore character.
+
+To apply a modifier, you add its name to the function declaration. For example, if we have a function that terminates the contract and want to make sure that only the owner of the contract can call it, we declare it like this:
+
+----
+function terminate() public onlyOwner {
+    selfdestruct(owner);
+}
+----
+
+The function modifier's name (+onlyOwner+) is after the keyword +public+ and tells us that the +terminate+ function is modified by the +onlyOwner+ modifier. Essentially you can read this as "Only the owner can terminate this contract". In practice, the resulting code is equivalent to "wrapping" the code from +onlyOwner+ around +terminate+.
+----
+function terminate() public {
+    require(msg.sender == owner);
+	selfdestruct(owner);
+}
+----
+
+Function modifiers are an extremely useful tool because they allow us to write preconditions for functions and apply them consistently, making the code easier to read and, as a result, easier to audit for security problems. They are most often used for access control, as in the example <<function_modifier_onlyowner>>, but are quite versatile and can be used for a variety of other purposes.
+
+Inside a modifier, you can access all the symbols (variables and arguments) visible to the modified function. However, the inverse is not true: you cannot access any of the modifier's variable inside the modified function.
+
+We will apply modifiers to +Faucet+ in <<make_it_better>>.
 
 ==== Exceptions
 
-==== Modifier functions
+
 
 ==== Events
 
