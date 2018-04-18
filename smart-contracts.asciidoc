@@ -228,53 +228,6 @@ interface:: An interface definition is structured exactly a contract, except non
 
 library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
 
-==== Contract lifecycle (constructor and selfdstruct)
-
-Contracts can be created with a transaction from an EOA, or from another contract. When a contract is created, it also runs the _constructor_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional. In fact, our +Faucet+ example has no constructor function.
-
-Constructors can be specified in two ways. Up to Solidity v.0.4.21, the constructor is a function whose name matches the name of the contract:
-
-[[old_constructor_style]]
-.Constructor function prior to Solidity v0.4.22
-----
-contract MEContract {
-	function MEContract() {
-		// This is the constructor
-	}
-}
-----
-
-The difficulty with this format is that if the contract name is changed and the constructor function name is not changed, it is no longer a constructor. This can cause some pretty nasty, unexpected and difficult to notice bugs. Imagine for example if the constructor is setting the "owner" of the contract for purposes of control. Not only will it not set the owner at the time of contract creation, but may also be "callable" like a normal function, allowing any third party to hijack the contract and become the "owner" after contract creation.
-
-To address the potential problems with constructor functions being based on having an identical name as the contract, Solidity v0.4.22 introduces a +constructor+ keyword that operates like a constructor function but does not have a name. Renaming the contract does not affect the constructor at all. Also, it is easier to identify which function is the constructor. It looks like this:
-
-----
-pragma ^0.4.22
-contract MEContract {
-	constructor () {
-		// This is the constructor
-	}
-}
-----
-
-So, to summarize, a contract's lifecycle starts with a creation transaction from an EOA or other contract. If there is a constructor, it is called from the same creation transaction and can initialize the state of the contract as it is being created.
-
-The other end of the contract's lifecycle is _contract destruction_. contracts are destroyed by a special EVM opcode called +SEFDESTRUCT+. It used to be name +SUICIDE+, but that name was deprecated due to the negative associations of the word. In Solidity, this opcode is exposed as a high level built-in function called +selfdestruct+, which takes one argument: the address to receive any balance remaining in the contract account. It looks like this:
-
-----
-selfdestruct(address recipient);
-----
-
-==== Adding a constructor and selfdestruct to our +Faucet+ example
-
-The +Faucet+ example contract we introduced in <<intro>> does not have any constructor or selfdestruct functions. It is an eternal contract that cannot be removed from the blockchain. Let's change that, by adding a constructor and selfdestruct function. We probably want the selfdestruct to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable, called +owner+. Our constructor sets the owner variable and the selfdestruct function will first check that the owner called it.
-
-First our constructor:
-
-----
-
-----
-
 
 ==== Functions
 
@@ -316,9 +269,86 @@ payable:: A payable function is one that can accept incoming payments. Functions
 
 As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
 
+
+==== Contract constructor and selfdstruct
+
+There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional. In fact, our +Faucet+ example has no constructor function.
+
+Constructors can be specified in two ways. Up to Solidity v.0.4.21, the constructor is a function whose name matches the name of the contract:
+
+[[old_constructor_style]]
+.Constructor function prior to Solidity v0.4.22
+----
+contract MEContract {
+	function MEContract() {
+		// This is the constructor
+	}
+}
+----
+
+The difficulty with this format is that if the contract name is changed and the constructor function name is not changed, it is no longer a constructor. This can cause some pretty nasty, unexpected and difficult to notice bugs. Imagine for example if the constructor is setting the "owner" of the contract for purposes of control. Not only will it not set the owner at the time of contract creation, but may also be "callable" like a normal function, allowing any third party to hijack the contract and become the "owner" after contract creation.
+
+To address the potential problems with constructor functions being based on having an identical name as the contract, Solidity v0.4.22 introduces a +constructor+ keyword that operates like a constructor function but does not have a name. Renaming the contract does not affect the constructor at all. Also, it is easier to identify which function is the constructor. It looks like this:
+
+----
+pragma ^0.4.22
+contract MEContract {
+	constructor () {
+		// This is the constructor
+	}
+}
+----
+
+So, to summarize, a contract's lifecycle starts with a creation transaction from an EOA or other contract. If there is a constructor, it is called from the same creation transaction and can initialize the state of the contract as it is being created.
+
+The other end of the contract's lifecycle is _contract destruction_. contracts are destroyed by a special EVM opcode called +SEFDESTRUCT+. It used to be name +SUICIDE+, but that name was deprecated due to the negative associations of the word. In Solidity, this opcode is exposed as a high level built-in function called +selfdestruct+, which takes one argument: the address to receive any balance remaining in the contract account. It looks like this:
+
+----
+selfdestruct(address recipient);
+----
+
+==== Adding a constructor and selfdestruct to our +Faucet+ example
+
+The +Faucet+ example contract we introduced in <<intro>> does not have any constructor or selfdestruct functions. It is an eternal contract that cannot be removed from the blockchain. Let's change that, by adding a constructor and selfdestruct function. We probably want the selfdestruct to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable, called +owner+. Our constructor sets the owner variable and the selfdestruct function will first check that the owner called it.
+
+First our constructor:
+
+----
+// Version of Solidity compiler this program was written for
+pragma solidity ^0.4.22;
+
+// Our first contract is a faucet!
+contract Faucet {
+
+	address owner;
+
+	// Initialize Faucet contract: set owner
+	constructor() {
+		owner = msg.sender;
+	}
+
+[...]
+----
+
+We've changed the pragma directive to specify v0.4.22 as the minimum version for this example, as we are using the new constructor keyword that only exists as of v.0.4.22 of Solidity. Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes the intention and purpose clear.
+
+Then, our constructor, which runs as part of the contract creation transaction, assigns the address from +msg.sender+ to the +owner+ variable. We've used the +msg.sender+ in the +withdraw+ function to identify the origin of the withdrawal request. In the constructor however, the +msg.sender+ is the EOA or contract address that signed the contract creation transaction. We know this is the case _because_ this is a constructor function: it only runs once and only as a result of the contract creation transaction.
+
+Ok, now we can add a function to destroy the contract. We need to make sure that only the owner can run this function, so we will use a +require+ statement to control access. Here's how it will look:
+
+----
+// Contract destructor
+function destroy() public {
+	require(msg.sender == owner);
+	selfdestruct(owner);
+}
+----
+
+If anyone other calls this +destroy+ function from an address other than +owner+, it will fail. But if the same address stored in +owner+ by the constructor calls it, the contract will selfdestruct and send any remaining balance to the +owner+ address.
+
 ==== Function modifiers
 
-Solidity offers a special type of function which is called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier functions are most often used to create conditions that apply to many functions withing a contract. Let's look at a simple example:
+Solidity offers a special type of function which is called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier functions are most often used to create conditions that apply to many functions withing a contract. We have an access control statement already, in our +destroy+ function. Let's create a function modifier that expresses that condition:
 
 [[function_modifier_onlyowner]]
 .onlyOwner function modifier
@@ -331,29 +361,23 @@ modifier onlyOwner {
 
 In <<function_modifier_onlyowner>> we see the declaration of a function modifier, named +onlyOwner+. This function modifier sets a condition on any function that it modifies, requiring that the address stored as the +owner+ of the contract is the same as the address of the transaction's +msg.sender+. This is the basic design patter for access control, allowing only the owner of a contract to execute any function that has the +onlyOwner+ modifier.
 
-You may have noticed that our function modifier has a peculiar syntactic "placeholder" in it, an underscore followed by a semicolon (+pass:[_;]+). This placeholder is replaced by the function that is being modified. Essentially, the modifier is "wrapped around" the modified function, placing its code in the location identified by the underscore character.
+You may have noticed that our function modifier has a peculiar syntactic "placeholder" in it, an underscore followed by a semicolon (+pass:[_;]+). This placeholder is replaced by the code of the function that is being modified. Essentially, the modifier is "wrapped around" the modified function, placing its code in the location identified by the underscore character.
 
-To apply a modifier, you add its name to the function declaration. For example, if we have a function that terminates the contract and want to make sure that only the owner of the contract can call it, we declare it like this:
+To apply a modifier, you add its name to the function declaration. More than one modifier can be applied to a function, as a comma-separated list, applied in the sequence they are declared.
+
+Let's re-write our +destroy+ function to use the +onlyOwner+ modifier:
 
 ----
-function terminate() public onlyOwner {
+function destroy() public onlyOwner {
     selfdestruct(owner);
 }
 ----
 
-The function modifier's name (+onlyOwner+) is after the keyword +public+ and tells us that the +terminate+ function is modified by the +onlyOwner+ modifier. Essentially you can read this as "Only the owner can terminate this contract". In practice, the resulting code is equivalent to "wrapping" the code from +onlyOwner+ around +terminate+.
-----
-function terminate() public {
-    require(msg.sender == owner);
-	selfdestruct(owner);
-}
-----
+The function modifier's name (+onlyOwner+) is after the keyword +public+ and tells us that the +destroy+ function is modified by the +onlyOwner+ modifier. Essentially you can read this as "Only the owner can destroy this contract". In practice, the resulting code is equivalent to "wrapping" the code from +onlyOwner+ around +destroy+.
 
 Function modifiers are an extremely useful tool because they allow us to write preconditions for functions and apply them consistently, making the code easier to read and, as a result, easier to audit for security problems. They are most often used for access control, as in the example <<function_modifier_onlyowner>>, but are quite versatile and can be used for a variety of other purposes.
 
-Inside a modifier, you can access all the symbols (variables and arguments) visible to the modified function. However, the inverse is not true: you cannot access any of the modifier's variable inside the modified function.
-
-We will apply modifiers to +Faucet+ in <<make_it_better>>.
+Inside a modifier, you can access all the symbols (variables and arguments) visible to the modified function. In this case, we can access the +owner+ variable, which is declared within the contract. However, the inverse is not true: you cannot access any of the modifier's variables inside the modified function.
 
 ==== Exceptions
 
