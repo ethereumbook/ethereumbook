@@ -104,7 +104,7 @@ INFO [03-19|22:44:24] Imported new state entries               count=205 elapsed
 
 If messages are visible, then `geth` has started successfully. To stop `geth`, simply hit `Ctrl-C`.
 
-By default, `geth` will run for main network, and uses the folder `$HOME/ethereum/.geth` to store the downloaded blocks. To work with private nodes, `geth` needs to be configured for a new directory needs to be created - preferably under `$HOME`. Multiple such directories maybe created when working with multiple private networks.
+By default, `geth` will run for main network, and uses the folder `$HOME/ethereum/.geth` to store the downloaded blocks. To work with private nodes, `geth` needs to be configured for a new directory; created preferably under `$HOME`. Multiple such directories maybe created when working with multiple private networks.
 
 [source,bash]
 ----
@@ -246,7 +246,7 @@ Note that, the block hash values are the same in 3 and 6 above. This means, curr
 
 [[_anchor_peering]]
 === Peering
-The nodes of an Ethereum network communicate with each other to exchange transactions and newly mined blocks. For effective communication, the nodes should know about each other. This is called as _peering_ and can be acheived in three ways:
+The nodes of an Ethereum network communicate with each other to exchange transactions and newly mined blocks. This is called as _peering_ and can be acheived in three ways:
 
 . Boot node - <<_anchor_peering_bootnode>>
 . Static nodes - <<_anchor_peering_static_nodes>>
@@ -254,12 +254,14 @@ The nodes of an Ethereum network communicate with each other to exchange transac
 
 [[_anchor_peering_bootnode]]
 ==== Peering with `bootnode`
-When installing Ethereum (refer <<_anchor_install_ethereum_client>>), `bootnode`, and few other standalone tools, are also installed. With the genesis state (refer <<_anchor_node_configuration>>) defined for all machines, peer discovery via boot node is done with the following command.
+When installing Ethereum (refer <<_anchor_install_ethereum_client>>), `bootnode`, and few other standalone tools, are also installed. With the genesis state (refer <<_anchor_node_configuration>>) defined for all machines, peer discovery via boot node is done with the following commands. 
 
-This command needs to be run on the Ethereum-Boot-Node machine only.
+Refer these links for more information on boot nodes.
 
 https://github.com/ethereum/go-ethereum/wiki/Setting-up-private-network-or-local-cluster#setup-bootnode
 https://ethereum.stackexchange.com/a/8955/3137
+
+These commands need to be run on the Ethereum-Boot-Node machine only.
 
 [[_code_start_bootnode]]
 ----
@@ -282,12 +284,11 @@ To know the IP address of this machine run the command below.
 curl http://checkip.amazonaws.com/
 ----
 
-Note that, this set-up had not considered a detailed topology of the machines to be used for the private network. Therefore, the IP address to be used has been chosen as the public IP address. Depending on the choice of topology, it could be IP address in a private subnet, etc. 
+Note that, this set-up has not considered a detailed topology of the machines to be used for a private network. Therefore, the IP address to be used has been chosen as the public IP address. Depending on the choice of topology, it could be IP address in a private subnet, etc. 
 
-To start the private network, log on to other machines in the network and run the following steps.
+To start the private network, log on to other machines in the network and do the following step.
 
-1. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
-2. Start `geth` with command as shown below.
+1. Start `geth` with command, on different machines, as shown below.
 
 [[_code_start_with_boot_node]]
 [source,bash]
@@ -308,7 +309,7 @@ Running RPC node with `--rpcaddr "0.0.0.0" --rpccorsdomain "\*"` is *discouraged
 
 *NOTE* that, since this topology is exposed to the internet, it is quite likely that, many nodes that are _outside_ this topology will also try to connect to this boot node. Therefore, it may take a while to see the nodes of this topology connect to this boot node. 
 
-3. Log on to any machine and check connected peer.
+2. Log on to any machine and check connected peer.
 
 [[_code_list_of_peers]]
 [source,bash]
@@ -322,19 +323,20 @@ At this point, the private network has three machines peering with each other, v
 [[_anchor_peering_static_nodes]]
 ==== Peering with static nodes
 
+__To do__
+
 [[_anchor_peering_manual]]
 ==== Peering manually
 To set-up the peers manually, the boot node machine is not considered.
 
-1. Log on to Ethereum-Standalone-node and create folder `eth-priv`. 
-2. Copy `genesis.json` (see <<_code_genesis_json>> here) into `eth-priv` folder.
-3. Launch `geth` with console as shown below.
+1. Launch `geth` with console, for different machines, as shown below.
 
 [[_code_start_node_console]]
+.Launch console for node 
 [source,bash]
 ----
 geth --datadir "eth-priv" console // <1>
-geth --datadir "eth-priv" console --rpc --rpcapi "web3,eth" --rpcaddr "0.0.0.0" --rpccorsdomain "*" consoled   // 2
+geth --datadir "eth-priv" console --rpc --rpcapi "web3,eth" --rpcaddr "0.0.0.0" --rpccorsdomain "*" console   // 2
 geth --datadir "eth-priv" console --mine console <3>
 ----
 
@@ -342,9 +344,10 @@ geth --datadir "eth-priv" console --mine console <3>
 <2> On node with RPC port exposed.
 <3> On node set-up for mining. 
 
-4. From the console, show node information.
+2. From the console on standalone node, show node information.
 
 [[_code_show_nodeInfo]]
+.Show node information 
 [source,bash]
 ----
 admin.nodeInfo
@@ -372,12 +375,12 @@ admin.nodeInfo
 <1> This `enode://` URI will have the `[::]` replaced with the IP address of this machine (see <<_code_show_machineip>>). The resulting `enode://` URI will be used in other machines for peering.
 <2> The network ID is `15` - our choice of network ID for setting up private network.
 
-5. Log on to Ethereum-Mining-Node.
-6. Copy `genesis.json` (see <<_code_genesis_json>> here).
-7. Start `geth` (see <<_code_start_node_console>> here).
-8. Add Ethereum-Standalone-Node as a peer. 
+3. Log on to Ethereum-Mining-Node.
+4. Start `geth` (see <<_code_start_node_console>> here).
+5. Add Ethereum-Standalone-Node as a peer using `enode://` URI for standalone node.
 
 [[_code_add_peer_1]]
+.Start mining node
 [source,bash]
 ----
 geth --datadir "eth-priv" --mine console // <1>
@@ -429,9 +432,10 @@ admin.peers  // <4>
 <5> The `enode://` URI of the connected peer.
 <6> IP address of the connected peer.
 
-This peering can be verified from other machine also. For example, launch the console for the Ethereum-Standalone-Node and look for connected peers as shown below.
+This peering can be verified from the other machine also. For example, launch the console for the Ethereum-Standalone-Node and look for connected peers as shown below.
 
 [[_code_show_connected_peer]]
+.Show connected peer 
 [source,bash]
 ----
 geth --datadir "eth-priv" console // <1>
