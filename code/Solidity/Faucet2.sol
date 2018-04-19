@@ -1,3 +1,6 @@
+// Version of Solidity compiler this program was written for
+pragma solidity ^0.4.19;
+
 // Our first contract is a faucet!
 contract Faucet {
 
