@@ -202,7 +202,26 @@ structs:: User-defines data containers for grouping variables.
 
 mappings:: Hash lookup tables for +key => value+ pairs.
 
+In addition to the data types above, Solidity also offers a variety of value literals that can be used to calculate different units:
+
+time units:: The units +seconds+, +minutes+, +hours+, and +days+ can be used as a suffix, converting to multiples of the base unit +seconds+.
+
+ether units:: The units +wei+, +finney+, +szabo+, and +ether+ can be used as a suffix, converting to multiples of the base unit +wei+.
+
 So far, in our +Faucet+ contract example, we used +uint+ (which is an alias for +uint256+), for the +withdraw_amount+ variable. We also indirectly used an +address+ variable, which is +msg.sender+. We will use some more of these data types in our examples, throughout this chapter.
+
+Let's use one of the unit multipliers, to improve the readability of our example contract +Faucet+. In the +withdraw+ function we limit the maximum withdrawal, expressing the amount limit as +wei+, the base unit of ether:
+
+----
+require(withdraw_amount <= 100000000000000000);
+----
+
+That's not very easy to read, so we can improve our code by using the unit multiplier +ether+, to express the value in ether instead of wei:
+
+----
+require(withdraw_amount <= 0.1 ether);
+----
+
 
 ==== Contract definition
 
@@ -213,7 +232,6 @@ Solidity offers two other objects that are similar to a contract:
 interface:: An interface definition is structured exactly a contract, except none of the functions are defined, they are only declared. This type of function declaration is often called a _stub_, as it tells you about the arguments and return types of all the functions, without any implementation. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
 
 library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
-
 
 ==== Functions
 
@@ -254,7 +272,6 @@ pure:: A pure function is one that neither reads nor write any variables. It can
 payable:: A payable function is one that can accept incoming payments. Functions without payable will reject incoming payments, unless they originate in a coinbase (mining income) or as the destination of +SELFDESTRUCT+ (contract termination). In those cases, a contract cannot prevent incoming payments, due to design decisions in the EVM.
 
 As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
-
 
 ==== Contract constructor and selfdstruct
 
