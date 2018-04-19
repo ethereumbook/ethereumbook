@@ -437,7 +437,31 @@ By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract no
 
 ==== Error handling (assert, require, revert)
 
+A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+.
+
+When a contract terminates with an error, all the state changes (changes to variables, balances etc.) are reverted, all the way up the chain of contract calls, if more than one contract were called. This ensures that transactions are atomic, meaning they either complete successfully or have no effect on state and are reverted entirely.
+
+The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those conditions.
+
+We've used +require+ in our function modifier +onlyOwner+, to test that the message sender is the owner of the contract:
+
+----
+require(msg.sender == owner);
+----
+
+The +require+ function acts as a _gate condition_, preventing execution of the rest of the function and producing an error if it is not satisfied.
+
+As of Solidity v.0.4.22, +require+ can also include a helpful text message, that can be used to show the reason for the error. The error message is recorded in the transaction log. So we can improve our code, by adding an error message in our +require+ function:
+
+----
+require(msg.sender == owner, "Only the contract owner can call this function");
+----
+
+The +revert+ and +throw+ functions, stop execution of the contract and revert any state changes. The  +throw+ function is obsolete and will be removed in future versions of Solidity - you should use +revert+ instead. The +revert+ function can also take an error message as the only argument, which is recorded in the transaction log.
+
 ==== Calling other contracts (call, send, delegatecall, callcode)
+
+
 
 ==== Events
 
