@@ -11,6 +11,7 @@ However, many blockchain applications require access to extrinsic information. T
 * Capital markets data: pricing baskets of tokenized assets/securities
 * Benchmark reference data: incorporating interest rates into smart financial derivatives
 * Static/pseudo-static data: security identifiers, country codes, currency codes
+* Time and Interval data: Event triggers grounded in precise SI time measurement
 * Weather data: insurance premium calculation based on a weather forecast
 * Political events: prediction market resolution
 * Sporting events: prediction market resolution and fantasy sports contracts
@@ -66,7 +67,20 @@ So far, we have only discussed oracles in the context of requesting and deliveri
 
 Oraclize provides a service that allows decentralized applications to request the output of a computation performed in a sandboxed AWS virtual machine. The AWS instance is instantiated from a Docker file, an archive of which is stored on IPFS. On request, Oraclize retrieves this archive using its hash, and then initializes and executes the Docker application on AWS, passing any arguments that are provided to the application as environment variables. The Docker application performs the calculation, subject to a time constraint, and must print the output to standard output where it can be retrieved by Oraclize and returned to the decentralized application. Oraclize currently offer this service on an auditable t2.micro AWS instance.
 
-TrueBit [7] is a solution for scalable and verifiable off-chain computation. It introduces a system of solvers and verifiers, who are incentivized to perform computations and verification of those computations, respectively. Should a solution be challenged, an iterative verification process on subsets of the computation are performed on-chain—a kind of 'verification game'. The game proceeds through a series of rounds, each recursively checking a smaller and smaller subset of the computation. The game eventually reaches a final round, where the challenge is sufficiently trivial such that the judges–Ethereum miners–can make a final ruling on whether the challenge was justified, on-chain. In effect, TrueBit is an implementation of a computation market, allowing decentralized applications to pay for verifiable computation to be performed outside of the network, but relying on Ethereum to enforce the rules of the verification game. In theory, this enables trustless smart contracts to securely perform any computation task. 
+The concept of a 'cryptlet' as a standard for verifiable oracle truths has been formalized as part of Microsoft's wider ESC Framework [7].  Cryptlets execute within an encrypted capsule that abstracts away the infrastructure, such as I/O, and has the CryptoDelegate attached so incoming and outgoing messages are signed, validated, and proven automatically.  Cryptlets support distributed transactions so that contract logic can take on complex multi-step, multi-blockchain and external system transactions in an ACID manner.  This allows developers to create portable, isolated, and private resolutions of the truth for use in smart-contracts.  Cryptlets follow the format below:
+
+----
+public class SampleContractCryptlet : Cryptlet 
+  { 
+        public SampleContractCryptlet(Guid id, Guid bindingId, string name, string address, IContainerServices hostContainer, bool contract)  
+            : base(id, bindingId, name, address, hostContainer, contract) 
+        { 
+            MessageApi = 
+                new CryptletMessageApi(GetType().FullName, new SampleContractConstructor()) 
+----
+
+
+TrueBit [8] is a solution for scalable and verifiable off-chain computation. It introduces a system of solvers and verifiers, who are incentivized to perform computations and verification of those computations, respectively. Should a solution be challenged, an iterative verification process on subsets of the computation are performed on-chain—a kind of 'verification game'. The game proceeds through a series of rounds, each recursively checking a smaller and smaller subset of the computation. The game eventually reaches a final round, where the challenge is sufficiently trivial such that the judges–Ethereum miners–can make a final ruling on whether the challenge was justified, on-chain. In effect, TrueBit is an implementation of a computation market, allowing decentralized applications to pay for verifiable computation to be performed outside of the network, but relying on Ethereum to enforce the rules of the verification game. In theory, this enables trustless smart contracts to securely perform any computation task. 
 
 A broad range of applications exist for systems like TrueBit, ranging from machine learning to verification of any proof-of-work. An example of the latter is the Doge-Ethereum bridge, which utilizes TrueBit to verify Dogecoin’s proof-of-work, Scrypt, a memory-hard and computationally intensive function that cannot be computed within the Ethereum block gas limit. By performing this verification on TrueBit, it has been possible to securely verify Dogecoin transactions within a smart contract on Ethereum's Rinkeby testnet.
 
@@ -75,18 +89,18 @@ A broad range of applications exist for systems like TrueBit, ranging from machi
 
 The mechanisms outlined above all describe centralized oracle systems reliant on trusted authorities. While they should suffice for many applications, they do however represent central points of failure in the Ethereum network. A number of schemes have been proposed around the idea of decentralized oracles as a means of ensuring data availability, and the creation of a network of individual data providers with an on-chain data aggregation system. 
 
-ChainLink [8] have proposed a decentralized oracle network consisting of three key smart contracts: a reputation contract, an order-matching contract, an aggregation contract, and an off-chain registry of data providers. The reputation contract is used to keep track of data provider's performance. Scores in the reputation contract are used to populate the off-chain registry. The order-matching contract selects bids from oracles using the reputation contract. It then finalizes a Service Level Agreement (SLA), which includes query parameters and the number of oracles required. This means that the purchaser needn’t transact with the individual oracles directly. The aggregation contract collects responses, submitted using a commit/reveal scheme, from multiple oracles, calculates the final collective result of the query, and feeds the results back into the reputation contract.
+ChainLink [9] have proposed a decentralized oracle network consisting of three key smart contracts: a reputation contract, an order-matching contract, an aggregation contract, and an off-chain registry of data providers. The reputation contract is used to keep track of data provider's performance. Scores in the reputation contract are used to populate the off-chain registry. The order-matching contract selects bids from oracles using the reputation contract. It then finalizes a Service Level Agreement (SLA), which includes query parameters and the number of oracles required. This means that the purchaser needn’t transact with the individual oracles directly. The aggregation contract collects responses, submitted using a commit/reveal scheme, from multiple oracles, calculates the final collective result of the query, and feeds the results back into the reputation contract.
 
 One of the main challenges with such a decentralized approach is the formulation of the aggregation function. ChainLink proposes calculating a weighted response, allowing a validity score to be reported for each oracle response. Detecting an 'invalid' score here is non-trivial since it relies on the premise that outlying data points, measured by deviations from responses provided by peers, are incorrect. Calculating a validity score based on the location of an oracle response amongst a distribution of responses risks penalizing correct answers over average ones. Therefore, ChainLink offers a standard set of aggregation contracts, but also allow customized aggregation contracts to be specified.
 
-A related idea is the SchellingCoin protocol [10]. Here, multiple participants report values and the median is taken as the 'correct' answer. Reporters are required to provide a deposit which is redistributed in favor of values that are closer to the median, therefore incentivizing the reporting of values that are similar to others. A common value, also known as the Schelling Point, which respondents might consider as the natural and obvious target around which to coordinate is expected to be close to the actual value.
+A related idea is the SchellingCoin protocol [11]. Here, multiple participants report values and the median is taken as the 'correct' answer. Reporters are required to provide a deposit which is redistributed in favor of values that are closer to the median, therefore incentivizing the reporting of values that are similar to others. A common value, also known as the Schelling Point, which respondents might consider as the natural and obvious target around which to coordinate is expected to be close to the actual value.
 
-Teusch recently proposed a new design for a decentralized off-chain data availability oracle [9]. This design leverages a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store, and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system allows storage to be reused by releasing data after the registration period ends.
+Teusch recently proposed a new design for a decentralized off-chain data availability oracle [12]. This design leverages a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store, and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system allows storage to be reused by releasing data after the registration period ends.
 
 [[oracle_client_interfaces_in_solidity_sec]]
 === Oracle client interfaces in Solidity
 
-Below is a Solidity example demonstrating how Oraclize can be used to fetch the temperature in London from WolframAlpha [11]: 
+Below is a Solidity example demonstrating how Oraclize can be used to fetch the temperature in London from WolframAlpha [13]: 
 
 ----
 pragma solidity ^0.4.11;
@@ -127,7 +141,7 @@ To integrate with Oraclize, the contract ExampleOraclizeContract must be a child
 
 The temperature query is performed in the update() function. In order to perform the query, Oraclize requires the payment of a small fee in ether. This is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by the usingOraclize contract, passing in the response value and a queryId argument which be used to implement different behaviors, for example, when there are multiple pending calls from Oraclize.
 
-Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [12]. Below is the interface for the oracle, and a client contract that will make the request:
+Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [14]. Below is the interface for the oracle, and a client contract that will make the request:
 
 ----
 pragma solidity ^0.4.11;
@@ -188,7 +202,7 @@ contract OracleB1IQClient {
 The data request is initiated using the initRequest() function, which allows the query type (in this example, a request for an intraday price) to be specified in addition to two callback functions. 
 This returns a uint256 identifier which can then be used to provide additional arguments. The addArgumentToRequestString() function is used to specify the RIC (Reuters Instrument Code), here for IBM stock, and addArgumentToRequestUint() allows the timestamp to be specified. Now, passing in an alias for block.timestamp will retrieve the current price for IBM. The request is then executed by the executeRequest() function. Once the request has been processed, the oracle contract will call the onSuccess callback function with the query identifier, allowing the resulting data to be retrieved, else the onFailure callback with an error code in the event of retrieval failure. The available fields that can be retrieved on success include open, high, low, close (OHLC) and bid/ask prices.
 
-Reality Keys [13] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
+Reality Keys [15] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
 
 ----
 wget -qO- https://www.realitykeys.com/api/v1/blockchain/new --post-data="chain=XBT&address=1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX&which_total=total_received&comparison=ge&value=1000&settlement_date=2015-09-23&objection_period_secs=604800&accept_terms_of_service=current&use_existing=1"
@@ -228,13 +242,14 @@ uint256 result = uint256(signed_value) / base_unit;
 [4] https://bitcointalk.org/index.php?topic=301538.0 +
 [5] http://hackingdistributed.com/2017/06/15/town-crier/ +
 [6] https://www.cs.cornell.edu/~fanz/files/pubs/tc-ccs16-final.pdf +
-[7] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
-[8] https://link.smartcontract.com/whitepaper +
-[9] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
-[10] https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/ +
-[11] http://www.wolframalpha.com +
-[12] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum +
-[13] https://www.realitykeys.com
+[7] https://github.com/Azure/azure-blockchain-projects/blob/master/bletchley/EnterpriseSmartContracts.md
+[8] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
+[9] https://link.smartcontract.com/whitepaper +
+[10] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
+[11] https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/ +
+[12] http://www.wolframalpha.com +
+[13] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum +
+[14] https://www.realitykeys.com
 
 [[other_links_sec]]
 === Other links
