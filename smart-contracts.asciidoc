@@ -208,20 +208,6 @@ So far, in our +Faucet+ contract example, we used +uint+ (which is an alias for 
 
 Solidity's main data type is the _contract_ object, which is defined at the top of our +Faucet+ example. Similar to any object in an object-oriented language, the contract is a container that includes data and methods.
 
-Solidity's contract object supports _inheritance_, which is a mechanism for extending a base contract with additional functionality. To use inheritance, specify a parent contract with the keyword +is+:
-
-----
-contract Child is Parent {
-}
-----
-
-With this construct, the +Child+ contract inherits all the methods, functionality, and variables of +Parent+. Solidity also supports multiple inheritance, which can be specified by comma-separated contract names after the keyword +is+:
-
-----
-contract Child is Parent1, Parent2 {
-}
-----
-
 Solidity offers two other objects that are similar to a contract:
 
 interface:: An interface definition is structured exactly a contract, except none of the functions are defined, they are only declared. This type of function declaration is often called a _stub_, as it tells you about the arguments and return types of all the functions, without any implementation. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
@@ -378,6 +364,76 @@ The function modifier's name (+onlyOwner+) is after the keyword +public+ and tel
 Function modifiers are an extremely useful tool because they allow us to write preconditions for functions and apply them consistently, making the code easier to read and, as a result, easier to audit for security problems. They are most often used for access control, as in the example <<function_modifier_onlyowner>>, but are quite versatile and can be used for a variety of other purposes.
 
 Inside a modifier, you can access all the symbols (variables and arguments) visible to the modified function. In this case, we can access the +owner+ variable, which is declared within the contract. However, the inverse is not true: you cannot access any of the modifier's variables inside the modified function.
+
+==== Contract inheritance
+
+Solidity's contract object supports _inheritance_, which is a mechanism for extending a base contract with additional functionality. To use inheritance, specify a parent contract with the keyword +is+:
+
+----
+contract Child is Parent {
+}
+----
+
+With this construct, the +Child+ contract inherits all the methods, functionality, and variables of +Parent+. Solidity also supports multiple inheritance, which can be specified by comma-separated contract names after the keyword +is+:
+
+----
+contract Child is Parent1, Parent2 {
+}
+----
+
+Contract inheritance allows us to write our contracts in such as way as to achieve modularity, extensibility and reuse. We start with contracts that are simple and implement the most generic capabilities, then extend them by inheriting those capabilities in more specialized contracts.
+
+In our +Faucet+ contract, we introduced the constructor and destructor, together with access control for an owner, assigned on construction. Those capabilities are quite generic: many contracts will have them. We can defined them as generic contracts, then use inheritance to extend them to the +Faucet+ contract.
+
+We start by defining a base contract +owned+, which has an +owner+ variable, setting it in the contract's constructor:
+
+----
+contract owned {
+	address owner;
+
+	// Contract constructor: set owner
+	constructor() {
+		owner = msg.sender;
+	}
+
+	// Access control modifier
+	modifier onlyOwner {
+	    require(msg.sender == owner);
+	    _;
+	}
+}
+----
+
+Next, we define a base contract +mortal+, which inherits +owned+:
+
+----
+contract mortal is owned {
+	// Contract destructor
+	function destroy() public onlyOwner {
+		selfdestruct(owner);
+	}
+}
+----
+
+As you can see, the +mortal+ contract can utilize the +onlyOwner+ function modifier, defined in +owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +owned+. Inheritance makes each contract simpler and focused on the specific functionality of its class, allowing us to manage the details in a modular way.
+
+Now we can further extend the +owned+ contract, inheriting its capabilities in +Faucet+:
+
+----
+contract Faucet is mortal {
+    // Give out ether to anyone who asks
+    function withdraw(uint withdraw_amount) public {
+        // Limit withdrawal amount
+        require(withdraw_amount <= 100000000000000000);
+        // Send the amount to the address that requested it
+        msg.sender.transfer(withdraw_amount);
+    }
+    // Accept any incoming amount
+    function () public payable {}
+}
+----
+
+By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and destroy functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code re-use and modularity make our code cleaner, easier to read, and easier to audit.
 
 ==== Exceptions
 
