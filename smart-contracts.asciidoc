@@ -476,7 +476,25 @@ require(msg.sender == owner, "Only the contract owner can call this function");
 
 The +revert+ and +throw+ functions, stop execution of the contract and revert any state changes. The  +throw+ function is obsolete and will be removed in future versions of Solidity - you should use +revert+ instead. The +revert+ function can also take an error message as the only argument, which is recorded in the transaction log.
 
+Certain conditions in a contract will generate errors regardless of whether we explicitly check for them. For example, in our +Faucet+ contract, we don't check whether there is enough ether to satisfy a withdrawal request. That's because the +transfer+ function will fail with an error and revert the transaction if there is insufficient balance to make the transfer:
+
+.The transfer function will fail, if there is insufficient balance
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+However, it might be better to check explicitly, to give a clear error message on failure. We can do that by adding a require statement before the transfer:
+
+----
+require(this.balance >= withdraw_amount,
+	"Insufficient balance in faucet for withdrawal request")
+msg.sender.transfer(withdraw_amount);
+----
+
+Additional error checking code like this will increase gas consumption slightly, but it offers better error reporting than if omitted. Striking the right balance between gas consumption and verbose error checking is something you will need to decide based on the expected use of your contract. In the case of a +Faucet+ intended for a testnet, we'd probably err on the side of extra reporting even if it costs more gas. Perhaps for a mainnet contract we'd choose to be frugal on gas instead.
+
 ==== Calling other contracts (call, send, delegatecall, callcode)
+
 
 
 
