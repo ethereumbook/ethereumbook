@@ -495,7 +495,120 @@ Additional error checking code like this will increase gas consumption slightly,
 
 ==== Calling other contracts (call, send, delegatecall, callcode)
 
+Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method.
 
+===== Creating a new instance
+
+The safest way to call another contract is if you create that other contract yourself. That way, you are certain of its interfaces and behavior. To do this, you can simply instantiate it, using the keyword +new+, as with any object-oriented language. In Solidity, the keyword +new+ will create the contract on the blockchain and return an object that you can use to reference it. Let's say you want to create and call a +Faucet+ contract, from within another contract called +Token+:
+
+
+----
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+This mechanism for contract construction ensures that you know the exact type of contract and its interface. The contract +Faucet+ must be defined within the scope of +Token+, which you can do with an +import+ statement, if the definition is in another file:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+The +new+ keyword can also accept optional parameters to specify the +value+ of ether transfer on creation, and arguments passed to the new contract's constructor, if any:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+}
+----
+
+If we endow the created +Faucet+ with some ether, we can also then call the +Faucet+ functions, which operate just like a method call. In this example, we call the +destroy+ function of +Faucet+, from within the +destroy+ function of +Token+:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+
+	function destroy() ownerOnly {
+		_faucet.destroy();
+	}
+}
+----
+
+===== Addressing an existing instance
+
+Another way we can use to call a contract, is to cast the address of an existing instance of the contract. With this method, we apply a known interface to an existing instance. It is therefore critically important that we know, for sure, that the instance we are addressing is in fact of the same type as we assume. Let's look at an example:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+
+	Faucet _faucet;
+
+	constructor(address _f) {
+		_faucet = Faucet(_f);
+		_faucet.withdraw(0.1 ether)
+	}
+}
+----
+
+Here, we take an address provided as an argument to the contructor and we cast it as a +Faucet+ object. This is much riskier than the previous mechanism, because we don't in fact know whether that address is in fact a +Faucet+ object. When we call +withdraw+, we are assuming that it accepts the same arguments and executes the same code as our +Faucet+ declaration, but we can't be sure. For all we know, the +withdraw+ function at this address could execute something completely different from what we expect, even if it is named the same. Using addresses passed as input and casting them into specific objects is therefore much more dangerous than creating the contract ourselves.
+
+===== Raw call, delegatecall
+
+Solidity offers some even more "low-level" functions for calling other contracts. These correspond diretly to EVM opcodes of the same name and allow us to construct a contract-to-contract call manually. As such, they represent the most flexible *and* the most dangerous mechanisms for calling other contracts.
+
+Here's the same example, using a +call+ method:
+
+----
+contract Token is mortal {
+	constructor(address _f) {
+		_f.call("withdraw", 0.1 ether);
+	}
+}
+----
+
+As you can see, this type of +call+, is a _blind_ call into a function, very much like constructing a raw transaction, only from within a contract's context. It can expose our contract to a number of security risks, most importantly _reentrancy_, which we will talk about in more detail in <<reentrancy>>. The +call+ function will return false if there is a problem, so we can evaluate the return value, for error handling:
+
+----
+contract Token is mortal {
+	constructor(address _f) {
+		if !(_f.call("withdraw", 0.1 ether)) {
+			revert("Withdrawal from faucet failed");
+		}
+	}
+}
+----
+
+Another variant of +call+ is +delegatecall+, previously +callcode+. The +callcode+ method will be deprecated soon, so it should not be used.
+
+////
+TODO: Explain context of calling contract First
+////
 
 
 ==== Events
