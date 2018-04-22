@@ -267,6 +267,7 @@ block.number:: The current block number (height).
 
 block.timestamp:: The timestamp placed in the current block by the miner, since Unix epoch (seconds).
 
+[[solidity_address_object]]
 ===== Address object
 
 Any address, either passed as an input, or cast from a contract object, has a number of attributes and methods:
@@ -297,7 +298,7 @@ Solidity offers two other objects that are similar to a contract:
 
 interface:: An interface definition is structured exactly a contract, except none of the functions are defined, they are only declared. This type of function declaration is often called a _stub_, as it tells you about the arguments and return types of all the functions, without any implementation. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
 
-library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
+library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +delegatecall+ method (see <<solidity_address_object>>).
 
 ==== Functions
 
@@ -672,12 +673,45 @@ contract Token is mortal {
 
 Another variant of +call+ is +delegatecall+, previously +callcode+. The +callcode+ method will be deprecated soon, so it should not be used.
 
-////
-TODO: Explain context of calling contract First
-////
+As mentioned in <<solidity_address_object>>, a +delegatecall+ is different from a +call+, in that the +msg+ context does not change. For example, whereas a +call+ changes the value of +msg.sender+ to be the calling contract, a +delegatecall+ keeps the same +msg.sender+ as it is in the calling contract. Essentially, +delegatecall+ runs the code of another contract inside the context of the current contract. It is most often used to invoke code from a +library+.
 
+The +delegate+ call should be used with great caution. It can have some unexpected effects, especially if the contract you call was not designed as a library.
 
 ==== Events
+
+Events are Solidity constructs that facilitate the production of transaction logs. When a transaction completes (successfully or not), it produces a _transaction receipt_, as we will see in <<evm>>. The transaction receipt contains _log_ entries that provide information about the actions that occurred during the execution of the transaction. Events are the Solidity high-level objects that are used to construct these logs.
+
+Events are especially useful in lightweight clients and DApps, which can "watch" for specific events and report them to the user-interface, or make a change in the state of the application to reflect an event in an underlying contract.
+
+Event objects take arguments that are serialized and recorded in the transaction logs, in the blockchain. You can supply the keyword +indexed+, before an argument, to make the value part of an indexed table (hash table) that can be searched or filtered by an application.
+
+We have not added any events in our +Faucet+ example, so far, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+ respectively. First, we define the events, in the +Faucet+ contract:
+
+----
+contract Faucet is mortal {
+	event Withdrawal(address indexed to, uint amount)
+	event Deposit(address indexed from, uint amount)
+
+	[...]
+}
+----
+
+We've chosen to make the addresses +indexed+, to allow searching and filtering in any user interface built to access our +Faucet+.
+
+Next, we use the +emit+ keyword to incorporate the event data in the transaction logs:
+
+----
+// Give out ether to anyone who asks
+function withdraw(uint withdraw_amount) public {
+    [...]
+    msg.sender.transfer(withdraw_amount);
+    emit Withdrawal(msg.sender, withdraw_amount);
+}
+// Accept any incoming amount
+function () public payable {
+    emit Deposit(msg.sender, msg.value);
+}
+----
 
 ==== Organizing your code
 
