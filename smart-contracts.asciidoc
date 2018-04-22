@@ -222,6 +222,72 @@ That's not very easy to read, so we can improve our code by using the unit multi
 require(withdraw_amount <= 0.1 ether);
 ----
 
+==== Predefined global variables and functions
+
+When a contract is executed in the EVM, it has access to a narrow set of global objects. These include the +block+, +msg+ and +tx+ objects. In addition, Solidity exposes a number of EVM opcodes as predefined Solidity functions. In this section we will examine the variables and functions you can access from within a smart contract in Solidity.
+
+===== Calling transaction/message context
+
+msg:: The +msg+ object is the transaction (EOA originated) or message (contract originated) that launched the contract execution. It contains a number of useful attributes:
+
+msg.sender:: We've already used this one. It represents the address that originated the message. If our contracts was called by an EOA transaction, then this is the address that signed the transaction.
+
+msg.value:: The value of ether sent with the message.
+
+msg.gas:: The amount of gas left in the message that called our contract. It has been deprecate and will be replaced with the gasleft() function as of Solidity v0.4.21.
+
+msg.data:: The data payload of the message that called our contract.
+
+msg.sig:: The first four bytes of the data payload, which is the function selector.
+
+[NOTE]
+====
+Whenever a contract calls another contract, the values of all the attributes of +msg+ change, to reflect the new caller's information. The only exception to this is the +delegatecall+ function which runs the code of another contract/library within the original +msg+ context.
+====
+
+===== Transaction context
+
+tx.gasprice:: The gas price in the calling Transaction
+
+tx.origin:: The full call stack from the originating (EOA) transaction.
+
+===== Block context
+
+block:: The block object contains information about the current block.
+
+block.blockhash(blockNumber):: The block hash of the specified block number, up to the last 256 blocks. Deprecated and replaced with the +blockhash()+ function in Solidity v.0.4.22.
+
+block.coinbase:: The address of the miner of the current block.
+
+block.difficulty:: The difficulty (Proof-of-Work) of the current block.
+
+block.gaslimit:: The total block gas limit for the current block.
+
+block.number:: The current block number (height).
+
+block.timestamp:: The timestamp placed in the current block by the miner, since Unix epoch (seconds).
+
+===== Address object
+
+Any address, either passed as an input, or cast from a contract object, has a number of attributes and methods:
+
+address.balance:: The balance of the address, in wei. For example, the current contract balance is +address(this).balance+.
+
+address.transfer(amount):: Transfer the amount (wei) to this address, throwing an exception on any error. We used this function in our +Faucet+ example as a method on the +msg.sender+ address, as +msg.sender.transfer()+.
+
+address.send(amount):: Similar to +transfer+ above, only instead of throwing an exception, it returns +false+ on error.
+
+address.call():: Low-level call function, can construct an arbitrary message with +value+, +data+ payloads. Returns +false+ on error.
+
+address.delegatecall():: Low-level call function, keeps the +msg+ context of the calling contract, returns +false+ on error.
+
+===== Built-in functions
+
+addmod, mulmod:: Modulo addition and multiplication. For example, +addmod(x,y,k)+ calculates +pass:[(x + y) % k]+.
+
+keccak256, sha256, sha3, ripemd160:: Functions to calculate hashes with various standard hash algorithms.
+
+ecrecover:: Recover the address used to sign a message, from the signature.
 
 ==== Contract definition
 
