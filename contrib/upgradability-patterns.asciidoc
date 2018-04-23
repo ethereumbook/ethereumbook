@@ -1,0 +1,353 @@
+////
+Sources: https://github.com/SylTi/zeppelin-solidity/commit/ca947d89ada67b09c3590b754ea7a83e624e93d2
+https://blog.zeppelin.solutions/proxy-libraries-in-solidity-79fbe4b970fd
+License: MIT
+Added By: @SylTi
+////
+
+[[upgradable_smart_contracts_chapter]]
+== Upgradable Smart Contracts
+
+[[why]]
+=== Advantages of using Upgradable smart contracts
+
+Ethereum smart contracts are immutable and as such can't be modified once they are deployed. If you have a bug, or a missing feature once the smart contract is in production, this can become a very serious problem. Think of the DAO, and Parity hacks to name a few.
+
+Deploying a new version of the contract and importing it's data to a new address, in the cases where it's even a possible solution to the problem, is very costly if not outright impossible due to the gasPrice and gasLimit limiting the amount of data than a contract can copy during its creation.
+
+Fortunately you can use programming patterns proactively inside your smart contracts to remove those limitations from occurring later on.
+
+Those patterns can be regrouped into 2 family: Eternal Storage and Proxy libraries.
+
+
+=== Drawbacks
+Have we have seen, having the possibility of upgrading smart contract is a useful property but it is also a double-edged sword. It negates the promise of "Code is Law" by reintroducing a central point of failure and new attack vectors.
+
+* The owner of the contract could lose the private key or get it stolen
+* Anyone in possession of the private key can update the contract to a malicious version to steal users funds
+* Increase the complexity of writing smart contracts
+
+This first two vectors can be reduced by using a multiSig contract or some kind of voting scheme to control the private key which in turn also increase complexity and could introduce new risk (like the DAO). 
+
+[[eternal_storage]]
+=== Eternal Storage 
+An Eternal Storage is a smart contract that only store data on behalf of another one. It doesn't do anything else, to reduce the attack surface to a minimum.
+This is the simplest upgradability pattern. It decouples the storage of data from the smart contract logic allowing to simply deploy a new smart contract and make it point to the same storage. The contract containing the logic must have a way to forward the ownership of the EternalStorage and of the Ethers/tokens to the new version.
+
+Advantages: 
+
+* Very simple to implement
+
+Drawbacks:
+
+* The contract address will change for each version.
+
+==== Implementation
+
+*EternalStorage*
+[source:Eternal Storage, solidity]
+----
+pragma solidity ^0.4.13;
+
+import "../lifecycle/Pausable.sol";
+
+/**
+ * @title Contract that store data in behalf of another contract
+ * @author SylTi inspired from colony blog post https://blog.colony.io/writing-upgradeable-contracts-in-solidity-6743f0eecc88
+ * @dev This contract should be used in combination with other strategies to make your contract upgradeable
+ * like encapsulating logic into libraries.
+ */
+
+contract EternalStorage is Pausable {
+  mapping(bytes32 => uint) public UIntValues;
+  mapping(bytes32 => int) public IntValues;
+  mapping(bytes32 => string) public StringValues;
+  mapping(bytes32 => address) public AddressValues;
+  mapping(bytes32 => bytes) public BytesValues;
+  mapping(bytes32 => bytes32) public Bytes32Values;
+  mapping(bytes32 => bool) public BooleanValues;
+
+  function EternalStorage() {
+  }
+
+  /**
+   * @dev change the value inside UIntValues for the given key 
+   * @param record sha3 key
+   * @param value new value is uint
+   */
+  function setUIntValue(bytes32 record, uint value) public onlyOwner {
+    UIntValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside UIntValues for the given key 
+   * @param record sha3 key
+   */
+  function deleteUIntValue(bytes32 record) public onlyOwner {
+    delete UIntValues[record];
+  }
+
+  /**
+   * @dev change the value inside IntValues for the given key 
+   * @param record sha3 key
+   * @param value new value is int
+   */
+  function setIntValue(bytes32 record, int value) public onlyOwner {
+    IntValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside IntValues for the given key 
+   * @param record sha3 key
+   */
+  function deleteIntValue(bytes32 record) public onlyOwner {
+    delete IntValues[record];
+  }
+
+  /**
+   * @dev change the value inside StringValues for the given key 
+   * @param record sha3 key
+   * @param value new value is string
+   */
+  function setStringValue(bytes32 record, string value) public onlyOwner {
+    StringValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside StringValues for the given key 
+   * @param record sha3 key
+   */
+  function deleteStringValue(bytes32 record) public onlyOwner {
+    delete StringValues[record];
+  }
+
+  /**
+   * @dev change the value inside AddressValues for the given key 
+   * @param record sha3 key
+   * @param value new value is address
+   */
+  function setAddressValue(bytes32 record, address value) public onlyOwner {
+    AddressValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside AddressValues for the given key 
+   * @param record sha3 key
+   */
+  function deleteAddressValue(bytes32 record) public onlyOwner {
+    delete AddressValues[record];
+  }
+
+  /**
+   * @dev change the value inside BytesValues for the given key 
+   * @param record sha3 key
+   * @param value new value is bytes
+   */
+  function setBytesValue(bytes32 record, bytes value) public onlyOwner {
+    BytesValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside BytesValues for the given key 
+   * @param record sha3 key
+   */
+  function deleteBytesValue(bytes32 record) public onlyOwner {
+    delete BytesValues[record];
+  }
+
+  /**
+   * @dev change the value inside Bytes32Values for the given key 
+   * @param record sha3 key
+   * @param value new value is bytes32
+   */
+  function setBytes32Value(bytes32 record, bytes32 value) public onlyOwner {
+    Bytes32Values[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside Bytes32Values for the given key 
+   * @param record sha3 key
+   */
+  function deleteBytes32Value(bytes32 record) public onlyOwner {
+    delete Bytes32Values[record];
+  }
+
+  /**
+   * @dev change the value inside BooleanValues for the given key 
+   * @param record sha3 key
+   * @param value new value is bool
+   */
+  function setBooleanValue(bytes32 record, bool value) public onlyOwner {
+    BooleanValues[record] = value;
+  }
+
+  /**
+   * @dev delete the value inside BooleanValues for the given key 
+   * @param record sha3 key 
+   */
+  function deleteBooleanValue(bytes32 record) public onlyOwner {
+    delete BooleanValues[record];
+  }
+}
+----
+
+*UpgradableContract*
+----
+pragma solidity ^0.4.13;
+
+import '../math/SafeMath.sol';
+import "../data/EternalStorage.sol";
+
+library CounterLibrary {
+  using SafeMath for uint256;
+
+  function getCount(address _storageContract) public constant returns(uint256) {
+    return EternalStorage(_storageContract).UIntValues(sha3("counter"));
+  } 
+    
+  function increment(address _storageContract) public returns (uint) {
+    uint count = getCount(_storageContract);
+    uint value = count.add(1);
+    EternalStorage(_storageContract).setUIntValue(sha3("counter"), value);
+    return value;
+  }
+} 
+----
+
+----
+pragma solidity ^0.4.13;
+
+import "../lifecycle/Pausable.sol";
+import "../examples/SampleLibraryEternalStorage.sol";
+
+contract SampleContractWithEternalStorage is Pausable {
+
+  using CounterLibrary for address;
+  address eternalStorage;
+
+  function SampleContractWithEternalStorage(address _eternalStorage) {
+    eternalStorage = _eternalStorage;
+  }
+
+  function incrementValue() public returns (uint) {
+    return eternalStorage.increment();
+  }
+
+  function getValue() public returns (uint) {
+    return eternalStorage.getCount();
+  }
+
+  function transferEternalStorageOwnership(address recipient) public onlyOwner {
+    Ownable(eternalStorage).transferOwnership(recipient);
+  }
+}
+----
+
+
+[[proxy_libraries]]
+=== Proxy Libraries
+A proxy libraries allow for a contract to maintains the same address, and the same storage while changing the logic inside of it.
+This is done through the use of 4 contracts the *main contract*, the *dispatcher*, the *dispatcher storage* and the library that is the upgradeable part.
+
+advantages:
+
+* The address of the contract never change
+
+drawbacks:
+
+* More complex to implement
+* Need to use Assembly
+* You need to keep the same storage footprint
+
+image::images/proxy-lib.png["Proxy-libraries"]
+
+==== Implementation
+
+*MainContract*
+----
+pragma solidity ^0.4.8;
+
+import "./LibInterface.sol";
+
+contract TheContract {
+  LibInterface.S s;
+
+  using LibInterface for LibInterface.S;
+
+  function get() public constant returns (uint) {
+    return s.getUint();
+  }
+
+  function set(uint i) public {
+    return s.setUint(i);
+  }
+}
+----
+
+*Dispatcher*
+----
+pragma solidity ^0.4.8;
+
+import "./DispatcherStorage.sol";
+
+contract Dispatcher {
+  function() public {
+    DispatcherStorage dispatcherStorage = DispatcherStorage(0x1111222233334444555566667777888899990000);
+    address target = dispatcherStorage.lib();
+
+    assembly {
+      calldatacopy(0x0, 0x0, calldatasize)
+      let success := delegatecall(sub(gas, 10000), target, 0x0, calldatasize, 0, 0)
+      let retSz := returndatasize
+      returndatacopy(0, 0, retSz)
+      switch success
+      case 0 {
+        revert(0, retSz)
+      }
+      default {
+        return(0, retSz)
+      }
+    }
+  }
+}
+----
+
+*DispatcherStorage*
+----
+pragma solidity ^0.4.8;
+
+import "zeppelin-solidity/contracts/ownership/Ownable.sol";
+contract DispatcherStorage is Ownable {
+  address public lib;
+
+  function DispatcherStorage(address newLib) public {
+    replace(newLib);
+  }
+
+  function replace(address newLib) public onlyOwner /* onlyDAO */ {
+    lib = newLib;
+  }
+}
+----
+
+*LibInterface*
+----
+pragma solidity ^0.4.8;
+
+library LibInterface {
+  struct S { uint i; }
+
+  function getUint(S storage s) public constant returns (uint);
+  function setUint(S storage s, uint i) public;
+}
+----
+
+
+You can learn more about the proxy pattern at https://blog.zeppelin.solutions/proxy-libraries-in-solidity-79fbe4b970fd
+
+
+[[advanced_patterns]]
+==== More advanced patterns
+You can combine both of this families to obtains very advanced upgradability patterns.
+You can find examples of those at https://github.com/zeppelinos/labs
+https://blog.zeppelinos.org/upgradeability-using-unstructured-storage/
