@@ -100,48 +100,74 @@ Teusch recently proposed a new design for a decentralized off-chain data availab
 [[oracle_client_interfaces_in_solidity_sec]]
 === Oracle client interfaces in Solidity
 
-Below is a Solidity example demonstrating how Oraclize can be used to fetch the temperature in London from WolframAlpha [13]: 
+Below is a Solidity example demonstrating how Oraclize can be used to continuously poll for the ETH/USD price from an API and store the result in a usable manner. : 
 
 ----
-pragma solidity ^0.4.11;
+/*
+   ETH/USD price ticker leveraging CryptoCompare API
+
+   This contract keeps in storage an updated ETH/USD price,
+   which is updated every 10 minutes.
+ */
+
+pragma solidity ^0.4.1;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
-contract ExampleOraclizeContract is usingOraclize {
+/* 
+   "oraclize_" prepended methods indicate inheritance from "usingOraclize"
+ */
+contract EthUsdPriceTicker is usingOraclize {
     
-    bytes32 public id;
-    string public temperature;
+    uint public ethUsd;
 
     event newOraclizeQuery(string description);
-    event newTemperatureMeasurement(bytes32 id, string temperature);
+    event newCallbackResult(string result);
 
-    function ExampleOraclizeContract() public payable {
-        getTemperature();
+    function EthUsdPriceTicker() payable {
+        // signals TLSN proof generation and storage on IPFS
+        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+        
+        // requests query
+        queryTicker();
     }
 
-    function getTemperature() public payable {
-        emit newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-        oraclize_query("WolframAlpha", "temperature in London");
-    }
-    
-    function __callback(bytes32 myid, string result) public {
-        assert(msg.sender != oraclize_cbAddress());
-        id = myid;
-        temperature = result;
-        emit newTemperatureMeasurement(id, temperature);
-        // Do something with the temperature measurement..
+    function __callback(bytes32 _queryId, string _result, bytes _proof) public {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        newCallbackResult(_result);
+        
+        /*
+         * parse the result string into an unsigned integer for on-chain use
+         * uses inherited "parseInt" helper from "usingOraclize", allowing for 
+         * a string result such as "123.45" to be converted to uint 12345
+         */
+        ethUsd = parseInt(_result, 2);
+        
+        // called from callback since we're polling the price
+        queryTicker();
     }
 
-} 
+    function queryTicker() public payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            
+            // query params are (delay in seconds, datasource type, datasource argument)
+            // specifies JSONPath, to fetch specific portion of JSON API result
+            oraclize_query(60 * 10, "URL", "json(https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,GBP).USD");
+        }
+    }
+}
 ----
 
-To integrate with Oraclize, the contract ExampleOraclizeContract must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query() function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
+To integrate with Oraclize, the contract EthUsdPriceTicker must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query() function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
 
-* A datasource such as a URL, WolframAlpha, IPFS
+* The supported datasource to use, such as URL, WolframAlpha, IPFS
 * The argument for the given datasource, which may include the use of JSON or XML parsing helpers
 
-The temperature query is performed in the getTemperature() function. In order to perform the query, Oraclize requires the payment of a small fee in ether; to cover the gas cost for transmitting and processing the result to the __callback() function, and a surcharge for the service. This is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by an Oraclize controlled account permissioned to do the callback; it passes in the response value and a unique queryId argument, which as an example, can be used to handle and track multiple pending callbacks from Oraclize. 
+The price query is performed in the queryTicker() function. In order to perform the query, Oraclize requires the payment of a small fee in ether, covering the gas cost for transmitting and processing the result to the __callback() function and accompanying surcharge for the service. This amount is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by an Oraclize controlled account permissioned to do the callback; it passes in the response value and a unique queryId argument, which as an example, can be used to handle and track multiple pending callbacks from Oraclize. 
 
-Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [14]. Below is the interface for the oracle, and a client contract that will make the request:
+Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [13]. Below is the interface for the oracle, and a client contract that will make the request:
 
 ----
 pragma solidity ^0.4.11;
@@ -202,7 +228,7 @@ contract OracleB1IQClient {
 The data request is initiated using the initRequest() function, which allows the query type (in this example, a request for an intraday price) to be specified in addition to two callback functions. 
 This returns a uint256 identifier which can then be used to provide additional arguments. The addArgumentToRequestString() function is used to specify the RIC (Reuters Instrument Code), here for IBM stock, and addArgumentToRequestUint() allows the timestamp to be specified. Now, passing in an alias for block.timestamp will retrieve the current price for IBM. The request is then executed by the executeRequest() function. Once the request has been processed, the oracle contract will call the onSuccess callback function with the query identifier, allowing the resulting data to be retrieved, else the onFailure callback with an error code in the event of retrieval failure. The available fields that can be retrieved on success include open, high, low, close (OHLC) and bid/ask prices.
 
-Reality Keys [15] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
+Reality Keys [14] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
 
 ----
 wget -qO- https://www.realitykeys.com/api/v1/blockchain/new --post-data="chain=XBT&address=1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX&which_total=total_received&comparison=ge&value=1000&settlement_date=2015-09-23&objection_period_secs=604800&accept_terms_of_service=current&use_existing=1"
@@ -246,8 +272,7 @@ uint256 result = uint256(signed_value) / base_unit;
 [8] https://github.com/Azure/azure-blockchain-projects/blob/master/bletchley/EnterpriseSmartContracts.md +
 [9] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
 [10] https://link.smartcontract.com/whitepaper +
-[11] https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/ +
-[12] http://www.wolframalpha.com +
+[12] https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/ +
 [13] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum +
 [14] https://www.realitykeys.com
 
