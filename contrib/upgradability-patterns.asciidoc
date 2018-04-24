@@ -49,7 +49,7 @@ Drawbacks:
 ----
 pragma solidity ^0.4.13;
 
-import "../lifecycle/Pausable.sol";
+import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /**
  * @title Contract that store data in behalf of another contract
@@ -191,53 +191,67 @@ contract EternalStorage is Pausable {
 }
 ----
 
-*UpgradableContract*
+*CounterContractV1*
 ----
 pragma solidity ^0.4.13;
 
-import '../math/SafeMath.sol';
-import "../data/EternalStorage.sol";
+import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "EternalStorage.sol";
 
-library CounterLibrary {
-  using SafeMath for uint256;
+contract CounterWithEternalStorage is Pausable {
 
-  function getCount(address _storageContract) public constant returns(uint256) {
-    return EternalStorage(_storageContract).UIntValues(sha3("counter"));
+  EternalStorage eternalStorage;
+
+  function CounterWithEternalStorage() {
+    eternalStorage = new EternalStorage();
+  }
+
+  function getCount() public constant returns(uint256) {
+    return eternalStorage.UIntValues(keccak256("counter"));
   } 
     
-  function increment(address _storageContract) public returns (uint) {
-    uint count = getCount(_storageContract);
+  function increment() public whenNotPaused returns (uint) {
+    uint count = getCount();
     uint value = count.add(1);
-    EternalStorage(_storageContract).setUIntValue(sha3("counter"), value);
+    eternalStorage.setUIntValue(keccak256("counter"), value);
     return value;
   }
-} 
+
+  function transferEternalStorageOwnership(address recipient) public onlyOwner whenNotPaused {
+    Ownable(eternalStorage).transferOwnership(recipient);
+  }
+}
 ----
 
+So let's say for some reason you want to upgrade the *CounterContractV1* so that `increment()` increase the counter by 2; you just need to deploy a *CounterContractV2* that point to the same *EternalStorage* instead of creating it in the constructor. Then you call `transferEternalStorageOwnership(AddressOfCounterContractV2)` on *CounterContractV1* with the address of *CounterContractV2* as argument.
+
+*CounterContractV2*
 ----
 pragma solidity ^0.4.13;
 
-import "../lifecycle/Pausable.sol";
-import "../examples/SampleLibraryEternalStorage.sol";
+import "zeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "EternalStorage.sol";
 
-contract SampleContractWithEternalStorage is Pausable {
+contract CounterWithEternalStorage is Pausable {
 
-  using CounterLibrary for address;
-  address eternalStorage;
+  EternalStorage eternalStorage;
 
-  function SampleContractWithEternalStorage(address _eternalStorage) {
-    eternalStorage = _eternalStorage;
+  function CounterWithEternalStorage(address _eternalStorage) {
+    eternalStorage = EternalStorage(_eternalStorage);
   }
 
-  function incrementValue() public returns (uint) {
-    return eternalStorage.increment();
+  function getCount() public constant returns(uint256) {
+    return eternalStorage.UIntValues(keccak256("counter"));
+  } 
+    
+  function increment() public whenNotPaused returns (uint) {
+    uint count = getCount();
+    uint value = count.add(2);
+    eternalStorage.setUIntValue(keccak256("counter"), value);
+    return value;
   }
 
-  function getValue() public returns (uint) {
-    return eternalStorage.getCount();
-  }
-
-  function transferEternalStorageOwnership(address recipient) public onlyOwner {
+  function transferEternalStorageOwnership(address recipient) public onlyOwner whenNotPaused {
     Ownable(eternalStorage).transferOwnership(recipient);
   }
 }
