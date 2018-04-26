@@ -222,6 +222,73 @@ That's not very easy to read, so we can improve our code by using the unit multi
 require(withdraw_amount <= 0.1 ether);
 ----
 
+==== Predefined global variables and functions
+
+When a contract is executed in the EVM, it has access to a narrow set of global objects. These include the +block+, +msg+ and +tx+ objects. In addition, Solidity exposes a number of EVM opcodes as predefined Solidity functions. In this section we will examine the variables and functions you can access from within a smart contract in Solidity.
+
+===== Calling transaction/message context
+
+msg:: The +msg+ object is the transaction (EOA originated) or message (contract originated) that launched the contract execution. It contains a number of useful attributes:
+
+msg.sender:: We've already used this one. It represents the address that originated the message. If our contracts was called by an EOA transaction, then this is the address that signed the transaction.
+
+msg.value:: The value of ether sent with the message.
+
+msg.gas:: The amount of gas left in the message that called our contract. It has been deprecate and will be replaced with the gasleft() function as of Solidity v0.4.21.
+
+msg.data:: The data payload of the message that called our contract.
+
+msg.sig:: The first four bytes of the data payload, which is the function selector.
+
+[NOTE]
+====
+Whenever a contract calls another contract, the values of all the attributes of +msg+ change, to reflect the new caller's information. The only exception to this is the +delegatecall+ function which runs the code of another contract/library within the original +msg+ context.
+====
+
+===== Transaction context
+
+tx.gasprice:: The gas price in the calling Transaction
+
+tx.origin:: The full call stack from the originating (EOA) transaction.
+
+===== Block context
+
+block:: The block object contains information about the current block.
+
+block.blockhash(blockNumber):: The block hash of the specified block number, up to the last 256 blocks. Deprecated and replaced with the +blockhash()+ function in Solidity v.0.4.22.
+
+block.coinbase:: The address of the miner of the current block.
+
+block.difficulty:: The difficulty (Proof-of-Work) of the current block.
+
+block.gaslimit:: The total block gas limit for the current block.
+
+block.number:: The current block number (height).
+
+block.timestamp:: The timestamp placed in the current block by the miner, since Unix epoch (seconds).
+
+[[solidity_address_object]]
+===== Address object
+
+Any address, either passed as an input, or cast from a contract object, has a number of attributes and methods:
+
+address.balance:: The balance of the address, in wei. For example, the current contract balance is +address(this).balance+.
+
+address.transfer(amount):: Transfer the amount (wei) to this address, throwing an exception on any error. We used this function in our +Faucet+ example as a method on the +msg.sender+ address, as +msg.sender.transfer()+.
+
+address.send(amount):: Similar to +transfer+ above, only instead of throwing an exception, it returns +false+ on error.
+
+address.call():: Low-level call function, can construct an arbitrary message with +value+, +data+ payloads. Returns +false+ on error.
+
+address.delegatecall():: Low-level call function, keeps the +msg+ context of the calling contract, returns +false+ on error.
+
+===== Built-in functions
+
+addmod, mulmod:: Modulo addition and multiplication. For example, +addmod(x,y,k)+ calculates +pass:[(x + y) % k]+.
+
+keccak256, sha256, sha3, ripemd160:: Functions to calculate hashes with various standard hash algorithms.
+
+ecrecover:: Recover the address used to sign a message, from the signature.
 
 ==== Contract definition
 
@@ -231,7 +298,7 @@ Solidity offers two other objects that are similar to a contract:
 
 interface:: An interface definition is structured exactly a contract, except none of the functions are defined, they are only declared. This type of function declaration is often called a _stub_, as it tells you about the arguments and return types of all the functions, without any implementation. It serves to specify a contract interface and if inherited, each of the functions must be specified in the child.
 
-library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +DELEGATECALL+ method (see <<evm_delegatecall>>)
+library:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +delegatecall+ method (see <<solidity_address_object>>).
 
 ==== Functions
 
@@ -476,11 +543,176 @@ require(msg.sender == owner, "Only the contract owner can call this function");
 
 The +revert+ and +throw+ functions, stop execution of the contract and revert any state changes. The  +throw+ function is obsolete and will be removed in future versions of Solidity - you should use +revert+ instead. The +revert+ function can also take an error message as the only argument, which is recorded in the transaction log.
 
+Certain conditions in a contract will generate errors regardless of whether we explicitly check for them. For example, in our +Faucet+ contract, we don't check whether there is enough ether to satisfy a withdrawal request. That's because the +transfer+ function will fail with an error and revert the transaction if there is insufficient balance to make the transfer:
+
+.The transfer function will fail, if there is insufficient balance
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+However, it might be better to check explicitly, to give a clear error message on failure. We can do that by adding a require statement before the transfer:
+
+----
+require(this.balance >= withdraw_amount,
+	"Insufficient balance in faucet for withdrawal request")
+msg.sender.transfer(withdraw_amount);
+----
+
+Additional error checking code like this will increase gas consumption slightly, but it offers better error reporting than if omitted. Striking the right balance between gas consumption and verbose error checking is something you will need to decide based on the expected use of your contract. In the case of a +Faucet+ intended for a testnet, we'd probably err on the side of extra reporting even if it costs more gas. Perhaps for a mainnet contract we'd choose to be frugal on gas instead.
+
 ==== Calling other contracts (call, send, delegatecall, callcode)
 
+Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method.
 
+===== Creating a new instance
+
+The safest way to call another contract is if you create that other contract yourself. That way, you are certain of its interfaces and behavior. To do this, you can simply instantiate it, using the keyword +new+, as with any object-oriented language. In Solidity, the keyword +new+ will create the contract on the blockchain and return an object that you can use to reference it. Let's say you want to create and call a +Faucet+ contract, from within another contract called +Token+:
+
+
+----
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+This mechanism for contract construction ensures that you know the exact type of contract and its interface. The contract +Faucet+ must be defined within the scope of +Token+, which you can do with an +import+ statement, if the definition is in another file:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+The +new+ keyword can also accept optional parameters to specify the +value+ of ether transfer on creation, and arguments passed to the new contract's constructor, if any:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+}
+----
+
+If we endow the created +Faucet+ with some ether, we can also then call the +Faucet+ functions, which operate just like a method call. In this example, we call the +destroy+ function of +Faucet+, from within the +destroy+ function of +Token+:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+
+	function destroy() ownerOnly {
+		_faucet.destroy();
+	}
+}
+----
+
+===== Addressing an existing instance
+
+Another way we can use to call a contract, is to cast the address of an existing instance of the contract. With this method, we apply a known interface to an existing instance. It is therefore critically important that we know, for sure, that the instance we are addressing is in fact of the same type as we assume. Let's look at an example:
+
+----
+import "Faucet.sol"
+
+contract Token is mortal {
+
+	Faucet _faucet;
+
+	constructor(address _f) {
+		_faucet = Faucet(_f);
+		_faucet.withdraw(0.1 ether)
+	}
+}
+----
+
+Here, we take an address provided as an argument to the contructor and we cast it as a +Faucet+ object. This is much riskier than the previous mechanism, because we don't in fact know whether that address is in fact a +Faucet+ object. When we call +withdraw+, we are assuming that it accepts the same arguments and executes the same code as our +Faucet+ declaration, but we can't be sure. For all we know, the +withdraw+ function at this address could execute something completely different from what we expect, even if it is named the same. Using addresses passed as input and casting them into specific objects is therefore much more dangerous than creating the contract ourselves.
+
+===== Raw call, delegatecall
+
+Solidity offers some even more "low-level" functions for calling other contracts. These correspond diretly to EVM opcodes of the same name and allow us to construct a contract-to-contract call manually. As such, they represent the most flexible *and* the most dangerous mechanisms for calling other contracts.
+
+Here's the same example, using a +call+ method:
+
+----
+contract Token is mortal {
+	constructor(address _f) {
+		_f.call("withdraw", 0.1 ether);
+	}
+}
+----
+
+As you can see, this type of +call+, is a _blind_ call into a function, very much like constructing a raw transaction, only from within a contract's context. It can expose our contract to a number of security risks, most importantly _reentrancy_, which we will talk about in more detail in <<reentrancy>>. The +call+ function will return false if there is a problem, so we can evaluate the return value, for error handling:
+
+----
+contract Token is mortal {
+	constructor(address _f) {
+		if !(_f.call("withdraw", 0.1 ether)) {
+			revert("Withdrawal from faucet failed");
+		}
+	}
+}
+----
+
+Another variant of +call+ is +delegatecall+, previously +callcode+. The +callcode+ method will be deprecated soon, so it should not be used.
+
+As mentioned in <<solidity_address_object>>, a +delegatecall+ is different from a +call+, in that the +msg+ context does not change. For example, whereas a +call+ changes the value of +msg.sender+ to be the calling contract, a +delegatecall+ keeps the same +msg.sender+ as it is in the calling contract. Essentially, +delegatecall+ runs the code of another contract inside the context of the current contract. It is most often used to invoke code from a +library+.
+
+The +delegate+ call should be used with great caution. It can have some unexpected effects, especially if the contract you call was not designed as a library.
 
 ==== Events
+
+Events are Solidity constructs that facilitate the production of transaction logs. When a transaction completes (successfully or not), it produces a _transaction receipt_, as we will see in <<evm>>. The transaction receipt contains _log_ entries that provide information about the actions that occurred during the execution of the transaction. Events are the Solidity high-level objects that are used to construct these logs.
+
+Events are especially useful in lightweight clients and DApps, which can "watch" for specific events and report them to the user-interface, or make a change in the state of the application to reflect an event in an underlying contract.
+
+Event objects take arguments that are serialized and recorded in the transaction logs, in the blockchain. You can supply the keyword +indexed+, before an argument, to make the value part of an indexed table (hash table) that can be searched or filtered by an application.
+
+We have not added any events in our +Faucet+ example, so far, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+ respectively. First, we define the events, in the +Faucet+ contract:
+
+----
+contract Faucet is mortal {
+	event Withdrawal(address indexed to, uint amount)
+	event Deposit(address indexed from, uint amount)
+
+	[...]
+}
+----
+
+We've chosen to make the addresses +indexed+, to allow searching and filtering in any user interface built to access our +Faucet+.
+
+Next, we use the +emit+ keyword to incorporate the event data in the transaction logs:
+
+----
+// Give out ether to anyone who asks
+function withdraw(uint withdraw_amount) public {
+    [...]
+    msg.sender.transfer(withdraw_amount);
+    emit Withdrawal(msg.sender, withdraw_amount);
+}
+// Accept any incoming amount
+function () public payable {
+    emit Deposit(msg.sender, msg.value);
+}
+----
+
 
 ==== Organizing your code
 
