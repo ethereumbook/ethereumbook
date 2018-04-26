@@ -1,0 +1,198 @@
+////
+Source: https://medium.com/@SylTi/how-to-simply-create-ethereum-private-contracts-that-remains-enforceable-on-chain-30805a0b1d14
+License: MIT
+Added By: @SylTi
+////
+
+== Privacy enhancing patterns
+ 
+=== Commit-Reveal 
+
+==== Introduction
+This is commitment scheme that allows keeping a value private, until the reveal phase, while making it unchangeable.
+
+It his a widely used concept in cryptography that has many use cases with Ethereum smart contract, like the in the next pattern, in voting schemes (like PLCRVoting), in auctions, payment/state channels etc..
+
+==== How does it work
+
+`hashOfvalue = keccak256(value, randomData)`
+
+By revealing the value and the randomData you can prove your commitment.
+
+
+=== Privacy Judge
+
+==== Introduction
+This pattern allows for a smart contract between 2 parties to remain private as long as they cooperate. Cooperation is incentivized by the use of a collateral.
+
+In case the other person is uncooperative or unresponsive, you can reveal the contract so it can be executed.
+
+This pattern can also be used with ERC20 tokens with a few simple changes.
+
+==== How does it work
+This pattern is based on the Commit-Reveal pattern; It uses two type of commits:
+
+* Signed bytecode of a *resolver* contract
+* Funds deposited inside a *judge* contract
+
+It also adds an economic incentive to never get into the reveal phase keeping the *resolver* contract unpublished and completely private.
+
+The *judge* contract can only release the funds under one of those two conditions:
+
+* One of the parties send the total amount and get back is collateral as a reward for keeping the *resolver* contract private
+* One of the parties reveal the bytecode to the judge which results in the full amount stored inside the *judge* contract to be sent to the *resolver* contract that settles the transaction.
+
+==== Example scenario
+Let’s take a very simple scenario where Alice and Bob want to bet on the price of Ethereum at a later date, but don’t want the world to know what they are betting on. 
+
+The terms of this bet are the following: If the price of Ethereum is >= $1200 at the specified date Alice will pay Bob 10 ethers, if not Bob will pay Alice 10 ethers.
+
+This terms will be represented by the following smart contract:
+
+===== Bet Implementation
+
+[source:Resolver Contract, solidity]
+----
+pragma solidity ^0.4.18;
+
+contract Oracle {
+  function getPrice(uint timestamp) public returns (uint) { return 1300; } // fake oracle
+}
+
+contract EtherPriceBet {
+
+  Oracle public  oracle;
+  uint public resultTime;
+  address public user1;
+  address public user2;
+
+  function EtherPriceBet() public {
+    user1 = 0xdf08f82de32b8d460adbe8d72043e3a7e25a3b39;
+    user2 = 0x6704fbfcd5ef766b287262fa2281c105d57246a6;
+
+    oracle = new Oracle();
+    resultTime = 1516051749 + 52 weeks;
+  }
+
+  function execute() public payable {
+    require(now > resultTime);
+    if (oracle.getPrice(resultTime) >= 1200)
+      selfdestruct(user1);
+    else
+      selfdestruct(user2);
+  }
+}
+----
+
+Once both Alice and Bob have compile this smart contract, they both need to sign the resulting bytecode and exchange the resulting signature.
+Both of them need to check that the signature is valid by using `isContractValid()`.
+
+Then, one of them deploy the *judge* contract where they both send 10 ethers.
+
+===== Judge Implementation
+
+This is a very simple implementation of the *judge* using the OpenZeppelin library and should not be considered production ready:
+
+[source: Judge Contract, solidity]
+----
+pragma solidity ^0.4.18;
+
+
+import "../ECRecovery.sol";
+import "../math/SafeMath.sol";
+
+/**
+ * @title Judge
+ * @author SylTi
+ * @dev This kind of construct allows for a smart contract between two entities to remains private as long as they cooperate with each other. 
+ *      Cooperation is incentivized by the use of a collateral
+ */
+
+contract Judge {
+  
+  using ECRecovery for bytes32;
+  using SafeMath for uint256;
+  address user1;
+  address user2;
+  uint amountToMatch;
+  uint collateralPercentage = 1; //percentage of bet used as collateral. This is necessary to incentivize voluntary release of funds
+  bool finalized;
+
+  event LogContractSettlement(uint balance, address deployedAddress);
+  event LogDeposit(address depositer, uint amount);
+
+  modifier isUser() {
+    require(msg.sender == user1 || msg.sender == user2);
+    _;
+  }
+
+  function executeContract(bytes32 hashed, bytes signature, bytes code) public isUser {
+    require(!finalized);
+    require(isContractValid(hashed, signature, code));
+    address deployedAddress;
+    //create contract in assembly, and jump if deployment failed: no code at address
+    assembly {
+      deployedAddress := create(0, add(code, 0x20), mload(code))
+      switch iszero(extcodesize(deployedAddress))
+        case 1 { revert(0, 0) } // throw if contract failed to deploy
+    }
+    LogContractSettlement(this.balance, deployedAddress);
+    assert(deployedAddress.call.gas(200000).value(this.balance)(bytes4(keccak256("execute()"))));
+    finalized = true;
+  }
+
+  function isContractValid(bytes32 hashed, bytes signature, bytes code) public view returns (bool) {
+    address signer;
+    bytes32 proof;
+    
+    signer = hashed.recover(signature);
+    if (signer != user1 && signer != user2) revert();
+    proof = keccak256(code);
+    return (proof == hashed);
+  }
+
+  function releasePayment() public isUser {
+    if (msg.sender == user1) {
+      assert(user2.send(this.balance.sub(this.balance.mul(collateralPercentage).div(100))));
+      assert(user1.send(this.balance));
+    }
+    else if (msg.sender == user2) {
+      assert(user1.send(this.balance.sub(this.balance.mul(collateralPercentage).div(100))));
+      assert(user2.send(this.balance));
+    }
+    finalized = true;
+  }
+
+  function resetContract() public isUser {
+    require(finalized);
+    amountToMatch = 0;
+    user1 = address(0);
+    user2 = address(0);
+  }
+
+  function () public payable {
+    require(user1 == address(0) || user2 == address(0));
+    require(msg.value > 0);
+    if (user1 == address(0)) {
+      user1 = msg.sender;
+      amountToMatch = msg.value;
+    }
+    else {
+      require(msg.value == amountToMatch);
+      require(msg.sender != user1);
+      user2 = msg.sender;
+      assert(this.balance == amountToMatch.mul(2));
+    }
+    LogDeposit(msg.sender, msg.value);
+  }
+}
+----
+
+==== Possible Improvement
+We could allow for multiples *resolver* to be run in series (participants must agree on the previous result before signing the next *resolver*) by adding bidirectional payment capabilities to the *judge*.
+
+This could be done by adding a nonce, both users balances, and an amount to the hashed bytecode 
+
+`proof = keccak256(code, nonce, balance1, balance2, amount);`
+
+We would also need to add a challenge period before the *resolver* can be executed to ensure one of the participants doesn't try to cheat by publishing a *resolver* with an old nonce.
