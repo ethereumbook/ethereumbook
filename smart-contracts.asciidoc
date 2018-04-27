@@ -521,7 +521,7 @@ By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract no
 
 ==== Error handling (assert, require, revert)
 
-A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+.
+A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+(now deprecated).
 
 When a contract terminates with an error, all the state changes (changes to variables, balances etc.) are reverted, all the way up the chain of contract calls, if more than one contract were called. This ensures that transactions are atomic, meaning they either complete successfully or have no effect on state and are reverted entirely.
 
@@ -550,7 +550,7 @@ Certain conditions in a contract will generate errors regardless of whether we e
 msg.sender.transfer(withdraw_amount);
 ----
 
-However, it might be better to check explicitly, to give a clear error message on failure. We can do that by adding a require statement before the transfer:
+However, it might be better to check explicitly and providing a clear error message on failure. We can do that by adding a require statement before the transfer:
 
 ----
 require(this.balance >= withdraw_amount,
@@ -558,7 +558,7 @@ require(this.balance >= withdraw_amount,
 msg.sender.transfer(withdraw_amount);
 ----
 
-Additional error checking code like this will increase gas consumption slightly, but it offers better error reporting than if omitted. Striking the right balance between gas consumption and verbose error checking is something you will need to decide based on the expected use of your contract. In the case of a +Faucet+ intended for a testnet, we'd probably err on the side of extra reporting even if it costs more gas. Perhaps for a mainnet contract we'd choose to be frugal on gas instead.
+Additional error checking code like this will increase gas consumption slightly, but it offers better error reporting than if omitted. Striking the right balance between gas consumption and verbose error checking is something you will need to decide based on the expected use of your contract. In the case of a +Faucet+ intended for a testnet, we'd probably err on the side of extra reporting even if it costs more gas. Perhaps for a mainnet contract we'd choose to be frugal with our gas usage instead.
 
 ==== Calling other contracts (call, send, delegatecall, callcode)
 
@@ -743,7 +743,7 @@ Because gas is paid by the user who creates that transaction, users are discoura
 
 *How do I estimate gas for a contract method?*
 
-In case that you need to estimate the gas necessary to execute a certain method of a contract considering its call arguments, you can use for instance the following procedure;
+In case that you need to estimate the gas necessary to execute a certain method of a contract considering its call arguments, you could, for instance, use the following procedure;
 
 [source, JavaScript]
 var contract = web3.eth.contract(abi).at(address);
@@ -822,6 +822,10 @@ This exploit is particularly famous because of its relevance in the DAO attack. 
 To guard against re-entrancy, http://solidity.readthedocs.io/en/v0.4.21/security-considerations.html[Solidity] recommends that a programmer adheres to the Checks-Effects-Interactions pattern, wherein the effects of a function call (such as decreasing the balance) occur before making the call. In our example, this would mean switching steps 3 and 2: updating a user's balance before paying them out. In ethereum, this is perfectly okay, because all effects of a transaction are atomic, meaning it is impossible for the balance to update without the user also being paid out. Either both occur, or an exception is thrown and neither occurs. This guards against re-entrancy attacks because all subsequent calls into the original contract will encounter the correct modified state.
 
 *Delegate Call*:: //todo
+
+The call method, as mentioned previously, "calls" into a function from with it's contract's context. The delegate call on the other hand, notifies the receiving contract that the sender is a contract as well and that the receiver is allowed(delegated) to do as it pleases with the sender's storage. This, as it seems, carries with it security risks.
+
+DelegateCall replaces the buggy opcode Callcode, and preserves it's msg.sender and msg.value. For example, if A invokes B who invokes delegatecall to C, the msg.sender is A(for callcode it would have been B).  
 
 ////
 TODO: add Delegate Call section ^
