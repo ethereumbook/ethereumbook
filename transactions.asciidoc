@@ -313,6 +313,7 @@ withdraw(uint256)
 
 Let's calculate the Keccak256 hash of this string (we can use the truffle console or any JavaScript web3 console to do that):
 
+[source,javascript]
 ----
 web3.sha3("withdraw(uint256)");
 '0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
@@ -322,6 +323,7 @@ The first 4 bytes of the hash are +0x2e1a7d4d+. That's our "function selector" v
 
 Next, let's calculate a value to pass as the argument +withdraw_amount+. We want to withdraw 0.01 ether. Let's encode that to a hex-serialized big-endian unsigned 256-bit integer, denominated in wei:
 
+[source,javascript]
 ----
 withdraw_amount = web3.toWei(0.01, "ether");
 '10000000000000000'
@@ -342,12 +344,6 @@ That's the +data+ payload for our transaction, invoking the +withdraw+ function 
 
 There is one special case of a transaction with a data payload and no value. This is a transaction that _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
 
-A contract registration transaction should contain no ether value, only a data payload that contains the compiled bytecode of the contract. The only effect of this transaction is to register the contract.
-
-====
-TODO Add example, show in web3 console and etherscan
-====
-
 While the zero address is only intended for contract registration, it sometimes receives payments from various addresses. There are two explanations for this: either it is by accident, resulting in the loss of ether, or it is an intentional _ether burn_ (see <<burning_ether>>). If you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
 
 [[burn_address]]
@@ -359,6 +355,74 @@ While the zero address is only intended for contract registration, it sometimes 
 ====
 Any ether sent to the contract registration address +0x0+ or the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
 ====
+
+A contract registration transaction should contain no ether value, only a data payload that contains the compiled bytecode of the contract. The only effect of this transaction is to register the contract.
+
+As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidiy compiler.
+----
+> solc --bin Faucet.sol
+======= Faucet.sol:Faucet =======
+Binary:
+6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029
+----
+The same information can also be obtained from the Remix online compiler.
+Now we can create the transaction.
+[source,javascript]
+----
+> src = web3.eth.accounts[0];
+> faucet_code = "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029"
+
+> web3.eth.sendTransaction({from: src, data: faucet_code, gas: 113558, gasPrice: 200000000000})
+
+"0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
+----
+There is no need to specify a +to+ parameter, the default zero address will be used. You can specify +gasPrice+ and +gas+ limit.
+Once, the contract is mined we can see it on etherscan block explorer
+
+[[publish_contract_from_web3]]
+.Etherscan showing the contract successully minded
+image::images/contract_published.png["Etherscan showing the contract successully minded"]
+
+You can look at the receipt of transaction to get infromation about the contract.
+
+[source,javascript]
+----
+> eth.getTransactionReceipt("0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");
+
+{
+  blockHash: "0x6fa7d8bf982490de6246875deb2c21e5f3665b4422089c060138fc3907a95bb2",
+  blockNumber: 3105256,
+  contractAddress: "0xb226270965b43373e98ffc6e2c7693c17e2cf40b",
+  cumulativeGasUsed: 113558,
+  from: "0x2a966a87db5913c1b22a59b0d8a11cc51c167a89",
+  gasUsed: 113558,
+  logs: [],
+  logsBloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  status: "0x1",
+  to: null,
+  transactionHash: "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b",
+  transactionIndex: 0
+}
+----
+Here we can see the address of the contract. We can send and receive funds from the contract as shown in <<data_EOA>>.
+
+[source,javascript]
+----
+> contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"
+> web3.eth.sendTransaction({from: src, to: contract_address, value: web3.toWei(0.1, "ether"), data: ""});
+
+"0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
+
+> web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});
+
+"0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
+----
+
+After a while, both transactions are visible on ethescan
+[[publish_contract_transactions]]
+.Etherscan showing the transactions for sending and receiving funds
+image::images/published_contract_transactions.png["Etherscan showing the transactions for sending and receiving funds"]
+
 
 [[digital_sign]]
 === Digital signatures

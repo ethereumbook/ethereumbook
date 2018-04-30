@@ -67,6 +67,26 @@ In which case:
 
 `excess gas * gas price` ether is refunded to the sender
 
+=== Estimating Gas 
+
+////
+Source: https://ethereum.stackexchange.com/a/515/19763 
+License: CC0 
+Added by: @naveensrinivasan 
+////
+
+Estimating gas works by pretending the transaction was actually being included in the blockchain, and then returning the exact gas amount that would have been charged if that pretend operation was real. In other words, it uses the exact same procedure a miner would use to calculate the actual fee but never mined into the blockchain.
+
+Note that the estimate may be significantly more than the amount of gas actually used by the transaction, for a variety of reasons including EVM mechanics and node performance.
+
+``` javascript
+var result = web3.eth.estimateGas({
+    to: "0xc4abd0339eb8d57087278718986382264244252f", 
+    data: "0xc6888fa10000000000000000000000000000000000000000000000000000000000000003"
+});
+console.log(result); // "0x0000000000000000000000000000000000000000000000000000000000000015"
+```
+
 === Gas price and transaction prioritization
 
 Gas price is the amount in ether that the transaction sender is willing to pay for each unit of gas used. The miner who mines the next block gets to decide which transactions to include. Since gas price is factored into the transaction fee they will receive as a reward, they are more likely to include transactions with highest gas prices first. If the sender sets the gas price too low, they may have to wait a long time before their transaction makes it into a block.
