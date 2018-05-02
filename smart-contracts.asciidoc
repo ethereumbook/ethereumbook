@@ -873,21 +873,25 @@ The next two calls, using the low-level +call+ and +delegatecall+, verify our ex
 Two of the most important concepts to consider during smart contract creation are *gas* and *security*.
 
 [[gas_sec]]
-==== Gas
+==== Gas considerations
 
-*Gas* is described in more in detail in the <<gas>> section but is an incredibly important consideration in smart contract programming. Gas is a resource dictating the amount of computation power that a user will allot to a transaction. If the gas limit is exceeded during computation, the following series of events occurs:
+Gas is described in more in detail in the <<gas>> section and is an incredibly important consideration in smart contract programming. Gas is a resource constraining the maximum amount of computation that Ethereum will allow a transaction to consume. If the gas limit is exceeded during computation, the following series of events occurs:
 
-* An exception is thrown
-* The state of the contract prior to the function's execution is restored
-* The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded
+* An "out of gas" exception is thrown.
+* The state of the contract prior to the function's execution is restored (reverted).
+* The entire amount of the gas is given to the miner as a transaction fee, it is *not* refunded.
 
 Because gas is paid by the user who creates that transaction, users are discouraged from calling functions that have a high gas cost. It is thus in the programmer's best interest to minimize the gas cost of a contract's functions. To this end, there are certain practices that are recommended when constructing smart contracts, so as to minimize the gas costs surrounding a function call.
 
-*Avoid dynamically-sized Arrays*
+===== Avoid dynamically-sized arrays
 
-* Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element is at the risk of gas overflow. The contract may run out of gas before finding the desired result, or before acting on every element.
+Any loop through a dynamically sized array wherein a function performs operations on each element or searches for a particular element introduces the risk of using too much gas. The contract may run out of gas before finding the desired result, or before acting on every element.
 
-*How do I estimate gas for a contract method?*
+===== Avoid calls to other contracts
+
+Calling other contracts, especially when the gas cost of their functions is not known, introduces the risk of running out of gas. Avoid using libraries that are not well tested and broadly used. The less scrutiny a library has received from other programmers, the greater the risk of using it.
+
+===== Estimating gas cost
 
 In case that you need to estimate the gas necessary to execute a certain method of a contract considering its call arguments, you could, for instance, use the following procedure;
 
@@ -907,40 +911,56 @@ And from there, estimate the *gas cost*;
 [source, JavaScript]
 var gasCostInEther = web3.fromWei((gasEstimate * gasPrice), 'ether');
 
-In *Truffle* this can be achieved as follows,
+Let's apply our gas estimation functions to estimating the gas cost of our +Faucet+ example, using the code from the book's repository found here:
+
+----
+code/truffle/FaucetEvents
+----
+
+We start truffle in development mode, and execute a JavaScript file +gas_estimates.js+, which contains:
 
 [source, JavaScript]
-....
-var METokenContract = artifacts.require("./METoken.sol");
+.gas_estimates.js: Using the estimateGas function
+----
+var FaucetContract = artifacts.require("./Faucet.sol");
 
-METokenContract.web3.eth.getGasPrice(function(error, result) {
+FaucetContract.web3.eth.getGasPrice(function(error, result) {
     var gasPrice = Number(result);
     console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
 
     // Get the contract instance
-    METokenContract.deployed().then(function(METokenContractInstance) {
+    FaucetContract.deployed().then(function(FaucetContractInstance) {
 
         // Use the keyword 'estimateGas' after the function name to get the gas estimation for this particular function (aprove)
-        return METokenContractInstance.aprove.estimateGas(_address, 100);
+		FaucetContractInstance.send(web3.toWei(1, "ether"));
+        return FaucetContractInstance.withdraw.estimateGas(web3.toWei(0.1, "ether"));
 
     }).then(function(result) {
         var gas = Number(result);
 
         console.log("gas estimation = " + gas + " units");
         console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
-        console.log("gas cost estimation = " + METokenContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+        console.log("gas cost estimation = " + FaucetContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
     });
 });
-....
+----
 
-Which could have an output similar to;
+Here's how that looks in the truffle development console:
 
-....
+----
+$ truffle develop
+
+truffle(develop)> exec gas_estimates.js
+Using network 'develop'.
+
 Gas Price is 20000000000 wei
-gas estimation = 26794 units
-gas cost estimation = 535880000000000 wei
-gas cost estimation = 0.00053588 ether
-....
+gas estimation = 31397 units
+gas cost estimation = 627940000000000 wei
+gas cost estimation = 0.00062794 ether
+----
+
+It is recommended that you evaluate the gas cost of functions as part of your development workflow, to avoid any surprises when deploying contracts to the mainnet.
+
 
 [[security_sec]]
 ==== Security
@@ -965,7 +985,7 @@ However, malicious attackers can take advantage of this execution. Imagine that 
 
 This exploit is particularly famous because of its relevance in the DAO attack. A user took advantage of the fact that the balance in a contract was changed after a call to transfer funds was made and withdrew millions of dollars worth of ether.
 
-To guard against re-entrancy, http://solidity.readthedocs.io/en/v0.4.21/security-considerations.html[Solidity] recommends that a programmer adheres to the Checks-Effects-Interactions pattern, wherein the effects of a function call (such as decreasing the balance) occur before making the call. In our example, this would mean switching steps 3 and 2: updating a user's balance before paying them out. In ethereum, this is perfectly okay, because all effects of a transaction are atomic, meaning it is impossible for the balance to update without the user also being paid out. Either both occur, or an exception is thrown and neither occurs. This guards against re-entrancy attacks because all subsequent calls into the original contract will encounter the correct modified state.
+To guard against re-entrancy, http://solidity.readthedocs.io/en/v0.4.21/security-considerations.html[Solidity] recommends that a programmer adheres to the Checks-Effects-Interactions pattern, wherein the effects of a function call (such as decreasing the balance) occur before making the call. In our example, this would mean switching steps 3 and 2: updating a user's balance before paying them out. In Ethereum, this is perfectly okay, because all effects of a transaction are atomic, meaning it is impossible for the balance to update without the user also being paid out. Either both occur, or an exception is thrown and neither occurs. This guards against re-entrancy attacks because all subsequent calls into the original contract will encounter the correct modified state.
 
 ==== Delegate Call
 
@@ -975,13 +995,6 @@ delegatecall replaces the buggy opcode callcode, and preserves it's *msg.sender*
 
 ////
 TODO: embellish Delegate Call section ^
-////
-
-[[development_style_sec]]
-==== Development style
-
-////
-TODO: add paragraph
 ////
 
 [[design_patterns_sec]]
