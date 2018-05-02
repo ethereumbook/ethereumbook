@@ -761,8 +761,8 @@ Here's the same example, using a +call+ method:
 
 ----
 contract Token is mortal {
-	constructor(address _f) {
-		_f.call("withdraw", 0.1 ether);
+	constructor(address _faucet) {
+		_faucet.call("withdraw", 0.1 ether);
 	}
 }
 ----
@@ -771,8 +771,8 @@ As you can see, this type of +call+, is a _blind_ call into a function, very muc
 
 ----
 contract Token is mortal {
-	constructor(address _f) {
-		if !(_f.call("withdraw", 0.1 ether)) {
+	constructor(address _faucet) {
+		if !(_faucet.call("withdraw", 0.1 ether)) {
 			revert("Withdrawal from faucet failed");
 		}
 	}
@@ -803,27 +803,7 @@ Let's run this in a truffle development environment and capture the events, to s
 ----
 truffle(develop)> migrate
 Using network 'develop'.
-
-Running migration: 1_initial_migration.js
-  Deploying Migrations...
-  ... 0xa06eb2c9fdd725d446b844003d0da7cb7a1c7ff1e946e64c0411f572d1a3de3a
-  Migrations: 0x8cdaf0cd259887258bc13a92c0a6da92698644c0
-Saving successful migration to network...
-  ... 0xd7bc86d31bee32fa3988f1c1eabce403a1b5d570340a3a9cdba53a472ee8c956
-Saving artifacts...
-Running migration: 2_deploy_contracts.js
-  Deploying calledContract...
-  ... 0xfc06dc93dae7c0d3a26975ab96f08d0d9e7c2d536a5fc0e924c3ae33bd5cab53
-  calledContract: 0x345ca3e014aaf5dca488057592ee47305d9b3e10
-  Deploying calledLibrary...
-  ... 0x2924a4e23000a707dc9c4ba4891d6119e95b18fca618a2b7e44dbadd79bcc227
-  calledLibrary: 0xf25186b5081ff5ce73482ad761db0eb0d25abfbf
-  Linking calledLibrary to caller
-  Deploying caller...
-  ... 0x770d1e9493828430ec48be7150c068894d151d745da8491ac0231987ed72454f
-  caller: 0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f
-Saving successful migration to network...
-  ... 0x0faca9f680c3dbf3e6d41c8695e44a8a3c27184f28d4d0eebaa633ea51b8736d
+[...]
 Saving artifacts...
 truffle(develop)> web3.eth.accounts[0]
 '0x627306090abab3a6e1400e9345bc60c78a8bef57'
@@ -886,13 +866,6 @@ from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
 This time, the +msg.sender+ is not the address of +caller+. Instead it is the address of our wallet, and is the same as the transaction origin. That's because when you call a library, the call is always +delegatecall+ and runs within the context of the caller. So, when +calledLibrary+ code was running, it inherited the execution context of +caller+, as if its code was running inside +caller+. The variable +this+ (shown as +from+ in the event emitted) is the address of +caller+, even though it is accessed from within +calledLibrary+.
 
 The next two calls, using the low-level +call+ and +delegatecall+, verify our expectations, emitting events that mirror what we just saw above.
-
-==== Organizing your code
-
-First, let's look at some stylistic conventions that will help you write Solidity programs that are consistent and easy to read. There's a style guide for Solidity here:
-
-https://solidity.readthedocs.io/en/develop/style-guide.html
-
 
 [[best_practices_sec]]
 === Best Practices
