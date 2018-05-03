@@ -150,6 +150,28 @@ Binary:
 
 The result that +solc+ produces is a hex serialized binary that can be submitted to the Ethereum blockchain.
 
+[[eth_contract_abi_sec]]
+=== Ethereum contract Application Binary Interface (ABI)
+
+In computer software, an Application Binary Interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures and functions are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
+
+In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. The purpose of an ABI is to define which functions in the contract can be invoked and describe how the function will accept arguments and return data.
+
+The JSON format for a contract's ABI is given by an array of descriptions of functions (see <<solidity_functions>>) and event (see <<solidity_events>>). A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`.
+
+We use the +solc+ command-line Solidity compiler to produce the ABI for our +Faucet.sol+ example contract:
+
+----
+solc --abi Faucet.sol
+======= Faucet.sol:Faucet =======
+Contract JSON ABI
+[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}],"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"payable":true,"stateMutability":"payable","type":"fallback"}]
+----
+
+As you can see, the compiler produces a JSON object describing the two functions that are defined by +Faucet.sol+. This JSON object can be used by any application that wants to access the +Faucet+ contract once it is deployed. Using the ABI, an application such as a wallet or DApp browser, can construct transactions that call the functions in +Faucet+, with the correct arguments and argument types. For example, a wallet would know that to call the function +withdraw+ it would have to provide a +uint256+ argument named +withdraw_amount+. The wallet could prompt the user to provide that value, then create a transaction that encodes it and executes the +withdraw+ function.
+
+All that is needed for an application to interact with a contract is an ABI and the address where the contract has been deployed.
+
 [[solidity_pragma]]
 ==== Selecting Solidity compiler and language version
 
@@ -174,7 +196,7 @@ include::code/Solidity/Faucet2.sol[]
 
 Adding a version pragma is a best practice, as it avoids problems with mismatched compiler and language versions. We will explore other best practices and continue to improve the +Faucet+ contract throughout this chapter.
 
-=== Using Solidity
+=== Programming with Solidity
 
 In this section, we will look at some of the capabilities of the Solidity language. As we mentioned in <<intro>> our first contract example was very simple and also flawed in many different ways. We'll gradually improve that example, while learning how to use Solidity. This won't be a comprehensive Solidity tutorial however, as Solidity is quite complex and rapidly evolving. We'll cover the basics and give you enough of a foundation to be able to explore the rest on your own. The complete documentation for Solidity can be found at:
 
@@ -1384,62 +1406,6 @@ In Ethereum, the most widely used solution is the https://openzeppelin.org/[Open
 
 Also from Zeppelin is https://zeppelinos.org/[zeppelin_os], an open source platform of services and tools to develop and manage smart contract applications securely. zeppelin_os provides a layer on top of the EVM that makes it easy for developers to launch upgradeable DApps linked to an on-chain library of well tested contracts that are themselves upgradeable. Different versions of these libraries can coexist in the blockchain, and a vouching system allows users to propose or push improvements in different directions. A set of off-chain tools to debug, test, deploy and monitor decentralized applications is also provided by the platform.
 
-
-[[eth_contract_abi_sec]]
-=== Ethereum contract Application Binary Interface (ABI)
-
-In computer software, an Application Binary Interface (ABI) is an interface between two program modules; often, one at the level of machine code, and the other at the level of a program run by a user. An ABI defines how data structures and computational routines are accessed in *machine code*; this is not to be confused with an API, which defines this access in high-level, often human-readable format as *source code*. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
-
-In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. As discussed in a previous section, an Ethereum smart contract is bytecode deployed on the blockchain under a *contract address*. The purpose of an ABI is to thus specify which functions in the contract to invoke and to get a guarantee that the function will return data in an expected format.
-
-____
-If an account or a web application wants to interact with a published contract and use one of its functions, the account would first need to hash the function's definition through an ABI to create its *EVM bytecode*. Then, to call the function, the account would pass this bytecode to a transaction's data field so that the bytecode could be interpreted with code at the contract's address. Thus, the two necessary pieces of information for an external function call would be the *ABI* and the *address of the contract wherein the function is written*. We demonstrate the use of an ABI in a detailed example below.
-____
-
-The JSON format for a contract's ABI is given by an array of function and event descriptions. A function description is a JSON object with fields for `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields for `type`, `name`, `inputs`, and `anonymous`.
-
-The ABI thus specifies information about functions in a smart contract, relaying information such as inputs and types. However, the ABI *only* contains information about functions and events, meaning it will not hold values for fields such as state variables or modifiers.
-
-----
-solcjs --abi foo.sol
-----
-
-[[structure_of_call_data_sec]]
-==== Structure of call data
-
-The data for a function call is a concatenation of several values of bytes. We discuss these in steps below.
-
-*First Four Bytes*: The call data always begins with *four bytes* of the function signature. In specific, these are the first four bytes of the Keccak-256 hash of the *signature* of a function. In this context, the signature is simply the function name with a parenthesized list of parameter types split by a single comma.
-
-Assume, as a running example, the brief contract `Test`:
-
-[source,solidity]
-contract Test {
-  function foo(uint32 u, bool b) returns (bool b) { u > 2000 && b; }
-}
-
-.To encode function `foo(uint32 u, bool b)`:
-* The signature of `foo(uint32 u, bool b)` would be `foo(uint32,bool)`
-* Running `foo(uint32,bool)` through Keccak-256 outputs the hash `cc822237a37f9290b70dab4d640156d816bf8abdb959b5971d803a639dadef98`
-* The first four bytes of the hash are `cc822237`, which brings us to a Method ID of `0xcc822237`
-* Executing the command `web3.sha3("foo(uint32,bool)").substring(0, 10)` in the Go Ethereum (geth) JavaScript console produces the result `"0xcc822237"`
-
-*5th Byte And On*: We continue our data by encoding the *arguments* of our function. Encoding a `uint32` means converting the number to hexadecimal form and padding it with 0's until it becomes 32 bytes long, while encoding a `bool` is equivalent to encoding a `uint` with values `1` for `true` and `0` for `false`. A full list of type encoding can be found at the link attached in the _Further Reading_ section.
-
-.To continue with our example above, we call our function `foo` with parameters `2345` and `true`:
-* The hexadecimal representation of `2345` is `0x929`, and so padded to 32 bytes the first argument `u` is encoded as `0x0000000000000000000000000000000000000000000000000000000000000929`
-* The hexadecimal representation of `true` is `1`, and so padded to 32 bytes the second argument `b` becomes `0x0000000000000000000000000000000000000000000000000000000000000001`
-
-*Result*: We concatenate the Method ID with our encoded arguments to reach the finished call data for our function call. In our case, the call data for function `foo(uint32 u, bool b)` with arguments `2345` and `true` is
-`0xcc82223700000000000000000000000000000000000000000000000000000000000009290000000000000000000000000000000000000000000000000000000000000001`
-
-____
-We notice that our function returns a single `bool` value. For our choices of `u` and `b`, `foo` returns `true`, which would be the single byte array `0x0000000000000000000000000000000000000000000000000000000000000001`.
-____
-
-////
-TO-DO: Discuss Events vs. Functions
-////
 
 [[further_reading_sec]]
 ==== Further reading
