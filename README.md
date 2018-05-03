@@ -31,14 +31,14 @@ Here's what is available now:
 | [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
 | [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
 | [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: ||
-| [Smart Contracts](smart-contracts.asciidoc) | #################### |||
+| [Smart Contracts](smart-contracts.asciidoc) | ########################## |||
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
 | [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: ||
 | [DApps](dapps.asciidoc) | ### |||
 | [Oracles](oracles.asciidoc) | ####### |||
 | [Accounting & Gas](gas.asciidoc) | #### |||
 | [EVM](evm.asciidoc) | ####### |||
-| [Consensus](consensus.asciidoc) | ##### |||
+| [Consensus](consensus.asciidoc) | ####### |||
 | [Vyper](vyper.asciidoc) | ##### |||
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ### |||
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### |||
