@@ -965,9 +965,28 @@ It is recommended that you evaluate the gas cost of functions as part of your de
 [[security_sec]]
 ==== Security
 
-With blockchain being in its early stages, *security* is one of the most important considerations when writing smart contracts. As with other programs, a smart contract will execute exactly what is written, which is not always equivalent to the intentions of the programmer. To this end, a programmer must understand common security exploits and proper ways to safeguard against these exploits. Here is a list of some of the security issues that have arisen in the past.
+Security is one of the most important considerations when writing smart contracts. As with other programs, a smart contract will execute exactly what is written, which is not always what the programmer intended. Furthermore, all smart contracts are public and any user can interact with them simply by creating a transaction. Any vulnerability can be exploited and losses are almost always impossible to recover.
 
-*Re-entrancy*
+In the field of smart-contract programming, mistakes are costly and easily exploited. It is therefore critical to follow best practices and use well tested design patterns.
+
+_Defensive programming_ is a style of programming that is particularly well suited to programming smart contracts and has the following characteristics:
+
+Minimalism/Simplicity:: Complexity is the enemy of security. The simpler the code, the less it does, the lower the chance of a bug or unforeseen effect. When first engaging in smart-contract programming, developers are tempted to try to write a lot of code. Instead, you should look through your smart-contract code and try to find ways to do less, with fewer lines of code, with less complexity and with fewer "features". If someone tells you that their project has produced "thousands of lines of code", you should question the security of that project. Simpler is more secure.
+
+Code re-use:: As much as possible, try not to "reinvent the wheel". If a library or contract already exists that does most of what you need, re-use it. Within your own code, follow the DRY principle: Do not Repeat Yourself. If you see any snippet of code repeat more than once, ask yourself whether it could be written as a function or library and re-used. Code that has been extensively used and tested is likely more secure than any new code you write. Beware of Not-Invented-Here attitude, where you are tempted to "improve" a feature or component by building it from scratch. The security risk is often greater than the improvement value.
+
+Code quality:: Smart-contract code is unforgiving. Every bug can lead to monetary loss. You should not treat smart-contract programming the same way as general purpose programming. Rather, you should apply rigorous engineering and software development methodologies, akin to aerospace engineering or a similarly unforgiving engineering discipline. Once you "launch" your code, there's little you can do to fix any problems.
+
+Readability/Auditability:: Your code should be easy to comprehend and clear. The easier it is to read, the easier it is to audit. Smart contracts are public, as anyone can reverse engineer the bytecode. Therefore, you should develop your work in public, using collaborative and open source methodologies. You should write code that is well documented and easy to read, following the style conventions and naming conventions that are part of the Ethereum community.
+
+Test coverage:: Test everything that you can test. Smart contracts run in a public execution environment, where anyone can execute them with whatever input they want. You should never assume that input, such as function arguments, is well formed, properly bounded and has a benign purpose. Test all arguments to make sure they are within expected ranges and properly formatted.
+
+
+===== Common security risks
+
+Smart contract programmers should be familiar with many of the most common security risks, so as to be able to detect and avoid the programming patters that leave them exposed to these risks.
+
+====== Re-entrancy
 
 Re-entrancy is a phenomenon in programming in which a function or program is interrupted and then called again before its previous invocations have finished. In the context of smart contract programming, re-entrancy can occur when contract A calls a function in contract B, which in turn calls the same function in contract A, leading to a recursive execution. This can be particularly dangerous in a situation where the state of the contract is not updated until after the critical call is finished.
 
@@ -987,15 +1006,23 @@ This exploit is particularly famous because of its relevance in the DAO attack. 
 
 To guard against re-entrancy, http://solidity.readthedocs.io/en/v0.4.21/security-considerations.html[Solidity] recommends that a programmer adheres to the Checks-Effects-Interactions pattern, wherein the effects of a function call (such as decreasing the balance) occur before making the call. In our example, this would mean switching steps 3 and 2: updating a user's balance before paying them out. In Ethereum, this is perfectly okay, because all effects of a transaction are atomic, meaning it is impossible for the balance to update without the user also being paid out. Either both occur, or an exception is thrown and neither occurs. This guards against re-entrancy attacks because all subsequent calls into the original contract will encounter the correct modified state.
 
-==== Delegate Call
+====== Delegatecall
 
-The call method, as mentioned previously, "calls" into a function from with it's contract's context. The delegatecall on the other hand, notifies the receiving contract that the sender is a contract as well and that the receiver is allowed *(delegated)* to do as it pleases with the sender's storage. This, as it seems, carries with it security risks.
+The call method, as mentioned previously, "calls" into a function from within the calling contract's context.
 
-delegatecall replaces the buggy opcode callcode, and preserves it's *msg.sender* and *msg.value*. For example, if A invokes B who invokes delegatecall to C, the *msg.sender* is A(for callcode it would have been B).
 
 ////
-TODO: embellish Delegate Call section ^
+TODO: expand Delegate Call section ^
 ////
+
+
+====== Overflow and Underflow
+
+////
+TODO: expand
+////
+
+
 
 [[design_patterns_sec]]
 ==== Design Patterns
