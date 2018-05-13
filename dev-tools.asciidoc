@@ -410,13 +410,29 @@ Website link; https://openzeppelin.org/
 
 Docs link; https://openzeppelin.org/api/docs/open-zeppelin.html
 
-=== ZeppelinOS
-zeppelin_os is an open-source, distributed platform of tools and services on top of the EVM
-to develop and manage smart contract applications securely.
+=== zeppelin_os
+https://github.com/zeppelinos[zeppelin_os] is an open-source, distributed platform of tools and services on top of the EVM
+to develop and manage smart contract applications securely. 
+
+Unlike OpenZeppelin's code, which needs to be re-deployed with each application every time, zeppelin_os's code lives on-chain. Applications that need a given functionality, say, an ERC20 token, not only do not have to re-design and re-audit its implementation (something that OpenZeppelin solved) but do not even need to deploy it. With zeppelin_os, an application interacts with the token's on-chain implementation directly, in much the same way as a desktop application interacts with the components of its underlying OS.
+
+Applications that make use of OpenZeppelin avoid having to "reinvent the wheel" by reusing the library's curated and peer reviewed contracts. However, every single time an application uses an ERC20 token implementation, the same ERC20 bytecode is deployed into the blockchain, over and over again. Such bytecode exists duplicated in the network countless times. Now, applications that make use of zeppelin_os avoid this unnecessary duplication. Instead of deploying their own ERC20 implementation, they link to a contract that defines the latest ERC20 implementation accepted by the community. This single, central implementation is deployed in the blockchain only once, much like Solidity's libraries, but are considerably more sophisticated.
+
+Unlike Solidity's libraries, the implementations offered by zeppelin_os can be treated like regular contracts, i.e. they have storage. Also, they are upgradeable. If a vulnerability is ever found in one of the OS's official implementations, it can simply be swapped with an upgraded one. In the case of the ERC20 token, an upgrade to its implementation would instantly ripple to all the applications that use it. The OS not only provides upgradeability for all of its implementations, but also for the user's own contracts, and even for it's own codebase! Developers decide when and how an application should implement an upgrade, and even which "flavor" of an implementation to adhere to. 
+
+At the core of zeppelin_os sits a very clever contract known as a "proxy". A proxy is a contract that is capable of wrapping any other contract, exposing its interface without having to manually implement setters and getters for it, and can upgrade it without losing state. In Solidity terms, it can be seen as a normal contract whose business logic is contained within a library, which can be swapped by a new library at any time without losing its state. The way in which the proxy links to its implementation is completely automated and encapsulated for the developer. Practically any contract can be made upgradeable with little to no change in its code. More about zeppelin_os's proxy mechanism can be found in Zeppelin's blog: https://blog.zeppelinos.org/[upgradeability-using-unstructured-storage], and an example of how to use it can be found here: https://github.com/zeppelinos/zos-lib/tree/master/examples/single.
+
+The OS wraps its implementations in packages or "releases" that can be vouched for using ZepTokens. ZepTokens can hence be staked against a release, signaling it as the community's accepted implementation set. Anyone can submit new releases that can be scrutinized by the community and eventually accepted as official. As a reward, developers of a release receive tokens each time it is vouched for. As a Dapp developer, vouching provides a measurable way to determine how much is staked for a given release, and hence how much it can be trusted. 
+
+Developing applications using zeppelin_os is similar to developing Javascript applications using NPM. An AppManager handles an application package for each version of the application. A package is simply a directory of contracts, each of which can have one or more upgradeable proxies. The AppManager does not only provide proxies for application-specific contracts, but does so also for zeppelin_os implementations in the form of a standard library. To see a full example of this, please visit: https://github.com/zeppelinos/zos-lib/tree/master/[examples/complex].
+//// TODO: the example provided above is still a WIP - link to a tutorial once it's finished
+
+Although currently in development, zeppelin_os aims to provide a wide set of additional features, such as developer tools, a scheduler that automates background operations within contracts, development bounties, a marketplace that facilitates communication and exchange of value between applications and much more. All of this is described in zeppelin_os's https://zeppelinos.org/zeppelin_os_[whitepaper].pdf.
 
 Github link; https://github.com/zeppelinos
-
 Website link; https://zeppelinos.org
+Blog: https://blog.zeppelinos.org
+Github: https://github.com/zeppelinos
 
 == Utilities
 
