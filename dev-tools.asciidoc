@@ -358,14 +358,57 @@ $ npm -g install embark
 ----
 
 === OpenZeppelin
-OpenZeppelin is an open framework of reusable and secure smart contracts in the Solidity language.
-OpenZeppelin integrates well with Truffle
 
-Github link; https://github.com/OpenZeppelin
+https://openzeppelin.org/[OpenZeppelin] is an open framework of reusable and secure smart contracts in the Solidity language.
+
+It is community-driven, led by the https://zeppelin.solutions/[Zeppelin] team, with over a hundred external contributors. The main focus of the framework is security, achieved by applying industry standard contract security patterns and best practices, taking advantage of all the experience the Zeppelin devs have gained from https://blog.zeppelin.solutions/tagged/security[auditing] a huge amount of contracts, and through the constant testing and auditing from the community that uses the framework as a base for their real world applications.
+
+The OpenZeppelin framework is the most widely used solution for Ethereum smart contracts. This is due to the community discussing every proposed solution and learning from the implementation and integration of these solutions, which turns into a growing feedback loop that improves the existing contracts and finds new possibilities to combine them in a clear and secure architecture. It has resulted in the constant addition of new reusable contracts to solve increasingly complex challenges or explore exciting new possibilities on top of the Ethereum blockchain. As mentioned before, the framework currently has an ample library of contracts ranging from implementations of `ERC20` and `ERC721` tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository in some cases even function as _de facto_ standard implementations.
+
+The framework has an MIT license, and all the contracts have been designed with a modular approach to guarantee ease of reuse and extension. These are clean and basic building blocks, ready to be used on your next Ethereum project. Let's set up the framework and build a simple crowdsale using the OpenZeppelin contracts, as an example of how easy it is to use. This example also stresses the importance of reusing secure components instead of writing them by yourself, and gives a small sample of the ideas that the Ethereum platform and its community are making possible.
+
+First, we will need to install the openzepelin-solidity library from npm into our workspace. The latest release as of the time of this writing is `v1.9.0`, so we will use that one.
+
+----
+mkdir sample-crowdsale
+cd sample-crowdsale
+npm install openzeppelin-solidity@1.9.0
+mkdir contracts
+----
+
+For the crowdsale, we will need to define a token that we will give to the investors in exchange for their ether. At the time of writing, OpenZeppelin includes multiple basic token contracts that follow the ERC20, ERC721 and ERC827 standards, with different characteristics for emission, limits, vesting, lifecycle, etc.
+
+Let's make an ERC20 token that's mintable, meaning that the initial supply starts at 0 and new tokens can be created by the token owner (in our case, the crowdsale contract) and assigned to the investors. In order to do this, create a `contracts/SampleToken.sol` file with the following contents:
+
+----
+include::code/OpenZeppelin/contracts/SampleToken.sol
+----
+
+OpenZeppelin already provides a MintableToken contract that we can use as a base for our token, so we only define the details that are specific to our case. You can trust that the community has put great effort to ensure the correctness of the contract, but it's always better to verify this by ourselves. Take a look at the source code for https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/MintableToken.sol[MintableToken], https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/StandardToken.sol[StandardToken], and https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/ownership/Ownable.sol[Ownable] to understand the implementation details of your new token and the capabilities it supports. Also, take a look at the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/test/token/ERC20/MintableToken.test.js[automated tests] it has, to make sure that all the possible scenarios have been covered and that the code is safe.
+
+Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[RefundableCrowdsale] contract. Maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[IncreasingPriceCrowdsale] contract just for that. Or maybe end the crowdsale when a specified amount of ether has been received by the contract https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[CappedCrowdsale], or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[TimedCrowdsale] contract, or a whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[WhitelistedCrowdsale] contract.
+
+As we said before, the OpenZeppelin contracts are basic building blocks. These crowdsale contracts have been designed to be combined, just read the source code of the base https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/Crowdsale.sol[Crowdsale] contract for directions on how to extend it. For the crowdsale of our token, we need to mint tokens when the ether is received by the crowdsale contract, so let's use https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/emission/MintedCrowdsale.sol[MintedCrowdsale] as a base. And to make it more interesting, let's make it also a https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol[PostDeliveryCrowdsale] so the tokens can only be withdrawn after the crowdsale ends. Write the following into `contracts/SampleCrowdsale.sol`:
+
+----
+include::code/OpenZeppelin/contracts/SampleCrowdsale.sol
+----
+
+Again, we almost didn't have to write any code, but just to reuse the already battle-tested code that the OpenZeppelin community made available for us. However, it is important to note that this case is different than the one of our `SampleToken` contract. If you go to the https://github.com/OpenZeppelin/openzeppelin-solidity/tree/v1.9.0/test/crowdsale[Crowdsale automated tests] you will see that they are tested in isolation. When you integrate different units of code into a bigger component, it's not enough to test all the units separately because the interactions between them might cause behaviors that you didn't expect. In particular, you will see that here we introduced multiple inheritance, which can surprise the developer if they don't understand the implementation details of the Solidity compiler. Our `SampleCrowdsale` is simple, and it will work just as we expect because the framework was designed to make cases like these straightforward; but do not relax your security because of the simplicity that this framework introduces. Every time you integrate parts of the OpenZeppelin framework to build a more complex solution, you must fully test every aspect of your solution to ensure that all the interactions of the units work as you intend.
+
+Finally, after we are happy with our solution and we have tested it thoroughly, we need to deploy it. OpenZeppelin integrates well with Truffle, so we can just write a migrations file as explained in the Truffle section above. Write the following in migrations/2_deploy_contracts.js:
+
+----
+include::code/OpenZeppelin/migrations/2_deploy_contracts.js
+----
+
+This was just a quick overview of a few of the contracts that are part of the OpenZeppelin framework. There are many more, and the community is always proposing ideas for new ones, implementing new strategies to make them safer, simpler and clearer, and trying to find holes early to prevent vulnerabilities on the mainnet contracts. You are welcome to join the community to learn and contribute.
+
+Github link; https://github.com/OpenZeppelin/openzeppelin-solidity
 
 Website link; https://openzeppelin.org/
 
-Read the docs link; http://zeppelin-solidity.readthedocs.io/en/latest/index.html
+Docs link; https://openzeppelin.org/api/docs/open-zeppelin.html
 
 === ZeppelinOS
 zeppelin_os is an open-source, distributed platform of tools and services on top of the EVM
