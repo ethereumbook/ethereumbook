@@ -1,7 +1,12 @@
 == Ethereum Name Service (ENS)
 
-The _Ethereum Name Service (ENS)_ is one of the first Ethereum DApps, offering a decentralized name registry for Ethereum. It can be compared to the Domain Name System (DNS), but unlike DNS which is partially centralized, ENS is completely decentralized.
+You can design the best smart contract in the world, but if you don't provide a good interface for users, they won't be able to access it. Contracts on the blockchain can be considered the backend of your application, and you can write the front-end in any language or platform you feel comfortable. Most of the apps you'll read about on this book currently use a traditional server model to serve that front-end, but if you want to truly decentralize your application, you can also use decentralized hosting services like bit torrent, swarm or IPFS to also host the files required for the front-end.
 
+In a traditional server model of the web, you access content by describing the address where you can find the content. For instance 91.198.174.192 is the IP address of Wikipedia. That number has no information on what sort of content you will find, only the address of the computers that will serve you wikipedia's content. Content-addressing systems are different that their address reflect the content itself not its location. For instance, the url `QmfXeApFP1mCrMTT1JX5XLtUvLxS5eNsegqDpBYUZPhXEQ` actually describes an image that you can download from any computer on the IPFS network. Different standards, like IPFS or Swarm will have different hashes, but they all describe the content not the address itself. This allows more flexibility and decentralization because as long as a single node in your network has a copy of that image (or is connected to a node that has a copy of it), they can access it.
+
+This process allows acessing any files that will make up your interface, html, javascript, css, images, etc in a decentralized manner, but has a huge drawback: urls are not very human friendly. They consist of large mumbles of letters and numbers, which are neither memorable or easy to type. On the traditional IP-based internet, this was solved by Domain Naming system (DNS), an hierarchical system ultimately centralized on ICANN, a US-based organization that controls the distribution of top level domaisn, like .com or .org. On the blockchain an attempt to solve the same problem but in a decentralized manner is the Ethereum Naming System (ENS).
+
+Another advantadge of a naming system is that it can also be used as a aliases for receiving funds or identifiers. As an example, the Ethereum Foundation donation contract address is `0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359` or, in a wallet that supports ENS, it's simply `ethereum.eth`.
 
 === Name resolution services
 
@@ -13,38 +18,83 @@ The _Ethereum Name Service (ENS)_ is one of the first Ethereum DApps, offering a
 
 === History of Ethereum name services
 
-ENS is not the first name registration service in Ethereum. It was preceded by "NameReg" ...
+Name registrations is the first non-currency application of blockchains, being pioneered by Namecoin. The ethereum whitepaper contains as one of their example aplications, a two lines "namecoin-like" registration system. The early releases of geth and CPP client had a standard default "namereg" contract (not used anymore) and many proposals and ERCs have existed since the beginning, but it was not before Nick Johnson started working for Ethereum Foundation in 2016 and took the project under his wing that work on a serious registrar started.
 
-=== The ENS specification: ERC-137
+ENS was launched on Star Wars day, May 4, 2017 (after a failed attempt of launching it on Pie Day, march 15) and it was open for registrations.
 
-////
-Is this an EIP? Or just an ERC?
-////
+=== The ENS specification
 
-Describe the standard
+ENS is specified mainly in three Ethereum Improvement Proposals (EIP), namely ERC137 which specifies the basic ENS functioning, ERC162 the auction system for the .eth root and ERC181 for reverse registration of addresses.
 
-=== ENS contract interface
+ENS folows a "sandwich" design philosophy: a very simple layer on the bottom, followed by layers of more complex but replaceable code, followed with a very simple top layer that keeps all the funds in separate individual accounts.
 
-=== The ENS DApp
+=== Bottom of the sandwich: Name Owners and resolvers
+
+The base layer of the sandwich is a cleverly simple (less than 50 lines of code) contract defined by ERC137 that basically only allows owners of names to set information about their names and to create subnodes (subdomains). The core of the simplicity is the identifier mechanism for names, called namehash.
+
+Namehash is an algorithm for converting any name in a identifier hash of the name, and it works like this:
+
+Root Node:  `keccak(0x0000000000000000000000000000000000000000000000000000000000000000)`
+".eth" node: `keccak( (Root Node) + keccak('eth'))`
+"example.eth" node: `keccak( ('.eth' node) + keccak('example'))`
+"subdomain.example.eth" node: `keccak( ('example.eth' node) + keccak('subdomain'))`
+
+And recursively so. The only functions on the base layer are those that enable a node owner to set information about their own node (specifically: resolver, time to live and transferring ownership) and to create an owner to a subnode.
+
+==== Rootnode ownership
+
+One of the results of this hierarchical system is that it relies on the owners of the Rootnode, that are able to create top level domains. While the eventual goal is to move this into some sort of decentralized decision making process for new top level domains, right now the rootnode is a 4 out of 7 multisig, held by people in different countries (built as a reflection of the seven keyholders of the DNS system). Currently the purpose and goal of these keyholders is to work in consensus with the community to:
+
+* Migrate and upgrade the temporary ownrship of the ".eth" TLD to a more permanent contract once the system is evaluated
+* Allow adding new TLDs, if the community agrees that such is ever needed
+* Migrate the ownership of the root multisig in a more decentralized contract, when such system is agreed upon, tested and implemented.
+* To serve as a last resort way to deal with any bugs or vulnerability on the top level registries
+
+==== Resolvers
+
+The basic ENS contract doesn't allow owners of adding any metadata to contracts, that is the job of the resolver contracts. The purpose is to allow more flexibility by allowing users to create a custom contract that can answer any questions about the name in itself, like "what's the swarm address associated with this app?", "what is the ethereum address that receives payments in ether and tokens?", "what's the hash of the app, in order to verify its integrity?".
+
+=== Middle layer: the ".eth" nodes
+
+At the moment, the only top level domain that is uniquely registerable in a smart contract is ".eth". There's work on enabling traditional dns domain owners to claim ENS ownership. While in theory this could work for ".com" the only domain that this has been [implemented is for ".xyz" in a testnet](https://medium.com/the-ethereum-name-service/how-to-claim-your-dns-domain-on-ens-e600ef2d92ca).
+
+The way Eth domains are distributed are via an auction system. There is no special reserved lists or exclusive priorities, and the only way to acquire a name is to use the same system as everyone. That is a much more complex bit of code (over 500 lines of code), and where most of the bugs and tests on the development phase where here. But it's also replaceable and upgradeable (without risks to the funds – more on that later).
+
+==== Vickrey Auctions
+
+The way names are distributed is via a Vickrey Auction, a blind auction that attempts to find the bidder with the higher expected utility for the name, but without exagerating the value. Since there are no profits gathered from the auctions, there's no incentive to maximize it.
+
+In a traditional Vickrey auction, every bidder submits a sealed bid, and all of them are revealed at the same time, at which point the person with the *highest bid* wins the auction, but only pays *the second higher price*. Therefore bidders are incentivized in putting down their theoretical maximum utility value for a domain, since increasing it increases the chance they will win but does not affect the price they will eventually pay: they only need to pay enough to outbid the second higher bidder.
+
+On a blockchain, some changes are required:
+
+* Since you don't have everyone on the same room legally binding them to their promises, then bidders MUST to lock up a value equal or higher than their bid beforehand, to guarantee the bid is valid
+* Because you can't hide secrets on a blockchain, bidders MUST execute at least two transactions, a commit and then a reveal process, in order to hide the original value and name they bid on.
+* Since you can't reveal all bids on the same time on a decentralized manner bidders MUST reveal their own bids themselves or be punished by losing their funds if they don't. If such punishment did not exist, one could make multiple bids in many price points and choose to only reveal a few strategically ones, therefore turning a sealed-bid auction in a traditional increasing price auction.
+
+Therefore the auction process is a four step process:
+
+1) Start the auction or auctions. This is a required step to broadcast the intent to register a name. This creates all auction deadlines. The names are hashed, so that only those who have the name in their dictionary will know which auction was opened. This allows some privacy, specially if you are creating a new project and don't want to share details about it. You can open multiple "dummy" hashes at the same time, so if someone is following you, they cannot simply bid on all auctions you open
+
+2) Make a sealed bid: you must do this before the bidding deadline, by tying up a given amount of ether to a hash of a secret message (containing, among others, the hash of the name, the actual amount of the bid, and a salt). You can lock up more ether than you are actually bidding in order to mask the real evaluate
+
+3) Reveal the bid: during the reveal period, you MUST make a transaction that reveals the bid, which will then calculate the higher bidder, the second higger bid and send extra ether back to owners. Every time the bid is revealed the current winner is recalculated, therefore the last one to be set before the revealing deadline expires, becomes the owners
+
+4) Clean up after: if you are the owner, you can finalize the auction in order to get back the difference between your bid and the second higher one. If you forgot to reveal you can make a late reveal and recover a small amount of the original value.
+
+==== Top layer of the sandwich: the Deeds
+
+The last piece of the sandwich, the top bun so to speak is yet another super simple contract with a single purpose: to hold the funds. When you "win" a name, the funds are not actually sent anywhere, but are just locked up for the period you want to hold the name (minimum of a year). This works like a guarantee "buy-back" model, where if the owner does not want the name anymore they can sell it back to the system and get their ether back (making so that the cost of holding the name was the opportunity cost of doing anything with a better return than 0% interest). 
+
+But of course, having a single contract hold millions of dollars in ether has proven to be very risky so instead ENS solves that by creating a "Deed" contract for each new name. The Deed contract is a very simple code (about 50 lines of code) and it only allows the funds to be transferred back to a single account (the deed owner) and to be called by a single entity (the registrar contract). This approach drastically reduces the surface of attack where bugs can put the funds at risk.
 
 === Registering a name
-
 .ENS timeline for registration
 image::images/ens-flow.png[]
 
 ////
 Image with permission from Chris Remus, Nick Johnson and Alex Van de Sande, via article by Chris Remus
 ////
-
-==== The ENS auction
-
-===== Why an auction?
-
-===== Timeline of an ENS auction
-
-===== Making a bid
-
-===== Finaliing an auction
 
 === Setting an ENS name resolver
 
