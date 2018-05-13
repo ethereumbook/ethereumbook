@@ -180,6 +180,81 @@ For other operating systems, use the package manager of your OS or follow the Wi
 
 Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's get to work!
 
+[[parity]]
+==== Parity
+
+Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a modular, secure, and scalable Ethereum client. Parity is developed by Parity Tech, a UK company, and is released under a GPLv3 open source license.
+
+[NOTE]
+=====
+Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote most of the Parity client. Parity represents about 28% of the installed Ethereum client base.
+=====
+
+To install Parity, you can use the Rust package manager +cargo+ or download the source code from GitHub. The package manager also downloads the source code, so there's not much difference between the two options. In the next section, we will show you how to download and compile Parity yourself.
+
+[[install_parity]]
+===== Installing Parity
+
+The Parity Wiki offers instructions for building Parity in different environments and containers:
+
+https://github.com/paritytech/parity/wiki/Setup
+
+We'll build Parity from source. This assumes you have already installed Rust using +rustup+ (See <<sw_reqs>>).
+
+First, let's get the source code from GitHub:
+
+[[git_clone_parity]]
+----
+$ git clone https://github.com/paritytech/parity
+----
+
+Now, let's change to the +parity+ directory and use +cargo+ to build the executable:
+
+[[parity_build]]
+----
+$ cd parity
+$ cargo build
+----
+
+If all goes well, you should see something like:
+
+[[parity_build_status]]
+----
+$ cargo build
+    Updating git repository `https://github.com/paritytech/js-precompiled.git`
+ Downloading log v0.3.7
+ Downloading isatty v0.1.1
+ Downloading regex v0.2.1
+
+ [...]
+
+Compiling parity-ipfs-api v1.7.0
+Compiling parity-rpc v1.7.0
+Compiling parity-rpc-client v1.4.0
+Compiling rpc-cli v1.4.0 (file:///home/aantonop/Dev/parity/rpc_cli)
+Finished dev [unoptimized + debuginfo] target(s) in 479.12 secs
+$
+----
+
+Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
+
+[[run_parity]]
+----
+$ parity --version
+Parity
+  version Parity/v1.7.0-unstable-02edc95-20170623/x86_64-linux-gnu/rustc1.18.0
+Copyright 2015, 2016, 2017 Parity Technologies (UK) Ltd
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+By Wood/Paronyan/Kotewicz/Drwięga/Volf
+   Habermeier/Czaban/Greeff/Gotchac/Redmann
+$
+----
+
+Great! Now that Parity is installed, we can sync the blockchain and get started with some basic command-line options.
+
 [[go_ethereum_geth]]
 ==== Go-Ethereum (Geth)
 
@@ -262,7 +337,7 @@ Run "build/bin/geth" to launch geth.
 $
 ----
 
-Let's run +geth+ to make sure it works:
+Let's run +geth+ to make sure it works before stopping it and chainging it's configuration:
 
 [[run_geth]]
 ----
@@ -291,80 +366,31 @@ $ sudo cp ./build/bin/geth /usr/local/bin
 ----
 Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way," and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
 
-[[parity]]
-==== Parity
 
-Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a modular, secure, and scalable Ethereum client. Parity is developed by Parity Tech, a UK company, and is released under a GPLv3 open source license.
+[[first_sync]]
+=== The First Synchronization of Ethereum-based Blockchains
+
+Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the genesis block.
+
+While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high computing resource requirements (much more RAM and faster storage).
+
+Many Ethereum-based blockchains were the victim of a Denial-of-Service (DoS) attack at the end of 2016. Blockchains affected by this attack will tend to sync slowly when doing a full sync.
+
+For example, on Ethereum, a new client will make rapid progress until it reaches block 2,283,397. This block was mined on September 18th, 2016 and marks the beginning of the DoS attacks. From this block and until block 2,700,031 (November 26th, 2016), the validation of transactions becomes extremely slow, memory intensive, and I/O intensive. This results in validation times exceeding 1 minute per block. Ethereum implemented a series of upgrades, using hard forks, to address the underlying vulnerabilities that were exploited in the denial of service. These upgrades also cleaned up the blockchain by removing some 20 million empty accounts created by spam transactions. <<[1]>>
+
+If you are syncing with full validation, your client will slow down and may take several days or longer to validate any blocks affected by this DoS attack.
+
+Most Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
+
+For Geth, the option to enable fast synchronization is typically called +--fast+. You may need to refer to the specific instructions for your chosen Ethereum chain.
+
+For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
 
 [NOTE]
 =====
-Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote most of the Parity client. Parity represents about 28% of the installed Ethereum client base.
+Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
 =====
 
-To install Parity, you can use the Rust package manager +cargo+ or download the source code from GitHub. The package manager also downloads the source code, so there's not much difference between the two options. In the next section, we will show you how to download and compile Parity yourself.
-
-[[install_parity]]
-===== Installing Parity
-
-The Parity Wiki offers instructions for building Parity in different environments and containers:
-
-https://github.com/paritytech/parity/wiki/Setup
-
-We'll build Parity from source. This assumes you have already installed Rust using +rustup+ (See <<sw_reqs>>).
-
-First, let's get the source code from GitHub:
-
-[[git_clone_parity]]
-----
-$ git clone https://github.com/paritytech/parity
-----
-
-Now, let's change to the +parity+ directory and use +cargo+ to build the executable:
-
-[[parity_build]]
-----
-$ cd parity
-$ cargo build
-----
-
-If all goes well, you should see something like:
-
-[[parity_build_status]]
-----
-$ cargo build
-    Updating git repository `https://github.com/paritytech/js-precompiled.git`
- Downloading log v0.3.7
- Downloading isatty v0.1.1
- Downloading regex v0.2.1
-
- [...]
-
-Compiling parity-ipfs-api v1.7.0
-Compiling parity-rpc v1.7.0
-Compiling parity-rpc-client v1.4.0
-Compiling rpc-cli v1.4.0 (file:///home/aantonop/Dev/parity/rpc_cli)
-Finished dev [unoptimized + debuginfo] target(s) in 479.12 secs
-$
-----
-
-Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
-
-[[run_parity]]
-----
-$ parity --version
-Parity
-  version Parity/v1.7.0-unstable-02edc95-20170623/x86_64-linux-gnu/rustc1.18.0
-Copyright 2015, 2016, 2017 Parity Technologies (UK) Ltd
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.
-
-By Wood/Paronyan/Kotewicz/Drwięga/Volf
-   Habermeier/Czaban/Greeff/Gotchac/Redmann
-$
-----
-
-Great! Now that Parity is installed, we can sync the blockchain and get started with some basic command-line options.
 
 [[json_rpc]]
 ==== JSON-RPC Interface
@@ -373,7 +399,7 @@ Ethereum clients offer an Application Programming Interface (API) and a set of R
 
 Usually, the RPC interface is offered over as an HTTP service on port +8545+. For security reasons it is restricted, by default, to only accept connections from localhost (the IP address of your own computer which is +127.0.0.1+).
 
-To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RCP interface. Let's try that:
+To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RCP interface. Let's try that(ensure that you have Geth configured and running first):
 
 [[curl_web3]]
 .Using curl to call the web3_clientVersion function over JSON-RPC
@@ -443,30 +469,6 @@ Parity has a special "Geth Compatibility Mode", where it offers a JSON-RPC API t
 ----
 $ parity --geth
 ----
-
-[[first_sync]]
-=== The First Synchronization of Ethereum-based Blockchains
-
-Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the genesis block.
-
-While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high computing resource requirements (much more RAM and faster storage).
-
-Many Ethereum-based blockchains were the victim of a Denial-of-Service (DoS) attack at the end of 2016. Blockchains affected by this attack will tend to sync slowly when doing a full sync.
-
-For example, on Ethereum, a new client will make rapid progress until it reaches block 2,283,397. This block was mined on September 18th, 2016 and marks the beginning of the DoS attacks. From this block and until block 2,700,031 (November 26th, 2016), the validation of transactions becomes extremely slow, memory intensive, and I/O intensive. This results in validation times exceeding 1 minute per block. Ethereum implemented a series of upgrades, using hard forks, to address the underlying vulnerabilities that were exploited in the denial of service. These upgrades also cleaned up the blockchain by removing some 20 million empty accounts created by spam transactions. <<[1]>>
-
-If you are syncing with full validation, your client will slow down and may take several days or longer to validate any blocks affected by this DoS attack.
-
-Most Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
-
-For Geth, the option to enable fast synchronization is typically called +--fast+. You may need to refer to the specific instructions for your chosen Ethereum chain.
-
-For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
-
-[NOTE]
-=====
-Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
-=====
 
 [[lw_eth_clients]]
 === Lightweight Ethereum Clients
