@@ -115,9 +115,9 @@ The first function (named f) accepts an input argument of type uint, however the
 
 Variable typecasting:: There are two modalities of typecasting. 
 
-Implicit typecasting is often performed at compile time. For example if a type conversion is semantically sound and no information is likely to be lost the compiler could perform an implicit conversion, such as converting a variable of type uint8 to uint16.
+Implicit typecasting is often performed at compile time. For example if a type conversion is semantically sound and no information is likely to be lost, the compiler can perform an implicit conversion, such as converting a variable of type uint8 to uint16. Whilst the earliest versions of Vyper entertained implicit typecasting of variables, the most recent version of the Vyper programming language does not support implicit typecasting.
 
-Explicit type conversion can be performed by a software developer in the source code. Unfortunately, explicit type conversions in code can often lead to unexpected behaviour. For example, if an explicit type conversion transposes a uint32 type to the smaller type of uint16, the higher-order bits are simply cut off as demonstrated below. 
+Explicit typecasting can be performed by a software developer in their source code. Unfortunately, explicit typecasting in code can often lead to unexpected behaviour. For example, if an explicit type conversion transposes a uint32 type to the smaller type of uint16, the higher-order bits are simply cut off as demonstrated below. 
 
 [source,javascript]
 ----
@@ -126,7 +126,51 @@ uint16 b = uint16(a);
 //Variable b is 0x5678 now
 ----
 
-Whilst the earliest versions of Vyper entertained typecasting of variables, the most recent version of the Vyper programming language does not support variable typecasting.
+It is for this reason that Vyper has implemented a convert()function. The convert() function allows developers to perform explicit typecasting in their code. The convert function (found on line 82 of the https://github.com/ethereum/vyper/blob/master/vyper/types/convert.py[convert.py] file) is as follows.
+
+[source,python]
+----
+def convert(expr, context):
+    output_type = expr.args[1].s
+    if output_type in conversion_table:
+        return conversion_table[output_type](expr, context)
+    else:
+        raise Exception("Conversion to {} is invalid.".format(output_type))
+----
+
+You may notice the conversion_table, which is mentioned in the above code. The conversion table (found on line 90 of the same file) is as follows.
+
+[source,python]
+----
+conversion_table = {
+    'int128': to_int128,
+    'uint256': to_unint256,
+    'decimal': to_decimal,
+    'bytes32': to_bytes32,
+}
+----
+
+When a developer originally calls the convert function, the convert function references the conversion_table which then ensures that the appropriate conversion is performed. For example, if a developer passes the argument of 'int128' into the convert function the to_int128 function on line 26 of the same (convert.py) file will be executed. The to_int128 function is as follows.
+
+[source,python]
+----
+@signature(('int128', 'uint256', 'bytes32', 'bytes'), 'str_literal')
+def to_int128(expr, args, kwargs, context):
+    in_node = args[0]
+    typ, len = get_type(in_node)
+    if typ in ('int128', 'uint256', 'bytes32'):
+        if in_node.typ.is_literal and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+            raise InvalidLiteralException("Number out of range: {}".format(in_node.value), expr)
+        return LLLnode.from_list(
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node, ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'), pos=getpos(expr)
+        )
+    else:
+        return byte_array_to_num(in_node, expr, 'int128')
+----
+
+As you can see, the conversion is handled strictly (with the appropriate exceptions). The conversion code accounts for any truncating as well as other anomolies which would ordinarily take place, without one's knowledge, in an implicit typecasting situation. As mentioned above, implicit typecasting between integer types in arithmetic and comparison can not only be confusing, but can also reduce auditability. 
+
+Choosing explicit, over implicit, typecasting means that the developer is responsible for performing the variable typecasting up front. While this approach does produce more verbose code, it also improves the safety and auditability of smart contracts.
 
 :revnumber: v1.1
 :revdate: 2018-04-11 (yyyy-mm-dd)
