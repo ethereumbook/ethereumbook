@@ -1,9 +1,9 @@
 [Vyper]
 [[viper_chap]]
 == Vyper: A contract-oriented programming language
-:revnumber: v1.7
+:revnumber: v1.8
 :revdate: 2018-05-18 (yyyy-mm-dd)
-:revremark: Updating this chapter with some how-to guides and code examples.Please note that there are still sections in this chapter labelled with TODO. The TODO tag identifies pending points which are still being researched and need to be completed.
+:revremark: All TODOs are now complete.
 
 ////
 Source: https://github.com/ethereum/vyper/blob/master/README.md
@@ -39,7 +39,8 @@ Added by: @tpmccallum
 :revdate: 2018-04-12 (yyyy-mm-dd)
 :revremark: This paragraph is complete and has been merged < https://github.com/ethereumbook/ethereumbook/pull/456 >
 
-Research shows that smart contracts, with trace vulnerabilities, can result in unexpected execution. https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed 970,898 contracts. It outlined three basic categories of trace vulnerabilities (which have already resulted in the catastrophic loss of funds for Ethereum users). These categories include::
+Research shows that smart contracts, with trace vulnerabilities, can result in unexpected execution. https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed 970,898 contracts. It outlined three basic categories of trace vulnerabilities (which have already resulted in the catastrophic loss of funds for Ethereum users). These categories include.
+
 * Suicidal contracts. Contracts which can be killed by arbitrary addresses
 * Greedy contracts which have no way to release Ether after a certain execution state, and
 * Prodigal contracts which release Ether to arbitrary addresses carelessly
@@ -57,7 +58,7 @@ This section is a reference for those who are considering developing smart contr
 
 :revnumber: v1.5
 :revdate: 2018-04-28 (yyyy-mm-dd)
-:revremark: TODO - The Function overloading and Variable typecasting sections listed below have to be re-worded. They are, by and large, just a cut and paste of the original documentation and also contain TODOs
+:revremark: This section is complete.
 
 Modifiers:: In Solidity you can write a function using modifiers. For example, the following function called `changeOwner` will run the code in a modifier, called `onlyBy`, as part of its execution. 
 
@@ -95,9 +96,35 @@ Inline assembly:: Inline assembly provides developers with an opportunity to acc
 
 As mentioned previously, Vyper strives to provide developers and code auditors with the most human readable code. whilst inline assembly can provide powerful fine-grained control, it is not supported by the Vyper programming language.
 
-Function overloading:: TODO paraphrase the following ... "having multiple function definitions with the same name and different argument options can cause lots of confusion over which function is called at any given time. With function overloading, it's easier to write misleading code (foo("hello") logs "hello" but foo("hello", "world") steals your funds). Another problem with function overloading is that it makes the code much harder to search through as you have to keep track on which call refers to which function."
 
-Variable typecasting:: Typecasting is a mechanism which allows programmers to convert a variable from one data type to another data type. TODO explain how this has been handled in Vyper.
+Function overloading:: Function overloading allows developers to write multiple functions of the same name. Each of the overloaded functions, which contain the same name, are uniquely identified by their argument signatures. Take the following two functions for example.
+
+[source,javascript]
+----
+function f(uint _in) public pure returns (uint out) {
+    out = 1;
+}
+
+function f(uint _in, bytes32 _key) public pure returns (uint out) {
+    out = 2;
+}
+----
+The first function (named f) accepts an input argument of type uint, however the second function (also named f) accepts two arguments, one of type uint and one of type bytes32. Having multiple function definitions with the same name and different argument options could cause confusion and it is primarily for this reason that Vyper does not support function overloading.
+
+Variable typecasting:: There are two modalities of typecasting. 
+
+Implicit typecasting is often performed at compile time. For example if a type conversion is semantically sound and no information is likely to be lost the compiler could perform an implicit conversion, such as converting a variable of type uint8 to uint16.
+
+Explicit type conversion can be performed by a software developer in the source code. Unfortunately, explicit type conversions in code can often lead to unexpected behaviour. For example, if an explicit type conversion transposes a uint32 type to the smaller type of uint16, the higher-order bits are simply cut off as demonstrated below. 
+
+[source,javascript]
+----
+uint32 a = 0x12345678;
+uint16 b = uint16(a); 
+//Variable b is 0x5678 now
+----
+
+Whilst the earliest versions of Vyper entertained typecasting of variables, the most recent version of the Vyper programming language does not support variable typecasting.
 
 :revnumber: v1.1
 :revdate: 2018-04-11 (yyyy-mm-dd)
@@ -191,8 +218,7 @@ While smart contracts can write to Ethereum's chain data (through log events), s
 
 :revnumber: v1.1
 :revdate: 2018-04-10 (yyyy-mm-dd)
-:revremark: Just want to keep an eye on the development in Vyper GitHub in order to compare and contrast the differences between Vyper and Solidity's ERC20 Token Interface Implementation closer to ethereumbook being published.
-:revstatus: TODO
+:revremark: This section is now complete
 
 [[erc20_token_interface_implementation_sec]]
 === ERC20 token interface implementation
@@ -200,15 +226,10 @@ Vyper has implemented ERC20 as a precompiled contract and allows to use it by de
 Contracts in Vyper must be declared as global variables. An example for declaring the ERC20 variable can be
 token: address(ERC20).
 
-:revnumber: v1.0
-:revdate: 2018-04-10 (yyyy-mm-dd)
-:revremark: There is a pending question in the Vyper GitHub repo < https://github.com/ethereum/vyper/issues/745 >. Whilst sharding opcodes have been implemented on a branch, the Vyper code base is yet to have sharding opcodes merged into a release. It would be nice to include updated information for the book as soon as Vyper has implemented sharding opcodes. @jacqueswww and @NIC619 have provided URLs in relation to opcodes, specifically the sharding roadmap < https://github.com/ethereum/py-evm/issues/190 > and Vitalik's Account Abstraction Proposals information < https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263 >. Details will be added as soon as possible.
-:revstatus: TODO
-
 :revnumber: v1.2
 :revdate: 2018-05-18 (yyyy-mm-dd)
-:revremark: Providing a brief explaination of opcodes (origin of opcodes in the Ethereum Yellow Paper) and then linking to the individual Solidity and Vyper opcode implementations. Rather than make assumptions (comparing and contrasting) now, readers can compare and contrast the opcode implementations in real time after the book is published and throughout future ongoing development and revision of opcodes (as decided by the Ethereum creators and developers)
-:revstatus: TODO
+:revremark: Providing a brief explaination of opcodes (origin of opcodes in the Ethereum Yellow Paper) and then linking to the individual Solidity and Vyper opcode implementations.
+
 [[opcodes_sec]]
 === OPCODES
 The code for smart contracts is mainly written in high level languages like Solidity or Vyper. The compiler is responsible for taking the high level code and creating the lower level interpretation of it, which is then executable on the Ethereum Virtual Machine (EVM). The lowest representation the compiler can distill the code to (prior to execution by the EVM) are opcodes. This being the case, each implementation of a high level language (like Vyper) is required to provide an appropriate compilation mechanism (a compiler) to allow (among other things) the high level code to be compiled into the universally predefined EVM opcodes. The origin of Ethereum opcodes is of course the Ethereum Yellow Paper. Each implementation of the Ethereum opcodes can be found in the appropriate source code repository. For example Solidity's C++ opcode implementation can be found in the https://github.com/ethereum/solidity/blob/develop/libevmasm/Instruction.cpp[Instructions.cpp file] and Vyper's Python opcode implementation can be found in the https://github.com/ethereum/vyper/blob/248c723288e84899908048efff4c3e0b12f0b3dc/vyper/opcodes.py[opcodes.py file].
