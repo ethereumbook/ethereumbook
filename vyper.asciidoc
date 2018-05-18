@@ -1,8 +1,8 @@
 [Vyper]
 [[viper_chap]]
 == Vyper: A contract-oriented programming language
-:revnumber: v1.5
-:revdate: 2018-04-28 (yyyy-mm-dd)
+:revnumber: v1.7
+:revdate: 2018-05-18 (yyyy-mm-dd)
 :revremark: Updating this chapter with some how-to guides and code examples.Please note that there are still sections in this chapter labelled with TODO. The TODO tag identifies pending points which are still being researched and need to be completed.
 
 ////
@@ -164,6 +164,16 @@ The human readable ABI code (in JSON format) can be obtained by then running the
 
 vyper -f json ~/hello_world.v.py
 
+:revnumber: v1.0
+:revdate: 2018-05-18 (yyyy-mm-dd)
+:revremark: The following section points out that Vyper protects against overflows at the compiler level
+
+[[protecting_against_overflows_sec]]
+=== Protecting against overflow errors at the compiler level
+
+Overflow errors in software can be catastrophic when dealing with real value. This https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction] [1] shows the malicious transfer of over 57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,000 BEC tokens. The transaction, which occured in mid April of 2018, is the result of an integer overflow issue in BeautyChain's ERC20 token contract (BecToken.sol) [2]. While Solidity developers do have libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol[SafeMath] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril], they are still able to write arbitrary code (outside of the help provided) which can then be successfully compiled and later on successfully executed. Even if the outcome is detrimental. 
+
+Vyper strives to provide overflow protection which is actually built into the programming language. The in-built functionality, which provides protection against overflow errors, is implemented in a two prong approach. Firstly Vyper provides https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275[a SafeMath equivalent] [3] which includes the necessary exception cases for all arithmetic of uint256 integers. In addition to this, Vyper also uses clamps which are enforced whenever a literal constant is loaded, a value is passed into a function, or when a variable is assigned. Clamps are implemented via custom functions in the LLL compiler.
 
 :revnumber: v1.1
 :revdate: 2018-04-11 (yyyy-mm-dd)
@@ -195,10 +205,14 @@ token: address(ERC20).
 :revremark: There is a pending question in the Vyper GitHub repo < https://github.com/ethereum/vyper/issues/745 >. Whilst sharding opcodes have been implemented on a branch, the Vyper code base is yet to have sharding opcodes merged into a release. It would be nice to include updated information for the book as soon as Vyper has implemented sharding opcodes. @jacqueswww and @NIC619 have provided URLs in relation to opcodes, specifically the sharding roadmap < https://github.com/ethereum/py-evm/issues/190 > and Vitalik's Account Abstraction Proposals information < https://ethresear.ch/t/tradeoffs-in-account-abstraction-proposals/263 >. Details will be added as soon as possible.
 :revstatus: TODO
 
-:revnumber: v1.1
-:revdate: 2018-04-10 (yyyy-mm-dd)
-:revremark: Just want to keep an eye on the development in Vyper GitHub in order to compare and contrast the differences between Vyper and Solidity's ERC20 Token Interface Implementation closer to ethereumbook being published.
+:revnumber: v1.2
+:revdate: 2018-05-18 (yyyy-mm-dd)
+:revremark: Providing a brief explaination of opcodes (origin of opcodes in the Ethereum Yellow Paper) and then linking to the individual Solidity and Vyper opcode implementations. Rather than make assumptions (comparing and contrasting) now, readers can compare and contrast the opcode implementations in real time after the book is published and throughout future ongoing development and revision of opcodes (as decided by the Ethereum creators and developers)
 :revstatus: TODO
 [[opcodes_sec]]
 === OPCODES
-The code for smart contracts is mainly written in high level languages like Solidity or Vyper. The compiler is responsible for taking the high level code and creating the lower level interpretation of it, which is then executable on the Ethereum Virtual Machine (EVM). The lowest representation the compiler can distill the code to (prior to execution by the EVM) are opcodes. This being the case, each implementation of a high level language (like Vyper) is required to provide an appropriate compilation mechanism (a compiler) to allow (among other things) the high level code to be compiled into the universally predefined EVM opcodes. A good example of this is Vyper's implementation of Ethereum's sharding opcodes.
+The code for smart contracts is mainly written in high level languages like Solidity or Vyper. The compiler is responsible for taking the high level code and creating the lower level interpretation of it, which is then executable on the Ethereum Virtual Machine (EVM). The lowest representation the compiler can distill the code to (prior to execution by the EVM) are opcodes. This being the case, each implementation of a high level language (like Vyper) is required to provide an appropriate compilation mechanism (a compiler) to allow (among other things) the high level code to be compiled into the universally predefined EVM opcodes. The origin of Ethereum opcodes is of course the Ethereum Yellow Paper. Each implementation of the Ethereum opcodes can be found in the appropriate source code repository. For example Solidity's C++ opcode implementation can be found in the https://github.com/ethereum/solidity/blob/develop/libevmasm/Instruction.cpp[Instructions.cpp file] and Vyper's Python opcode implementation can be found in the https://github.com/ethereum/vyper/blob/248c723288e84899908048efff4c3e0b12f0b3dc/vyper/opcodes.py[opcodes.py file].
+
+[1] https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f
+[2] https://etherscan.io/token/0xc5d105e63711398af9bbff092d4b6769c82f793d
+[3] https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275
