@@ -14,37 +14,35 @@ This repository contains the draft of the book, currently in progress, scheduled
 
 # Contents
 
-The current status of the book is "outline". Chapters are not clearly defined or organized yet. Snippets and outlines of various topics are being developed and comments are very welcome!
+The current status of the book is **CONTENT FREEZE - TECH REVIEW**. Only errors, fixes and typos will be accepted. Any nw content submissions will be delayed for the second edition, which goes into production in late 2019 or early 2020.
 
-Note: the order or structure of these snippets is in constant flux.
 
 Here's what is available now:
 
-| Section | Progress | Content Complete | Review Complete |
-|-------|------|:------:|:------:|
-| [Preface](preface.asciidoc) | ### |||
-| [Glossary](glossary.asciidoc) | ####### |||
-| [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: ||
-| [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: ||
-| [Ethereum Clients](clients.asciidoc) | ########## |||
-| [Ethereum Testnets](ethereum-testnets.asciidoc) | ### |||
-| [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: ||
-| [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: ||
-| [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: ||
-| [Smart Contracts](smart-contracts.asciidoc) | ########### |||
-| [Vyper](vyper.asciidoc) | ### |||
-| [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: ||
-| [Oracles](oracles.asciidoc) | ####### |||
-| [Accounting & Gas](gas.asciidoc) | ### |||
-| [EVM](evm.asciidoc) | ##### |||
-| [Consensus](consensus.asciidoc) | ### |||
-| [DevP2P Protocol](devp2p-protocol.asciidoc) | ### |||
-| [Dev Tools and Frameworks](dev-tools.asciidoc) | ###### |||
-| [DApps](dapps.asciidoc) | ### |||
-| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### |||
+| Section | Progress | Content Complete |
+|-------|------|:------:|
+| [Preface](preface.asciidoc) | #### ||
+| [Glossary](glossary.asciidoc) | ######## | :heavy_check_mark: |
+| [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: |
+| [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: |
+| [Ethereum Clients](clients.asciidoc) | ########## | :heavy_check_mark: |
+| [Ethereum Testnets](ethereum-testnets.asciidoc) | #### ||
+| [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: |
+| [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: |
+| [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: |
+| [Smart Contracts](smart-contracts.asciidoc) | ########################## | :heavy_check_mark: |
+| [Dev Tools and Frameworks](dev-tools.asciidoc) | ########## | :heavy_check_mark: |
+| [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: |
+| [DApps](dapps.asciidoc) | #### ||
+| [Oracles](oracles.asciidoc) | ####### | :heavy_check_mark: |
+| [Accounting & Gas](gas.asciidoc) | #### | :heavy_check_mark: |
+| [EVM](evm.asciidoc) | ####### | :heavy_check_mark: |
+| [Consensus](consensus.asciidoc) | ####### | :heavy_check_mark: |
+| [Vyper](vyper.asciidoc) | ##### | :heavy_check_mark: |
+| [DevP2P Protocol](devp2p-protocol.asciidoc) | ### | :heavy_check_mark: |
+| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### | :heavy_check_mark: |
+| [Forks History (DAO/ETC)](forks-history.asciidoc) | ###### | :heavy_check_mark: |
 
-
-Jump in! Review, comment, suggest and contribute...
 
 # Contributing, reviewing and commenting
 
@@ -55,7 +53,7 @@ To chat with the authors and editors:
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
-To contribute, see the detailed [Contributing Guide](CONTRIBUTE.md).
+To contribute, see the detailed [Contributing Guide](CONTRIBUTING.md).
 
 # Source & License
 
