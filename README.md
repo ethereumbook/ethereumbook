@@ -14,7 +14,7 @@ This repository contains the draft of the book, currently in progress, scheduled
 
 # Contents
 
-The current status of the book is **CONTENT FREEZE - TECH REVIEW**. Only errors, fixes and typos will be accepted. Any nw content submissions will be delayed for the second edition, which goes into production in late 2019 or early 2020.
+The current status of the book is **CONTENT FREEZE - TECH REVIEW**. Only errors, fixes and typos will be accepted. Any new content submissions will be delayed for the second edition, which goes into production in late 2019 or early 2020.
 
 
 Here's what is available now:
