@@ -741,16 +741,20 @@ ERC223 is not widely implemented and there is some debate in the ERC discussion 
 
 Another proposal for an improved token contract standard is ERC777. This proposal has several goals, including:
 
-* To offer an ERC20 compatibility interface
+* To offer an ERC20 compatible interface
 * To transfer tokens using a +send+ function, similar to ether transfers
 * To be compatible with ERC820 for token contract registration
-* Contracts and addresses can control which tokens they send through a +tokensToSend+ function that is called prior to sending
-* Contracts and addresses are notified by calling a +tokensReceived+ function in the recipient
-* Token transfer transactions contain metadata in a +userData+ and +operatorData+ field
+* Contracts and addresses can control which tokens they send through a `tokensToSend` function that is called prior to sending
+* Contracts and addresses are notified by calling a `tokensReceived` function in the recipient
+* To reduce the probability of tokens being locked into contracts by requiring contracts to provide a +tokensReceived+ function
+* Existing contracts can use proxy contracts to provide the `tokensToSend` and `tokensReceived` functions
 * To operate in the same way, whether sending to a contract or EOA
+* To provide specific events for the minting and burning of tokens
+* To add operators, trusted third-parties, intended to be contracts, to move tokens on behalf of a token holder
+* Token transfer transactions contain metadata in a +userData+ and +operatorData+ field
 
-The details and ongoing discussion on ERC777 can be found here:
-https://github.com/ethereum/EIPs/issues/777
+The specification of the standard can be found here: https://eips.ethereum.org/EIPS/eip-777 +
+The ongoing discussion on ERC777 can be found here: https://github.com/ethereum/EIPs/issues/777
 
 [[ERC777_interface]]
 The ERC777 contract interface specification is:
@@ -779,6 +783,37 @@ interface ERC777Token {
     event RevokedOperator(address indexed operator, address indexed tokenHolder);
 }
 ----
+
+[[ERC777_hooks]]
+===== ERC777 Hooks
+
+[[ERC777TokensSender_interface]]
+The ERC777 tokens sender hook specification is:
+
+[source,solidity]
+----
+interface ERC777TokensSender {
+    function tokensToSend(address operator, address from, address to, uint value, bytes userData, bytes operatorData) public;
+}
+----
+
+The implementation of this interface is required for any address wishing to be notified of, to handle, or to prevent the debit of tokens. The address for which the contract implementing this interface for must be registered via ERC820 whether the contract implements the interface for itself or another address.
+
+[[ERC777TokensRecipient_interface]]
+The ERC777 tokens recipient hook specification is:
+
+[source,solidity]
+----
+interface ERC777TokensRecipient {
+    function tokensReceived(address operator, address from, address to, uint amount, bytes userData, bytes operatorData) public;
+}
+----
+
+The implementation of this interface is required for any address wishing to be notified of, to handle, or to reject the reception of tokens. The same logic and requirements as the tokens sender interface apply to the tokens recipient with the added constraint that recipient contracts must implement this interface to prevent locking tokens. If the recipient contract does not register an address implementing this interface, the transfer of tokens will fail.
+
+An important aspect is that only one single tokens sender and one tokens recipient can be registered per address. Hence the same hook functions are called upon the debit and the reception of every ERC777 token transfer. A specific token can be identified in these functions using the message's sender which is the specific token contract address, for example, to handle a particular use case.
+
+On the other hand, the same tokens sender and tokens recipient hooks can be registered for multiple addresses and the hooks can distinguish who are the sender and the intended recipient using the `from` and `to` parameters.
 
 A reference implementation of ERC777 is linked in the proposal. ERC777 depends on a parallel proposal for a registry contract, specified in ERC820. Some of the debate on ERC777 is about the complexity of adopting two big changes at once: a new token standard and a registry standard. The discussion continues.
 
