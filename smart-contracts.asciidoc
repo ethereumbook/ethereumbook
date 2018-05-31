@@ -362,7 +362,7 @@ payable:: A payable function is one that can accept incoming payments. Functions
 
 As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
 
-==== Contract constructor and selfdstruct
+==== Contract constructor and selfdestruct
 
 There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional. In fact, our +Faucet+ example has no constructor function.
 
@@ -440,7 +440,7 @@ If anyone other calls this +destroy+ function from an address other than +owner+
 
 ==== Function modifiers
 
-Solidity offers a special type of function which is called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier functions are most often used to create conditions that apply to many functions withing a contract. We have an access control statement already, in our +destroy+ function. Let's create a function modifier that expresses that condition:
+Solidity offers a special type of function which is called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier functions are most often used to create conditions that apply to many functions within a contract. We have an access control statement already, in our +destroy+ function. Let's create a function modifier that expresses that condition:
 
 [[function_modifier_onlyowner]]
 .onlyOwner function modifier
@@ -451,7 +451,7 @@ modifier onlyOwner {
 }
 ----
 
-In <<function_modifier_onlyowner>> we see the declaration of a function modifier, named +onlyOwner+. This function modifier sets a condition on any function that it modifies, requiring that the address stored as the +owner+ of the contract is the same as the address of the transaction's +msg.sender+. This is the basic design patter for access control, allowing only the owner of a contract to execute any function that has the +onlyOwner+ modifier.
+In <<function_modifier_onlyowner>> we see the declaration of a function modifier, named +onlyOwner+. This function modifier sets a condition on any function that it modifies, requiring that the address stored as the +owner+ of the contract is the same as the address of the transaction's +msg.sender+. This is the basic design pattern for access control, allowing only the owner of a contract to execute any function that has the +onlyOwner+ modifier.
 
 You may have noticed that our function modifier has a peculiar syntactic "placeholder" in it, an underscore followed by a semicolon (+pass:[_;]+). This placeholder is replaced by the code of the function that is being modified. Essentially, the modifier is "wrapped around" the modified function, placing its code in the location identified by the underscore character.
 
@@ -543,9 +543,9 @@ By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract no
 
 ==== Error handling (assert, require, revert)
 
-A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+(now deprecated).
+A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+ (now deprecated).
 
-When a contract terminates with an error, all the state changes (changes to variables, balances etc.) are reverted, all the way up the chain of contract calls, if more than one contract were called. This ensures that transactions are atomic, meaning they either complete successfully or have no effect on state and are reverted entirely.
+When a contract terminates with an error, all the state changes (changes to variables, balances, etc.) are reverted, all the way up the chain of contract calls, if more than one contract were called. This ensures that transactions are atomic, meaning they either complete successfully or have no effect on state and are reverted entirely.
 
 The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those conditions.
 
@@ -576,7 +576,7 @@ However, it might be better to check explicitly and provide a clear error messag
 
 ----
 require(this.balance >= withdraw_amount,
-	"Insufficient balance in faucet for withdrawal request")
+	"Insufficient balance in faucet for withdrawal request");
 msg.sender.transfer(withdraw_amount);
 ----
 
@@ -595,8 +595,8 @@ We have not added any events in our +Faucet+ example, so far, so let's do that. 
 
 ----
 contract Faucet is mortal {
-	event Withdrawal(address indexed to, uint amount)
-	event Deposit(address indexed from, uint amount)
+	event Withdrawal(address indexed to, uint amount);
+	event Deposit(address indexed from, uint amount);
 
 	[...]
 }
@@ -1000,7 +1000,7 @@ Test coverage:: Test everything that you can test. Smart contracts run in a publ
 
 ==== Common security risks
 
-Smart contract programmers should be familiar with many of the most common security risks, so as to be able to detect and avoid the programming patters that leave them exposed to these risks.
+Smart contract programmers should be familiar with many of the most common security risks, so as to be able to detect and avoid the programming patterns that leave them exposed to these risks.
 
 ===== Re-entrancy
 
@@ -1391,7 +1391,7 @@ https://blog.zeppelin.solutions/onward-with-ethereum-smart-contract-security-97a
 
 https://medium.com/zeppelin-blog/the-hitchhikers-guide-to-smart-contracts-in-ethereum-848f08001f05#.cox40d2ut
 
-Perhaps the most fundamental software security principle consists in maximizing reuse of trusted code. In blockchain technologies, this is even condensed in an adage: "Do not roll your own crypto". In the case of smart contracts, this amounts to profiting as much as possible from freely available libraries that have been thoroughly vetted by the community.
+Perhaps the most fundamental software security principle is to maximize reuse of trusted code. In blockchain technologies, this is even condensed in an adage: "Do not roll your own crypto". In the case of smart contracts, this amounts to profiting as much as possible from freely available libraries that have been thoroughly vetted by the community.
 
 In Ethereum, the most widely used solution is the https://openzeppelin.org/[OpenZeppelin] suite, an ample library of contracts ranging from implementations of `ERC20` and `ERC721` tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository have been extensively tested and in some cases even function as _de facto_ standard implementations. They are free to use, and are built and mantained by https://zeppelin.solutions[Zeppelin] together with an ever growing list of external contributors.
 
@@ -1425,15 +1425,15 @@ TODO: add paragraph
 [[testing_frameworks_sec]]
 ==== Testing Frameworks
 
-There are several commonly-used test frameworks (no particular order)
+There are several commonly-used test frameworks (in no particular order):
 
-Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in Javascript (Mocha based) or Solidity. These tests are run against TestRPC/Ganache. More details on writing these tests are located at <<truffle>>
+Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in JavaScript (Mocha based) or Solidity. These tests are run against TestRPC/Ganache. More details on writing these tests are located at <<truffle>>
 
 ////
 TODO: add anchor for <<truffle>>
 ////
 
-Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in Javascript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like ```assert.equal()```. ```embark test``` will run any test files under directory test/.
+Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like ```assert.equal()```. ```embark test``` will run any test files under directory test/.
 
 DApp:: DApp uses native Solidity code (a library called ds-test) and a Parity built Rust library called Ethrun to execute Ethereum bytecode and then assert correctness. The ds-test library provides assertion functions for validating correctness and events for logging data in the console.
 
@@ -1460,7 +1460,7 @@ log_named_decimal_int(bytes32 key, int val, uint decimals)
 log_named_decimal_uint(bytes32 key, uint val, uint decimals)
 ....
 
-Populus:: Populus uses python and its own chain emulator to run contracts written in solidity. Unit tests are written in Python with the pytest library. Populus supports writing contracts that are specifically for testing. These contract filenames should match the glob pattern ```Test*.sol``` and be located anywhere under the project tests directory ```./tests/```.
+Populus:: Populus uses python and its own chain emulator to run contracts written in Solidity. Unit tests are written in Python with the pytest library. Populus supports writing contracts that are specifically for testing. These contract filenames should match the glob pattern ```Test*.sol``` and be located anywhere under the project tests directory ```./tests/```.
 
 |=======
 |Framework | Test Language(s)    | Testing Framework | Chain Emulator       | Website
