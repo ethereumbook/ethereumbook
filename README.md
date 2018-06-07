@@ -23,7 +23,7 @@ Mastering Ethereum это книга для разработчиков, пред
 
 | Секциия | Прогресс | Завершенность | Перевод |
 |-------|------|:------:|:------:|
-| [Предисловие](preface.asciidoc) | #### || | :heavy_check_mark: |
+| [Предисловие](preface.asciidoc) | #### | | :heavy_check_mark: |
 | [Глоссарий](glossary.asciidoc) | ######## | :heavy_check_mark: | ||
 | [Что такое Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: | ||
 | [Введение](intro.asciidoc) | ############# | :heavy_check_mark: | ||
