@@ -9,7 +9,7 @@ Ethereum is defined by a formal specification called the "Yellow Paper".
 
 This is in contrast to, for example, Bitcoin, which is not defined in any formal way. Where Bitcoin's "specification" is the reference implementation Bitcoin Core, Ethereum's specification is documented in a paper that combines an English and a mathematical (formal) specification. This formal specification, in addition to various Ethereum Improvement Proposals, defines the standard behavior of an Ethereum client. The Yellow Paper is periodically updated as major changes are made to Ethereum.
 
-As a result of Ethereum's clear formal specification, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Ethereum has a greater diversity of implementations running on the network than any other blockchain, which is generally regarded as a good thing. Indeed, it has, for example, prooved itself to be an excellent way of defending against attacks on the network, because exploitation of a particular client's implementation strategy simply hassles the developers while they patch the exploit, while other clients keep the network running almost uneffected.
+As a result of Ethereum's clear formal specification, there are a number of independently developed, yet interoperable, software implementations of an Ethereum client. Ethereum has a greater diversity of implementations running on the network than any other blockchain, which is generally regarded as a good thing. Indeed, it has, for example, prooved itself to be an excellent way of defending against attacks on the network, because exploitation of a particular client's implementation strategy simply hassles the developers while they patch the exploit, while other clients keep the network running almost unaffected.
 
 == Ethereum Networks
 
@@ -19,14 +19,14 @@ Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expan
 
 Currently, there are six main implementations of the Ethereum protocol written in six different languages:
 
+* Parity, written in Rust
 * Geth, written in Go
-* Parity, written in Rust 
 * cpp-ethereum, written in C++
 * pyethereum, written in Python
 * Mantis, written in Scala,
 * and Harmony, written in Java.
 
-In this section, we will look at the two most common clients, Geth and Parity. We'll learn to set up a node using each client and explore some of their command-line and application programming interfaces (APIs).
+In this section, we will look at the two most common clients, Parity and Geth. We'll learn to set up a node using each client and explore some of their command-line and application programming interfaces (APIs).
 
 [[full_node_importance]]
 === Should I run a full node?
@@ -41,7 +41,7 @@ You also have the option of running a remote client which does not store a local
 
 The terms "remote client" and "wallet" are used interchangeably, though there are some differences. Usually, a remote client offers an API (such as the web3js API) in addition to the transaction functionality of a wallet.
 
-Do not confuse the concept of a remote wallet in Ethereum with that of a light client, or Simplified Payment Verification (SPV) client in Bitcoin. SPV clients validate block headers and use merkle proofs to validate the inclusion of transactions in the blockchain. Ethereum remote clients, generally, do not validate block headers or transactions. They entirely trust a full client operated by a third party (which could be you) to give them RPC access to the blockchain.
+Do not confuse the concept of a remote wallet in Ethereum with that of a _light client_ (which is analagous to a Simplified Payment Verification (SPV) client in Bitcoin). Light clients validate block headers and use Merkle proofs to validate the inclusion of transactions in the blockchain and determine their effects, rendering them of a similar level of security to a full node. Conversely, Ethereum remote clients do not validate block headers or transactions. They entirely trust a full client operated by a third party (which could be you) to give them RPC access to the blockchain and as such lose significant security and anonymity guarantees.
 
 [[full_node_adv_disadv]]
 ==== Full Node Advantages and Disadvantages
@@ -104,12 +104,12 @@ For many testing purposes, the best option is to launch a single instance privat
 [[running_client]]
 === Running an Ethereum client
 
-If you have the time and resources, you should attempt to run a full node, even if only to learn more about the process. In the next few sections we will download, compile, and run the Ethereum clients Go-Ethereum (Geth) and Parity. This requires some familiarity with using the command-line interface on your operating system. It's worth installing these clients whether you choose to run them as full nodes, as testnet nodes, or as clients to a local private blockchain.
+If you have the time and resources, you should attempt to run a full node, even if only to learn more about the process. In the next few sections we will download, compile, and run the Ethereum clients Parity and Geth. This requires some familiarity with using the command-line interface on your operating system. It's worth installing these clients whether you choose to run them as full nodes, as testnet nodes, or as clients to a local private blockchain.
 
 [[requirements]]
 ==== Hardware Requirements for a Full Node
 
-Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 80GB of disk space to store a full copy of the Ethereum blockchain. If you also want to run a full node on the Ethereum testnet, you will need at least an additional 15GB. Downloading 80GB of blockchain data can take a long time, so it's recommended that you work on a fast Internet connection. 
+Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 80GB of disk space to store a full copy of the Ethereum blockchain. If you also want to run a full node on the Ethereum testnet, you will need at least an additional 15GB. Downloading 80GB of blockchain data can take a long time, so it's recommended that you work on a fast Internet connection.
 
 Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best to have a Solid-State Drive (SSD). If you have a mechanical hard disk drive (HDD), you will need at least 8GB of RAM to use as cache. Otherwise, you may discover that your system is too slow to keep up and sync fully.
 
@@ -122,7 +122,7 @@ Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best
 
 These are the minimum requirements to sync a full (but pruned) copy of an Ethereum-based blockchain.
 
-At the time of writing (April 2018) the Parity codebase tends to be lighter on resources, so if you're running with limited hardware you'll likely see the better results using Parity.
+At the time of writing (April 2018) the Parity codebase is lighter on resources, so if you're running with limited hardware you'll likely see the better results using Parity.
 
 If you want to sync in a reasonable amount of time and store all the development tools, libraries, clients, and blockchains we discuss in this book, you will want a more capable computer.
 
@@ -142,7 +142,7 @@ It’s difficult to predict how fast a blockchain's size will increase and when 
 [[sw_reqs]]
 ==== Software Requirements for Building and Running a Client (Node)
 
-This section covers Geth and Parity client software. It also assumes you are using a Unix-like command-line environment. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
+This section covers Parity and Geth client software. It also assumes you are using a Unix-like command-line environment. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
 
 Typically every blockchain will have their own version of Geth, while Parity provides support for multiple Ethereum-based blockchains (Ethereum, Ethereum Classic, Ellaism, Expanse, Musicoin) with the same client download.
 
@@ -192,7 +192,7 @@ Parity is an implementation of a full node Ethereum client and DApp browser. Par
 
 [NOTE]
 =====
-Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote most of the Parity client. Parity represents about 28% of the installed Ethereum client base.
+Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote much of the Parity client. Parity represents about 28% of the installed Ethereum client base.
 =====
 
 To install Parity, you can use the Rust package manager +cargo+ or download the source code from GitHub. The package manager also downloads the source code, so there's not much difference between the two options. In the next section, we will show you how to download and compile Parity yourself.
@@ -393,7 +393,7 @@ For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by 
 
 [NOTE]
 =====
-Geth and Parity can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth and Parity cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
+Geth can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
 =====
 
 
@@ -508,7 +508,7 @@ Let's look at some of the most popular remote clients and the functions they off
 [[mobile_wallets]]
 === Mobile (Smartphone) Wallets
 
-All mobile wallets are remote clients because smartphones do not have adequate resources to run a full Ethereum client. Light clients are in development, but they are not available yet for Ethereum.
+All mobile wallets are remote clients because smartphones do not have adequate resources to run a full Ethereum client. Light clients are in development and not in general use for Ethereum. In the case of Parity, it is marked "experimental" and can be used by running parity with the +--light+ option.
 
 Popular mobile wallets include Jaxx, Status, and Trust Wallet. We list these as examples of popular mobile wallets (this is not an endorsement or an indication of the security or functionality of these wallets).
 
