@@ -15,7 +15,7 @@ However, many blockchain applications require access to extrinsic information. T
 * Weather data: insurance premium calculation based on a weather forecast
 * Political events: prediction market resolution
 * Sporting events: prediction market resolution and fantasy sports contracts
-* Geo-location data: supply chain tracking  
+* Geo-location data: supply chain tracking
 * Damage verification: insurance contracts
 * Events occurring on other blockchains: interoperability functions
 * Transaction gas price: gas price oracles
@@ -26,9 +26,9 @@ In this section, we will examine the primary functions of oracles, oracle subscr
 [[primary_functions_sec]]
 === Primary functions
 
-In practical terms, an oracle might be implemented as a system of on-chain smart contracts and off-chain infrastructure used to monitor requests, retrieve and return data. A request for data from a decentralized application would typically be an asynchronous process involving a number of steps. 
+In practical terms, an oracle might be implemented as a system of on-chain smart contracts and off-chain infrastructure used to monitor requests, retrieve and return data. A request for data from a decentralized application would typically be an asynchronous process involving a number of steps.
 
-Firstly, an externally-controlled account would transact with a decentralized application, resulting in an interaction with a function defined in the oracle smart contract. This function initiates the request to the oracle, with the associated arguments detailing the data requested in addition to supplementary information that might include callback functions and scheduling parameters. Once this transaction has been validated, the oracle request can be observed as an EVM event emitted by the oracle contract, or as a state change; the arguments can be retrieved and used to perform the actual query from the off-chain data source. The oracle may also require payment for processing the request, gas payment for the callback, and permissions/rights to access the requested data. Finally, the resulting data is signed by the oracle owner, essentially attesting to the value of the data at a given time, and delivered in a transaction to the decentralized application that made the request—either directly or via the oracle contract. Depending on the scheduling parameters, the oracle may broadcast further transactions updating the data at regular intervals, e.g. end of day pricing information. 
+Firstly, an externally-controlled account would transact with a decentralized application, resulting in an interaction with a function defined in the oracle smart contract. This function initiates the request to the oracle, with the associated arguments detailing the data requested in addition to supplementary information that might include callback functions and scheduling parameters. Once this transaction has been validated, the oracle request can be observed as an EVM event emitted by the oracle contract, or as a state change; the arguments can be retrieved and used to perform the actual query from the off-chain data source. The oracle may also require payment for processing the request, gas payment for the callback, and permissions/rights to access the requested data. Finally, the resulting data is signed by the oracle owner, essentially attesting to the value of the data at a given time, and delivered in a transaction to the decentralized application that made the request—either directly or via the oracle contract. Depending on the scheduling parameters, the oracle may broadcast further transactions updating the data at regular intervals, e.g. end of day pricing information.
 
 A range of alternative schemes are also possible. Data can be requested from and returned directly by an externally-controlled account, removing the need for an oracle smart contract. Similarly, the request and response could be made to and from an Internet of Things enabled hardware sensor. Therefore, oracles can be human, software, or hardware-based.
 
@@ -45,7 +45,7 @@ The primary functions of an oracle may be summarized as follows:
 [[subscription_paterns_sec]]
 === Subscription patterns
 
-The subscription pattern described above is a typical request-response pattern, commonly seen in client-server architectures. While this is a useful messaging pattern which allows applications to have a two-way conversation, it is a relatively simple pattern and perhaps inappropriate under certain conditions. For example, a smart bond requiring an interest rate from an oracle might have to request the data on a daily basis under a request-response pattern in order to ensure the rate is always correct. Given that interest rates change infrequently, a publish-subscribe pattern may be more appropriate here—especially when taking into consideration Ethereum's limited bandwidth.    
+The subscription pattern described above is a typical request-response pattern, commonly seen in client-server architectures. While this is a useful messaging pattern which allows applications to have a two-way conversation, it is a relatively simple pattern and perhaps inappropriate under certain conditions. For example, a smart bond requiring an interest rate from an oracle might have to request the data on a daily basis under a request-response pattern in order to ensure the rate is always correct. Given that interest rates change infrequently, a publish-subscribe pattern may be more appropriate here—especially when taking into consideration Ethereum's limited bandwidth.
 
 Publish–subscribe is a pattern where publishers—here, oracles—do not send messages directly to receivers, but instead categorize published messages into distinct classes. Subscribers are able to express an interest in one or more classes and retrieve only those messages which are of interest. Under such a pattern, an oracle might write the interest rate to its own internal storage, when and only when it changes. Multiple subscribed decentralized applications can simply read it from the oracle contract, thereby reducing the impact on network bandwidth while minimizing storage costs.
 
@@ -56,92 +56,118 @@ In a broadcast or multicast pattern, an oracle would post all messages to a chan
 
 If we assume that the source of data being queried by a decentralized application is both authoritative and trustworthy, an outstanding question remains: given that the oracle and the query/response mechanism may be operated by distinct entities, how are we able trust this mechanism? There is a distinct possibility that data may be tampered with whilst in transit, so it is critical that off-chain methods are able to attest to the returned data's integrity. Two common approaches to data authentication are authenticity proofs and Trusted Execution Environments (TEEs).
 
-Authenticity proofs are cryptographic guarantees that prove that data has not been tampered with. Based on a variety of attestation techniques (e.g. digitally signed proofs), they effectively shift the trust from the data carrier to the attestor, i.e. the provider of the attestation method. By verifying the authenticity proof on-chain, smart contracts are able to verify the integrity of the data before operating upon it. An authenticity proof that has been implemented by Oraclize [1] and is currently available for data queries from the Ethereum main network is the TLSNotary Proof [2]. TLSNotary Proofs allow a client to provide evidence to a third party that HTTPS web traffic occurred between the client and a server. While HTTPS is itself secure, it doesn’t support data signing. As a result, TLSNotary Proofs rely on TLSNotary (via PageSigner [3]) signatures. TLSNotary Proofs leverage the Transport Layer Security (TLS) protocol, enabling the TLS master key, which signs the data after it has been accessed, to be split between three parties: the server (the oracle), an auditee (Oraclize), and an auditor. As an auditor, Oraclize uses an Amazon Web Services (AWS) virtual machine instance that can be verified as unmodified since instantiation [4]. This AWS instance stores the TLSNotary secret, allowing it to provide honesty proofs. Although it offers higher assurances against data tampering than a purely trusted query/response mechanism, this approach assumes that Amazon itself will not tamper with the VM instance.
+Authenticity proofs are cryptographic guarantees that prove that data has not been tampered with. Based on a variety of attestation techniques (e.g. digitally signed proofs), they effectively shift the trust from the data carrier to the attestor, i.e. the provider of the attestation method. By verifying the authenticity proof on-chain, smart contracts are able to verify the integrity of the data before operating upon it. Oraclize [1] is an example of an oracle service leveraging a variety of authenticity proofs. One such proof that is currently available for data queries from the Ethereum main network is the TLSNotary Proof [2]. TLSNotary Proofs allow a client to provide evidence to a third party that HTTPS web traffic occurred between the client and a server. While HTTPS is itself secure, it doesn’t support data signing. As a result, TLSNotary Proofs rely on TLSNotary (via PageSigner [3]) signatures. TLSNotary Proofs leverage the Transport Layer Security (TLS) protocol, enabling the TLS master key, which signs the data after it has been accessed, to be split between three parties: the server (the oracle), an auditee (Oraclize), and an auditor. Oraclize uses an Amazon Web Services (AWS) virtual machine instance as the auditor which can be verified as having been unmodified since instantiation [4]. This AWS instance stores the TLSNotary secret, allowing it to provide honesty proofs. Although it offers higher assurances against data tampering than a purely trusted query/response mechanism, this approach does require the assumption that Amazon itself will not tamper with the VM instance.
 
 TownCrier [5,6] is an authenticated data feed oracle system based on Trusted Execution Environment; such methods adopt a different approach that utilizes hardware-based secure enclaves to verify data integrity. TownCrier uses Intel's SGX (Software Guard eXtensions) to ensure that responses from HTTPS queries can be verified as authentic. SGX provides guarantees of integrity, ensuring that applications running within an enclave are protected by the CPU against tampering by any other process. It also provides confidentiality, ensuring that an application's state is opaque to other processes when running within the enclave. And finally, SGX allows attestation, by generating a digitally signed proof that an application—securely identified by a hash of its build—is actually running within an enclave. By verifying this digital signature, it is possible for a decentralized application to prove that a TownCrier instance is running securely within an SGX enclave. This, in turn, proves that the instance has not been tampered with and that the data emitted by TownCrier is therefore authentic. The confidentiality property additionally enables TownCrier to handle private data by allowing data queries to be encrypted using the TownCrier instance's public key. By operating an oracle's query/response mechanism within an enclave such as SGX, it can effectively be thought of as running securely on trusted third party hardware, ensuring that the requested data is returned untampered (assuming that we trust Intel/SGX).
 
 [[computation_oracles_sec]]
 === Computation oracles
 
-So far, we have only discussed oracles in the context of requesting and delivering data. However, oracles can also be used to perform arbitrary computation, a function which can be especially useful given Ethereum's block gas limit. Rather than just relaying the results of a query, computation oracles can be used to perform a relevant computation on a set of inputs and return a calculated result that may have been infeasible to calculate on-chain. For example, one might use a computation oracle to perform a computationally-intensive regression calculation in order to estimate the yield of a bond contract.
+So far, we have only discussed oracles in the context of requesting and delivering data. However, oracles can also be used to perform arbitrary computation, a function which can be especially useful given Ethereum’s inherent block gas limit and comparatively expensive computation costs; with Vitalik himself pointing out the fact that the computational cost on Ethereum is less efficient by a factor of a million when compared to existing centralized services [7]. Rather than just relaying the results of a query, computation oracles can be used to perform a relevant computation on a set of inputs and return a calculated result that may have been infeasible to calculate on-chain. For example, one might use a computation oracle to perform a computationally-intensive regression calculation in order to estimate the yield of a bond contract.
 
-Oraclize provides a service that allows decentralized applications to request the output of a computation performed in a sandboxed AWS virtual machine. The AWS instance is instantiated from a Docker file, an archive of which is stored on IPFS. On request, Oraclize retrieves this archive using its hash, and then initializes and executes the Docker application on AWS, passing any arguments that are provided to the application as environment variables. The Docker application performs the calculation, subject to a time constraint, and must print the output to standard output where it can be retrieved by Oraclize and returned to the decentralized application. Oraclize currently offer this service on an auditable t2.micro AWS instance.
+Oraclize provides a service that allows decentralized applications to request the output of a computation performed in a sandboxed AWS virtual machine. The AWS instance creates an executable container, from a user-configured Dockerfile packed in an archive that is uploaded to IPFS. On request, Oraclize retrieves this archive using its hash, and then initializes and executes the Docker container on AWS, passing any arguments that are provided to the application as environment variables. The containerized application performs the calculation, subject to a time constraint, and must have the result written to standard output where it can be retrieved by Oraclize and returned to the decentralized application. Oraclize currently offers this service on an auditable t2.micro AWS instance.
 
-The concept of a 'cryptlet' as a standard for verifiable oracle truths has been formalized as part of Microsoft's wider ESC Framework [7].  Cryptlets execute within an encrypted capsule that abstracts away the infrastructure, such as I/O, and has the CryptoDelegate attached so incoming and outgoing messages are signed, validated, and proven automatically.  Cryptlets support distributed transactions so that contract logic can take on complex multi-step, multi-blockchain and external system transactions in an ACID manner.  This allows developers to create portable, isolated, and private resolutions of the truth for use in smart-contracts.  Cryptlets follow the format below:
+The concept of a 'cryptlet' as a standard for verifiable oracle truths has been formalized as part of Microsoft's wider ESC Framework [8].  Cryptlets execute within an encrypted capsule that abstracts away the infrastructure, such as I/O, and has the CryptoDelegate attached so incoming and outgoing messages are signed, validated, and proven automatically.  Cryptlets support distributed transactions so that contract logic can take on complex multi-step, multi-blockchain and external system transactions in an ACID manner.  This allows developers to create portable, isolated, and private resolutions of the truth for use in smart-contracts.  Cryptlets follow the format below:
 
 ----
-public class SampleContractCryptlet : Cryptlet 
-  { 
-        public SampleContractCryptlet(Guid id, Guid bindingId, string name, string address, IContainerServices hostContainer, bool contract)  
-            : base(id, bindingId, name, address, hostContainer, contract) 
-        { 
-            MessageApi = 
-                new CryptletMessageApi(GetType().FullName, new SampleContractConstructor()) 
+public class SampleContractCryptlet : Cryptlet
+  {
+        public SampleContractCryptlet(Guid id, Guid bindingId, string name, string address, IContainerServices hostContainer, bool contract)
+            : base(id, bindingId, name, address, hostContainer, contract)
+        {
+            MessageApi =
+                new CryptletMessageApi(GetType().FullName, new SampleContractConstructor())
 ----
 
 
-TrueBit [8] is a solution for scalable and verifiable off-chain computation. It introduces a system of solvers and verifiers, who are incentivized to perform computations and verification of those computations, respectively. Should a solution be challenged, an iterative verification process on subsets of the computation are performed on-chain—a kind of 'verification game'. The game proceeds through a series of rounds, each recursively checking a smaller and smaller subset of the computation. The game eventually reaches a final round, where the challenge is sufficiently trivial such that the judges–Ethereum miners–can make a final ruling on whether the challenge was justified, on-chain. In effect, TrueBit is an implementation of a computation market, allowing decentralized applications to pay for verifiable computation to be performed outside of the network, but relying on Ethereum to enforce the rules of the verification game. In theory, this enables trustless smart contracts to securely perform any computation task. 
+TrueBit [9] is a solution for scalable and verifiable off-chain computation. It introduces a system of solvers and verifiers, who are incentivized to perform computations and verification of those computations, respectively. Should a solution be challenged, an iterative verification process on subsets of the computation are performed on-chain—a kind of 'verification game'. The game proceeds through a series of rounds, each recursively checking a smaller and smaller subset of the computation. The game eventually reaches a final round, where the challenge is sufficiently trivial such that the judges–Ethereum miners–can make a final ruling on whether the challenge was justified, on-chain. In effect, TrueBit is an implementation of a computation market, allowing decentralized applications to pay for verifiable computation to be performed outside of the network, but relying on Ethereum to enforce the rules of the verification game. In theory, this enables trustless smart contracts to securely perform any computation task.
 
 A broad range of applications exist for systems like TrueBit, ranging from machine learning to verification of any proof-of-work. An example of the latter is the Doge-Ethereum bridge, which utilizes TrueBit to verify Dogecoin’s proof-of-work, Scrypt, a memory-hard and computationally intensive function that cannot be computed within the Ethereum block gas limit. By performing this verification on TrueBit, it has been possible to securely verify Dogecoin transactions within a smart contract on Ethereum's Rinkeby testnet.
 
 [[decentralized_orackes_sec]]
 === Decentralized oracles
 
-The mechanisms outlined above all describe centralized oracle systems reliant on trusted authorities. While they should suffice for many applications, they do however represent central points of failure in the Ethereum network. A number of schemes have been proposed around the idea of decentralized oracles as a means of ensuring data availability, and the creation of a network of individual data providers with an on-chain data aggregation system. 
+The mechanisms outlined above all describe centralized oracle systems reliant on trusted authorities. While they should suffice for many applications, they do however represent central points of failure in the Ethereum network. A number of schemes have been proposed around the idea of decentralized oracles as a means of ensuring data availability, and the creation of a network of individual data providers with an on-chain data aggregation system.
 
-ChainLink [9] have proposed a decentralized oracle network consisting of three key smart contracts: a reputation contract, an order-matching contract, an aggregation contract, and an off-chain registry of data providers. The reputation contract is used to keep track of data provider's performance. Scores in the reputation contract are used to populate the off-chain registry. The order-matching contract selects bids from oracles using the reputation contract. It then finalizes a Service Level Agreement (SLA), which includes query parameters and the number of oracles required. This means that the purchaser needn’t transact with the individual oracles directly. The aggregation contract collects responses, submitted using a commit/reveal scheme, from multiple oracles, calculates the final collective result of the query, and feeds the results back into the reputation contract.
+ChainLink [10] have proposed a decentralized oracle network consisting of three key smart contracts: a reputation contract, an order-matching contract, an aggregation contract, and an off-chain registry of data providers. The reputation contract is used to keep track of data provider's performance. Scores in the reputation contract are used to populate the off-chain registry. The order-matching contract selects bids from oracles using the reputation contract. It then finalizes a Service Level Agreement (SLA), which includes query parameters and the number of oracles required. This means that the purchaser needn’t transact with the individual oracles directly. The aggregation contract collects responses, submitted using a commit/reveal scheme, from multiple oracles, calculates the final collective result of the query, and feeds the results back into the reputation contract.
 
 One of the main challenges with such a decentralized approach is the formulation of the aggregation function. ChainLink proposes calculating a weighted response, allowing a validity score to be reported for each oracle response. Detecting an 'invalid' score here is non-trivial since it relies on the premise that outlying data points, measured by deviations from responses provided by peers, are incorrect. Calculating a validity score based on the location of an oracle response amongst a distribution of responses risks penalizing correct answers over average ones. Therefore, ChainLink offers a standard set of aggregation contracts, but also allow customized aggregation contracts to be specified.
 
 A related idea is the SchellingCoin protocol [11]. Here, multiple participants report values and the median is taken as the 'correct' answer. Reporters are required to provide a deposit which is redistributed in favor of values that are closer to the median, therefore incentivizing the reporting of values that are similar to others. A common value, also known as the Schelling Point, which respondents might consider as the natural and obvious target around which to coordinate is expected to be close to the actual value.
 
-Teusch recently proposed a new design for a decentralized off-chain data availability oracle [12]. This design leverages a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store, and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system allows storage to be reused by releasing data after the registration period ends.
+Teutsch recently proposed a new design for a decentralized off-chain data availability oracle [12]. This design leverages a dedicated proof-of-work blockchain which is able to correctly report on whether or not registered data is available during a given epoch. Miners attempt to download, store, and propagate all currently registered data, therefore guaranteeing data is available locally. While such a system is expensive in the sense that every mining node stores and propagates all registered data, the system allows storage to be reused by releasing data after the registration period ends.
 
 [[oracle_client_interfaces_in_solidity_sec]]
 === Oracle client interfaces in Solidity
 
-Below is a Solidity example demonstrating how Oraclize can be used to fetch the temperature in London from WolframAlpha [13]: 
+Below is a Solidity example demonstrating how Oraclize can be used to continuously poll for the ETH/USD price from an API and store the result in a usable manner. :
 
 ----
-pragma solidity ^0.4.11;
+/*
+   ETH/USD price ticker leveraging CryptoCompare API
+
+   This contract keeps in storage an updated ETH/USD price,
+   which is updated every 10 minutes.
+ */
+
+pragma solidity ^0.4.1;
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
-contract ExampleOraclizeContract is usingOraclize {
-    
-    bytes32 public id;
-    string public temperature;
+/*
+   "oraclize_" prepended methods indicate inheritance from "usingOraclize"
+ */
+contract EthUsdPriceTicker is usingOraclize {
+
+    uint public ethUsd;
 
     event newOraclizeQuery(string description);
-    event newTemperatureMeasurement(bytes32 id, string temperature);
+    event newCallbackResult(string result);
 
-    function ExampleOraclizeContract() public payable {
-        getTemperature();
+    function EthUsdPriceTicker() payable {
+        // signals TLSN proof generation and storage on IPFS
+        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+
+        // requests query
+        queryTicker();
     }
 
-    function getTemperature() public payable {
-        emit newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-        oraclize_query("WolframAlpha", "temperature in London");
-    }
-    
-    function __callback(bytes32 myid, string result) public {
-        assert(msg.sender == oraclize_cbAddress());
-        id = myid;
-        temperature = result;
-        emit newTemperatureMeasurement(id, temperature);
-        // Do something with the temperature measurement..
+    function __callback(bytes32 _queryId, string _result, bytes _proof) public {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        newCallbackResult(_result);
+
+        /*
+         * parse the result string into an unsigned integer for on-chain use
+         * uses inherited "parseInt" helper from "usingOraclize", allowing for
+         * a string result such as "123.45" to be converted to uint 12345
+         */
+        ethUsd = parseInt(_result, 2);
+
+        // called from callback since we're polling the price
+        queryTicker();
     }
 
-} 
+    function queryTicker() public payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+
+            // query params are (delay in seconds, datasource type, datasource argument)
+            // specifies JSONPath, to fetch specific portion of JSON API result
+            oraclize_query(60 * 10, "URL", "json(https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,GBP).USD");
+        }
+    }
+}
 ----
 
-To integrate with Oraclize, the contract ExampleOraclizeContract must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query() function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
+To integrate with Oraclize, the contract EthUsdPriceTicker must be a child of usingOraclize; the usingOraclize contract is defined in the oraclizeAPI file. The data request is made using the oraclize_query() function which is inherited from the usingOraclize contract. This is an overloaded function that expects at least two arguments:
 
-* A datasource such as a URL, WolframAlpha, IPFS
+* The supported datasource to use, such as URL, WolframAlpha, IPFS, or computation
 * The argument for the given datasource, which may include the use of JSON or XML parsing helpers
 
-The temperature query is performed in the update() function. In order to perform the query, Oraclize requires the payment of a small fee in ether. This is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by the usingOraclize contract, passing in the response value and a queryId argument which be used to implement different behaviors, for example, when there are multiple pending calls from Oraclize.
+The price query is performed in the queryTicker() function. In order to perform the query, Oraclize requires the payment of a small fee in ether, covering the gas cost for transmitting and processing the result to the __callback() function and accompanying surcharge for the service. This amount is dependent on the datasource, and where specified, the type of authenticity proof that is required. Once the data has been retrieved, the __callback() function is called by an Oraclize controlled account permissioned to do the callback; it passes in the response value and a unique queryId argument, which as an example, can be used to handle and track multiple pending callbacks from Oraclize.
 
-Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [14]. Below is the interface for the oracle, and a client contract that will make the request:
+Financial data provider Thomson Reuters also provides an oracle service for Ethereum, called BlockOne IQ, allowing market and reference data to be requested by smart contracts running on private or permissioned networks [13]. Below is the interface for the oracle, and a client contract that will make the request:
 
 ----
 pragma solidity ^0.4.11;
@@ -159,7 +185,7 @@ contract Oracle {
 }
 
 contract OracleB1IQClient {
-    
+
     Oracle private oracle;
     event LogError(bytes32 description);
 
@@ -186,23 +212,23 @@ contract OracleB1IQClient {
         uint256 ask = oracle.getResponseUint(id, "ask");
         uint256 timestamp = oracle.getResponseUint(id, "timestamp");
         oracle.deleteResponse(id);
-        // Do something with the price data..        
+        // Do something with the price data..
     }
 
     function handleFailure(uint256 id) public {
         assert(msg.sender == address(oracle));
         bytes32 error = oracle.getResponseError(id);
         oracle.deleteResponse(id);
-        emit LogError(error);        
+        emit LogError(error);
     }
 
 }
 ----
 
-The data request is initiated using the initRequest() function, which allows the query type (in this example, a request for an intraday price) to be specified in addition to two callback functions. 
+The data request is initiated using the initRequest() function, which allows the query type (in this example, a request for an intraday price) to be specified in addition to two callback functions.
 This returns a uint256 identifier which can then be used to provide additional arguments. The addArgumentToRequestString() function is used to specify the RIC (Reuters Instrument Code), here for IBM stock, and addArgumentToRequestUint() allows the timestamp to be specified. Now, passing in an alias for block.timestamp will retrieve the current price for IBM. The request is then executed by the executeRequest() function. Once the request has been processed, the oracle contract will call the onSuccess callback function with the query identifier, allowing the resulting data to be retrieved, else the onFailure callback with an error code in the event of retrieval failure. The available fields that can be retrieved on success include open, high, low, close (OHLC) and bid/ask prices.
 
-Reality Keys [15] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
+Reality Keys [14] allows requests for facts to be made off-chain using POST requests. Responses are cryptographically signed, allowing them to be verified on-chain. Here, a request is made to check the balance of an account on the Bitcoin blockchain at a specific time using the blockr.io API:
 
 ----
 wget -qO- https://www.realitykeys.com/api/v1/blockchain/new --post-data="chain=XBT&address=1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX&which_total=total_received&comparison=ge&value=1000&settlement_date=2015-09-23&objection_period_secs=604800&accept_terms_of_service=current&use_existing=1"
@@ -230,7 +256,7 @@ bytes32 result_hash = sha3(fact_hash, signed_value);
 address signer_address = ecrecover(result_hash, sig_v, sig_r, sig_s);
 assert(signer_address == ethereum_address);
 uint256 result = uint256(signed_value) / base_unit;
-// Do something with the result..    
+// Do something with the result..
 ----
 
 [[references_sec]]
@@ -242,12 +268,12 @@ uint256 result = uint256(signed_value) / base_unit;
 [4] https://bitcointalk.org/index.php?topic=301538.0 +
 [5] http://hackingdistributed.com/2017/06/15/town-crier/ +
 [6] https://www.cs.cornell.edu/~fanz/files/pubs/tc-ccs16-final.pdf +
-[7] https://github.com/Azure/azure-blockchain-projects/blob/master/bletchley/EnterpriseSmartContracts.md
-[8] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
-[9] https://link.smartcontract.com/whitepaper +
-[10] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
+[7] https://www.crowdfundinsider.com/2018/04/131519-vitalik-buterin-outlines-off-chain-ethereum-smart-contract-activity-at-deconomy/ +
+[8] https://github.com/Azure/azure-blockchain-projects/blob/master/bletchley/EnterpriseSmartContracts.md +
+[9] https://people.cs.uchicago.edu/~teutsch/papers/truebit.pdf +
+[10] https://link.smartcontract.com/whitepaper +
 [11] https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed/ +
-[12] http://www.wolframalpha.com +
+[12] http://people.cs.uchicago.edu/~teutsch/papers/decentralized_oracles.pdf +
 [13] https://developers.thomsonreuters.com/blockchain-apis/blockone-iq-ethereum +
 [14] https://www.realitykeys.com
 

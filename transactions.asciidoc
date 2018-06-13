@@ -41,11 +41,11 @@ The nonce is one of the most important and least understood components of a tran
 
  nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
-Strictly speaking, the nonce is an attribute of the originating address (it only has meaning in the context of the sending address). However, the nonce is not stored explicitly as part of an account's state on the blockchain. Instead it is calculated dynamically, by counting the number of confirmed transactions that have originated from an address. 
+The nonce is an attribute of the originating address (it only has meaning in the context of the sending address); it is stored explicitly as part of an account's state on the blockchain. It could, in principle, be calculated dynamically, by counting the number of confirmed transactions that have originated from an address.
 
-The nonce value is also used to prevent erroneous calculations of an account balance. For example, let's say an account has a balance of 10 ether and signs two transactions spending 6 ether each, with nonce 1 and nonce 2 respectively. Which of these two transaction is valid? In a distributed system like Ethereum, nodes may receive the transactions out of sequence. The nonce forces transactions from any address to be processed sequentially, without gaps, regardless of the sequence in which they were received by a node. That way, all nodes calculate the same balance. The transaction paying 6 ether with nonce 1 will be processed successfully, reducing the balance of the account to 4 ether. The transaction paying 6 ether with the nonce 2, will be seen as invalid by all nodes, regardless of when it was received. If the  nonce 2 transaction is received first, a node will hold it and not validate it until it has seen, and processed, the nonce 1 transaction. 
+The nonce value is also used to prevent erroneous calculations of an account balance. For example, let's say an account has a balance of 10 ether and signs two transactions spending 6 ether each, with nonce 1 and nonce 2 respectively. Which of these two transaction is valid? In a distributed system like Ethereum, nodes may receive the transactions out of sequence. The nonce forces transactions from any address to be processed sequentially, without gaps, regardless of the sequence in which they were received by a node. That way, all nodes calculate the same balance. The transaction paying 6 ether with nonce 1 will be processed successfully, reducing the balance of the account to 4 ether. The transaction paying 6 ether with the nonce 2, will be seen as invalid by all nodes, regardless of when it was received. If the  nonce 2 transaction is received first, a node will hold it and not validate it until it has seen, and processed, the nonce 1 transaction.
 
-The use of the nonce to ensure that all nodes calculate the same balance, and sequence transactions properly, is equivalent to the mechanism used to prevent "double spending" in Bitcoin. However, because Ethereum tracks account balances and does not track coins individually (called UTXO in Bitcoin), "double spending" can only happen if the account balance is calculated erroneously. The nonce mechanism prevents that from happening. 
+The use of the nonce to ensure that all nodes calculate the same balance, and sequence transactions properly, is equivalent to the mechanism used to prevent "double spending" in Bitcoin. However, because Ethereum tracks account balances and does not track coins individually (called UTXO in Bitcoin), "double spending" can only happen if the account balance is calculated erroneously. The nonce mechanism prevents that from happening.
 
 [[tracking_nonce]]
 ===== Keeping track of nonces
@@ -135,7 +135,7 @@ In the end, these concurrency problems, on top of the difficulty of tracking acc
 
 We discuss _gas_ in detail in <<gas>>. However, let's cover some basics about the role of the +gasPrice+ and +startGas+ components of a transaction.
 
-Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with an exchange rate vis-a-vis ether. Ethereum uses gas to control the amount of resources that a transaction can spend, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertent resource-devouring transactions.
+Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with an exchange rate vis-a-vis ether [TODO: FALSE: it's not really a "currency" since you can't exchange it back again and it only exists in a closed environment - there's no way to actually hold or own "gas". It's really just a unit of computation for metering.]. Ethereum uses gas to control the amount of resources that a transaction can spend, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertent resource-devouring transactions.
 
 Gas is separate from ether in order to protect the system from the volatility that might arise along with rapid changes in the value of ether.
 
@@ -172,7 +172,7 @@ If your transaction's destination address is a contract, then the amount of gas 
 
 To borrow a common analogy used in Ethereum, you can think of startGas as the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey such as a diversion (a more complex execution path), which increase fuel consumption.
 
-The analogy to a fuel tank is somewhat misleading, however. It's more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * startGas+ fee. But the amount is not actually deducted from your account until the end of the transaction execution. You are only billed for gas actually consumed by your transaction at the end, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.
+The analogy to a fuel tank is somewhat misleading, however. It's more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * startGas+ fee. But the amount is not actually deducted from your account until the end of the transaction execution. You are only billed for gas actually consumed by your transaction at the end, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction. [TODO: FALSE: eth is removed from the sender account at the beginning of computation and unused gas is refunded after successful computation.]
 
 [[tx_recipient]]
 === Transaction recipient
@@ -193,7 +193,7 @@ Sending a transaction to an invalid address will _burn_ the ether sent, renderin
 
 The main "payload" of a transaction is contained in two fields: +value+ and +data+. Transactions can have both value and data, only value, only data, or neither value nor data. All four combinations are valid.
 
-A transaction with only value is a _payment_. A transaction with only data is an _invocation_. A transaction with neither value nor data, well that's probably just a waste of gas! But it is still possible.
+A transaction with only value is a _payment_. A transaction with only data is an _invocation_. A transaction with both is simply an invocation which makes a payment as part of it. A transaction with neither... well that's probably just a waste of gas! But it is still possible.
 
 Let's try all of the above combinations:
 
@@ -342,9 +342,9 @@ That's the +data+ payload for our transaction, invoking the +withdraw+ function 
 [[contract_reg]]
 === Special transaction: Contract registration
 
-There is one special case of a transaction with a data payload and no value. This is a transaction that _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
+There is one special case of a transaction with a data payload. This is a transaction that _registers_ a new contract. Contract registration transactions are sent to a special destination address, the zero address. In simple terms, the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private/public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "register this contract".
 
-While the zero address is only intended for contract registration, it sometimes receives payments from various addresses. There are two explanations for this: either it is by accident, resulting in the loss of ether, or it is an intentional _ether burn_ (see <<burning_ether>>). If you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
+While the zero address is only intended for contract registration, paying into it has a special meaning; the ether is provided to the new contract as an initial _endowment_. If the contract that is created cannot spend ether for whatever reason (due to a bug, perhaps), then that ether will be rendered unspendable and lost forever. If you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
 
 [[burn_address]]
 ----
@@ -353,10 +353,8 @@ While the zero address is only intended for contract registration, it sometimes 
 
 [WARNING]
 ====
-Any ether sent to the contract registration address +0x0+ or the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
+Any ether sent to the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
 ====
-
-A contract registration transaction should contain no ether value, only a data payload that contains the compiled bytecode of the contract. The only effect of this transaction is to register the contract.
 
 As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidiy compiler.
 ----
@@ -381,9 +379,9 @@ Once, the contract is mined we can see it on etherscan block explorer
 
 [[publish_contract_from_web3]]
 .Etherscan showing the contract successully minded
-image::images/contract_published.png["Etherscan showing the contract successully minded"]
+image::images/contract_published.png["Etherscan showing the contract successully mined"]
 
-You can look at the receipt of transaction to get infromation about the contract.
+You can look at the receipt of transaction to get information about the contract.
 
 [source,javascript]
 ----
@@ -660,7 +658,7 @@ Our transaction has completed its journey from creation to signing by an EOA, pr
 
 === Multiple signatures (multisig) transactions
 
-If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's value transactions have no provisions for multiple signatures, although arbitrary contracts with any conditions may be deployed to handle the transfer of ether and tokens alike. 
+If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's value transactions have no provisions for multiple signatures, although arbitrary contracts with any conditions may be deployed to handle the transfer of ether and tokens alike.
 
 To protect your ether under a multisig condition, transfer them to a multisig contract. Whenever you want to send funds to another account, all the required users will need to send transactions to the contract using a regular wallet software, effectively authorizing the contract to perform the final transaction.
 
