@@ -1,65 +1,67 @@
-![Mastering Ethereum Cover](images/cover_thumb.png)____________________**Watch a video tutorial on how to contribute ---->**[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/1.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
-<hr/>
+Чат (англоязычный): [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
-Chat: [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
+- Телеграм группа для общения - [TechGarageRu](https://t.me/techgarageru)
+- Телеграм канал для получения уведомлений по переводу - [ProtocolX](http://t.me/protocolx)
+- ETH адрес для поддержки этого перевода: [0x0071a7250ba11e086b0de4afc6e0264061d8c941](https://etherscan.io/address/0x0071a7250ba11e086b0de4afc6e0264061d8c941)
+- Обновление перевода: 2-3 раза в неделю
+- Мой телеграм: [@IlyaDruzhinin](https://t.me/IlyaDruzhinin)
 
-Project Management: [![Waffle.io - Columns and their card count](https://badge.waffle.io/ethereumbook/ethereumbook.svg?columns=all)](https://waffle.io/ethereumbook/ethereumbook)
 <hr/>
 
 # Mastering Ethereum
 
-Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
+Mastering Ethereum это книга для разработчиков, предлагаемое руководство по эксплуатации и использованию Ethereum, Ethereum Classic, RootStock (RSK) и других совместимых с основанными на Ethereum открытыми блокчейнами.
 
-This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
+Этот репозиторий содержит драфт книги, которая только разрабатывается и планируемая у публикации в четвертом квартале 2018 года в O'Reilly Media. Дата публикации к сожалению была отложена, по персональным причинам.
 
-# Contents
+# Содержание
 
-The current status of the book is **CONTENT FREEZE - TECH REVIEW**. Only errors, fixes and typos will be accepted. Any new content submissions will be delayed for the second edition, which goes into production in late 2019 or early 2020.
-
-
-Here's what is available now:
-
-| Section | Progress | Content Complete |
-|-------|------|:------:|
-| [Preface](preface.asciidoc) | #### ||
-| [Glossary](glossary.asciidoc) | ######## | :heavy_check_mark: |
-| [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: |
-| [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: |
-| [Ethereum Clients](clients.asciidoc) | ########## | :heavy_check_mark: |
-| [Ethereum Testnets](ethereum-testnets.asciidoc) | #### ||
-| [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: |
-| [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: |
-| [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: |
-| [Smart Contracts](smart-contracts.asciidoc) | ########################## | :heavy_check_mark: |
-| [Dev Tools and Frameworks](dev-tools.asciidoc) | ########## | :heavy_check_mark: |
-| [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: |
-| [DApps](dapps.asciidoc) | #### ||
-| [Oracles](oracles.asciidoc) | ####### | :heavy_check_mark: |
-| [Accounting & Gas](gas.asciidoc) | #### | :heavy_check_mark: |
-| [EVM](evm.asciidoc) | ####### | :heavy_check_mark: |
-| [Consensus](consensus.asciidoc) | ####### | :heavy_check_mark: |
-| [Vyper](vyper.asciidoc) | ##### | :heavy_check_mark: |
-| [DevP2P Protocol](devp2p-protocol.asciidoc) | ### | :heavy_check_mark: |
-| [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### | :heavy_check_mark: |
-| [Forks History (DAO/ETC)](forks-history.asciidoc) | ###### | :heavy_check_mark: |
+Текущий статус книги - **КОНТЕНТ ЗАМОРОЖЕН, ЖДЁМ ТЕХНИЧЕСКОГО РЕВЬЮ**. Только ошибки, исправления и опечатки будут исправлены. Весь новый контент, который придет от сообщества будет отложен до второго издания, который планируется в конце 2019 года или начале 2020.
 
 
-# Contributing, reviewing and commenting
+Что сейчас доступно:
 
-This book is developed collaboratively and openly, here on Github. We accept comments, contributions and corrections from all.
+| Секциия | Прогресс | Завершенность | Перевод |
+|-------|------|:------:|:------:|
+| [Предисловие](preface.asciidoc) | #### | | :heavy_check_mark: |
+| [Глоссарий](glossary.asciidoc) | ######## | :heavy_check_mark: | :heavy_check_mark: |
+| [Что такое Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: | |
+| [Введение](intro.asciidoc) | ############# | :heavy_check_mark: | ||
+| [Клиенты Ethereum](clients.asciidoc) | ########## | :heavy_check_mark: | ||
+| [Тестнет Ethereum](ethereum-testnets.asciidoc) | #### || ||
+| [Ключи и Адреса](keys-addresses.asciidoc) | ############# | :heavy_check_mark: | ||
+| [Кошельки](wallets.asciidoc) | ########### | :heavy_check_mark: | ||
+| [Транзакции](transactions.asciidoc) | ############### | :heavy_check_mark: | ||
+| [Смарт контракты](smart-contracts.asciidoc) | ########################## | :heavy_check_mark: | ||
+| [Инструменты разработчика и фреймворки](dev-tools.asciidoc) | ########## | :heavy_check_mark: | ||
+| [Токены](tokens.asciidoc) | ################### | :heavy_check_mark: | ||
+| [DApps](dapps.asciidoc) | #### || ||
+| [Ораклы](oracles.asciidoc) | ####### | :heavy_check_mark: | ||
+| [Accounting & Gas](gas.asciidoc) | #### | :heavy_check_mark: | ||
+| [EVM](evm.asciidoc) | ####### | :heavy_check_mark: | ||
+| [Консенсус](consensus.asciidoc) | ####### | :heavy_check_mark: | ||
+| [Vyper](vyper.asciidoc) | ##### | :heavy_check_mark: | ||
+| [Протокол DevP2P](devp2p-protocol.asciidoc) | ### | :heavy_check_mark: | ||
+| [Стандарты Ethereum (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### | :heavy_check_mark: | ||
+| [История форков (DAO/ETC)](forks-history.asciidoc) | ###### | :heavy_check_mark: | ||
 
-To chat with the authors and editors:
+
+# Содействие, обзоры и комментарии
+
+Эта книга разрабатывается совместными усилдиями и открыто, здесь на Github. Мы принимаем комментарии, любое содествие и правки.
+
+Чат для общения с авторами и редакторами:
 
 
 [![Gitter](https://github.com/ethereumbook/ethereumbook/blob/develop/images/chat-on-gitter.svg)](https://gitter.im/ethereumbook/Lobby)
 
-To contribute, see the detailed [Contributing Guide](CONTRIBUTING.md).
+Чтобы внести свой вклад в книгу, смотрите условия [Contributing Guide](CONTRIBUTING.md).
 
-# Source & License
+# Исходники и Лицензирование
 
-The book's source code, found in this repository, is kept synchronized with the print and ebook editions.
+Исходный код данной книги находится в этом репозитории, полностью синхронизирово с печатными и электронными изданиями.
 
-The [develop branch](https://github.com/ethereumbook/ethereumbook/tree/develop), containing the most recent changes you see here is the in-progress drafting of Mastering Ethereum.
+Ветка [develop](https://github.com/ethereumbook/ethereumbook/tree/develop), содержит все самые свежие изменения, которые включаются в драфт книги Mastering Ethereum.
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Mastering Ethereum</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://antonopoulos.com/" property="cc:attributionName" rel="cc:attributionURL">The Ethereum Book LLC and Gavin Wood</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
 
