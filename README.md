@@ -38,7 +38,7 @@ Here's what is available now:
 | [Accounting & Gas](gas.asciidoc) | #### | :heavy_check_mark: |
 | [EVM](evm.asciidoc) | ####### | :heavy_check_mark: |
 | [Consensus](consensus.asciidoc) | ####### | :heavy_check_mark: |
-| [Vyper](vyper.asciidoc) | ##### | :heavy_check_mark: |
+| [Vyper](vyper.asciidoc) | ###### | :heavy_check_mark: |
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ### | :heavy_check_mark: |
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### | :heavy_check_mark: |
 | [Forks History (DAO/ETC)](forks-history.asciidoc) | ###### | :heavy_check_mark: |
