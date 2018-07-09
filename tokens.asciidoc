@@ -110,15 +110,14 @@ One of the benefits of deploying services on general-purpose platforms like Ethe
 Make this decision for the right reasons. Adopt a token because your application _cannot work without a token_. Adopt it because the token solves a fundamental market barrier or access problem. Don't introduce a utility token because it is the only way you can raise money fast and you need to pretend it's not a public securities offering.
 
 [[token_std]]
-=== Token Standards
+=== Tokens on Ethereum
 
 Blockchain tokens have existed before Ethereum. In some ways, the first blockchain currency, bitcoin, is a token itself. Many token platforms were also developed on Bitcoin and other cryptocurrencies before Ethereum. However, the introduction of the first token standard on Ethereum led to an explosion of tokens.
 
 Vitalik Buterin suggested tokens as one of the most obvious and useful applications of a generalized programmable blockchain such as Ethereum. In fact, in the first year of Ethereum, it was common to see Vitalik and others wearing t-shirts emblazoned with the Ethereum logo and a smart contract sample on the back. There were several variations of this t-shirt, but the most common showed an implementation of a token.
 
+Before we delve into the details of creating tokens on Ethereum it is first important to look at an overview of how tokens work on Ethereum. Tokens are different from ether because the Ethereum protocol does not know anything about them. Sending ether is an intrinsic action of the Ethereum platform, but sending or even owning tokens is not. The ether balance of Ethereum accounts is handled at the protocol level, whereas the token balance of Ethereum accounts is handled at the smart contract level. In order to create a new token on Ethereum, you must create a new smart contract. Once deployed, the smart contract handles everything, including ownership, transfers and access rights. You can write your smart contract to perform all the necessary actions any way you want, but it is probably wisest to follow an existing standard. We will look at such standards next. We discuss the pros and cons of following standards at the end of the chapter.
 
-//When first exposed to the token concept, readers might assume that tokens are owned and transferred between Ethereum accounts (addresses) just like ether, through value transactions, without using a smart contract. I see there's mention to this later in the chapter.  Should we introduce avoid this misconception here, before presenting standards, functions and events? Or this will actually complicate matters?
-//I agree with this comment - I think bringing the description of how tokens work on Ethereum to be given before the description of the standards makes a lot of sense.
 
 [[ERC20_std]]
 ==== ERC20 Token Standard
@@ -230,7 +229,7 @@ When the AliceICO contract receives ether from Bob, it needs to send some AliceC
 [[ERC20_implementation]]
 ===== ERC20 Implementations
 
-While it is possible to implement an ERC20-compatible token in about thirty lines of Solidity code, most implementations are more complex, to account for potential security vulnerabilities. There are two implementations mentioned in the EIP20 standard:
+While it is possible to implement an ERC20-compatible token in about thirty lines of Solidity code, most implementations are more complex. This is to account for potential security vulnerabilities. There are two implementations mentioned in the EIP20 standard:
 
 Consensys EIP20:: A simple and easy to read implementation of an ERC20-compatible token.
 
@@ -281,7 +280,7 @@ Edit the +truffle.js+ or +truffle-config.js+ configuration file to set up your +
 
 https://github.com/ethereumbook/ethereumbook/blob/develop/code/truffle/METoken/truffle-config.js
 
-If you use the example +truffle-config.js+, remember to create a file +.env+ in the +METoken+ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as ganache or Kovan. You can export your test network private key from MetaMask. 
+If you use the example +truffle-config.js+, remember to create a file +.env+ in the +METoken+ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as Ganache or Kovan. You can export your test network private key from MetaMask. 
 
 After that your directory look like:
 
@@ -301,7 +300,7 @@ METoken/
 
 [WARNING]
 ====
-Only use test keys or test mnemonics that are not used to hold funds on the main Ethereum network. Never use keys that hold real money for testing.
+Only use test keys or test mnemonics that are _not_ used to hold funds on the main Ethereum network. _Never_ use keys that hold real money for testing.
 ====
 
 For our example, we will import the OpenZeppelin StandardContract, which implements some important security checks and is easy to extend. Let's import that library:
@@ -565,13 +564,14 @@ truffle(ganache)> BigNumber { s: 1, e: 5, c: [ 100000 ] }
 Alright, we have transferred 1000 MET to the +Faucet+ contract. Now, how do we withdraw from the +Faucet+?
 
 Remember, +Faucet.sol+ is a pretty simple contract. It only has one function, +withdraw+, which is for withdrawing _ether_. It doesn't have a function for withdrawing MET, or any other ERC20 token. If we use +withdraw+ it will try to send ether, but since the faucet doesn't have a balance of ether yet, it will fail.
+
 The +METoken+ contract knows that +Faucet+ has a balance, but the only way that it can transfer that balance is if it receives a +transfer+ call from the address of the contract. Somehow we need to make the +Faucet+ contract call the +transfer+ function in +METoken+.
 
 If you're wondering what to do next, don't. There is no solution to this problem. The MET sent to +Faucet+ is stuck, forever. Only the +Faucet+ contract can transfer it, and the +Faucet+ contract doesn't have code to call the +transfer+ function of an ERC20 token contract.
 
-Perhaps you anticipated this problem. Most likely, you didn't. In fact, neither did hundreds of Ethereum users who accidentally transferred various tokens to contracts that didn't have any ERC20 capability. According to some estimates, tokens worth more than $2.5 million USD have been "stuck" like this and are lost forever.
+Perhaps you anticipated this problem. Most likely, you didn't. In fact, neither did hundreds of Ethereum users who accidentally transferred various tokens to contracts that didn't have any ERC20 capability. According to some estimates, tokens worth more than roughly $2.5 million USD (at the time of writing) have been "stuck" like this and are lost forever.
 
-One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer, is when they attempt to transfer to an exchange or another service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts serve a number of different functions, most often sweeping all funds sent to them to a "cold storage" or another centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
+One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer, is when they attempt to transfer to an exchange or another service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts serve a number of different functions, most often sweeping all funds sent to them to "cold storage" or another centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
 
 [[transfer_workflow_demo]]
 ==== Demonstrating the approve & transferFrom workflow
@@ -628,7 +628,7 @@ Finally, since our faucet no longer sends ether, we should probably prevent anyo
 function () public payable { revert(); }
 ----
 
-Now that our +METFaucet.sol+ code is ready, we need to modify the migration script to deploy it. This migration script will be a bit more complex, as +METFaucet+ depends on the address of +METoken+. We will use a JavaScript promise to deploy the two contracts in sequence. Create +2_deply_contracts.js+ as follows:
+Now that our +METFaucet.sol+ code is ready, we need to modify the migration script to deploy it. This migration script will be a bit more complex, as +METFaucet+ depends on the address of +METoken+. We will use a JavaScript promise to deploy the two contracts in sequence. Create +2_deploy_contracts.js+ as follows:
 
 [[2_deploy_contracts]]
 ----
@@ -687,11 +687,11 @@ The adoption of the ERC20 token standard has been truly explosive. Thousands of 
 
 One of the less obvious issues with ERC20 tokens is that they expose subtle differences between tokens and ether itself. Where ether is transferred by a transaction which has a recipient address as its destination, token transfers occur within the _specific token contract state_ and have the token contract as their destination, not the recipient's address. The token contract tracks balances and issues events. In a token transfer, no transaction is actually sent to the recipient of the token. Instead, the recipient's address is added to a map within the token contract itself. A transaction sending ether to an address changes the state of an address. A transaction transferring a token to an address only changes the state of the token contract, not the state of the recipient address. Even a wallet that has support for ERC20 tokens does not become aware of a token balance unless the user explicitly adds a specific token contract to "watch". Some wallets watch the most popular token contracts to detect balances held by addresses they control, but that's limited to a small fraction of the available ERC20 contracts.
 
-In fact, it's unlikely that a user would _want_ to track all balances in all possible ERC20 token contracts. Many ERC20 tokens are more like email spam than usable tokens. They automatically create balances for accounts that have ether activity, to attract users. If you have an Ethereum address with a long history of activity, especially if it was created in the presale, you will find it full of "junk" tokens that appeared out of nowhere. Of course, the address isn't really full of tokens, it's the token contracts that have your address in them. You only see these balances if these tokens contracts are being watched by the block explorer or wallet you use to view your address.
+In fact, it's unlikely that a user would _want_ to track all balances in all possible ERC20 token contracts. Many ERC20 tokens are more like email spam than usable tokens. They automatically create balances for accounts that have ether activity, in order to attract users. If you have an Ethereum address with a long history of activity, especially if it was created in the presale, you will find it full of "junk" tokens that appeared out of nowhere. Of course, the address isn't really full of tokens, it's the token contracts that have your address in them. You only see these balances if these tokens contracts are being watched by the block explorer or wallet you use to view your address.
 
 Tokens don't behave the same way as ether. Ether is sent with the +send+ function and accepted by any payable function in a contract or any externally owned address. Tokens are sent using +transfer+ or +approve & transferFrom+ functions that exist only in the ERC20 contract, and do not (at least in ERC20) trigger any payable functions in a recipient contract. Tokens are meant to function just like a cryptocurrency such as ether, but they come with certain subtle distinctions that break that illusion.
 
-Consider another issue. To send ether, or use any Ethereum contract you need ether to pay gas. To send tokens, you _also need ether_. You cannot pay for a transaction's gas with a token and the token contract can't pay the gas for you. This can cause some rather strange user experiences. For example, let's say you use an exchange or Shapeshift to convert some bitcoin to a token. You "receive" the token in a wallet that tracks that token's contract and shows your balance. It looks the same as any of the other cryptocurrencies you have in your wallet. Now try sending the token and your wallet will inform you that you need ether to do that. You might be confused - after all you didn't need ether to receive the token. Perhaps you have no ether. Perhaps you didn't even know the token was an ERC20 token on Ethereum, maybe you thought it was a cryptocurrency with its own blockchain. The illusion just broke.
+Consider another issue. To send ether, or use any Ethereum contract you need ether to pay gas. To send tokens, you _also need ether_. You cannot pay for a transaction's gas with a token and the token contract can't pay the gas for you. This may change at some point in the distant future, but for the forseeable this can cause some rather strange user experiences. For example, let's say you use an exchange or Shapeshift to convert some bitcoin to a token. You "receive" the token in a wallet that tracks that token's contract and shows your balance. It looks the same as any of the other cryptocurrencies you have in your wallet. Now try sending the token and your wallet will inform you that you need ether to do that. You might be confused - after all you didn't need ether to receive the token. Perhaps you have no ether. Perhaps you didn't even know the token was an ERC20 token on Ethereum, maybe you thought it was a cryptocurrency with its own blockchain. The illusion just broke.
 
 Some of these issues are specific to ERC20 tokens. Others are more general issues that relate to abstraction and interface boundaries within Ethereum. Some can be solved by changing the token interface, others may need changes to fundamental structures within Ethereum (such as the distinction between EOAs and contracts, and between transactions and messages). Some may not be "solvable" exactly and may require user interface design to hide the nuances and make the user experience consistent regardless of the underlying distinctions.
 
@@ -799,9 +799,9 @@ From the Oxford Dictionary:
 
     deed: A legal document that is signed and delivered, especially one regarding the ownership of property or legal rights.
 
-The use of the word deed is intended to reflect the "ownership of property" part, even though these are not recognized as "legal documents" in any jurisdiction, at least not currently.
+The use of the word deed is intended to reflect the "ownership of property" part, even though these are not recognized as "legal documents" in any jurisdiction - yet. It is likely that at some point in the future, legal ownership based on digital signatures on a blockchain platform will be legally recognized.
 
-Non-fungible tokens track ownership of a unique thing. The thing owned can be a digital item, such as a game item, or digital collectible. Or, the thing can be a physical item whose ownership is tracked by a token, such as a house, a car, artwork. A deed could also represent things with negative value, such as loans (debt), liens, easements, etc. The ERC721 standard places no limitation or expectation on the nature of the thing whose ownership is tracked by a deed, only that it can be uniquely identified, which in the case of this standard is achieved by a 256-bit identifier.
+Non-fungible tokens track ownership of a unique thing. The thing owned can be a digital item, such as an in-game item, or digital collectible; or, the thing can be a physical item whose ownership is tracked by a token, such as a house, a car, or an artwork. A deed could also represent things with negative value, such as loans (debt), liens, easements, etc. The ERC721 standard places no limitation or expectation on the nature of the thing whose ownership is tracked by a deed, only that it can be uniquely identified, which in the case of this standard is achieved by a 256-bit identifier.
 
 The details of the standard and discussion are tracked in two different GitHub locations:
 
@@ -878,9 +878,9 @@ In this section, we've reviewed several proposed standards and a couple of widel
 [[token_std_purpose]]
 ==== What are token standards? What is their purpose?
 
-Token standards are a _minimum_ specification for an implementation. What that means is that in order to be compliant with, say ERC20, you need to at minimum, implement the functions and behavior specified by ERC20. You are also free to _add_ to the functionality by implementing functions that are not part of the standard.
+Token standards are a _minimum_ specification for an implementation. What that means is that in order to be compliant with, say ERC20, you need to at minimum implement the functions and behavior specified by ERC20. You are also free to _add_ to the functionality by implementing functions that are not part of the standard.
 
-The primary purpose of these standards is to encourage _interoperability_ between contracts. Thus, all wallets, exchanges, user interfaces and other infrastructure components can _interface_ in a predictable manner with any contract that follows the specification.
+The primary purpose of these standards is to encourage _interoperability_ between contracts. Thus, all wallets, exchanges, user interfaces and other infrastructure components can _interface_ in a predictable manner with any contract that follows the specification. I.e. if you deploy a contract that follows the ERC20 standard, all existing wallet users can seemlessly start trading your token without any wallet upgrade or effort on your part.
 
 The standards are meant to be _descriptive_, rather than _prescriptive_. How you choose to implement those functions is up to you - the internal function of the contract is not relevant to the standard. They have some functional requirements, which govern the behavior under specific circumstances, but they do not prescribe an implementation. An example of this is the behavior of a transfer function if the value is set to zero.
 
@@ -899,7 +899,7 @@ As part of this consideration is an even bigger issue: the value of interoperabi
 [[security_maturity]]
 === Security by maturity
 
-Beyond the choice of standard, there is the parallel choice of _implementation_. When you decide to use a standard, such as ERC20, you have to then decide how to implement a compatible token. There are a number of existing "reference" implementations that are broadly used in the Ethereum ecosystem. Or you could write your own from scratch. Again, this choice represents a dilemma that can have serious security implications.
+Beyond the choice of standard, there is the parallel choice of _implementation_. When you decide to use a standard, such as ERC20, you have to then decide how to implement a compatible design. There are a number of existing "reference" implementations that are broadly used in the Ethereum ecosystem, or you could write your own from scratch. Again, this choice represents a dilemma that can have serious security implications.
 
 Existing implementations are "battle tested". While it is impossible to prove that they are secure, many of them underpin millions of dollars of tokens. They have been attacked, repeatedly and vigorously. So far, no significant vulnerabilities have been discovered. Writing your own is not easy - there are many subtle ways that a contract can be compromised. It is much safer to use a well-tested broadly-used implementation. In our examples above, we used the OpenZeppelin implementation of the ERC20 standard, as this implementation is security focused from the ground up.
 
@@ -908,9 +908,9 @@ If you use an existing implementation you can also extend it. Again, be careful 
 [[extend_token_interface]]
 === Extensions to token interface standards
 
-The token standards discussed in this section start with a very minimal interface, with limited functionality. Many projects have created extended implementations, to support features that they need for their application. Some of these include:
+The token standards discussed in this section start with a very minimal interface, with limited functionality. Many projects have created extended implementations to support features that they need for their application. Some of these include:
 
-Owner Control:: Specific addresses, or set of addresses (multi-signature) are given special capabilities, such as blacklisting, whitelisting, minting, recovery etc.
+Owner Control:: Specific addresses, or sets of addresses (i.e. multi-sig) are given special capabilities, such as blacklisting, whitelisting, minting, recovery, etc.
 
 Burning:: A token burn is when tokens are deliberately destroyed by transfer to an unspendable address or by erasing a balance and reducing the supply.
 
@@ -920,9 +920,9 @@ Crowdfunding:: The ability to offer tokens for sale, for example through an auct
 
 Caps:: Pre-defined and immutable limits on the total supply, the opposite of the "minting" feature.
 
-Recovery "Back Doors":: Functions to recover funds, reverse transfers, or dismantle the token that can be activated by a designated address or set of addresses (multi-signature).
+Recovery "Back Doors":: Functions to recover funds, reverse transfers, or dismantle the token that can be activated by a designated address or sets of addresses.
 
-Whitelisting:: The ability to restrict token transfers only to listed addresses. Most commonly used to offer tokens to "accredited investors" after vetting by the rules of different jurisdictions. There is usually a mechanism for updating the whitelist.
+Whitelisting:: The ability to restrict actions (such as token transfers) only to listed addresses. Most commonly used to offer tokens to "accredited investors" after vetting by the rules of different jurisdictions. There is usually a mechanism for updating the whitelist.
 
 Blacklisting:: The ability to restrict token transfers by disallowing specific addresses. There is usually a function for updating the blacklist.
 
@@ -933,7 +933,7 @@ As previously discussed, the decision to extend a token standard with additional
 [[tokens_ico]]
 === Tokens and ICOs
 
-Tokens have become an explosive development in the Ethereum ecosystem. It is likely that they will be a very important, foundational, component of all smart-contract platforms like Ethereum.
+Tokens have become an explosive development in the Ethereum ecosystem. It is likely that they will be a very important, foundational component of all smart-contract platforms like Ethereum.
 
 Nevertheless, the importance and future impact of these standards should not be confused with an endorsement of the current token offerings. As in any early stage technology, the first wave of products and companies will almost all fail, and some will fail spectacularly. Many of the tokens on offer in Ethereum today are barely disguised scams, pyramid schemes and money grabs.
 
