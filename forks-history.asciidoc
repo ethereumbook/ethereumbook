@@ -1,0 +1,187 @@
+[[ethereum_fork_history]]
+== Ethereum Fork History
+Most hard forks are planned as part of an upgrade roadmap and consist of updates that the community generally agrees to (i.e. consensus on the social level). However, some hard forks do not always retain consensus which leads to multiple, distinct blockchains. The events that lead to the Ethereum / Ethereum Classic split is one such case.
+
+[[etc_origin]]
+=== Ethereum Classic (ETC)
+Ethereum Classic came to be after members of the Ethereum community went ahead with a time-sensitive hard fork ("DAO Hard Fork"). On 205th July 2016, at a block height of 1.92 million, Ethereum introduced an irregular state change via a hard-fork in an effort to return approximately 3.6 million ether that had been taken from a smart contract known as The DAO. Almost everyone agreed that the ether taken had been stolen and that leaving it all in the hands of the theif would be of significant detriment to development of the Ethereum ecosystem as well as the platform itself. 
+
+Returning the ether to its respective owners before The DAO even existed was technically easy, if rather politically controversial. A number of people in the ecosystem disagreed with this change, believing immutability should be a fundamental principle of the Ethereum blockchain without exception; they elected to continue the original chain under the moniker of Ethereum Classic. While the split itself was initially ideological both chains have since evolved into their own separate entities.
+
+[[dao_origin]]
+=== The Decentralized Autonomous Organization (The DAO)
+
+The DAO was created by Slock.It with the goal to provide community-based funding and governance for projects. The core idea of it being that proposals would be submitted, curators would manage proposals, funds would be raised from investors within the Ethereum community, and if the project proves successful then investors would receive a share of the profits.
+
+The DAO was also one of the first experiments in an Ethereum token. Rather than funding projects directly with Ether, participants would trade their ether for DAO tokens, use them to vote on project funding, and would later be able to trade them back for Ether.
+
+DAO tokens were able to be purchased in a crowdsale that ran from 5th April through 30th April 2016, amassing nearly 14% <<[1]>> of the total ether in existence which was worth ~$150 million USD at the time.
+
+[[dao_reentrancy_bug]]
+=== The Re-Entrancy Bug
+On 9th June, developers Peter Vessenes and Chriseth reported that most Ethereum-based contracts which manage funds are potentially vulnerable to an exploit <<[2]>> that can empty contract funds. A few days later (12th June) Stephen Tual (Co-founder of Slock.It), reported that The DAO's code is not vulnerable <<[3]>> to the bug described by Peter and Chriseth. Worried DAO contributors temporarily breathe a sigh of relief until 5 days later, when an unknown attacker ("the DAO Attacker") started draining The DAO <<[4]>> using an exploit similar to the one described on 9th June. Ultimately the DAO Attacker siphoned ~3.6 million ether out of The DAO.
+
+Simultaneously an assemblage of volunteers calling themselves the Robinhood Group (RHG) started using the same exploit to withdraw the remaining funds in order to save them from being stolen by the DAO Attacker. On the 21st June, the RHG announced <<[5]>> that they've secured the about 70% of The DAO's funds (roughly 7.2 million ether), with plans to return it to the community (which they successfully did on the ETC network, and didn't need to do on the Ethereum network post fork). Much thanks and commendations are given to the RHG for their quick thinking and fast actions that helped secure the bulk of the community's ether.
+
+[[dao_reentrancy_bug_technicals]]
+==== Re-Entrancy Technicals
+While a more detailed and thorough explanation of the bug is described by Phil Daian <<[6]>> the short explanation is that a crucial function in the DAO had two lines of code in the wrong order, meaning that the Attacker could have requests to withdraw ether acted upon repeatedly, before the check of whether the Attacker was entitled to the withdraw was completed.
+
+[[dao_reentrancy_bug_attack_flow]]
+==== Re-Entrancy Attack Flow
+Imagine you had $100 in your bank account and you could bring your bank teller any number of withdrawal slips. The bank teller gives you money for each slip in order, and only at the end of all the slips do they record your withdrawal. What if you brought them three slips to each withdraw $100? What if you brought them three thousand?
+
+*Put another way, the flow was:*
+
+1. DAO Attacker asks the DAO Contract to withdraw DAO tokens (DAO).
+2. DAO Attacker asks the contract to withdraw DAO *again*. Before the contract updates its records that DAO was withdrawn.
+3. Repeat step two as much as possible.
+4. Contract finally logs a single DAO withdrawal, losing track of the withdrawals that happened in the interim.
+
+[[dao_hard_fork]]
+=== The DAO Hard Fork
+Fortunately, there were several safe guards built into The DAO: all withdrawal requests were subject to a 28 day delay. This gave the community a short timeframe to discuss what to do about the exploit. From roughly 17th June to 20th July the DAO Attacker would be unable to convert their DAO tokens into Ether.
+
+Several developers focused on finding a viable solution and multiple avenues were explored in this short space of time. Among them was the DAO Soft Fork, announced on 24th June, to delay DAO withdrawals until consensus was reached <<[7]>>, and a DAO Hard Fork, announced on 15th July, to reverse the effects of the DAO Attack with an exceptional state change <<[8]>>.
+
+On 28th June, developers discovered a DoS exploit in the DAO Soft Fork <<[9]>>, and concluded that the DAO Hard Fork would be the only viable option to fully resolve the situation. The DAO Hard Fork would transfer all ether that had been invested in the DAO into a new refund smart contract, allowing the original owners of the ether to claim a full refund. This provided a solution for returning the hacked funds but also meant interfering with the balances of specific addresses on the network; however isolated they were. There would also be some leftover ether in portions of The DAO known as childDAOs <<[12]>>. A group of trustees would manually authorize the leftover ether; worth ~$6-7 million at the time <<[8]>>.
+
+With time running out, multiple Ethereum development teams created clients that allowed a user to decide whether they wanted to enable this fork. However, the client creators wanted to decide whether to make this choice opt-in (don't fork by default), or opt-out (fork by default). On the 15th July, a vote was opened on +carbonvote.com+ <<[10]>>. The next day, at block height 1,894,000 <<[11]>> it was closed. Of the 5.5% of the total ether supply that voted, ~80% of the votes (~4.5% of the total ether supply) voted for opt-out. One quarter of the opt-out vote came from a single address <<[12]>>.
+
+Ultimately the decision became opt-out, and those who opposed the DAO Hard Fork would need to explicitly state that they opposed by changing a configuration option in the software they were running. 
+
+On the 20th July, at block height 1,920,000 <<[13]>> Ethereum implemented the DAO Hard Fork <<[14]>> and thus two Ethereum networks were created, one including the state change, and the other ignoring it.
+
+When the DAO Hard Forked Ethereum (present-day Ethereum) gained a majority of the mining power, many assumed that consensus was achieved and the minority chain would fade away; as in previous forks. Despite this, a sizable portion of the Ethereum community (roughly 10% by value and mining power) started supporting the unforked chain which came to be known as Ethereum Classic with the symbol ETC.
+
+Within days, several exchanges began to list both Ethereum ("ETH") and Ethereum Classic ("ETC"). Due to the nature of hard forks, all Ethereum users holding ether at the time of the split then held funds on both of the chains and a market value for ETC was soon established with Poloniex listing ETC on the 24th July <<[15]>>.
+
+[[dao_hard_fork_timeline]]
+=== Timeline of The DAO Hard Fork
+
+- 2016 April 5: Slock.It creates The DAO following a security audit by Dejavu Security <<[16]>>
+- 2016 April 30: The DAO crowdsale launches <<[17]>>
+- 2016 May 27: The DAO crowdsale ends
+- 2016 June 9: A generic recursive call bug is discovered and believed to affect many Solidity contracts that track user's balances <<[2]>>
+- 2016 June 12: Stephen Tual declares that DAO funds are not at risk <<[3]>>
+- 2016 June 17: The DAO is exploited and a variant of the discovered bug (termed the "re-entry bug") is used to start draining the funds; eventually nabbing ~30% of the funds. <<[6]>>
+- 2016 June 21: The RHG announces it has secured the other ~70% of the ether stored within The DAO. <<[5]>>
+- 2016 June 24: A soft fork vote is announced via opt-in signaling through Geth and Parity clients. This is designed to temporarily withhold funds until the community can better decide on what to do. <<[7]>>
+- 2016 June 28: A vulnerability is discovered in the soft fork and it's abandoned. <<[9]>>
+- 2016 June 28 to July 15: Users debate whether or not to hard fork. Most of the vocal public debate occurs on the +/r/ethereum+ subreddit.
+- 2016 July 15: The DAO Hard Fork is proposed to return the funds taken in The DAO Attack. <<[8]>>
+- 2016 July 15: A vote is held on carbonvote to decide if the DAO Hard Fork is opt-in (don't fork by default) or opt-out (fork by default). <<[10]>>
+- 2016 July 16: 5.5% of the total ether supply votes, ~80% of the votes (~4.5% of the total supply) are pro the opt-out hard fork. One quarter of the pro-vote comes from a single address. <<[11]>> <<[12]>>
+- 2016 July 20: The hard fork occurs at block 1,920,000. <<[13]>> <<[14]>>
+- 2016 July 20: Those against the DAO Hard Fork continue running the old non-hard fork client software. This leads to issues with transactions being replayed on both chains. <<[18]>>
+- 2016 July 24: Poloniex lists the original Ethereum chain under the ticker symbol ETC; the first exchange to do so. <<[15]>>
+- 2016 August 10: The RHG transfers 2.9 million of the recovered ETC to Poloniex in order to convert it to ETH under the advice of Bity SA. 14% of the total RHG holdings are converted from ETC to ETH and other cryptocurrencies. Poloniex freezes the other 86% of deposited ETH. <<[19]>>
+- 2016 August 30: The frozen funds are sent by Poloniex back to the RHG. RHG then sets up a refund contract on the ETC chain. <<[20]>> <<[21]>>
+- 2016 December 11: IOHK's ETC development team forms. Lead by Ethereum founding member Charles Hoskinson.
+- 2017 January 13: The ETC network is updated to resolve transaction replay issues. Both chains are now functionally separate. <<[22]>>
+- 2017 February 20: ETCDEVTeam forms. Lead by early ETC developer Igor Artamonov (splix).
+
+[[eth_etc_differences]]
+=== Ethereum and Ethereum Classic
+
+While the initial split was centered around The DAO, the two networks, Ethereum and Ethereum Classic are now separate projects, although most development is still done by the Ethereum community and simply ported to Ethereum Classic codebases. Nevertheless, the full set of differences is constantly evolving and too extensive to cover in this chapter. However, it is worth noting that the chains do differ significantly in their core development and community structure.
+
+[[eth_etc_differences_technical]]
+=== Technical Differences
+
+[[eth_etc_differences_evm]]
+==== The EVM
+For the most part (as of April 2018) the two networks remain highly compatible. Contract code produced for one chain runs as expected on the other, but there are some small differences in EVM OPCODES (see EIPs link:https://github.com/ethereum/EIPs/blob/master/EIPS/eip-140.md[140], link:https://github.com/ethereum/EIPs/blob/master/EIPS/eip-145.md[145], and link:https://github.com/ethereum/EIPs/blob/master/EIPS/eip-214.md[214]).
+
+[[eth_etc_differences_core_development]]
+==== Core Network Development
+Being open projects, most blockchain platforms ultimately have many users and contributors. However, the core network development (code that runs the network) is often done by discrete groups due to the expertise and knowledge required to develop this type of software. As such the code that these groups produce is very closely tied to the code that actually runs the network.
+
+[cols=2*, options=header]
+|===
+|Ethereum
+|Ethereum Classic
+
+|Ethereum Foundation, and volunteers.
+|ETCDEV, IOHK, and volunteers.
+|===
+
+[[eth_etc_differences_ideological]]
+=== Ideological Differences
+One of the biggest material differences between Ethereum and Ethereum Classic is ideology which manifests itself in two key ways: immutability and community structure.
+
+[[eth_etc_differences_immutability]]
+==== Immutability
+Within the context of blockchains, immutability refers to the preservation of blockchain history.
+
+[cols=2*, options=header]
+|===
+|Ethereum
+|Ethereum Classic
+
+|Follows a philosophy that's colloquially termed "governance". This philosophy allows participants to vote, with varying degrees of representation, to change the blockchain in certain cases (such as The DAO attack).
+|Follows a philosophy that once data is on the blockchain it cannot be modified by others. This is a philosophy shared with Bitcoin, Litecoin, and other cryptocurrencies.
+|===
+
+[[eth_etc_differences_community_structure]]
+==== Community structure
+While blockchains aim to be decentralized much of the world around them is centralized. Ethereum and Ethereum Classic approach this reality in different ways.
+
+[cols=2*, options=header]
+|===
+|Ethereum
+|Ethereum Classic
+
+|_Owned by the Ethereum Foundation:_ 
+
+/r/ethereum Subreddit, ethereum.org Website, Forums, GitHub (ethereum), Twitter (@ethereum), Facebook, and Google+ account.
+
+|_Owned by separate entities:_
+
+/r/ethereumclassic Subreddit, the ethereumclassic.org Website, Forums, GitHubs (ethereumproject, ethereumclassic, etcdevteam, iohk, ethereumcommonwealth), Twitter (@eth_classic), Telegrams, and Discord.
+|===
+
+[[other_ethereum_forks]]
+=== A timeline of notable Ethereum forks
+//// TODO: Really needs other forks as well, Ellaism, Ubiq, Musicoin ////
+
+//// TODO: Hopefully someone more familiar with these other forks can elaborate, as well as clarify the difference between network and software forks if necessary. ////
+
+Several other forks have occurred on Ethereum as well. Some of these are hard forks in the sense that they split directly off of the pre-existing Ethereum network. Others are software forks: they use Ethereum's client/node software but run entirely separate networks without any history shared with Ethereum. There will likely be more forks over the life of Ethereum.
+
+There are also several other projects that claim to be Ethereum forks but are actually based on ERC20 tokens and run on the Ethereum network. Two examples of these are EtherBTC (ETHB) and Ethereum Modification (EMOD). These are not forks in the traditional sense, and may sometimes be called airdrops. 
+
+- Expanse was the first fork of the Ethereum blockchain to gain traction. It was announced via the Bitcoin Talk forum on September 7 2015. The actual fork occurred a week later on September 14 2015 at a block height of 800,000. It was originally founded by Christopher Franko and James Clayton. Their stated vision was to create an advanced chain for: "identity, governance, charity, commerce, and equity".
+
+//// TODO: Recommend dropping some of the forks below if they seem to be abandoned ////
+
+- EthereumFog (ETF) was launched on December 14 2017 and forked at a block height of 4730660. Their stated aims are to develop "World Decentralized Fog Computing" by focusing on fog computing and decentralised storage. There is still little information on what this will actually entail.
+- EtherZero (ETZ) was launched on January 19 2018 at block height of 4936270 at a block height of 4936270. Its notable innovations were the introduction of a masternode architecture and the removal of transaction fees for smart contracts to enable a wider diversity of DAPPs. There have been some criticism from some prominent members of the Ethereum community, MyEtherWallet and MetaMask, due to the lack of clarity surrounding development and some accusations of possible phishing.
+- EtherInc (ETI) was launched on February 13 2018 at a block height of 5078585 with a focus on building decentralised organisations. They also announced the reduction of block times, increased miner rewards, the removal of uncle rewards and set a cap on mineable coins. They use the same private keys as Ethereum and have implemented replay protection to protect ether on the original unforked chain. 
+
+[bibliography]
+=== References
+- [[[1]]] https://www.economist.com/news/finance-and-economics/21699159-new-automated-investment-fund-has-attracted-stacks-digital-money-dao
+- [[[2]]] http://vessenes.com/more-ethereum-attacks-race-to-empty-is-the-real-deal/
+- [[[3]]] https://blog.slock.it/no-dao-funds-at-risk-following-the-ethereum-smart-contract-recursive-call-bug-discovery-29f482d348b
+- [[[4]]] http://hackingdistributed.com/2016/06/18/analysis-of-the-dao-exploit
+- [[[5]]] https://www.reddit.com/r/ethereum/comments/4p7mhc/update_on_the_white_hat_attack/
+- [[[6]]] http://hackingdistributed.com/2016/06/18/analysis-of-the-dao-exploit/
+- [[[7]]] https://blog.ethereum.org/2016/06/24/dao-wars-youre-voice-soft-fork-dilemma/
+- [[[8]]] https://blog.slock.it/hard-fork-specification-24b889e70703
+- [[[9]]] https://blog.ethereum.org/2016/06/28/security-alert-dos-vulnerability-in-the-soft-fork/
+- [[[10]]] https://blog.ethereum.org/2016/07/15/to-fork-or-not-to-fork/
+- [[[11]]] https://etherscan.io/block/1894000
+- [[[12]]] https://elaineou.com/2016/07/18/stick-a-fork-in-ethereum/
+- [[[13]]] https://etherscan.io/block/1920000
+- [[[14]]] https://blog.ethereum.org/2016/07/20/hard-fork-completed/
+- [[[15]]] https://twitter.com/poloniex/status/757068619234803712
+- [[[16]]] https://blog.slock.it/deja-vu-dao-smart-contracts-audit-results-d26bc088e32e
+- [[[17]]] https://blog.slock.it/the-dao-creation-is-now-live-2270fd23affc
+- [[[18]]] https://gastracker.io/block/0x94365e3a8c0b35089c1d1195081fe7489b528a84b22199c916180db8b28ade7f
+- [[[19]]] https://bitcoinmagazine.com/articles/millions-of-dollars-worth-of-etc-may-soon-be-dumped-on-the-market-1472567361/
+- [[[20]]] https://medium.com/@jackfru1t/the-robin-hood-group-and-etc-bdc6a0c111c3
+- [[[21]]] https://www.reddit.com/r/EthereumClassic/comments/4xauca/follow_up_statement_on_the_etc_salvaged_from/
+- [[[22]]] https://www.reddit.com/r/EthereumClassic/comments/5nt4qm/diehard_etc_protocol_upgrade_successful_nethash/
+- [[[23]]] https://web.archive.org/web/20160429141714/https://daohub.org/explainer.html/
+- [[[24]]] https://ethereumclassic.github.io/blog/2016-12-12-TeamGrothendieck/
