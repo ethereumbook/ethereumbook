@@ -1074,15 +1074,16 @@ This "truth voting" system is actually the foundation of Gnosis, a forecasting t
 [[access_control_sec]]
 ===== Access control
 
-Access control restricts which users may call contract functions. For the example, the owner of the truth voting contract may decide to limit those who can participate in the vote.
-To accomplish this the contract must impose two access restrictions:
+Access control restricts which users may call contract functions. For our example, the owner of the truth voting contract may decide to limit those who can participate in the vote. To accomplish this the contract must impose two access restrictions:
 
 . Only an owner of the contract may add new users to the list of "allowed voters"
 . Only allowed voters may cast a vote
 
-Solidity function modifiers offer a concise way to implement these restrictions.
+As we saw above, Solidity function modifiers offer a concise way to implement these restrictions.
 
-_Note: The following example uses an underscore semicolon within the modifier bodies. This is a Solidity feature used to tell the compiler when to run the modified function's body. A developer can act as if the modified function's body will be copied to the position of the underscore._
+[TIP]
+====
+The Solidity feature of _function modifiers_ uses a special character sequence to indicate to the compiler where to put the modified function's body; this character sequence is +pass:[_;]+ i.e. an underscore followed by a semicolon. A developer can act as if the modified function's body will be copied to the position of the underscore._
 [source,solidity]
 ----
 pragma solidity ^0.4.21;
@@ -1147,17 +1148,15 @@ contract TruthVote {
 [[state_flow_sec]]
 ===== State flow
 
-Many contracts will require some notion of operation state. The state of a contract will determine how the contract will behave and what operations it offers
-at a given point in time. Let's return to our truth voting system for a more concrete example.
+Many contracts will require some notion of operation state. The state of a contract will determine how the contract will behave and what operations it offers at a given point in time. Let's return to our truth voting system for a more concrete example.
 
 The operation of our voting system can be broken down into 3 distinct states.
 
 . *Register*: The service has been created and the owner can now add voters.
 . *Vote*:  All voters cast their votes.
-. *Disperse*: Vote payments are divided and sent to the majority participants.
+. *Disperse*: Vote payments are divided and sent to the majority decision participants.
 
-The following code continues to build on the access control code, but further restricts functionality to specific states.
-In Solidity, it is commonplace to use enumerated values to represent states.
+The following code continues to build on the access control code, but further restricts functionality to specific states. In Solidity, it is commonplace to use enumerated values to represent states.
 
 [source,solidity]
 ----
@@ -1284,17 +1283,14 @@ contract TruthVote {
 - *disperse*: function that calculates the majority and disperses winnings accordingly. Only the owner may call this function to officially close voting.
 - *startVote*: function that the owner can use to start a vote.
 
-It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more genuine implementation, the voting period should close after a publicly understood period of time. For the sake of this example, this is fine.
+It may be important to note that allowing the owner to close the voting process at will opens this contract up to abuse. In a more genuine implementation, the voting period should close after a publicly understood period of time. However, we are to keep it simple at this stage for demonstration purposes and avoid extra functionality, such as dealing with the tricky problem of time.
 
 The additions made now ensure that voting is only allowed when the owner decides to start the voting period, users can only be registered by the owner before the vote happens, and funds are only dispersed after the vote closes.
 
 [[withdraw_sec]]
 ===== Withdraw
 
-Many contracts will offer some way for a user to retrieve money from it. In our working example, users of the majority are sent money directly when the contract
-begins dispersing funds. Although this appears to work, it is an under-thought solution. The receiving address of the *addr.send()* call in *disperse* could be a contract that
-has a fallback function which fails and consequently breaks *disperse*. This effectively stops all further majority participants from receiving their earning.
-A better solution is to provide a withdraw function that a user can call to collect their earnings.
+Many contracts will offer some way for a user to retrieve money from it. In our working example, users of the majority are sent money directly when the contract begins dispersing funds. Although this appears to work, it is an inadequate solution. The receiving address of the +addr.send()+ call in +disperse+ could be a contract that has a fallback function which fails and consequently breaks +disperse+. This effectively stops all further majority dicision participants from receiving their earnings. A better solution is to provide a withdraw function that a user can call to collect their earnings.
 
 [source,solidity]
 ----
@@ -1385,19 +1381,12 @@ This way, if the send fails, it will only fail on the specific caller's case and
 TODO: add paragraph
 ////
 
-[[contract_libraries_sec]]
-==== Contract libraries
 
-Github link: https://github.com/ethpm
-
-Repository link: https://www.ethpm.com/registry
-
-Website: https://www.ethpm.com/
-
-Documentation: https://www.ethpm.com/docs/integration-guide
 
 [[security_best_practices_sec]]
 ==== Security best practices
+
+There is a lot for any developer working in the smart contract domain to know and understand. By following best practice in your smart contract design and code writing, you will avoid many severe pitfalls and traps. Here are some links for you to explore on the topic:
 
 Github: https://github.com/ConsenSys/smart-contract-best-practices/
 
@@ -1407,12 +1396,26 @@ https://blog.zeppelin.solutions/onward-with-ethereum-smart-contract-security-97a
 
 https://medium.com/zeppelin-blog/the-hitchhikers-guide-to-smart-contracts-in-ethereum-848f08001f05#.cox40d2ut
 
-Perhaps the most fundamental software security principle is to maximize reuse of trusted code. In blockchain technologies, this is even condensed in an adage: "Do not roll your own crypto". In the case of smart contracts, this amounts to profiting as much as possible from freely available libraries that have been thoroughly vetted by the community.
+Perhaps the most fundamental software security principle is to maximize reuse of trusted code. In the blockchain world, this is so important, it has been condensed in an adage: "Don't roll your own crypto". In the case of smart contracts, this amounts to profiting as much as possible from freely available libraries that have been thoroughly vetted by the community.
 
-In Ethereum, the most widely used solution is the https://openzeppelin.org/[OpenZeppelin] suite, an ample library of contracts ranging from implementations of `ERC20` and `ERC721` tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository have been extensively tested and in some cases even function as _de facto_ standard implementations. They are free to use, and are built and mantained by https://zeppelin.solutions[Zeppelin] together with an ever growing list of external contributors.
+[[contract_libraries_sec]]
+==== Contract libraries
 
-Also from Zeppelin is https://zeppelinos.org/[zeppelin_os], an open source platform of services and tools to develop and manage smart contract applications securely. zeppelin_os provides a layer on top of the EVM that makes it easy for developers to launch upgradeable DApps linked to an on-chain library of well tested contracts that are themselves upgradeable. Different versions of these libraries can coexist in the blockchain, and a vouching system allows users to propose or push improvements in different directions. A set of off-chain tools to debug, test, deploy and monitor decentralized applications is also provided by the platform.
+There is a lot of exisitng code available both deployed on-chain as callable libraries and off-chain as code template libraries. On-platform libraries, having been deployed, exist as bytecode smart contracts and so great care should be taken before using them in production. However, using well established existing on-platform libraries comes with many advantages, such as being able to benefit from the latest upgrades, but it also simply saves you money and benefits the Ethereum ecosystem by keeping the number of contracts in the Ethereum state down. 
 
+In Ethereum, the most widely used resource is the https://openzeppelin.org/[OpenZeppelin] suite; an ample library of contracts ranging from implementations of `ERC20` and `ERC721` tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts, such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository have been extensively tested and in some cases even function as _de facto_ standard implementations. They are free to use, and are built and mantained by https://zeppelin.solutions[Zeppelin] together with an ever growing list of external contributors.
+
+Also from Zeppelin is https://zeppelinos.org/[zeppelin_os], an open source platform of services and tools to develop and manage smart contract applications securely. zeppelin_os provides a layer on top of the EVM that makes it easy for developers to launch upgradeable DApps linked to an on-chain library of well tested contracts that are themselves upgradeable. Different versions of these libraries can coexist on the Ethereum platform, and a vouching system allows users to propose or push improvements in different directions. A set of off-chain tools to debug, test, deploy, and monitor decentralized applications is also provided by the platform.
+
+Here is another example for you to browse:
+
+Github link: https://github.com/ethpm
+
+Repository link: https://www.ethpm.com/registry
+
+Website: https://www.ethpm.com/
+
+Documentation: https://www.ethpm.com/docs/integration-guide
 
 [[further_reading_sec]]
 ==== Further reading
