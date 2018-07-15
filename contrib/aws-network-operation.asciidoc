@@ -1,12 +1,17 @@
 [[_anchor_operate_private_network]]
 == Operating a private Ethereum network
 
-Once the set-up for private network is completed, the network has the following nodes peering with each other:
+Once the set-up for private network is completed, the network has the following nodes are launched:
 
 * Ethereum boot node for other machines to look up for peering.
 * Ethereum mining node that does mining.
 * Ethereum RPC node that exposes RPC port for programmatic access.
 * Ethereum stand alone node that does not mine or expose API.
+
+[NOTE]
+====
+The remainder of this section will use peering of nodes using `bootnodes`.
+====
 
 For a quick summary on launching a private network, see link:aws-networ-setup.asciidoc#Summary[AWS network set-up summary]. To learn more about setting up the network, see link:aws-network-setup.asciidoc[AWS network set-up].
 
@@ -18,49 +23,78 @@ Now, the network is ready for deployment of smart contracts. The steps to be fol
 
 [[_anchor_account_set_up]]
 === Account set-up
-While account could be set-up on any node, for this section, accounts will be created for mining node and RPC node to store the mining reward and end-point activities only. To create an account, log on to the nodes and run this command.
+While account could be set-up on any node, for this section, accounts will be created for mining node and RPC node to store the mining reward and end-point activities only. To create an account, log on to the mining node and run this command.
 
 [[_code_new_account]]
+.Account creation 
 [source,bash]
 ----
 geth --datadir eth-priv account new      // 1
 ----
-<1> Note the `datadir` flag; it indicates that, the account is for a private network. Running this account will prompt for password.
+<1> Note the `datadir` flag; it indicates that, the account is for a private network. Note the generated address. Running this account will prompt for password.
 
-[TIP]
+[NOTE]
 ====
-There is no 'Forgot password' option for your account. Therefore, keep your password at a safe place.
+*There is no 'Forgot password' option for your account. Therefore, keep your password at a safe place!*
 ====
 
 
 [[_anchor_deploy_contract]]
 === Deploy contract
-For this section, we will deploy the `METoken` contract as described in the link:tokens.asciidoc[Tokens] section. Once the contract has been developed and compiled successfully, we will migrate to the private network. To migrate the contract, `truffle` needs to know about the network. This information will be provided in the `truffle.js` configuration file as provided link:../code/aws/truffle.js[here]. Basically, another network with name as `aws` is added to the array of `networks` shown as an example below.
+
+[TIP]
+====
+This chapter uses `truffle` for contract development and deployment. 
+====
+
+For this section, we will deploy the `METoken` contract as described in the link:tokens.asciidoc[Tokens] section. Once the contract has been developed and compiled successfully, we will migrate to the private network. A quick introduction to set-up is provided here.
+
+. Install `truffle`, run `npm install -g truffle`.
+. Clone repository `https://github.com/chainhead/MET`
+. In the cloned repository, go to `MET/METtoken` and run `npm install` to install dependencies.
+. At `MET/METtoken`, run `truffle compile` to compile the contracts.
+
+To migrate the contract, `truffle` needs to know about the network. This information will be provided in the `truffle.js` configuration file. A sample file is provided link:../code/aws/truffle.js[here]. The information is provided via another network, with name as `aws`, added to the array of `networks` shown as an example below.
 
 [[_code_truffle_config_private_network]]
+.Truffle configuration
 [source,json]
 ----
 		aws: { // Private network on AWS
 			network_id: "15",        // 1
 			host: "IP address RPC node",    // 2
 			port: 8545,              // 3
-			gas: 6721975             // 4
+			gas: 6721975,            // 4
+			from : "0xaddresstopayforgas" // 5
 		}
 ----
 
 <1> The `network_id` as defined in `genesis.json` document.
 <2> The public IP address of the EC2 instance node running `geth` with RPC node exposed.
-<3> The RPC port number of the EC2 instance. Default is `8545`
-<4> ?
+<3> The RPC port number of the EC2 instance hosting Ethereum RPC node. Default is `8545`.
+<4> Gas limit used for deploys. Default is `4712388`.
+<5> An account with sufficient ether to pay gas for contract interactions. This will be the address generated at <<_code_new_account>>.
 
 To deploy the contract with `truffle`, run the command below.
 [[_code_deploy_contract]]
+.Truffle network migration 
 [source,bash]
 ----
 truffle migrate --network aws       // 1
+  Deploying Migrations...
+  ... 0x3d04e043f82e323fb326a75f6da382e6687be1df4d00f026207f1b8e4d892fe8      // 2
+
 ----
 
 <1> The `--network` flag is set to the value of `aws` as defined in `truffle.js` file.
+<2> Output of deployment showing the address where the contrat was deployed.
+
+The contract creation can be seen on the mining node console output also as shown below.
+[[_code_deployment_output]]
+[source,bash]
+----
+INFO [03-26|23:15:55] Submitted contract creation              fullhash=0x3d04e043f82e323fb326a75f6da382e6687be1df4d00f026207f1b8e4d892fe8 contract=0xD33b0dCFFA52D2188E22BD01826d063265ec3e83
+----
 
 [[_anchor_interacting_with_the_contract]]
 === Interacting with the contract 
@@ -73,3 +107,25 @@ truffle console --network aws // 1
 ---- 
 
 <1> The `--network` flag is set to the value of `aws` as defined in `truffle.js` file.
+
+
+==== Use faucet
+
+==== Buy MET 
+
+[[_anchor_operation_summary]]
+== Summary 
+To summarize working with private Ethereum network, here are the steps used:
+
+. Launch a private Ethereum network as described in link:aws-network-setup.asciidoc[AWS network set-up]
+. Once the nodes are launched and configured for genesis on each of the nodes, run the following commands on nodes.
+
+[[_table_command_summary]]
+.Ethereum nodes - Command summary
+|==================================================================================================================================
+| Node| Command | Remarks
+|Boot node | `bootnode --nodekey=bootnode.key` | Generate `bootnode.key` in advance. See <<aws-network-operation.asciidoc#_code_start_bootnode>>
+|Standalone node | `geth --bootnodes 'enode://' --datadir eth-priv console` | Change `[::]` in `enode://` URI from `bootnode` output above with public IP address of the machine where `bootnode` is running.
+|RPC node | `geth --bootnodes 'enode://' --datadir eth-priv --rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "\*" console` | Opens RPC port for contract interaction. *NOTE* the values of `--rpcaddr "0.0.0.0" --rpccorsdomain "\*"` are discouraged!
+|Mining node | `geth --bootnodes 'enode://' --datadir eth-priv ---mine -rpc --rpcapi "web3,eth,personal" --rpcaddr "0.0.0.0" --rpccorsdomain "\*"` | Starts mining _and_ opens RPC port. An account should exist before running this command.
+|==================================================================================================================================
