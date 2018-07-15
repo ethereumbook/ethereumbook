@@ -1,149 +1,184 @@
 [[evm_chapter]]
-== Ethereum Virtual Machine
+== The Ethereum Virtual Machine
+
+At the heart of the Ethereum protocol and operation is the Ethereum Virtual Machine or EVM for short. As you might guess from the name, it is a computation engine, not hugely dissimilar to the virtual machines of Microsoft's .NET framework or LLVM, or interpreters of other byte code compiled programming languages, such as Java. In this chapter we take a detailed look at the EVM, including its instruction set, its structure and operation within the context of Ethereum state updates.
 
 [[evm_description]]
 === What is it?
-The part of the protocol that actually handles internal state and computation is referred to as the Ethereum Virtual Machine (EVM). From a practical standpoint, the EVM can be thought of as a large decentralized computer containing millions of objects.
+The EVM is the part of the Ethereum protocol that handles smart contract deployment and execution. Simple value transfer transactions from an EOA to another EOA don't need to involve the EVM, practically speaking, but everything else will. In other words, anything other than a basic transfer of ether from one simple account to another simple account involves a state update computed by the EVM. At a high level, the EVM running on the Ethereum blockchain can be thought of as a global decentralized computer containing millions of executable objects, each with their own permanent data store.
+
+The EVM is a quasi-Turing complete state machine, named such because all execution processes are necessarily limited to a finite number of computational steps as specified by the amount of +gas+ available for any given smart contract execution. As such, the halting problem is "solved" (all program executions will halt) and the situation where execution might (accidentally or maliciously) run forever (thus bringing the Ethereum platform to halt in its entirety) is avoided.
+
+The EVM has a stack-based architecture, storing all in-memory values on a stack. It works with a word size of 256 bits (mainly to facilitate native hashing and elliptic curve operations) and has several addressable data components:
+
+1. an immutable program code ROM, loaded with the bytecode of the smart contract to be executed
+2. a volatile _memory_, explicitly initialized to hold only zero values
+3. a permanent _storage_ that is part of the Ethereum state, and also all zeros  
+
+There is also a set of environment variables and data that are available during execution. We will go through these in more detail in this chapter, but you can see them in the architecture diagram <<EVM_architecture>>:
+
+[evm_architecture]
+////
+TODO: diagram of the EVM
+////
 
 [[evm_comparison]]
-==== Compare to
+==== Comparison with Existing Technology
 
-* Virtual Machine (Virtualbox, QEMU, cloud computing)
+Virtual Machine technologies such as Virtualbox and QEMU/KVM differ from the EVM in that their purpose is to provide hypervisor functionality, or a software abstraction that handles system calls, task scheduling, and resource management between a guest OS and the underlying host OS and hardware. In contrast, the EVM is designed for a very focussed computational application, namely the execution of smart contracts to determine state updates to the Ethereum platform. The EVM has no scheduling capability, because execution ordering is organized externally to it - Ethereum clients run through verified block transactions to determine which smart contracts need executing and in which order. In this sense, the Ethereum world computer is single-threaded, like javascript. Neither does the EVM have any "system interface" handling or "hardware support" - there is no physical machine to interface with. The Ethereum world computer is completely virtual.
 
-* Java VM
-
-Virtual Machine technologies such as Virtualbox and QEMU/KVM differ from the EVM in that their purpose is to provide hypervisor functionality, or a software abstraction that handles system calls, task scheduling, and resource management between a guest OS and the underlying host OS and hardware.
-
-Certain aspects of the Java VM (JVM) specification however, do contain similarities to the EVM. From a high-level overview, the JVM is designed to provide a runtime environment that is irrespective of the underlying host OS or hardware, enabling compatibility across a wide variety of systems. High level program languages such as Java or Scala that run on the JVM are compiled into the respective instruction set bytecode. This is comparable to compiling a Solidity source file to run on the EVM.
+The EVM does, however, have similarities with certain aspects of the Java Virtual Machine (JVM) specification, for example. From a high-level viewpoint, the JVM is designed to provide a runtime environment that is agnostic of the underlying host OS or hardware, enabling compatibility across a wide variety of systems. High level programming languages such as Java or Scala (that use the JVM), or C# (that uses .NET) are compiled into the bytecode instruction set of their respective virtual machine. In the same way, the EVM executes its own bytecode instruction set (which we will look at below) which higher level smart contract programming languages, such as LLL, Serpent, Mutan or Solidity, are compiled into.
 
 [[evm_bytecode_overview]]
-==== EVM Machine Language (Bytecode Operations)
+==== The EVM Instruction Set (Bytecode Operations)
 
-The EVM Machine Language is divided into specific instruction set groups, such as arithmetic operations, logical and comparison operations, control flow, system calls, stack operations, and memory operations. In addition to the typical bytecode operations, the EVM must also manage account information (i.e. address and balance), current gas price, and block information.
-[[common_stack_opcodes]]
-Common Stack Operations:: Opcode instructions for stack and memory management:
+The EVM instruction set most of the standard machine code instructions you might expect, including: 
 
+* arithmetic and bitwise logic operations
+* execution context inquiries
+* stack, memory, and storage access
+* process flow operations
+* logging, jumping and other operators
+
+In addition to the typical bytecode operations, the EVM also has access to account information (e.g. address and balance), and block information (such as block number and current gas price).
+
+Let's start our exploration of the EVM in more detail by looking at the available opcodes and what they do. As you might expect, all operands are taken from the stack, and the result (where applicable) is often
+put back on the top of the stack.
+
+[[arithmetic_opcodes]]
+Arithmetic Operations:: Arithmetic opcode instructions:
 ----
-POP     //Pop item off the stack
-PUSH    //Push item on the stack
-MLOAD   //Load item into memory
-MSTORE  //Store item in memory
-JUMP    //Alter the location of program counter (PC)
-PC      //Program counter
-MSIZE   //Active memory size
-GAS     //Amount of available gas for transaction
-DUP     //Stack item duplication
-SWAP    //Stack item exchange operation
-----
-
-[[common_system_opcodes]]
-Common System Operations:: Opcode instructions for the system executing the program:
-
-----
-CREATE  //Create a new account
-CALL    //Instruction for message passing between accounts
-RETURN  //Execution halt
-REVERT  //Execution halt, reverting state changes
-SELFDESTRUCT //Execution halt, and flag account for deletion
-----
-
-[[common_arithmetic_opcodes]]
-Arithmetic Operations:: Common arithmetic opcode instructions:
-
-----
-ADD      //Add
-MUL      //Multiplication
-SUB      //Subtraction
-DIV      //Integer division
-SDIV     //Signed integer division
-MOD      //Modulo (Remainder) operation
-SMOD     //Signed modulo operation
-ADDMOD   //Modulo addition
-MULMOD   //Modulo multiplication
-EXP      //Exponent operation
-STOP     //Halt operation
+ADD        //Add the top two stack items
+MUL        //Multiply the top two stack items
+SUB        //Subtract the top two stack items
+DIV        //Integer division
+SDIV       //Signed integer division
+MOD        //Modulo (remainder) operation
+SMOD       //Signed modulo operation
+ADDMOD     //Addition modulo any number
+MULMOD     //Multiplication modulo any number
+EXP        //Exponential operation
+SIGNEXTEND //Extend the length of a two’s complement signed integer
+SHA3       //Compute the Keccak-256 hash of a block of memory
 ----
 
-[[common_environment_opcodes]]
-Environmental Opcodes:: Common opcodes dealing with execution environment information:
 
+[[stack_opcodes]]
+Stack Operations -- for stack, memory and storage management:
 ----
-ADDRESS        //Address of current execution account
-BALANCE        //Account balance
-CALLVALUE      //Transaction value for execution environment
-ORIGIN         //Origin address of execution environment
-CALLER         //Address of execution caller
-CODESIZE       //Execution environment code size
-GASPRICE       //Gas price state
-EXTCODESIZE    //An account's code size
-RETURNDATACOPY //Copy of data output from previous memory call
+POP     //Remove the top item from the stack
+MLOAD   //Load a word from memory
+MSTORE  //Save a word to memory
+MSTORE8 //Save a byte to memory
+SLOAD   //Load a word from storage
+SSTORE  //Save a word to storage
+MSIZE   //Get the size of the active memory in bytes
+PUSHx   //Place x-byte item on the stack, where x can be any integer from 1 to 32 (full word) inclusive
+DUPx    //Duplicate the x-th stack item, where x can be any integer from 1 to 16 inclusive
+SWAPx   //Exchange 1st and (x+1)-th stack items, where x can by any integer from 1 to 16 inclusive
 ----
+
+
+[[flow_opcodes]]
+Process Flow Operations:: Opcodes for controlling process flow:
+----
+STOP      //Halts execution
+JUMP      //Set the program counter to any value
+JUMPI     //Conditionally alter the program counter
+PC        //Get the value of the program counter (prior to the increment corresponding to this instruction)
+JUMPDEST  //Mark a valid destination for jumps
+
+[[system_opcodes]]
+System Operations:: Opcodes for the system executing the program:
+----
+LOGx          //Append a log record with +x+ topics, where +x+ is any integer from 0 to 4 inclusive 
+CREATE        //Create a new account with associated code
+CALL          //Message-call into another account, i.e. run another account's code
+CALLCODE      //Message-call into this account with an another account’s code
+RETURN        //Halt execution and return output data
+DELEGATECALL  //Message-call into this account with an alternative account’s code, but persisting the current values for sender and value
+STATICCALL    //Static message-call into an account
+REVERT        //Halt execution reverting state changes but returning data and remaining gas
+INVALID       //The designated invalid instruction
+SELFDESTRUCT  //Halt execution and register account for deletion
+----
+
+[[logic_opcides]]
+Logic Operations:: Opcodes for comparisons and bitwise logic:
+----
+LT     //Less-than comparison
+GT     //Greater-than comparison
+SLT    //Signed less-than comparison
+SGT    //Signed greater-than comparison
+EQ     //Equality comparison
+ISZERO //Simple not operator
+AND    //Bitwise AND operation
+OR     //Bitwise OR operation.
+XOR    //Bitwise XOR operation.
+NOT    //Bitwise NOT operation.
+BYTE   //Retrieve a single byte from a full width 256 bit word
+----
+
+[[environment_opcodes]]
+Environmental Operations:: Opcodes dealing with execution environment information:
+----
+GAS            //Get the amount of available gas (after the reduction for this instruction)
+ADDRESS        //Get the address of the currently executing account
+BALANCE        //Get the account balance of any given account
+ORIGIN         //Get the address of the EOA that initiated this EVM execution
+CALLER         //Get the address of the caller immediately responsible for this execution
+CALLVALUE      //Get the ether amount deposited by the caller responsible for this execution
+CALLDATALOAD   //Get the input data sent by the caller responsible for this execution
+CALLDATASIZE   //Get the size of the input data 
+CALLDATACOPY   //Copy the input data to memory
+CODESIZE       //Get the size of code running in the current environment
+CODECOPY       //Copy the code running in the current environment to memory
+GASPRICE       //Get the gas price specified by the originating transaction
+EXTCODESIZE    //Get the size of any account's code
+EXTCODECOPY    //Copy any account’s code to memory.
+RETURNDATASIZE //Get the size of the output data from the previous call in the current environment
+RETURNDATACOPY //Copy of data output from the previous call to memory
+----
+
+[[block_opcodes]]
+Block Operations:: Opcodes for accessing information on the current block:
+----
+BLOCKHASH  //Get the hash of one of the 256 most recently completed blocks
+COINBASE   //Get the block’s beneficiary address for the block reward
+TIMESTAMP  //Get the block’s timestamp
+NUMBER     //Get the block’s number.
+DIFFICULTY //Get the block’s difficulty.
+GASLIMIT   //Get the block’s gas limit.
+
+Note that all arithmetic is performed modulo 2^256^ (unless otherwise noted), and that the zero-th power of zero 0^0^ is taken to be one.
 
 [[evm_state_descriptions]]
-==== State
+==== Ethereum State
 
-As with any computing system, the concept of state is an important one. Just like a CPU keeping track of a process in execution, the EVM must keep track of the status of various components in order to support a transaction. The status or _state_ of these components ultimately drives the level of change in the overarching blockchain. This aspect leads to the description of Ethereum as a _transaction-based state machine_ containing the following components:
+The job of the EVM is to update the Ethereum state by computing valid state transitions as a result of smart contact code execution, as defined by the Ethereum protocol. This aspect leads to the description of Ethereum as a _transaction-based state machine_, which reflects the aspect that external actors (i.e. account holders and miners) initiate state transitions by creating, accepting and ordering transactions. It is useful at this point to consider what consitutes the Ethereum state.
 
-World State:: A mapping between 160-bit address identifiers and account state, maintained in an immutable _Merkle Patricia Tree_ data structure.
+At the top level, we have the Ethereum _world state_. The world state is a mapping of Ethereum addresses (160 bit values) and _accounts_. At the lower level, each Ethereum address represents an account comprising an ether _balance_ (stored as the number of Wei owned by the account), a _nonce_ (representing the number of transactions successfully sent from this account, if it is an EOA, or the number of contracts created by it, if it is a contract account), the account's _storage_ (which is a permanent data store, only used by smart contracts), and the account's _program code_ (again, only if the account is a smart contract account). An EOA will always have no code and a completely empty storage.
 
-Account State:: Contains the following four components:
+////
+TODO: basic diagram showing the structure of the world state mapping and account structure
+////
 
-* _nonce_: A value representing the number of transactions sent from this respective account.
+When a transaction results in smart contract code execution, an EVM is instantiated with all the information required in relation to the current block being created and the specific transaction being processed. In particular, the EVM's program code ROM is loaded with the code of the contract account being called, the program counter is set to zero, the storage is loaded from the contract account's storage, the memory is set to all zeros and all the block and environment variables are set. A key variable is the gas supply for this execution, and it is set to the amount of gas paid for by the sender at the start of the transaction (see <<gas>> for more details). As the code execution progresses, the gas supply is reduced according to the gas cost of the operations executed. If at any point the gas supply is reduced to zero we get an _"Out of Gas"_ (OOG) exception; execution immediately halts and the transaction is abandoned. No changes to the Ethereum state are applied, except for the sender's nonce being incremented and their ether balance going down to pay the block's beneficiary for the resources used to execute the code to the halting point. At this point, you can think of the EVM running on a sand-boxed copy of the Ethereum world state, with this sand-boxed version being discarded completely if execution can not complete for whatever reason. However, if the execution does complete successfully, then the real world state is updated to match the sand-boxed version, including any changes to the called contract's storage data, any new contracts created and any ether balance transfers that were initated.
 
-* _balance_: The number of _wei_ owned by the account address.
-
-* _storageRoot_: A 256-bit hash of the Merkle Patricia Tree's root node.
-
-* _codeHash_: An immutable hash value of the EVM code for the respective account.
-
-Storage State:: Account specific state information maintained at runtime on the EVM.
-
-Block Information:: The state values needed for a transaction include the following:
-
-* _blockhash_: The hash of the most recently completed blocks.
-
-* _coinbase_: The address of the recipient.
-
-* _timestamp_: The current block's timestamp.
-
-* _number_: The current block's number.
-
-* _difficulty_: The current block's difficulty.
-
-* _gaslimit_: The current block's gas-limit.
-
-Runtime Environment Information:: Information used to facilitate transactions.
-
-* _gasprice_: Current gas price, which is specified by the transaction initiator.
-
-* _codesize_: Size of the transaction codebase.
-
-* _caller_: Address of the account executing the current transaction.
-
-* _origin_: Address of the current transactions original sender.
-
-
-
-State transitions are calculated with the following functions:
-
-Ethereum State Transition Function:: Used to calculate a _valid state transition_.
-
-Block Finalization State Transition Function:: Used to determine the state of a finalized block as part of the mining process, including block reward.
-
-Block Level State Transition Function:: The resulting state of the Block Finalization State Transition Function when applied to a transaction state.
+Note that, because a smart contract can itself effectively initiate transactions, code execution is a recursive process. A contract can call other contracts, with each call resulting in another EVM being instantiated around the new target of the call. Each instantiation has its sand-box world state initialized from the sand-box of the EVM at the level above. Each instantiation is also given a specified amount of gas for its gas supply (not exceding the amount of gas remaining in the level above, of course), and so may itself exceptionally halt due to being given too little gas to complete its execution. Again, in such cases, the sand-box state is discarded, and execution returns to the EVM at the level above. 
 
 [[compiling_solidity_to_evm]]
 ==== Compiling Solidity to EVM bytecode
 
 [[solc_help]]
-Compiling a Solidity source file to EVM bytecode can be accomplished via the command line. For a list of additional compile options, simply run the following command:
+Compiling a Solidity source file to EVM bytecode can be accomplished via several methods. In <<intro_chapter>> we used the online +Remix+ compiler. In this chapter, we will use the command line and the +solc+ executable. For a list of compile options, simply run the following command:
 
 ----
 $ solc --help
 ----
 
 [[solc_opcodes_option]]
-Generating the raw opcode stream of a Solidity source file is easily achieved with the _--opcodes_ command line option. This opcode stream leaves out some information (the _--asm_ option produces the full information), but is sufficient for this first introduction. For example, compiling an example Solidity file _Example.sol_ and populating the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
+Generating the raw opcode stream of a Solidity source file is easily achieved with the +--opcodes+ command line option. This opcode stream leaves out some information (the +--asm+ option produces the full information), but it is sufficient for this discussion. For example, compiling an example Solidity file +Example.sol+ and sending the opcode output into a directory named _BytecodeDir_ is accomplished with the following command:
 
 ----
 $ solc -o BytecodeOutputDir --opcodes Example.sol
@@ -163,7 +198,7 @@ The following command will produce the bytecode binary for our example program:
 $ solc -o BytecodeOutputDir --bin Example.sol
 ----
 
-The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file _Example.sol_ <<simple_solidity_example>> has only one contract named "example".
+The output opcode files generated will depend on the specific contracts contained within the Solidity source file. Our simple Solidity file +Example.sol+ <<simple_solidity_example>> has only one contract named "example".
 
 [[simple_solidity_example]]
 ----
@@ -179,15 +214,16 @@ contract example {
 }
 ----
 
+As you can see, all this contract does is hold one persistent state variable, which is set as the address of the last account to run this contract.
 
-If you look in the _BytecodeDir_ directory, you will see the opcode file _example.opcode_ (see <<simple_solidity_example>>) which contains the EVM machine language opcode instructions of the "example" contract. Opening up the _example.opcode_ file in a text editor will show the following:
+If you look in the +BytecodeDir+ directory, you will see the opcode file +example.opcode+ (see <<simple_solidity_example>>) which contains the EVM opcode instructions of the "example" contract. Opening up the +example.opcode+ file in a text editor will show the following:
 
 [[opcode_output]]
 ----
 PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1 0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP 0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5 0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27 EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
 ----
 
-Compiling the example with the _--asm_ option produces a file labed _example.evm_ in our _BytecodeDir_ directory. This contains the detailed EVM machine language instructions:
+Compiling the example with the +--asm+ option produces a file named +example.evm+ in our +BytecodeDir+ directory. This contains a slightly higher level description of the EVM bytecode instructions, together with some helpful annotations:
 
 [[asm_output]]
 ----
@@ -244,7 +280,7 @@ sub_0: assembly {
 }
 ----
 
-The _--bin_ option produces the following:
+The +--bin-runtime+ option produces the machine readable hexadecimal bytecode:
 
 [[bin_output]]
 ----
@@ -255,64 +291,33 @@ ffffffffffffffffffffffffffffffffffffffff
 160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b99dcb1e
 ----
 
-Let's examine the first two instructions (reference <<common_stack_opcodes>>):
+You can investigate what's going on here in detail using the opcode list given above in <<evm_bytecode_overview>>. However, that's quite a task, so let's just start by examining the first four instructions as listed in <<opcode_output>>:
 
 [[opcode_analysis_1]]
 ----
-PUSH1 0x60 PUSH1 0x40
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE
 ----
 
-Here we have the _mnemonic_ "PUSH1" followed with a raw byte of value "0x60". This corresponds to the EVM instruction of interpreting the single byte following the opcode as a literal value and pushing it onto the stack. It is possible to push values of size up to 32 bytes onto the stack. For example, the following bytecode pushes a 4 byte value onto the stack:
+Here we have +PUSH1+ followed with a raw byte of value +0x60+. This corresponds to the EVM instruction which takes the single byte following the opcode in the program code (as a literal value) and pushing it onto the stack. It is possible to push values of size up to 32 bytes onto the stack: +PUSH32 0x436f6e67726174756c6174696f6e732120536f6f6e20746f206d617374657221+. 
 
-[[opcode_analysis_2]]
-----
-PUSH4 0x7f1baa12
-----
+The second +PUSH1+ opcode from <<opcode_output>> stores +0x40+ onto the top of the stack (pushing the +0x60+ already present there down one slot).
 
-The second push opcode stores "0x40" onto the stack (on top of "0x60" already present there).
+Next is +MSTORE+, which is a memory store operation, that saves a value to the EVM's memory. It takes two arguments and, like most EVM operations, uses the values on the stack to determine what those arguments should be. For each argument the stack is popped, i.e. the top value on the stack is taken off and all the other values on the stack are shifted up one position. The first argument for +MSTORE+ is the address of the word in memory where the value to be saved will be put. For this program, we have +0x40+ and so that is removed from the stack and used as the memory address. The second argument is the value to be saved, which is +0x60+ here. After the +MSTORE+ is executed, our stack is empty again, but we have the value +0x60+ (i.e. 96 in decimal) at the memory location +0x40+. 
 
-Moving on to the next two instructions:
+The next opcode is +CALLVALUE+, which is an environmental opcode that pushes onto the top of the stack the amount of ether (measured in Wei) sent with the message call that initiated this execution.
 
-[[opcode_analysis_3]]
-----
-MSTORE CALLVALUE
-----
+We could continue to step through this program in this way until we had a full understanding of the low level state changes that this code effects, but it wouldn't help us at this stage. Instead, let's keep going until we come back to this idea later in the chapter.
 
-MSTORE is a stack/memory operation (see <<common_stack_opcodes>>) that saves a value to memory, while CALLVALUE is an environmental opcode (see <<common_environment_opcodes>>) that returns the deposited value of the executing message call.
+[[contract_deployment_code]]
+==== Contract Deployment Code
 
-[[evm_bytecode_execution]]
-==== Execution of EVM bytecode
+There is an important, but subtle difference between the code used when creating and deploying a new contract on the Ethereum platform and the code of the contract itself. In order to create a new contract, a special transaction is needed that has its +to+ field set to the special +0x0+ address and its +data+ field set to the contract's _initiation code_. When such a contract creation transaction is processed, the code for the new contract account is _not_ the code in the +data+ field of the transaction. Instead, an EVM is instantiated with the code in the +data+ field of the transaction loaded into its program code ROM and then the output of the execution of that deployment code is taken as the code for the new contract account. This is so that new contracts can be programmatically initialized using the Ethereum world state at the time of deployment, set values in the contract's storage and even send ether or create further new contracts.
 
-[[gas_accounting_execution]]
-==== Gas, Accounting
+When compiling a contract offline, e.g. using +solc+ on the command line, you can either get the _deployment bytecode_ or the _runtime bytecode_.
 
-For every transaction, there is an associated _gas-limit_ and _gas-price_ which make up the fees of an EVM execution. These fees are used to facilitate the necessary resources of a transaction, such as computation and memory. Gas is also used for the creation of accounts and smart-contracts.
+The deployment bytecode is used for every aspect of the initialization of a new contract account, including the bytecode of what will actually end up being executed when transactions call this new contract (i.e. the runtime bytecode), and the code to initialize everythin based on the contract's constructor.
 
-[[turing_completeness_and_gas]]
-==== Turing Completeness and Gas
-
-In simple terms, a system or programming language is _Turing complete_ if it can solve any problem you feed into it. This is discussed in the Ethereum Yellow Paper:
-
-[quote, Gavin Wood, ETHEREUM: A SECURE DECENTRALISED GENERALISED TRANSACTION LEDGER]
-____________________________________________________________________
-It is a _quasi_-Turing complete machine; the quasi qualification comes from the fact that the computation is intrinsically bounded through a parameter, gas, which limits the total amount of computation done.
-____________________________________________________________________
-
-While the EVM can theoretically solve any problem it receives, gas is what might prevent it from doing so. This could occur in a few ways:
-
-1) Blocks that get mined in Ethereum have a gas limit associated with them; that is, the total gas used by all the transactions inside the block can not exceed a certain limit.
-2) Since gas and gas price go hand-in-hand, even if the gas limit restrictions were lifted, highly complex transactions may be economically infeasible.
-
-For the majority of use cases, however, the EVM can solve any problem provided to it.
-
-[[bytecode_vs_runtime_bytecode]]
-==== Bytecode vs. Runtime Bytecode
-
-When compiling a contract, you can either get the _contract bytecode_ or the _runtime bytecode_.
-
-The contract bytecode contains the bytecode of what will actually end up sitting on the blockchain _plus_ the bytecode needed to place that bytecode on the blockchain and run the contract's constructor.
-
-The runtime bytecode, on the other hand, is _only the bytecode that ends up sitting on the blockchain_. This does not include the bytecode needed to initialize the contract and place it on the blockchain.
+The runtime bytecode, on the other hand, is exactly _the bytecode that ends up being executed when the new contract is called_ and nothing more, i.e. this does not include the bytecode needed to initialize the contract during deployment.
 
 Let's take the simple `Faucet.sol` contract we created earlier as an example.
 
@@ -340,9 +345,9 @@ contract Faucet {
 }
 ----
 
-To get the contract bytecode, we would run `solc --bin Faucet.sol`. If we instead wanted just the runtime bytecode, we would run `solc --bin-runtime Faucet.sol`.
+To get the deployment bytecode, we would run `solc --bin Faucet.sol`. If we instead wanted just the runtime bytecode, we would run `solc --bin-runtime Faucet.sol`.
 
-If you compare the output of these commands, you will see that the runtime bytecode is a subset of the contract bytecode. In other words, the runtime bytecode is entirely contained within the contract bytecode.
+If you compare the output of these commands, you will see that the runtime bytecode is a subset of the deployment bytecode. In other words, the runtime bytecode is entirely contained within the deployment bytecode.
 
 [[disassembling_the_bytecode]]
 ==== Disassembling the Bytecode
@@ -361,9 +366,7 @@ After getting the runtime bytecode of Faucet.sol, we can feed it into Binary Nin
 .Disassembling the Faucet runtime bytecode
 image::images/Faucet_disassembled.png["Faucet.sol runtime bytecode disassembled"]
 
-When you send a transaction to a smart contract, the transaction first interacts with that smart contract's **dispatcher**. The dispatcher reads in the data field of the transaction and sends it to the appropriate function.
-
-After the familiar MSTORE instruction, we see the following insturctions in our compiled Faucet.sol contract:
+When you send a transaction to an ABI compatible smart contract (which you can assume all contracts are), the transaction first interacts with that smart contract's **dispatcher**. The dispatcher reads in the +data+ field of the transaction and sends the relevant part to the appropriate function. We can see an example of a dispatcher at the beginning of our disassemabled Faucet.sol runtime bytecode. After the familiar +MSTORE+ instruction, we see the following instructions:
 
 [[faucet_instructions]]
 ----
@@ -374,17 +377,17 @@ PUSH1 0x3f
 JUMPI
 ----
 
-"PUSH1 0x4" places 0x4 onto the top of the stack, which is otherwise empty. "CALLDATASIZE" gets the size in bytes of the received transaction's calldata and pushes it onto the stack. The current stack looks like as follows:
+As we have seen, +PUSH1 0x4+ places +0x4+ onto the top of the stack, which is otherwise empty. +CALLDATASIZE+ gets the size in bytes of the data sent with the transaction (known as the _calldata_) and pushes that number onto the stack. After these operations have been executed the stack looks like this:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
+|<length of calldata from tx>
 |0x4
-|length of calldata from tx (msg.data)
 |======================
 
-This next instruction is "LT", short for “less than”. The LT instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of CALLDATASIZE is less than 4 bytes.
+This next instruction is +LT+, short for “less than”. The +LT+ instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of +CALLDATASIZE+ is less than 4 bytes.
 
 Why does the EVM check to see that the calldata of the transaction is at least 4 bytes? Because of how function identifiers work. Each function is identified by the first four bytes of its keccak256 hash. By placing the function's name and what arguments it takes into a keccak256 hash function, we can deduce its function identifier. In our contract, we have:
 
@@ -393,36 +396,36 @@ Why does the EVM check to see that the calldata of the transaction is at least 4
 keccak256("withdraw(uint256)") = 0x2e1a7d4d...
 ```
 
-Thus, the function identifier for the "withdraw(uint256)" function is 0x2e1a7d4d, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire data field of the transaction sent to the contract is less than 4 bytes, then there’s no function with which the transaction could possibly be communicating, unless a _fallback function_ is defined. Because we implemented such a fallback function in Faucet.sol, the EVM jumps to this function when the calldata's length is less than 4 bytes.
+Thus, the function identifier for the +withdraw(uint256)+ function is +0x2e1a7d4d+, since these are the first four bytes of the resulting hash. A function identifier is always 4 bytes long, so if the entire data field of the transaction sent to the contract is less than 4 bytes, then there’s no function with which the transaction could possibly be communicating, unless a _fallback function_ is defined. Because we implemented such a fallback function in Faucet.sol, the EVM jumps to this function when the calldata's length is less than 4 bytes.
 
-If the msg.data field is less than 4 bytes, LT pops off the top two values of the stack and pushes 1 onto it. Otherwise, it pushes 0. In our example, let's assume the msg.data field of the transaciton sent to our contract _was_ less than 4 bytes. 
+LT pops off the top two values of the stack and, if the transaction's data field is less than 4 bytes, pushes 1 onto it. Otherwise, it pushes 0. In our example, let's assume the data field of the transaciton sent to our contract _was_ less than 4 bytes. 
 
-The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. After this instruction, the stack looks as follows:
+The "PUSH1 0x3f" instruction pushes the byte "0x3f" onto the stack. After this instruction, the stack looks like this:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
-|1
 |0x3f
+|1
 |======================
 
-The next instruction is "JUMPI", which stands for "jump if". It works like so:
+The next instruction is +JUMPI+, which stands for "jump if". It works like so:
 
 [[faucet_jump_instruction_text]]
 ----
 jumpi(label, cond) // Jump to "label" if "cond" is true
 ----
 
-In our case, "label" is 0x3f, which is where our fallback function lives in our smart contract. The "cond" argument is 1, which was from the result of the LT instruction earlier. To put this entire sequence into words, the contract jumps to the fallback function if the transaction data is less than 4 bytes.
+In our case, "label" is +0x3f+, which is where our fallback function lives in our smart contract. The "cond" argument is 1, which was the result of the +LT+ instruction earlier. To put this entire sequence into words, the contract jumps to the fallback function if the transaction data is less than 4 bytes.
 
-At 0x3f, only a "STOP" instruction follows, because though we declared a fallback function, we kept it empty. Had we not implemented a fallback function, the contract would throw an exception instead.
+At 0x3f, only a "STOP" instruction follows, because, although we declared a fallback function, we kept it empty. Had we not implemented a fallback function, the contract would throw an exception instead.
 
 [[Faucet_jumpi_instruction]]
 .JUMPI instruction leading to fallback function
 image::images/Faucet_jumpi_instruction.png["JUMPI instruction leading to fallback function"]
 
-Let's examine the central block of the dispatcher. Assuming we received calldata that was greater than 4 bytes in length, the "JUMPI" instruction would not jump to the fallback function. Instead, code execution would follow with the next instructions:
+Let's examine the central block of the dispatcher. Assuming we received calldata that was _greater_ than 4 bytes in length. In this case the +JUMPI+ instruction would not jump to the fallback function. Instead, code execution would follow with the next instructions:
 
 [[faucet_instructions]]
 ----
@@ -440,24 +443,14 @@ PUSH1 0x41
 JUMPI
 ----
 
-"PUSH1 0x0" pushes 0 onto the stack, which is otherwise empty. "CALLDATALOAD" accepts as an argument an index within the calldata sent to the smart contract and reads 32 bytes from that index, like so:
++PUSH1 0x0+ pushes 0 onto the stack, which is now otherwise empty again. +CALLDATALOAD+ accepts as an argument an index within the calldata sent to the smart contract and reads 32 bytes from that index, like so:
 
 [[faucet_calldataload_instruction_text]]
 ----
-calldataload(p) // call data starting from position p (32 bytes)
+calldataload(p) //load 32 bytes of calldata starting from byte position p
 ----
 
-Since 0 was the index passed to it from the PUSH1 0x0 command, CALLDATALOAD reads 32 bytes of calldata starting at byte 0, and then pushes it to the top of the stack (after popping the original 0x0). After the "PUSH29 0x1000000..." instruction, the stack looks as follows:
-
-.Current stack
-[width="40%",frame="topbot",options="header,footer"]
-|======================
-|Stack
-|32 bytes of calldata starting at byte 0
-|0x1000000... (29 bytes in length)
-|======================
-
-"SWAP1" switches the top element on the stack with the _ith_ element after it. In this case, it swaps 0x1000000... with the calldata. The new stack looks as follows: 
+Since 0 was the index passed to it from the +PUSH1 0x0+ command, +CALLDATALOAD+ reads 32 bytes of calldata starting at byte 0, and then pushes it to the top of the stack (after popping the original +0x0+). After the +PUSH29 0x1000000...+ instruction, the stack is then:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
@@ -467,65 +460,95 @@ Since 0 was the index passed to it from the PUSH1 0x0 command, CALLDATALOAD read
 |32 bytes of calldata starting at byte 0
 |======================
 
-The next instruction is "DIV", which works as follows:
++SWAP1+ switches the top element on the stack with the _ith_ element after it. In this case, it swaps +0x1000000...+ with the calldata. The new stack is: 
+
+.Current stack
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|32 bytes of calldata starting at byte 0
+|0x1000000... (29 bytes in length)
+|======================
+
+The next instruction is +DIV+, which works as follows:
 
 [[faucet_div_instruction_text]]
 ----
-div(x, y) // x / y
+div(x, y) // integer division x / y
 ----
 
-In this case, x = 32 bytes of calldata starting at byte 0, and y = 0x100000000... (29 bytes total). Can you think of why the dispatcher is doing the division? Here's a hint: we read 32 bytes from calldata earlier starting at index 0. The first four bytes of that calldata is the function identifier. 
+In this case, x = 32 bytes of calldata starting at byte 0, and y = +0x100000000...+ (29 bytes total). Can you think of why the dispatcher is doing the division? Here's a hint: we read 32 bytes from calldata earlier starting at index 0. The first four bytes of that calldata is the function identifier. 
 
 
-The 0x100000000.... we pushed earlier is 29 bytes long, consisting of a 1 at the beginning, followed by all 0s. Dividing our 32 bytes of calldata by this 0x100000000.... will leave us only the _topmost 4 bytes_ of our calldataload starting at index 0. These four bytes – the first four bytes in calldataload starting at index 0 – are the function identifier, and this is how the EVM extracts that field.
+The +0x100000000...+ we pushed earlier is 29 bytes long, consisting of a 1 at the beginning, followed by all 0s. Dividing our 32 bytes of calldata by this 0x100000000.... will leave us only the _topmost 4 bytes_ of our calldataload starting at index 0. These four bytes – the first four bytes in the calldata starting at index 0 – are the function identifier, and this is how the EVM extracts that field.
 
 If this part isn’t clear to you, think of it like this: in base~10~, 1234000 / 1000 = 1234. In base~16~, this is no different. Instead of every place being a multiple of 10, it is a multiple of 16. Just as dividing by 10^3^ (1000) in our smaller example kept only the topmost digits, dividing our 32 byte base~16~ value by 16^29^ does the same.
 
-The result of the DIV (the function identifier) gets pushed on the stack, and our new stack is as follows:
+The result of the +DIV+ (the function identifier) gets pushed on the stack, and our stack is now:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
-|function identifier sent in msg.data
+|function identifier sent in +data+
 |======================
 
-Since the "PUSH4 0xffffffff" and "AND" instructions are redundant, we can ignore them entirely, as the stack will remain the same after they are done. The "DUP1" instruction duplicates the 1^st^ item on the stack, which is the function identifier. The next instruction, "PUSH4 0x2e1a7d4d", pushes the calculated function identifier of the withdraw(uint256) function onto the stack. The stack now looks as follows:
+Since the +PUSH4 0xffffffff+ and +AND+ instructions are redundant, we can ignore them entirely, as the stack will remain the same after they are done. The +DUP1+ instruction duplicates the 1^st^ item on the stack, which is the function identifier. The next instruction, +PUSH4 0x2e1a7d4d+, pushes the pre-calculated function identifier of the +withdraw(uint256)+ function onto the stack. The stack now is:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
-|function identifier sent in msg.data
-|function identifier sent in msg.data
 |0x2e1a7d4d
+|function identifier sent in +data+
+|function identifier sent in +data+
 |======================
 
-The next instruction, "EQ", pops off the top two items of the stack and compares them. This is where the dispatcher does its main job: it compares whether the function identifier sent in the msg.data field of the transaction matches that of withdraw(uint256). If they are equal, EQ pushes 1 onto the stack, which will ultimately get used to jump to the withdraw function. Otherwise, EQ pushes 0 onto the stack.
+The next instruction, +EQ+, pops off the top two items of the stack and compares them. This is where the dispatcher does its main job: it compares whether the function identifier sent in the msg.data field of the transaction matches that of +withdraw(uint256)+. If they are equal, +EQ+ pushes 1 onto the stack, which will ultimately get used to jump to the withdraw function. Otherwise, +EQ+ pushes 0 onto the stack.
 
-Assuming the transaction sent to our contract indeed began with the function identifier for withdraw(uint256), our new stack looks as follows:
+Assuming the transaction sent to our contract indeed began with the function identifier for +withdraw(uint256)+, our stack has become:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
-|function identifier sent in msg.data
 |1
+|function identifier sent in +data+ (now known to be 0x2e1a7d4d)
 |======================
 
-Next, we have "PUSH1 0x41", which is the address at which the withdraw(uint256) function lives in the contract. After this instruction, the stack looks as follows:
+Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)+ function lives in the contract. After this instruction, the stack looks like this:
 
 .Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
-|function identifier sent in msg.data
-|1
 |0x41
+|1
+|function identifier sent in msg.data
 |======================
 
-The JUMPI instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have "jumpi(0x41, 1)", which tells the EVM to execute the jump to the location of the withdraw(uint256) function.
+The JUMPI instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have +jumpi(0x41, 1)+, which tells the EVM to execute the jump to the location of the +withdraw(uint256)+ function, and the execution of that function's code can proceed.
+
+[[turing_completeness_and_gas]]
+==== Turing Completeness and Gas
+
+As we have already touched on, in simple terms, a system or programming language is _Turing complete_ if it can solve any problem you feed into it. This capability, however, comes with an very important caveat: some problems take forever to to solve. An important aspect of this is that we can't tell, just by looking at a computer program, whether it will take forever or not to execute. We have to actually go through with the execution of the program and wait for it to finish to find out. Of course, if it is going to take forever to execute, we will have to wait forever to find out. This is called "the halting problem" and would be a huge problem for Ethereum if it were not addressed.
+
+Because of the halting problem, the Ethereum world computer is at risk of being asked to execute a program that never stops. This could be by accident or because of malicious intent. We have discussed that Ethereum acts like a single-threaded machine, without any scheduler, and so if it became stuck in an infinite loop, without gas, this would mean it would become unusable. However, with gas, there is a fall-back: if after a pre-specified maximum amount of computation has been performed, the execution hasn't ended, everything is stopped anyway. This makes the EVM a _quasi_-Turing complete machine: it can solve any problem you feed into it, but only if it turns out that the problem can be solved within a particular amount of time. That limit isn't fixed in Ethereum - you can pay to increase it up to a maximum (called the "block gas limit") and everyone can agree to increase that maximum over time. Nevertheless, at any one time, there is a limit in place, and transactions that take too long to execute are abandoned.
+
+As a smart contract developer, you must be very mindful of this. Some programs are simply too complex to be within any practical chance of ever getting sucessfully executed. A simple example would be a for-loop iterating over all the users of a DApp: when the number of users goes over a certain number, the for-loop will take longer than is allowed to complete, so the iteration will always fail. In such circumstances, "out of gas" protections need to be put in place, such as having a "gas supply check" at end of a potentially unbounded for-loop.
+
+[[gas_accounting_execution]]
+
+==== Gas Accounting During Execution
+
+For every transaction, there is an associated _gas limit_ and _gas price_ which are used to calculate fees of an EVM execution. We discuss this in detail in <<gas>>. These fees are used to compensate for the necessary resources of a transaction, such as computation and memory, to fully resolve the effects of a transaction, including smart contract execution. When an EVM is needed to complete a transaction, in the first instance it is given a gas supply equal to the amount specified by the +gas limit+. Every opcode that is executed has a cost in gas, and so the EVM's gas supply is reduced as the EVM steps through the program. Before each operation, the EVM checks that there is enough gas in its gas supply to pay for the operation's execution. If there isn't, execution is halted and the transaction is abandoned. The originator of the transaction still pays for all the gas used at the specified +gas price+, however. If the EVM gets to the end of execution successfully, without running out of gas, the value in ether of the gas remaining in the gas supply is refunded, based on the +gas price+ of the transaction.
+
+Again, smart contract developers must be very mindful: if the +gas price+ required to get a transaction confirmed goes up, it could become economically unfeasible to perform some calculations.
+
 
 [[evm_tools_references]]
 === EVM Tools References
 * [ByteCode To Opcode Disassembler](https://etherscan.io/opcode-tool) (Useful to check/debug if compilation ran with integrity and for reverse-engineering purposes if the source code wasn't published)
+
+
