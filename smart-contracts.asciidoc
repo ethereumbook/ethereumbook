@@ -27,7 +27,7 @@ Smart contracts are typically written in a high-level language, such as Solidity
 
 Importantly, contracts _only run if they are called by a transaction_. All smart contracts in Ethereum are executed, ultimately, because of a transaction initiated from an Externally Owned Account. A contract can call another contract that can call another contract, and so on, but the first contract in such a chain of execution will always have been called by a transaction from an EOA. Contracts never run “on their own”, or “run in the background”. Contracts effectively lie “dormant” until a transaction triggers execution, either directly or indirectly as part of a chain of contract calls. It is also worth noting that smart contracts are not executed "in parallel" in any sense - the Ethereum world computer can be considered to be a single-threaded machine.
 
-Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state. 
+Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
 
 As mentioned above, it important to remember that a contract’s code cannot be changed. However a contract can be “deleted”, removing the code and it’s internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). That operation costs “negative gas”, a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability wil only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inexcessible, the smart contract can not be deleted.
 
@@ -225,7 +225,7 @@ enum:: User-defined type for enumerating discrete values: +enum NAME {LABEL1, LA
 arrays:: An array of any type, either fixed or dynamic: +uint32[][5]+ is an array of five dynamic arrays of unsigned integers
 
 struct:: User-defines data containers for grouping variables: +struct NAME {TYPE1 VARIABLE1; TYPE2 VARIABLE2; ...}
- 
+
 mapping:: Hash lookup tables for +key => value+ pairs: +mapping(KEY_TYPE => VALUE_TYPE) NAME;
 
 In addition to the data types above, Solidity also offers a variety of value literals that can be used to calculate different units:
@@ -417,7 +417,7 @@ Note that you must explicitly add this command to your contract if you want it t
 
 ==== Adding a constructor and selfdestruct to our +Faucet+ example
 
-The +Faucet+ example contract we introduced in <<intro>> does not have any constructor or selfdestruct functions. It is an eternal contract that cannot be deleted. Let's change that, by adding a constructor and +selfdestruct+ function. We probably want the +selfdestruct+ to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable, called +owner+. Our constructor sets the owner variable and the +selfdestruct+ function will first check that the owner called it directly.
+The +Faucet+ example contract we introduced in <<intro_chapter>> does not have any constructor or selfdestruct functions. It is an eternal contract that cannot be deleted. Let's change that, by adding a constructor and +selfdestruct+ function. We probably want the +selfdestruct+ to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable, called +owner+. Our constructor sets the owner variable and the +selfdestruct+ function will first check that the owner called it directly.
 
 First our constructor:
 
@@ -710,7 +710,7 @@ Events are a very useful mechanism, not only for intra-contract communication, b
 
 ==== Calling other contracts (send, call, callcode, delegatecall)
 
-Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method. In short, the risks develop out of the fact that you may have no idea about a contract you are calling into or no idea about who is calling into your contract. When writing smart contracts, you must keep in mind that, while you are mostly expecting to be dealing with EOAs perhaps, there is nothing to stop arbitrarily complex and perhaps malign contracts from calling into and being called by your code. 
+Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method. In short, the risks develop out of the fact that you may have no idea about a contract you are calling into or no idea about who is calling into your contract. When writing smart contracts, you must keep in mind that, while you are mostly expecting to be dealing with EOAs perhaps, there is nothing to stop arbitrarily complex and perhaps malign contracts from calling into and being called by your code.
 
 ===== Creating a new instance
 
@@ -1401,7 +1401,7 @@ Perhaps the most fundamental software security principle is to maximize reuse of
 [[contract_libraries_sec]]
 ==== Contract libraries
 
-There is a lot of exisitng code available both deployed on-chain as callable libraries and off-chain as code template libraries. On-platform libraries, having been deployed, exist as bytecode smart contracts and so great care should be taken before using them in production. However, using well established existing on-platform libraries comes with many advantages, such as being able to benefit from the latest upgrades, but it also simply saves you money and benefits the Ethereum ecosystem by keeping the number of contracts in the Ethereum state down. 
+There is a lot of exisitng code available both deployed on-chain as callable libraries and off-chain as code template libraries. On-platform libraries, having been deployed, exist as bytecode smart contracts and so great care should be taken before using them in production. However, using well established existing on-platform libraries comes with many advantages, such as being able to benefit from the latest upgrades, but it also simply saves you money and benefits the Ethereum ecosystem by keeping the number of contracts in the Ethereum state down.
 
 In Ethereum, the most widely used resource is the https://openzeppelin.org/[OpenZeppelin] suite; an ample library of contracts ranging from implementations of `ERC20` and `ERC721` tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts, such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository have been extensively tested and in some cases even function as _de facto_ standard implementations. They are free to use, and are built and mantained by https://zeppelin.solutions[Zeppelin] together with an ever growing list of external contributors.
 
