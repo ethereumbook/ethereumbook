@@ -80,7 +80,10 @@ When you create a new transaction, you assign the next nonce in the sequence. Bu
 [[get_tx_count_bug]]
 [TIP]
 ====
-Be careful when using the +getTransactionCount+ function for counting pending transactions, because you might run into some problems if you send a few transactions in a row. Let's look at an example:
+Be careful when using the +getTransactionCount+ function for counting pending transactions, because you might run into some problems if you send a few transactions in a row.
+====
+
+Let's look at an example:
 
 ----
 web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pending")
@@ -99,21 +102,20 @@ web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", "pend
 As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent 3 more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be 3 pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there are more than one transactions pending, it might not help us.
 
 When you build an application that constructs transactions, it cannot rely on +getTransactionCount+ for pending transactions. Only when pending and confirmed are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
-====
 
 Parity's JSON RPC interface offers the +parity_nextNonce+ function, that returns the next nonce that should be used in a transaction. The +parity_nextNonce+ function counts nonces correctly, even if you construct several transactions in rapid succession, without confirming them.
 
 [[parity_curl]]
 [TIP]
 ====
-Parity has a web console for accessing the JSON RPC interface, but here we are using a command line HTTP client to access it:
+Parity has a web console for accessing the JSON RPC interface, but here we are using a command line HTTP client to access it
+====
 
 ----
 curl --data '{"method":"parity_nextNonce","params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545
 
 {"jsonrpc":"2.0","result":"0x32","id":1}
 ----
-====
 
 [[gaps_nonce]]
 ===== Gaps in nonces, duplicate nonces, and confirmation
@@ -227,7 +229,7 @@ dst = web3.eth.accounts[1];
 ----
 
 [[tx_value_nodata]]
-===== Transaction with value (payment), and no data payload
+==== Transaction with value (payment), and no data payload
 
 [[tx_value_nodata_src]]
 .Value, no data
@@ -243,8 +245,8 @@ Our wallet shows a confirmation screen, indicating the value to send, and no dat
 image::images/parity_txdemo_value_nodata.png["Parity wallet showing a transaction with value, but no data"]
 
 
-[[tx_value_data]]
-===== Transaction with value (payment), and a data payload
+[[tx_value_data_payload]]
+==== Transaction with value (payment), and a data payload
 
 [[tx_value_data_src]]
 .Value and data
@@ -260,10 +262,10 @@ Our wallet shows a confirmation screen, indicating the value to send and a data 
 image::images/parity_txdemo_value_data.png["Parity wallet showing a transaction with value and data"]
 
 
-[[tx_novalue_nodata]]
+[[tx_novalue_data]]
 ===== Transaction with 0 value, only a data payload
 
-[[tx_novalue_nodata_src]]
+[[tx_novalue_data_src]]
 .No value, only data
 [source,javascript]
 ----
@@ -277,7 +279,7 @@ Our wallet shows a confirmation screen, indicating the value as 0 and a data pay
 image::images/parity_txdemo_novalue_data.png["Parity wallet showing a transaction with no value, only data"]
 
 
-[[tx_novalue_data]]
+[[tx_novalue_nodata]]
 ===== Transaction with neither value (payment), nor data payload
 
 [[tx_novalue_nodata_src]]
@@ -378,9 +380,10 @@ Any ether sent to the contract registration address +0x0+ or the designated burn
 A contract creation transaction need only contain a data payload that contains the compiled bytecode which will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the +value+ field if you want to set the new contract up with a starting balance, but that is entirely optional.
 
 As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidity compiler.
+
 ----
 > solc --bin Faucet.sol
-======= Faucet.sol:Faucet =======
+
 Binary:
 6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029
 ----
@@ -391,13 +394,15 @@ Now we can create the transaction.
 [source,javascript]
 ----
 > src = web3.eth.accounts[0];
-> faucet_code = "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029"
+> faucet_code = "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029";
 
-> web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, gas: 113558, gasPrice: 200000000000})
+> web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, gas: 113558, gasPrice: 200000000000});
 
 "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
 ----
+
 It is good practice to always specify a +to+ parameter, even in the case of the zero address contract creation, because the cost of accidentally sending your ether to +0x0+ and losing it forever is too great. You can should also specify +gasPrice+ and the +gas+ limit.
+
 
 Once the contract is mined we can see it on etherscan block explorer
 
@@ -426,6 +431,7 @@ You can look at the receipt of transaction to get information about the contract
   transactionIndex: 0
 }
 ----
+
 Here we can see the address of the contract. We can send and receive funds from the contract as shown in <<data_EOA>>.
 
 [source,javascript]
@@ -441,6 +447,7 @@ Here we can see the address of the contract. We can send and receive funds from 
 ----
 
 After a while, both transactions are visible on etherscan
+
 [[publish_contract_transactions]]
 .Etherscan showing the transactions for sending and receiving funds
 image::images/published_contract_transactions.png["Etherscan showing the transactions for sending and receiving funds"]
@@ -476,7 +483,9 @@ _Source: https://en.wikipedia.org/wiki/Digital_signature_
 
 In Ethereum's implementation of ECDSA, the "message" being signed is the transaction, or more accurately, the Keccak256 hash of the RLP-encoded data from the transaction. The signing key is the EOA's private key. The result is the signature:
 
+////
 latexmath:[\(Sig = F_{sig}(F_{keccak256}(m), k)\)]
+////
 
 where:
 
@@ -561,10 +570,10 @@ To produce a valid transaction, the originator must apply a digital signature to
 To sign a transaction in Ethereum, the originator must:
 
 1. Create a transaction data structure, containing nine fields: nonce, gasPrice, gasLimit, to, value, data, chainID, 0, 0
-1. Produce an RLP-encoded serialized message of the transaction data structure
-1. Compute the Keccak256 hash of this serialized message
-1. Compute the ECDSA signature, signing the hash with the originating EOA's private key
-1. Append the ECDSA signature's computed +v+, +r+ and +s+ values in the transaction
+2. Produce an RLP-encoded serialized message of the transaction data structure
+3. Compute the Keccak256 hash of this serialized message
+4. Compute the ECDSA signature, signing the hash with the originating EOA's private key
+5. Append the ECDSA signature's computed +v+, +r+ and +s+ values in the transaction
 
 The special signature variable +v+ indicates two things: the chain ID and the recovery identifier to help the +ECDSArecover+ function check the signature. It is calculated as either one of 27 or 28, or as the chain ID doubled plus 35 or 36. For more information on the chain ID, see <<raw_tx_eip155>>. The recovery identifier (27 or 28 in the "old style" signatures, or 35 or 36 in the full "Spurious Dragon" style transactions) is used to indicate the parity of the +y+ component of the public key (see <<sign_prefix>> for more details).
 
