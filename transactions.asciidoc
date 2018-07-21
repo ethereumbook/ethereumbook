@@ -41,13 +41,13 @@ The nonce is one of the most important and least understood components of a tran
 
  nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
-Strictly speaking, the nonce is an attribute of the originating address, i.e. it only has meaning in the context of the sending address. However, the nonce is not stored explicitly as part of an account's state on the blockchain. Instead it is calculated dynamically, by counting the number of confirmed transactions that have originated from an address. 
+Strictly speaking, the nonce is an attribute of the originating address, i.e. it only has meaning in the context of the sending address. However, the nonce is not stored explicitly as part of an account's state on the blockchain. Instead it is calculated dynamically, by counting the number of confirmed transactions that have originated from an address.
 
-There are two senarios where the existance of a transaction counting nonce is important: the useability feature of transactions being included in the order they are created; and the vital feature of transaction duplication protection. Let's look at an example senario for each of these:
+There are two scenarios where the existence of a transaction counting nonce is important: the usability feature of transactions being included in the order they are created; and the vital feature of transaction duplication protection. Let's look at an example scenario for each of these:
 
 1. Imagine you wish to make two transactions. You have an important payment to make of 6 ether, and also another payment of 8 ether. You sign and broadcast the 6 ether transaction first, because it is the more important one, and then you sign and broadcast the second, 8 ether transaction. Sadly, you have overlooked the fact that this account of yours has only 10 ether, so the network can't accept both transactions. One of them will fail. Because you sent the more important 6 ether one first, you understandably expect that one to go through and the 8 ether one to be rejected. However, in a decentralized system like Ethereum, nodes may receive the transactions in either order; there is no guarantee that a particular node will have one transaction propagated to it before the other. As such, it will almost certainly be the case that some nodes receive the 6 ether transaction first and others receive the 8 ether transaction first. Without the nonce, it would be random as to which one gets accepted and which rejected. However, with the nonce included, the first transaction you sent will have the correct nonce, let's say it is 3, signifying that it is next in line to be processed. The 8 ether transaction has the next nonce value, i.e. 4, and so will be ignored until your account shows up to have officially processed all the transactions with nonces from 0 to 3, even if the 8 ether transaction is received first. Phew!
 
-2. Now imagine you have an account with 100 ether. Fantastic! You find someone on-line who will accept payment in ether for a mcguffin-widget that you really want to buy. You send them 2 ether and they send you the mcguffin-widget. Lovely. To make that 2 ether payment, you signed a transaction sending 2 ether from your account to their account, and then broadcast it to the Ethereum network to be verified and included on the blokchain. Now, without a nonce value in the transaction, a second transaction sending 2 ether to the same address a second time will look exactly the same as the first transaction. This would mean that anyone who saw your transaction on the Ethereum network (which means everyone, including the recipient, or your enemies) can "replay" the transaction again and again and again until all your ether is gone simply by copy-and-pasting your original transaction and resending it to the network. However, with the nonce value included in the transaction data, _every single transaction is unique_, even when sending the same amount of ether to the send recipient address multiple times. This means that, by having the incrementing nonce as part of the transaction, it is simply no possible for anyone to "duplicate" a payment you have made.
+2. Now imagine you have an account with 100 ether. Fantastic! You find someone on-line who will accept payment in ether for a mcguffin-widget that you really want to buy. You send them 2 ether and they send you the mcguffin-widget. Lovely. To make that 2 ether payment, you signed a transaction sending 2 ether from your account to their account, and then broadcast it to the Ethereum network to be verified and included on the blockchain. Now, without a nonce value in the transaction, a second transaction sending 2 ether to the same address a second time will look exactly the same as the first transaction. This would mean that anyone who saw your transaction on the Ethereum network (which means everyone, including the recipient, or your enemies) can "replay" the transaction again and again and again until all your ether is gone simply by copy-and-pasting your original transaction and resending it to the network. However, with the nonce value included in the transaction data, _every single transaction is unique_, even when sending the same amount of ether to the send recipient address multiple times. This means that, by having the incrementing nonce as part of the transaction, it is simply no possible for anyone to "duplicate" a payment you have made.
 
 In summary, it is important to note that the use of the nonce is actually vital for an _account based_ protocol, in contrast to the "UTXO" mechanism of the bitcoin protocol.
 
@@ -147,7 +147,7 @@ You could use a single computer to assign nonces, on a first-come first-served b
 
 Another approach would be to generate the transactions, but not assign a nonce to them (and therefore leave them unsigned - remember that the nonce is an integral part of the transaction data and therefore needs to be included in the digital signature that authenticates the transaction). Then queue them to a single node that signs them and also keeps track of nonces. Again, this would be a pitch-point in the process: the signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of the unsigned transaction is the part you don't really need to parallelize. You would have some concurrency, but you don't have it in any useful part of the process.
 
-In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmations in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange, or setting up mutliple hot wallets that can work completely independently for withdrawals and only need to be intermittently re-balanced.
+In the end, these concurrency problems, on top of the difficulty of tracking account balances and transaction confirmations in independent processes, force most implementations towards avoiding concurrency and creating bottlenecks such as a single process handling all withdrawal transactions in an exchange, or setting up multiple hot wallets that can work completely independently for withdrawals and only need to be intermittently re-balanced.
 
 [[tx_gas]]
 === Transaction gas
@@ -198,7 +198,7 @@ The analogy to a fuel tank is somewhat misleading, however. It's actually more l
 
 The recipient of a transaction is specified in the +to+ field. This contains a 20-byte Ethereum address. The address can be an EOA or a contract address.
 
-Ethereum does no further validation of this field. Any 20-byte value is considered valid. If the 20-byte value corresponds to an address without a corresponding private key, or without a corresponding contract, the transaction is still valid. Ethereum has no way of knowing whether an address was correctly derived from a public key (and therefore from a private key) in existance.
+Ethereum does no further validation of this field. Any 20-byte value is considered valid. If the 20-byte value corresponds to an address without a corresponding private key, or without a corresponding contract, the transaction is still valid. Ethereum has no way of knowing whether an address was correctly derived from a public key (and therefore from a private key) in existence.
 
 [WARNING]
 ====
@@ -377,7 +377,7 @@ Any ether sent to the contract registration address +0x0+ or the designated burn
 
 A contract creation transaction need only contain a data payload that contains the compiled bytecode which will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the +value+ field if you want to set the new contract up with a starting balance, but that is entirely optional.
 
-As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidiy compiler.
+As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidity compiler.
 ----
 > solc --bin Faucet.sol
 ======= Faucet.sol:Faucet =======
@@ -397,13 +397,13 @@ Now we can create the transaction.
 
 "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
 ----
-It is good practice to always specify a +to+ parameter, even in the case of the zero address contract creation, because the cost of accidently sending your ether to +0x0+ and losing it forever is too great. You can should also specify +gasPrice+ and the +gas+ limit.
+It is good practice to always specify a +to+ parameter, even in the case of the zero address contract creation, because the cost of accidentally sending your ether to +0x0+ and losing it forever is too great. You can should also specify +gasPrice+ and the +gas+ limit.
 
 Once the contract is mined we can see it on etherscan block explorer
 
 [[publish_contract_from_web3]]
 .Etherscan showing the contract successully mined
-image::images/contract_published.png["Etherscan showing the contract successully mined"]
+image::images/contract_published.png["Etherscan showing the contract successfully mined"]
 
 You can look at the receipt of transaction to get information about the contract.
 
@@ -440,7 +440,7 @@ Here we can see the address of the contract. We can send and receive funds from 
 "0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
 ----
 
-After a while, both transactions are visible on ethescan
+After a while, both transactions are visible on etherscan
 [[publish_contract_transactions]]
 .Etherscan showing the transactions for sending and receiving funds
 image::images/published_contract_transactions.png["Etherscan showing the transactions for sending and receiving funds"]
@@ -603,7 +603,7 @@ Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1bd
 
 The EIP-155 "Simple Replay Attack Protection" standard specifies a replay-attack-protected transaction encoding, which includes a _chain identifier_ inside the transaction data, prior to signing. This ensures that transactions created for one blockchain (e.g. Ethereum main network) are invalid on another blockchain (e.g. Ethereum Classic or Ropsten test network). Therefore, transactions broadcast on one network cannot be _replayed_ on another, hence the "replay attack protection" name of the standard.
 
-EIP-155 adds three fields to the main six fields of the transaction data structure, namely the chain identidier, 0, and 0. These three fields are added to the transaction data _before it is encoded and hashed_. The three additional fields therefore change the transaction's hash, to which the signature is later applied. By including the chain identifier in the data being signed, the transaction signature prevents any changes, as the signature is invalidated if the chain identifier is modified. Therefore, EIP-155 makes it impossible for a transaction to be replayed on another chain, because the signature's validity depends on the chain identifier.
+EIP-155 adds three fields to the main six fields of the transaction data structure, namely the chain identifier, 0, and 0. These three fields are added to the transaction data _before it is encoded and hashed_. The three additional fields therefore change the transaction's hash, to which the signature is later applied. By including the chain identifier in the data being signed, the transaction signature prevents any changes, as the signature is invalidated if the chain identifier is modified. Therefore, EIP-155 makes it impossible for a transaction to be replayed on another chain, because the signature's validity depends on the chain identifier.
 
 [[chain_id_table]]
 The chain identifier field takes a value according to network the transaction is meant for:
@@ -666,7 +666,7 @@ Once a transaction is signed, it is ready to transmit to the Ethereum network. T
 
 Why would you want to separate the signing and transmission of transactions? The most common reason is security: the computer that signs a transaction must have unlocked private keys loaded in memory. The computer that does the transmiting must be connected to the internet (and be running an Ethereum client). If these two functions are on one computer, then you have private keys on an online system, which is quite dangerous. Separating the functions of signing and transmitting and performing them on different machines (on an offline and online device, respectively) is called _offline signing_ and is a common security practice. The full procedure looks like this:
 
-1. Creation: can be using an online or offline device, but online is easier because the current state of the account to be used can be checked, noteably the current nonce and funds available.
+1. Creation: can be using an online or offline device, but online is easier because the current state of the account to be used can be checked, notably the current nonce and funds available.
 2. Signing: transfer the constructed transaction to an "air-gapped" offline device for transaction signing, e.g. via QR code scanning.
 3. Transmission: transfer the signed transaction (back) to an online device for broadcasting on the Ethereum client, e.g. via QR scanning or USB memory.
 
@@ -698,9 +698,9 @@ Our transaction has completed its journey from creation to signing by an EOA, pr
 
 === Multiple signatures (multisig) transactions
 
-If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's basic EOA value transactions have no provisions for multiple signatures, however arbitrary signing restrictions can be enforced by smart contracts with any conditions you can think of to handle the transfer of ether and tokens alike. This is one of the main advantages of the Ethereum protocol: fully programmable money. 
+If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's basic EOA value transactions have no provisions for multiple signatures, however arbitrary signing restrictions can be enforced by smart contracts with any conditions you can think of to handle the transfer of ether and tokens alike. This is one of the main advantages of the Ethereum protocol: fully programmable money.
 
-To take advantage of this capability, ether has to be transfered to a "wallet contract" that is programmed with the spending rules desired, such as multi-signature requirements or spending limits (or combinations of the two). The wallet contract then officially sends the funds when prompted by an authorized EOA once the spending conditions have been satisfied. For example, to protect your ether under a multisig condition, transfer the ether to a multisig contract. Whenever you want to send funds to another account, all the required users will need to send transactions to the contract using a regular wallet app, effectively authorizing the contract to perform the final transaction.
+To take advantage of this capability, ether has to be transferred to a "wallet contract" that is programmed with the spending rules desired, such as multi-signature requirements or spending limits (or combinations of the two). The wallet contract then officially sends the funds when prompted by an authorized EOA once the spending conditions have been satisfied. For example, to protect your ether under a multisig condition, transfer the ether to a multisig contract. Whenever you want to send funds to another account, all the required users will need to send transactions to the contract using a regular wallet app, effectively authorizing the contract to perform the final transaction.
 
 These contracts can also be designed to require multiple signatures before executing local code or to trigger other contracts. The security of the scheme is ultimately determined by the multisig contract code.
 
