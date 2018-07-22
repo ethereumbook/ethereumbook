@@ -1,0 +1,870 @@
+////
+Source: https://github.com/lrettig/ethereumbook/blob/develop/contrib/governance.asciidoc
+License: CC0
+Added by: @lrettig
+////
+
+:toc:
+
+[[governance_chapter]]
+== Ethereum governance
+
+Understanding the technological mechanisms by which Ethereum accounts, transactions, and smart
+contracts work is important, but equally important is understanding the human mechanisms by which
+Ethereum was built and by which it continues to be developed. Ethereum is software, and Ethereum is
+data (a ledger), but Ethereum is equally a community and a set of norms and processes governing the
+interaction of the people in the community, and the interaction between the people and the system.
+This set of norms and processes is Ethereum governance.
+
+[[_anchor_governance_in_general]]
+=== Governance in general
+
+It may help to begin by defining governance. Simply put,
+
+[quote]
+Governance is the process by which people organize themselves to make decisions.
+
+Note that _governance_ is different from _government_ in several important ways. For one thing,
+_government_ implies rigid structures: elections, leaders, political parties, checks and balances.
+_Governance,_ on the other hand, applies equally to such forms of rigid, institutionalized systems
+of government as it does to more casual, informal systems. As described by Mark Bevir,
+
+[quote]
+Governance differs from government in that it focuses less on the state and its institutions and
+more on social practices and activities. [1]
+
+Finally, governance focuses less on hierarchies such as states and more on organizational structures
+such as markets and networks. [1] Someday, blockchains may become so mature and institutionalized
+that we begin to refer to their organizing norms and processes as _government._ For now, however,
+_governance_ is the more appropriate term.
+
+Governance, on and off the blockchain, can take many forms. It may be based on the authority of a
+single person (monarchy), of one or more deities (theology), of experts (technocracy), of the people
+(democracy), of common ownership (socialism), or of money (plutarchy). While blockchain is a radical
+new technology which enables new forms of governance (which we'll discuss in a moment), ultimately
+blockchain governance is still old-fashioned governance: it's still people coming together and
+putting in place norms and processes by which decisions will be made and carried out.
+
+==== The aim of governance
+
+Before diving into the details of blockchain and Ethereum governance, it's worth asking the
+question, what is the point? As we consider the building blocks of governance and how to build the
+best, most effective systems of governance, what exactly are we optimizing for?
+
+Arriving at an answer to this question is itself part of the governance process. In order to find an
+answer, we must first consider questions such as, What is a blockchain? What is it intended to do?
+What sort of problems is it intended to solve? Who is it for? Who are the stakeholders, what are
+their needs, where do they overlap and where are they distinct?
+
+The following sections explore these questions in greater detail. While there is no simple answer to
+the overarching question of "What is it for?", one potential if somewhat unsatisfying answer is: The
+blockchain is for those who choose to participate in it. As opposed to private, permissioned
+databases and permissioned blockchains, public blockchains such as Bitcoin and Ethereum allow any
+person or group of people to participate freely. Perhaps the goal of blockchain governance is
+therefore to build a system that enfranchises as many different users as possible. Perhaps it is to
+enfranchise as _diverse_ a set of users as possible. To yet others, the goal instead may be to
+maximize economic activity and wealth creation.
+
+Keep these questions in mind as you read on and learn more about blockchain governance. There are as
+many different answers to this question as there are stakeholders in blockchain.
+
+==== An aside on the use of terminology
+
+The ideas, terminology, and frameworks presented in this section draw from classical fields
+including political science, economics, and game theory. However, their usage here may differ from
+their formal definitions and usage within those fields. To clasically-trained experts from these
+fields: we beg your forgiveness. Blockchain governance and the closely-related concept of
+cryptoeconomics are nascent and the ideas are still in the process of being developed.
+
+==== Some helpful terminology
+
+Before going deeper into the topic of governance it may be helpful to lay out some useful
+terminology and explain how it will be used throughout this chapter.
+
+ * a *stakeholder* is a party affected by governance.
+ * a *participant* is a party able to influence the governance process.
+ * *legitimate* governance is governance in which there is common knowledge that the governance
+ process will be used rather than abandoned or replaced.
+ * *illegitimate* governance is governance lacking this common knowledge, i.e., governance that is
+ likely to be abandoned or replaced.
+ * a stakeholder is *enfranchised* when they feel that a governance process produces decisions in
+ their best interest.
+ * a stakeholder is *disenfranchised* when they feel that a governance process produced decisions
+ not in their best interest.
+ * a governance process is *formalized* when it is put into language.
+ * a governance process that's not put into language remains *informal*.
+ * such a formalized process may be *institutionalized* when it is deliberately encoded into
+ governance structure.
+
+Before explaining how blockchain and Ethereum governance function today, let's examine the types of
+problems and questions such governance is intended to address. Two frameworks will help us
+understand these problems: coordination problems and game theory. We'll begin with coordination
+problems.
+
+==== Coordination problems
+
+One interesting way to think about the blockchain is as a coordination problem. A coordination
+problem is any problem in which the decisions and strategy of one actor affect those of other
+actors, and in which you, as an actor, cannot expect to achieve your desired outcome without
+considering the decisions and strategy of the other actors.
+
+Take, for example, the situation where you and I decide to meet after work. We'd both really like to
+meet at the pub, but we are okay meeting at the coffeehouse instead. If we're able to coordinate our
+plans and meet at the pub, we are each rewarded with a utility score of 1. If we instead meet at the
+coffeehouse we each receive a score of 1. If you go to the pub and I go to the coffeehouse, or vice
+versa, we each receive zero utility (since, presumably, we have to sit alone and entertain
+ourselves). As you can see the outcome, and my utility, depend not only upon my own actions but also
+upon your actions.[3]
+
+image::../images/coordination_game.png[]
+
+This is a simple, somewhat contrived example, but coordination problems are everywhere, from dating
+to business to the job market to the stock market to international relations and wars. Voting is a
+great, complex example of a coordination problem.
+
+So are many aspects of the blockchain. Here are a few concrete examples:
+
+* Miners want to maximize the amount of block rewards they receive. Generally, the best way for them
+to do this is to mine blocks as quickly as possible and to include as many transactions in each
+block as they can. However, they also want to make sure that every transaction that's included in
+their block is valid or they will be penalized (i.e., produce an invalid block that receives no
+rewards). If a miner receives invalid transactions from one of its peers it may decide to block that
+peer so it doesn't waste time executing invalid transactions.
+
+* When I send a transaction, I want it to be included in a block as quickly as possible, but I also
+want to minimize the fees (gas price) I pay the miners. If I set the gas price too low, the
+transaction won't get mined, but if I set it too high, I'll overpay. The gas price required to
+confirm a block quickly depends upon how busy the network is and how much gas other transactions are
+paying.
+
+* If I want to double-spend the same funds, I could send ether to another party, then bribe a miner
+not to include that transaction in the next block that gets mined. (There are multiple protections
+against this sort of behavior in the Ethereum protocol, but choosing whether or not to play by the
+rules is a coordination problem.)
+
+There are many, many other examples of coordination problems in Ethereum. Which others can you come
+up with?
+
+==== Game theory
+
+Another helpful framework for examining and understanding the problems of blockchain governance is
+game theory. Game theory presents a view of the world in which there are _actors_ with _objectives_
+playing games that have _rules._ Such a view of the world is admittedly oversimplified and doesn't
+necessarily line up with reality, which is far messier, but it is nonetheless a useful framework for
+understanding the sort of choices people make, how they make those choices, and how their choices
+impact other people and their future choices.
+
+* An *actor* is any entity, human or machine, that has agency and an *objective* it wants to
+achieve.
+* An *objective* is a goal. In game theory, objectives are measured quantitatively using a *utility
+function.*
+* A *utility function* is a function that maps the state of the world to a score describing how
+desirable that state is, from the perspective of the actor.
+* A *game* is a situation involving one or more *actors* governed by a set of *rules.* 
+(Don't get overly hung up on the use of the word "game" here. This is game theory speak for
+any situation where actors have to make decisions, similar to the coordination problem described
+above.)
+* A *rule* is logic which all actors in a game must obey. Think of this not as a normative rule
+("Thou shalt not kill") but rather as a rule in the cold-hard computer logic sense of the word
+("Every time you pass Go, $200 will appear in your account").
+
+Let's look at a concrete example. Jimmy (an *actor*) really likes to eat cookies, and really
+dislikes doing homework. Jimmy's *objective* is to eat as many cookies as he can, and to do as
+little homework as he can. His *utility function* therefore looks something like the following:
+
+```
+num_cookies_eaten - hours_homework_done
+```
+
+Jimmy's parents give him two cookies for every hour of homework he completes (a *rule*), up to a
+maximum of six cookies per day (another *rule*). Jimmy's best course of action is therefore to do
+three hours of homework and receive the maximum six cookies, resulting in a utility score of 6 - 3 =
+3. In terms of game theory, this is the behavior that maximizes his utility in this particular
+*game.*
+
+Game theory and coordination problems overlap when one actor's decisions impact, and are impacted
+by, the behavior and decisions of other actors as described above. Let's look at one such problem.
+
+The Prisoner's Dilemma is probably the most famous of all problems in game theory. It describes a
+scenario in which two (or more) actors who are prisoners, totally unable to communicate with one
+another, are given the chance to betray the other prisoner or to remain silent (which is known as
+cooperating). If both prisoners cooperate, neither is convicted and both are let off with a light
+sentence. If Prisoner A betrays Prisoner B and Prisoner B remains silent, Prisoner A is released and
+Prisoner B faces the death penalty (or some other severe penalty). If both prisoners betray, both
+are executed.
+
+//// TODO: graphical representation of prisoner's dilemma ////
+
+It's fairly obvious that the best course of action is for all prisoners to choose to cooperate, but
+if you think deeply about the problem it's not obvious how they can coordinate their decisions
+without being able to communicate with one another.
+
+//// TODO: mention solutions, Nash equilibria ////
+
+Where does game theory apply in Ethereum? Here are some examples.
+
+* Miners want to maximize their compute power (hash rate) in order to maximize the amount of block
+rewards they receive, and thus their profit. Since there are economies of scale in compute power,
+they will seek to mine with as much compute power as possible. However, they are also cognizant of
+the fact that, if they were to exceed (or even approach) the threshold of 50% of total network hash
+power and that fact were to become known to the market, the market may lose confidence in Ethereum
+and the value of ether may plummet. Miners are therefore incentivized to stay well below this
+threshold (and this has happened in practice //// TODO: add link ////.
+
+* In the Casper proof of stake system //// TODO: add link ////, collators and validators are
+rewarded for acting honestly: for including all transactions they're aware of in each block, for
+voting honestly on which block they believe to be the canonical head of the chain, etc. They are
+also severely punished (this is called being "slashed") for acting dishonestly or otherwise
+violating the rules of the protocol. Note that this system of incentives works even _outside_ the
+Ethereum protocol, so that a validator cannot for instance act maliciously, get slashed within the
+protocol, but expect to profit outside the protocol (this is called "extraprotocol incentives") by
+e.g. shorting ether. This set of carefully-designed incentives works well to keep all actors in
+line.
+
+* In a token curated registry //// TODO: link? ////, tokenholders are incentivized to maximize the
+economic value of their own token holdings by carefully vetting applicants to the registry and only
+voting to allow qualified applicants.
+
+Those responsible for designing the Ethereum protocol, the set of rules that govern how the system
+works and how agents (people and smart contracts) interact with the system, think deeply about game
+theory as a way of understanding how to incentivize people to use the system, follow its rules, and
+keep the system functioning well. In particular, game theory is useful for analyzing attack vectors.
+This is part of the governance of Ethereum, and understanding game theory and coordination problems
+is a critical requirement for those who contribute to Ethereum governance.
+
+Of course governance of and by human beings is never as simple as game theory would suggest. Humans
+act not only according to objective rules but also to subjective social norms, practices,
+conventions, and expectations.
+
+==== Social norms
+
+For this reason, social norms also play an important role in governance. For instance, imagine that
+a social convention (an unwritten rule) forms whereby members of a particular legislative body agree
+only to meet on Tuesdays and Thursdays. You may show up on Monday, but if you're the only one in the
+room, discussion and voting aren't going to happen. [Cite Vlad talk]
+
+It is therefore important that, while considering the cold, rational, economic logic of coordination
+problems and game theory, governance also include the human element.
+
+==== Focal points
+
+Another useful tool in game theory is the focal point, also known as a Schelling point. A focal
+point is a solution that people will tend to choose in a game where they cannot communicate with
+other participants because it stands out or holds some special meaning to them. For instance, which
+square do you think players are mostly likely to choose when asked to choose from among the
+following four squares?
+
+image::../images/focal_point_squares.png[]
+
+Source: https://en.wikipedia.org/wiki/Focal_point_(game_theory)#/media/File:Focal_point_squares.jpg
+
+Focal points are useful in game theory because they allow us to find likely equilibria in games
+where there are multiple possible equilibria.
+
+[[_anchor_blockchain_governance]]
+=== Blockchain governance
+
+With these basic concepts in place, let's take a look at how they're used in the governance of
+actual blockchains including Ethereum. Governance of each blockchain is different and, just as each
+blockchain is a "mini economy" with its own monetary and fiscal policy, each blockchain is also a
+mini system of governance with its own rules, norms, and stakeholders. We begin by considering the
+actors of the blockchain world: the various parties and their differing interests and objectives in
+using the blockchain.
+
+[[_anchor_stakeholders]]
+==== Stakeholders
+
+A diverse set of parties interact every day to keep Ethereum and other blockchains functioning. The
+entire system would fail, or would at least be far less useful, without any one of these parties. An
+important goal of governance is to balance the interests of each group of system users so that one
+group is not favored at the expense of another. It is the diversity of this set of stakeholders,
+closely resembling nature, which gives rise to the term "ecosystem" when used to describe the
+overall system.
+
+Stakeholders in many blockchains include:
+
+* *Core developers:* this group is responsible for writing and maintaining the code that runs on all
+blockchain nodes. They are primarily responsible for fixing bugs, responding to technical issues,
+and coordination ongoing protocol upgrades. Core developers are primarily incentivized to write good
+code and ensure that the network is as technically sound as possible.  Note that in many cases core
+developers are part of larger organizations, for-profit or non-profit, which are subject to their
+own governance and objectives.
+
+* *Miners:* miners are responsible for collecting transactions into a transaction pool, validating
+them, organizing them into blocks, and running the proof of work algorithm to produce a new, valid,
+sealed block which is then broadcast to the network. They are incentivized to maximize their block
+rewards by producing and broadcasting as many valid blocks as possible, so that the money they spend
+(out of protocol) on electricity is not wasted. They are also incentivized to increase the overall
+network utilization (transactions per second) in order to increase the amount of fees they collect
+for mining each block. While selfishly motivated by the protocol to do so they also provide security
+to the overall network by increasing the total cumulative proof of work performed on the blockchain,
+making it harder for an attacker to stage a 51% attack //// TODO: link ////.
+
+* *Mining pool operators:* miners may choose to mine solo or they may opt to join a mining pool,
+which efficiently combines the hash power of a large number of smaller miners and distributes
+rewards proportionally to the hash power that each individual miner contributes to the pool. Pool
+operators typically receive a cut of the overall block rewards received by the pool, but are
+incentivized not to set this fee too high by competition from other pool operators: if fees in a
+given pool are set too high the miners could switch to another pool. As described above, they are
+also incentivized to keep their overall network hash power well below the 50% threshold or they may
+cause the market to lose confidence in ether, causing its price (and, therefore, their profits) to
+plummet.
+
+* *Node operators:* people run blockchain nodes for a variety of reasons. Some want the security and
+added trust they get from individually verifying every transaction on the network. Some run full
+nodes in order to collect and analyze blockchain data. Yet others may run a node in order to bridge
+tokens, transactions, or other data to other blockchains or systems. In general node operators want
+to reduce the resource requirements--bandwidth, disk space and I/O, CPU cycles--required to operate
+a full node. They desire well-functioning, bug-free client software.
+
+* *Investors:* otherwise known as "hodlers," investors hold one or more cryptographic assets, either
+the native network token (ether) or ERC-20 tokens. They are motivated primarily by the market price
+of such assets, and may additionally be motived by second-order effects such as volatility. They may
+be less interested in the technical functioning of the network, except insofar as a well-functioning
+network may increase market prices for the assets in question.
+
+* *Users:* this is a general term encompassing those who transact on the blockchain or use
+applications built on it. In general, users prefer a less congested network and lower fees. It's
+hard to say more than this as users are motivated to transact on the blockchain for a wide variety
+of reasons and may have a broad array of differing needs and objectives in using the system.
+
+There is a broader set of stakeholders that includes parties such as exchanges, hedge funds,
+blockchain bridge operators, consultants, governments, etc. that are beyond the scope of this
+chapter. Note as well that many users may fall into multiple of the above categories, leading to
+potentially far more complex sets of overlapping incentives: I may be both a Dapp developer, in
+which case I want network utilization and fees to remain low, but also participate in mining, in
+which cases I prefer higher utilization and higher fees.
+
+Again, one of the main goals of blockchain governance is to balance the interests of this diverse
+set of stakeholders and ensure that all feel enfranchised by the governance system (that they have a
+voice and that their interests are being represented in the governance system).
+
+As the ecosystem develops actors with a range of motivations will emerge. It is prudent to model how such actors may affect the game-theoretical basis of governance and to discuss solutions to the dynamics that they may introduce. This approach has its empirical limitations since it is hard to predict unseen behaviours, yet it may become critical to deal with issues (e.g. attacks) that arise rapidly.
+
+==== Vetoes and checks and balances ====
+
+A question often asked by those who are new to the blockchain ecosystem is, "Who is in charge?" Many
+people have more experience in various "real world" governance structures such as companies and
+governments which tend to be top-down and hierarchical. They often struggle to understand the sort
+of decentralized, network-style governance that arises in blockchains simply because this sort of
+governance has not been commonly seen before.
+
+The primary structure of blockchain governance is in fact a set of vetoes, otherwise known as "a
+system of checks and balances." While no individual party or class of stakeholders has the power to
+unilaterally change the blockchain protocol, groups of stakeholders may exercise their veto power to
+block changes proposed by other groups. For instance, if a group of users proposes a change that the
+core developers disagree with, the core developers may opt not to implement that change. Similarly,
+if the core developers implement a change that miners and node operators disagree with, the miners
+and node operators may opt not to run node software implementing those changes.
+
+In this way, making changes to the core blockchain protocol is in fact a complex and difficult
+coordination problem of the type described above, and changes that are adopted have passed through
+many checks and been agreed to be a large, diverse set of stakeholders. Each blockchain community
+has a different process to arrive at such consensus. We'll see concrete examples of several such
+systems in a moment.
+
+==== Off-chain governance
+
+Most blockchains today, including Bitcoin and Ethereum, are governed primarily through _off-chain_
+(otherwise known as "loosely coupled") systems of governance. Off-chain means that the rules of
+governance are not written into the core blockchain protocol itself and must instead be dealt with
+at the social layer, i.e., humans talking to other humans. In the case of Ethereum this includes
+processes such as the EIP process and the All core devs meetings (see below). Only after various
+groups of stakeholders come to consensus about what changes should or should not be made to the
+protocol is the code implementing those changes made. Users (including full node operators,
+exchanges, miners, etc.) then have the choice about whether to run the code implementing those
+changes. This is one of the vetoes described above. The important point is that this entire process
+is run off-chain, i.e., not written in code and not enforced by the protocol.
+
+Proponents of off-chain governance feel that all of the above-mentioned stakeholders have a role in
+governing the system and that to move decisions on-chain where, for instance, node software is
+automatically upgraded once a change is decided, is to deprive one or more such stakeholders (in
+this case, node operators) of their role in the governance process. They feel that blockchain
+governance today is more an art than a science and that attempting to write governance processes in
+code today is risky as a result. In particular, what happens if governance is written on-chain and
+later a bug is discovered or the system comes under attack, requiring human intervention? This human
+intervention is itself a form of off-chain governance.
+
+On the other hand, proponents of on-chain governance point to deficiencies in current off-chain processes. For example, various scenarios can be described where the slow responsiveness of the existing off-chain governance paradigm may pose problems. For example, fast-acting, malicious smart contracts may become the subject of ethical concerns and face calls for the community to alter or even terminate them (“blockchain censorship”). In the case of “the DAO hack of 2016” the community was driven to undertake a contentious hard-fork due to what was widely perceived as a malicious smart contract. Other such contracts could cause serious damage, to society and to the blockchain itself, before existing governance processes were able to act. On-chain governance systems could pre-empt such situations by increasing responsiveness to fast-acting on-chain problems whilst also avoiding the extremes of contentious forks.
+
+===== Case study: Bitcoin
+
+The governance of the Bitcoin blockchain is perhaps the most well-known example of both the
+strengths and weaknesses of off-chain governance. The Bitcoin protocol contains no mechanism to make
+or implement decisions automatically, so all changes must flow through the BIP ("Bitcoin Improvement
+Proposal") process. This process involves developers proposing changes, writing the code to
+implement those changes and tests to test them, analyzing the impact of those changes, and
+discussing the changes with other core developers. A change can only be made to the core Bitcoin
+protocol once the core developers unanimously agree to implement it.
+
+Due to the length and complexity of this process, as well as the fact that it requires unanimity
+among a large group of stakeholders, large changes to the Bitcoin protocol happen extremely
+infrequently. This is both a strength and a weakness of Bitcoin governance. It's a strength because
+it leads to stability: Bitcoin doesn't change very often so one may safely assume that it will look
+quite similar in one year or five years to the Bitcoin of today. It also leads to security. The less
+you change, the less chance you introduce a bug or new attack vector. It's also a weakness because
+it means Bitcoin is slow to respond to threats, congestion, and competition from newer protocols
+such as Ethereum.
+
+As one example, debate has raged in the Bitcoin community for many years about increasing the size
+of each block, which has been set to 1mb since the genesis block. In late 2017 the Bitcoin network
+became extremely congested with nearly every block completely full and average transaction fees
+rising as high as hundreds of dollars. Many Bitcoin community members feel that increasing the size
+of such blocks would alleviate this congestion. However, other community members feel that to do so
+would risk further centralizing the Bitcoin network, since only more powerful computers, owned and
+operated by large, centralized parties, would be able to handle the added load of larger blocks.
+Since the community has been unable to reach consensus, the block size has not been changed. This is
+one factor that led to a hard fork and the creation of the Bitcoin Cash blockchain, with larger
+block sizes, in 2017.
+
+==== On-chain governance
+
+In contrast to those who believe in off-chain governance, proponents of on-chain governance feel
+that off-chain governance, as in the case of Bitcoin, is too slow or inefficient. They feel that,
+just as with web and mobile applications, it should be easy to upgrade software to add new features,
+fix bugs, and increase efficiency. For this reason, they have proposed blockchain protocols with
+built-in voting mechanisms for allowing changes and upgrades, and software that can automatically
+upgrade itself.
+
+While on the surface such systems may sound attractive, they face a number of unsolved challenges.
+Who makes the decision to approve a change and upgrade the software? See [Community and consensus]
+below for more on the challenges of finding consensus among the community. Assuming the voting is
+based on token holdings (one token, one vote), these systems are subject to a form of plutocracy
+where the wealthy, i.e. those who hold the most tokens, wield the greatest influence. As mentioned
+above, they also face the challenge of how to respond in case of bugs or threats. What happens if a
+malicious change makes it through the approval process?
+
+===== Case study: Tezos
+
+The governance mechanism of the Tezos blockchain stands in stark contrast to that of Bitcoin. Rather
+than requiring developers to propose, discuss, and implement changes off-chain as described above,
+Tezos contains a mechanism which allows the protocol and all core code to be upgraded automatically.
+A developer may submit such a change and Tezos coinholders vote on the change. If the change is
+approved it's automatically added to the protocol and broadcast to all nodes.
+
+The Tezos network has not launched yet, but it is a fascinating experiment in blockchain governance
+and time will tell whether the idea succeeds.
+
+==== Layer one versus layer two
+
+It is important to note that blockchain governance mechanisms may be implemented either at layer one
+or at layer two. Layer one refers to the core consensus protocol that all nodes implement: the
+process by which they come to consensus on which blocks to add to the chain. Layer two refers to
+software that does not require changes to the consensus protocol but are rather built on top of it
+(hence the name "layer two").
+
+The Tezos upgrade mechanism described above is an example of layer one governance, since it allows
+changes to the consensus protocol itself.
+
+In contrast, layer two governance mechanisms may be implemented as smart contracts, as in Ethereum,
+that run on the core protocol. Imagine a smart contract that charges its users a fee for transacting
+with it. For example, 1% of all of the funds it receives may go into a collective pool of funds that
+its users can vote on how to allocate. This is a simple example of a DAO, a decentralized autonomous
+organization.
+
+==== Decentralized autonomous organizations (DAOs)
+
+A DAO is a set of one or more smart contracts that govern the use of a set of resources where there
+are at least two stakeholders participating in the governance of those resources. You can think of a
+DAO as a "mini blockchain" of sorts: control of the resources is governed on-chain and the DAO does
+not contain a consensus mechanism of its own (since it's built on top of an existing blockchain
+consensus mechanism).
+
+One way to think of a DAO is as a transparent corporation. Just as a corporation is its own legal
+entity, has stakeholders, and controls resources, a DAO is its own blockchain entity, has
+stakeholders, and controls resources. The difference is that the full set of stakeholders, their
+stake, and all votes and decisions are published to the blockchain and publicly visible.
+
+The most well-known DAO project, known as The DAO, launched in May 2016 on the Ethereum blockchain.
+It was a form of decentralized venture capital fund where all tokenholders could vote on which
+projects it would invest in. Less than a month after its launch, an attacker was able to exploit a
+bug in its code and steal a large portion of its funds, which ultimately led to a hard fork and the
+creation of the Ethereum Classic blockchain (which opposed the fork to restore funds lost in the
+attack).
+
+Today, platforms such as Aragon and DAOstack allow organizations to automatically create and deploy
+DAOs representing various types of communities and projects including membership, voting, and
+allocation of funds.
+
+==== Community, consensus, voting, and the Sybil problem
+
+Core developers and others involved in designing, upgrading, and governing blockchains today often
+struggle with the question of understanding the diverse group of stakeholders, described above, and
+the interests and preferences of each of these groups. For public, large-scale blockchains like
+Ethereum they struggle with the question of how to build a system that is as fair and useful for as
+large a number of people as possible, both current users and potential future users.
+
+In pre-blockchain, centralized governance systems the most common tool for understanding the
+consensus of a community or "the will of the people" is the vote. Voting is possible because there
+is a single, definitive list of stakeholders, whether a government voting registry or the list of
+shareholders in a corporation. Creating and managing such a definitive list must be done in a
+centralized fashion: a government can check someone's identification, make sure they're not already
+registered to vote elsewhere, and then add them to the registry.
+
+In the decentralized world of the blockchain there is no single, centralized, trusted party that can
+perform this sort of check or maintain such a registry. This makes it very difficult to know "the
+will of the people." In most blockchains including Bitcoin and Ethereum users are identified by
+pseudonymous accounts rather than via some "real world" identity such as a name or an identification
+number recognized by some government. For this reason, one user can create any number of such
+pseudonymous accounts at little or no cost. This allows them to gain disproportionately large
+influence in a vote. This is known as the "Sybil problem," and such an attack on a consensus
+mechanism is known as a "Sybil attack."
+
+There are various solutions to the Sybil problem. The proof of work algorithms used in Bitcoin and
+Ethereum are the best-known examples in the blockchain world: require a user to perform a certain
+amount of work in a way that is computationally verifiable before allowing them to participate in a
+consensus process, thereby limiting the number of participants in the process and ensuring that each
+is committed to the process. This system works extremely well for securing the consensus protocol
+for a blockchain such as Bitcoin or Ethereum because there are clear economic incentives for doing
+so (i.e., miners receive block rewards) but it works less well in a voting scenario where there are
+no clear economic rewards for participation. Proof of work mining is expensive.
+
+Another approach is to use coin voting. While one user can create any number of pseudonyms, one
+bitcoin is one bitcoin and no one can create them out of thin air. If you weight someone's vote by
+the number of coins their account contains, you can therefore overcome the Sybil problem. The
+challenge with this approach is that it replaces the idea of "one person one vote" with "one coin
+one vote," which is the definition of plutocracy, or rule by the wealthy. Many stakeholders in
+blockchain do not believe such a system accurately or fairly represents "the will of the people."
+
+Due to the lack of such robust consensus mechanisms, many decision makers rely upon dialog on social
+media such as Twitter and Reddit to get the pulse of the community sentiment. This is also a
+suboptimal approach since social media are susceptible to the Sybil problem and generally attract
+only the loudest voices for or against a particular proposal.
+
+Finding better signals to accurately gauge community consensus is an ongoing, highly-important
+challenge of blockchain governance today.
+
+==== The power of the fork
+
+The ultimate tool in the toolbox of blockchain governance is the fork. The fork is a powerful
+mechanism by which a subset of any community can choose to exit the larger community and form a
+smaller community united by a set of values or beliefs that differ from those of the parent
+community. Forking is possible in the blockchain world because the resources controlled by the
+blockchain are _non-contentious_: one can easily make a copy of the code governing the blockchain,
+and of the blockchain ledger itself, without directly impacting the original blockchain and both can
+subsequently coexist.
+
+Blockchains such as Bitcoin and Ethereum have forked many times and will continue to fork as long as
+they exist. One high-profile example, described above, is the Bitcoin Cash fork that occurred in
+August 2017. A subset of the Bitcoin community became frustrated with the small block sizes and
+associated high fees involved with Bitcoin transactions and with the lack of consensus to increase
+the block size and decided to create a fork with larger blocks and therefore lower fees. They felt
+that such a change was necessary to realize their vision of a Bitcoin that could be used to make
+small, daily purchases such as buying a cup of coffee, which had become impossible in the parent
+chain due to the high transaction fees.
+
+Another such example is Ethereum Classic. After the decision was made to restore funds stolen from
+The DAO in June 2016, a subset of the Ethereum community, valuing immutability above funds
+restoration, decided not to adopt the change allowing funds restoration and thus became a new
+network known as Ethereum Classic.
+
+The fork is the "magic power" of blockchain governance. Imagine if you disagree with the monetary
+policy of the country you live in, or that you disagree with a newly-elected leader. Instead of
+being forced to choose between participating in the existing governance system or rebelling against
+it, you could pursue a third path, allowing you to join a portion of the community in subscribing to
+a modified system of governance in a conflict-free, bloodless fashion. Needless to say such an idea
+is not possible in physical world governance, but it's what make blockchain governance so flexible
+and responsive to the needs of its stakeholders. Any portion of the community can choose to fork at
+any time _without anyone's permission._
+
+One interesting question in the case of a fork is, "Which chain is the true chain?" For instance,
+after the Bitcoin Cash fork described above, proponents of Bitcoin Cash in fact believed that their
+version of Bitcoin was truer to the original Bitcoin vision and should therefore be referred to as
+Bitcoin (the other chain to be referred to as "Bitcoin Core"). As with blockchain governance itself,
+this question involves a large, diverse group of stakeholders coming to consensus. Parties such as
+exchanges, which have to give a label to each fork, wield disproportionate sway, and in the case of
+Bitcoin Cash they opted to label the fork "Bitcoin Cash" and continue to refer to the parent chain
+as "Bitcoin." The exact opposite happened in the case of Ethereum in June 2016: after a larger
+portion of the community decided to hard fork to restore funds lost in The DAO attack, the community
+came to the consensus that the newly-created fork should retain the "Ethereum" name and the original
+chain become known henceforth as "Ethereum Classic."
+
+Note that forks in the case of simple ledgers such as Bitcoin are much simpler than a fork of a
+network that includes many complex applications such as Ethereum. Were Ethereum to fork today, a
+large number of applications would suddenly exist on two different chains and may need to decide to
+support only one chain. Two examples are stable coins and non-fungible tokens (NFTs). A stable coin
+is a token that's pegged to an asset such as the US Dollar. If one stable coin is worth $1 prior to
+a fork, and after a fork the account holder now has two such coins, is each coin worth $1? Is one
+coin worth $0.75 and the other $0.25? In the case of NFTs, if an account holder holds a token
+representing a real-world asset such as a unique piece of art, after a fork they now hold two such
+tokens--but there is still only one piece of art. There are no simple answers to such questions and
+there is a host of related legal problems that remain to be worked out.
+
+A final note on forks: the process by which blockchains with off-chain governance, such as Bitcoin
+and Ethereum, upgrade their core protocols is known as forking since it requires making
+backwards-incompatible changes to the protocol. Such upgrade forks may or may not result in a fork
+of the ledger, as described above, depending upon whether the community has reached consensus about
+the contents of the upgrade fork. See the section on Contentious forks below for more on this topic.
+
+"Forking" may also refer to making a copy of a codebase without forking the ledger.
+
+=== Ethereum governance today
+
+Ethereum is a Nakamoto consensus-compatible blockchain governed primarily off-chain. In these ways
+it is not dissimilar from Bitcoin, but its governance norms and processes are in fact quite
+different from those of Bitcoin. What sets Ethereum governance apart from that of other blockchains
+such as Bitcoin and Tezos, described above? Whereas Bitcoin is governed extremely conservatively and
+backwards-incompatible changes are extremely rare, the ethos of Ethereum governance is closer to
+that famously expoused by Facebook: "Move fast and break things." In this way, its roadmap and
+governance are far more aggressive than the more conservative processes that govern Bitcoin.
+
+While still largely informal, Ethereum governance does consist of several distinct groups of
+stakeholders and processes that have been followed for some time. Let's look at how they differ from
+those of Bitcoin and other blockchains.
+
+==== Stakeholders
+
+Ethereum has a very similar set of stakeholders to that described above in <<stakeholders>>, with a
+few notable differences.
+
+* *Miners and validators*: The Ethereum blockchain today runs on a consensus mechanism called
+<<proof of work>> but will soon transition to a hybrid protocol that overlays <<proof of stake>> on
+top of the existing mechanism. Later, it will likely transition entirely to proof of stake. Security
+in proof of work is provided by stakeholders called miners, but in proof of stake the stakeholders
+that provide security are instead called validators. Proof of stake validators have many of the same
+incentives as miners in proof of work--to participate honestly in the consensus process and collect
+rewards for doing so--but whereas mining requires spending fiat currency to buy mining hardware and
+pay for electricity, proof of stake instead requires staking a blockchain's native currency, ether
+in the case of Ethereum. For this reason, their incentives may be slightly different: for one thing,
+since they are required to hold large amounts of ether and lock that ether for months, they may be
+more incentivized than miners to see the value of ether rise. See <<proof of stake>> for more
+information on the process of validation.
+
+* *Application developers:* Whereas Bitcoin is a relatively simplistic distributed ledger, Ethereum
+allows developers to build and deploy applications of arbitrary complexity known as "Dapps"
+(decentralized applications). Developers of such applications running on Ethereum are incentivized
+to keep fees low and to keep network utilization down so that users of their application can
+interact with it cheaply and easily. They also want the Ethereum network to scale so that it can
+handle greater load. Note that this puts them at odds with miners, who want higher fees and fuller
+blocks. Dapp developers may also want to add extra features to Ethereum to enable a broader range of
+applications to be developed and run on the network.
+
+==== Process
+
+The current, overall Ethereum governance process consists of a set of interlocking processes which
+enfranchise and take into consideration the inputs of a wide array of Ethereum stakeholders. These
+components are described in detail in the sections that follow.
+
+image::../images/governance_process.png[]
+
+[3]
+
+==== EIPs
+
+The EIP ("Ethereum Improvement Proposal") process is the most formalized part of the Ethereum
+governance process today. All EIPs live on Github at https://github.com/ethereum/eips and anyone
+with a Github account is welcome to submit an EIP. EIPs should conform to a standard format and must
+belong to one of several tracks. The entire process is documented in EIP-1 here:
+
+https://eips.ethereum.org/EIPS/eip-1
+
+As described in this document:
+
+* A *standard track EIP* describes any change that affects most or all Ethereum implementations,
+such as a change to the the network protocol, a change in block or transaction validity rules,
+proposed application standards/conventions, or any change or addition that affects the
+interoperability of applications using Ethereum.
+* An *Informational EIP* describes an Ethereum design issue, or provides general guidelines or
+information to the Ethereum community, but does not propose a new feature
+* A *Meta EIP* describes a process surrounding Ethereum or proposes a change to (or an event in) a
+process.
+
+Once an EIP has been proposed, it is initially given a "Draft" status and may pass through several
+rounds of reviews and request for improvement before it meets the standards of a finalized EIP and
+gets moved to "Accepted" or "Final" status. Set of designated EIP Editors are responsible for
+reviewing submitted EIPs, requesting changes, and eventually, if they are satisfied that a draft
+meets all of the requirements for a finalized EIP, marking that EIP as Accepted and merging it into
+the repository. Note that marking an EIP as Accepted and merging it does not imply that the editor
+who performed the merging supports the EIP in question, nor that it will definitely be implemented.
+It merely means that it meets the technical requirements to be considered as an EIP.
+
+image::../images/eip_process.png[]
+The EIP process, from EIP-1
+
+In order for a Standard track EIP to actually be implemented, several other things must happen.
+After being accepted and merged, it may be discussed in the All Core Devs meetings (see next
+section) if someone (such as the author) is willing to champion that EIP. If there is consensus
+among the core developers that it should be implemented, it's marked as Final and implementation
+work can begin.
+
+Remember that even after this process has taken place, as described above, full node operators still
+have the option of whether or not to run the new code, giving them one final veto in the process.
+
+==== All Core Devs
+
+Ethereum core developers hold a meeting known as the All Core Devs meeting regularly, typically
+every two weeks. Any Ethereum core researcher or developer, i.e., someone working on the core
+Ethereum protocol or an Ethereum client, is invited to join these calls and as of publication they
+typically attract 20-30 attendees.
+
+The agenda for a call is published ahead of time and anyone may propose an addition
+or a change to the meeting agenda in the following Github repository:
+
+https://github.com/ethereum/pm
+
+The calls are publicly livestreamed and recorded, and the recording and notes are posted publicly in
+the same repository after each call. The purpose of the call is for the various development teams to
+update one another on their work, ask questions, and discuss recent EIPs. If there is support for an
+EIP and consensus among the core developers that a particular proposal should be implemented, it is
+marked as "Final" and the various teams add the change to their client software. Tests are also
+written to ensure that all clients implement the change (see <<Tests>>).
+
+Throughout most of Ethereum's history the topics discussed have been largely non-controversial and
+the core developers have been able to agree unanimously on which proposals should be finalized and
+implemented. However, a small number of topics (see <<Funds recovery>>) have been more controversial
+and required some degree of ongoing debate and community involvement to reach consensus.
+
+==== Tests
+
+There is no single, definitive "reference implementation" of Ethereum. Instead, many different teams
+of developers each create their own implementation of the protocol. This is by design since it
+limits the impact that a bug or vulnerability in any one particular implementation may have upon the
+overall network. Different implementations may also have different strengths and weaknesses: one may
+be better for mining, for instance, while another may be better for data extraction.
+
+Given the large number of different client implementations it is absolutely essential that each
+client implement precisely the same Ethereum protocol. If one client believes that a particular
+transaction is valid while another believes that it is invalid, for instance, it will result in a
+hard fork of the Ethereum network and ledger.
+
+In order to ensure that all client implementations agree about the protocol and to avoid issues such
+as this, the core developers maintain a comprehensive suite of thousands of tests which can be found
+in this repository:
+
+https://github.com/ethereum/tests
+
+Tests are updated or new tests written to correspond with every protocol change via the EIP process.
+All client implementations are required to pass all tests.
+
+Note that, in spite of this comprehensive test suite, mistakes can still happen. The network briefly
+forked after an upgrade due to a disagreement in consensus between two major clients in November
+2016.[5]
+
+==== The roadmap
+
+The Ethereum roadmap is an informal but nevertheless influential part of the governance process. It
+is heavily influenced by the input of core researchers such as Vitalik Buterin. The roadmap sets the
+long-term vision for the Ethereum protocol and network including, for instance, the transition from
+proof of work to proof of stake (Casper), scaling initiatives such as sharding, and the transition
+from EVM to the ewasm execution engine based on web assembly.
+
+The roadmap is laid out in the Ethereum wiki[5], in blog posts[6], in papers such as the Ethereum
+2.0 Mauve Paper published by Vitalik Buterin in late 2016 [7], and in talks such as the "Ethereum
+2.0" talk delivered by Vitalik in November 2017[8].
+
+==== Hard forks
+
+There is no mechanism in Ethereum to upgrade or otherwise change the protocol without a hard fork.
+In practice what this means is that every time a proposal makes it through the EIP process, becomes
+finalized, and gets implemented in the various clients, it must subsequently be scheduled for
+inclusion in an upcoming hard fork. The Ethereum core developers have historically scheduled
+periodic hard forks to include various protocol upgrades and improvements. The hard fork process
+requires coordination among many groups of stakeholders, as all must upgrade their client software
+before the designated block number of the fork or risk winding up on an unsupported fork where their
+transactions will not have effect on the new main chain.
+
+==== Contentious hard forks
+
+As described above in <<All core devs>>, this upgrade process has historically been non-contentious
+in all but one case, the hard fork in June 2016 that restored the funds stolen from The DAO. Because
+the changes made in this hard fork were contentious and a significant portion of the community did
+not agree with the change, the core developers gave node operators the choice of whether or not to
+activate the change using a command-line flag. After the designated fork block number had passed,
+node operators who chose not to activate the change found themselves on a different Ethereum branch
+than those that had. This branch subsequently became known as Ethereum Classic and continues to
+operate alongside Ethereum today. Users who held ether before the fork subsequently held the same
+balance of ether on both chains after the fork.
+
+Implementation of a contentious hard fork may entail more work for core developers than that of a
+non-contentious hard fork due to the need for replay protection and networking changes to ensure
+that the two branches can coexist without impacting one another.
+
+==== Funds recovery
+
+The only truly contentious category of EIP to date has been EIPs involving funds recovery. This
+includes the change discussed above that restored funds stolen from The DAO as well as more recent
+proposals such as EIP-867 which lays out a standardized procedure for funds recovery and EIP-999
+which proposes a one-off recovery of funds lost due to a bug in a multisig wallet contract.
+
+Proponents of funds recovery argue that, in cases where it's absolutely clear who the funds belong
+to and where funds were lost due to human error, there is an ethical case for returning those funds
+to their owners. The funds are also likely to be reinvested into the ecosystem, and refusing to
+recover funds under any circumstances may discourage innovation on Ethereum. Opponents of funds
+recovery feel that all users are responsible for their use of Ethereum including auditing the code
+for contracts where they store their funds and that it is not the responsibility of the core
+developers or of the community to fix someone else's mistakes. To do so would be to detract from the
+very thing that makes Ethereum, like other blockchains, better than real-world systems of
+governance: that no one receives special treatment, that all must play by the same rules, and that
+all transactions are final.
+
+This contentious question has already divided the Ethereum community and led to one ledger fork in
+the past.
+
+==== Difficulty bomb
+
+When faced with the decision of whether and when to implement a hard fork to upgrade the protocol,
+core developers are usually choosing between the stability of the status quo and the hassle and
+risks associated with a hard fork that puts new changes into production. It is easy to argue that
+"things are working well enough already" and that maybe changes are not necessary or could be
+postponed. As described above, Bitcoin, for instance, has not hard forked for a protocol upgrade in
+years. //// TODO: verify and cite this ////
+
+Ethereum introduced a clever mechanism to incentivize all stakeholders to come to consensus on
+required protocol changes: a difficulty time bomb known as Ice Age. Originally introduced in
+September 2015, Ice Age was designed to kick in approximately 11 months later and begin increasing
+the mining difficulty exponentially, gradually slowing the production of blocks and requiring a hard
+fork to either extend the bomb or replace it entirely. This technique is known as "planned
+obsolence," requiring all parties to upgrade or face the prospect of being stuck on an unusable
+blockchain.
+
+The decision was made to postpone the difficulty bomb and it was pushed back by approximately one
+year as part of the Byzantium hard fork in October 2017, causing average block times to fall from 30
+seconds to 14 seconds and causing a huge drop in mining difficulty.[9]
+
+image::../images/difficulty.png[]
+image::../images/block_time.png[]
+
+==== Setting gas limits
+
+While the vast majority of Ethereum governance occurs off-chain, as described above, one exception
+to this rule is the per-block gas limit. As described in <<Gas>>, miners have the ability to nudge
+the per-block gas limit in either direction by a factor of 1/1024 per block produced. In December
+2017, in response to a sudden increase in network utilization, miners coordinated to move the gas
+limit from 6.7M gas per block to 8M gas per block without a hard fork and without intervention on
+the part of the core developer, All Core Devs, or any of the other governance mechanisms described
+above.
+
+image::../images/gas_limit.png[]
+
+=== The future of Ethereum governance
+
+Just as the Ethereum project itself is relatively new and still evolving, so the governance norms
+and processes described in this chapter are new and constantly evolving as well. To date Ethereum
+governance has been largely informal and undocumented but is nevertheless generally viewed as
+legitimate and has enabled the network to grow and thrive. As Ethereum continues to mature and scale
+and adds many new users and new categories of stakeholders, the existing, informal governance
+processes may give way over time to a more formalized system of governance.
+
+One example of a new governance initiative is the Fellowship of Ethereum Magicians (FEM), an open
+technical committee announced in February 2018 by Jamie Pitts and Greg Colvin. Modeled after
+technical governance committees such as the Internet Engineering Task Force (IETF), FEM is intended
+as a forum for developers to discuss the merits of various technical proposals. FEM plans to hold
+in-person gatherings throughout the year in various countries.
+
+Questions have arisen about whether the existing governance processes or the FEM are well-suited to
+handle the sort of ethical, philosophical, political, and economic questions raised by proposals
+such as <<Funds recovery>>. As Ethereum scales, governance mechanisms will have to find a way to
+scale with it.
+
+[[references_sec]]
+=== References
+
+[1] Governance: A Very Short Introduction, Mark Bevir, Oxford University Press, 2012 +
+[3] Vlad Zamfir, BeyondBlock Taipei 2017 talk, https://youtu.be/9RtSod8EXn4 +
+[4] https://blog.ethereum.org/2016/11/25/security-alert-11242016-consensus-bug-geth-v1-4-19-v1-5-2/ +
+[5] https://github.com/ethereum/wiki/wiki/Releases +
+[6] https://blog.ethereum.org/2016/12/04/ethereum-research-update/ +
+[7] https://cdn.hackaday.io/files/10879465447136/Mauve%20Paper%20Vitalik.pdf +
+[8] https://www.youtube.com/watch?v=9RtSod8EXn4&t=188m38s +
+[9] https://blog.ethereum.org/2017/10/12/byzantium-hf-announcement/ +
+[10] https://medium.com/@jpitts/an-open-invitation-to-participate-in-a-fellowship-of-ethereum-magicians-982e6143db4f

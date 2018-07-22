@@ -1,35 +1,35 @@
 [[keys_addresses]]
 == Keys, Addresses
 
-((("cryptography", "defined")))((("cryptography", see="also keys and addresses")))One of Ethereum's foundational technologies is _cryptography_, which is a branch of mathematics used extensively in computer security. Cryptography means "secret writing" in Greek, but the science of cryptography encompasses more than just secret writing, which is referred to as encryption. Cryptography can also be used to prove knowledge of a secret without revealing that secret (digital signature), or prove the authenticity of data (digital fingerprint). These types of cryptographic proofs are the mathematical tools critical to Ethereum and most blockchain systems, being extensively used in Ethereum applications. ((("encryption")))((("encryption", see="also keys and addresses")))Ironically, encryption is not an important part of Ethereum, as its communications and transaction data are not encrypted and do not need to be encrypted to secure the system. In this chapter we will introduce some of the cryptography used in Ethereum to control ownership of funds, in the form of keys and addresses.
+((("cryptography", "defined")))((("cryptography", see="also keys and addresses")))One of Ethereum's foundational technologies is _cryptography_, which is a branch of mathematics used extensively in computer security. Cryptography means "secret writing" in Greek, but the study of cryptography encompasses more than just secret writing, which is referred to as encryption. Cryptography can, for example, also be used to prove knowledge of a secret without revealing that secret (e.g. with a digital signature), or to prove the authenticity of data (e.g. with digital fingerprints, also known as "hashes"). These types of cryptographic proofs are mathematical tools critical to the operation of the Ethereum platform (and, indeed, arguable all blockchain systems), and are also extensively used in Ethereum applications. ((("encryption")))((("encryption", see="also keys and addresses")))Note that, at the time of publication, no part of the Ethereum protocol involves encryption; that is to say all communication with the Ethereum platform and between nodes (including transaction data) are unencrypted and can (necessarily) be read by anyone. This is so everyone can verify the correctness of state updates and consensus can be reached. In the future, advanced cryptographic tools, such as "zero knowledge proofs" and "homomorphic encryption" will be available that will allow for some encrypted calculations to be recorded on the blockchain while still having consensus possible, but (while prevision has been made for them) they have yet to be deployed. In this chapter we will introduce some of the cryptography used in Ethereum, namely "public key cryptography", which is used to control ownership of funds, in the form of private keys and addresses.
 
 [[keys_addresses_intro]]
 === Introduction
 
-Ethereum has two different types of accounts, which can own and control ether: _Externally Owned Accounts_ (EOA) and _Contracts_. In this section we will examine the use of cryptography to establish ownership of ether by externally owned accounts, i.e. private keys.
+As we saw earlier in the book, Ethereum has two different types of accounts: _Externally Owned Accounts_ (EOA) and _Contracts_. In this section we will examine the use of cryptography to establish ownership of ether by externally owned accounts, i.e. private keys. Private keys enable many of the interesting properties of Ethereum, including decentralized trust and control, and ownership attestation.
 
-((("digital keys", see="keys and addresses")))((("digital signatures", "purpose of")))Ownership of ether in EOAs is established through _digital keys_, _Ethereum addresses_, and _digital signatures_. The digital keys are not actually stored on the blockchain or transmitted on the Ethereum network, but are instead created and stored by users in a file, or simple database, called a _wallet_. The digital keys in a user's wallet are completely independent of the Ethereum protocol and can be generated and managed by the user's wallet software without reference to the blockchain or access to the internet. Digital keys enable many of the interesting properties of Ethereum, including decentralized trust and control, and ownership attestation.
+((("private keys", see="keys and addresses")))((("digital signatures", "purpose of")))Ownership of ether in EOAs is established through digital _private keys_, _Ethereum addresses_, and _digital signatures_. The private keys are at the heart of all user interaction with Ethereum. In fact, account addresses and digital signatures are derived directly from private keys: a private key uniquely determines the single Ethereum address (which we also refer to as 'an account') which is used on-chain to identify access to funds and smart contract operations. That access is gained using digital signatures, which are also created using the private key. While the Ethereum specification dictates the exact form a private key must take, private keys are not used directly in the platform's protocol in any way. That is to say that private keys should remain private and never appear in messages passed to the network nor should they be stored on-chain; it is the derived addresses and signatures that are used in the protocol. For more information on how to keep private keys safe and secure, see <<ethereum_clients_chapter>>. Ethereum wallet apps often use several private keys behind-the-scenes, which arguably adds to security. They can do this easily, partly because the generation of private keys doesn't need any connection to, or even knowledge of, the Ethereum blockchain.
 
-Ethereum transactions require a valid digital signature to be included in the blockchain, which can only be generated with a secret key; therefore, anyone with a copy of that key has control of the ether. The digital signature in an Ethereum transaction proves the true owner of the funds.
+Ethereum transactions require a valid digital signature to be included in the blockchain, which, as we've touched on, can only be generated with a private key; therefore, anyone with a copy of that private key has control of that account and any Ether it holds. Assuming a user keeps their private key safe, the derived digital signatures in Ethereum transactions prove the true owner of the funds.
 
-((("public and private keys", "key pairs")))((("public and private keys", see="also keys and addresses")))Digital keys come in pairs consisting of a private (secret) key and a public key. Think of the public key as similar to a bank account number and the private key as similar to the secret PIN, that provides control over the account. These digital keys are very rarely seen by the users of Ethereum. For the most part, they are stored inside the wallet file and managed by Ethereum wallet software.
+((("public and private keys", "key pairs")))((("public and private keys", see="also keys and addresses")))In PKC systems, such as that used by Ethereum, keys come in pairs consisting of a private (secret) key and a public key. Think of the public key as similar to a bank account number and the private key as similar to the secret PIN; it is the later that provides control over the account, and the former that identifies it for others. The private keys themselves are very rarely seen by the users of Ethereum; for the most part, they are stored (in encrypted form) in special files and managed by Ethereum wallet software.
 
-In the payment portion of an Ethereum transaction, the intended recipient is represented by an _Ethereum address_, which is used in the same way as the beneficiary name on a check (i.e., "Pay to the order of"). In most cases, an Ethereum address is generated from and corresponds to a public key. However, not all Ethereum addresses represent public keys; they can also represent contracts, as we will see in <<contracts>>. The Ethereum address is the only representation of the keys that users will routinely see, because this is the part they need to share with the world.
+In the payment portion of an Ethereum transaction, the intended recipient is represented by an _Ethereum address_, which is used in the same way as the beneficiary account details of a bank transfer. As we will look into in more detail below, an Ethereum address for an EOA is generated from the public key portion of a PC key pair. However, not all Ethereum addresses represent public-private key pairs; they can also represent contracts, which, as we will see in <<contracts>>, are not backed by private keys.
 
-First, we will introduce cryptography and explain the mathematics used in Ethereum. Next, we will look at how keys are generated, stored, and managed.  Finally, we will review the various encoding formats used to represent private and public keys, and addresses.
+In the rest of this chapter, we will first explore basic cryptography in a bit more detail and explain the mathematics used in Ethereum. Next, we will look at how keys are generated, stored, and managed.  Finally, we will review the various encoding formats used to represent private keys, public keys, and addresses.
 
 [[pkc]]
 === Public key cryptography and cryptocurrency
 
-((("keys and addresses", "overview of", "public key cryptography")))((("digital currencies", "cryptocurrency")))Public key cryptography is a core concept of modern day information security. First publicly invented in the 1970s by Martin Hellman, Whitfield Diffie and Ralph Merkle, it was a monumental breakthrough which incited the first big wave of public interest into the field of cryptography. Before the 70s, strong cryptographic knowledge was held under governmental control with little public research untill the open publication of public key cryptography research.
+((("keys and addresses", "overview of", "public key cryptography")))((("digital currencies", "cryptocurrency")))Public key cryptography (also called "asymmetric cryptography") is a core concept of modern day information security. First publicly invented in the 1970s by Martin Hellman, Whitfield Diffie and Ralph Merkle, it was a monumental breakthrough which incited the first big wave of public interest into the field of cryptography. Before the 70s, strong cryptographic knowledge was held under governmental control with little public research until the open publication of public key cryptography research.
 
-Public key cryptography uses unique keys that are used to secure information. These unique keys are based on mathematical functions that have a unique property: they are easy to calculate in one direction, but very difficult to calculate in the inverse direction. Based on these mathematical functions, cryptography enables the creation of digital secrets and unforgeable digital signatures which are secured by the laws of mathematics.
+Public key cryptography uses unique keys that are used to secure information. These unique keys are based on mathematical functions that have a very special property: they are easy to calculate in one direction, but very difficult to calculate in the inverse direction. Based on these mathematical functions, cryptography enables the creation of digital secrets and unforgeable digital signatures which are secured by the laws of mathematics.
 
-For example, multiplying two large prime numbers together is trivial. But given the product of two large primes, it is very difficult to find the prime factors (a problem called _prime factorization_). Let's say I present the number 6895601 and tell you it is the product of two primes. Finding those two primes is much harder than it was for me to multiply them to produce 6895601.
+For example, multiplying two large prime numbers together is trivial. But given the product of two large primes, it is very difficult to find the prime factors (a problem called _prime factorization_). Let's say I present the number 8018009 and tell you it is the product of two primes. Finding those two primes is much harder than it was for me to multiply them to produce 8018009.
 
-Some of these mathematical functions can be inverted easily if you know some secret information. In our example above, if I tell you that one of the prime factors is 1931, you can trivially find the other one with a simple division: 6895601 / 1931 = 3571. Such functions are called _trapdoor functions_ because given one piece of secret information, you can take a shortcut that makes it trivial to reverse the function.
+Some of these mathematical functions can be inverted easily if you know some secret information. In our example above, if I tell you that one of the prime factors is 2003, you can trivially find the other one with a simple division: 8018009 / 2003 = 4003. Such "one way" functions are called _trapdoor functions_ because they are very difficult to invert, unless you are given a piece of secret information that can be used as a shortcut to reverse the function.
 
-Another category of mathematical functions that is useful in cryptography is based on arithmetic operations on an elliptic curve. In elliptic curve arithmetic, multiplication modulo a prime is simple but division is impossible (a problem known as the _discrete logarithm problem_). Elliptic curve cryptography is used extensively in modern computer systems and is the basis of Ethereum's (and other cryptocurrencies') digital keys and digital signatures.
+A more advanced category of mathematical functions that is useful in cryptography is based on arithmetic operations on an elliptic curve. In elliptic curve arithmetic, multiplication modulo a prime is simple but division (the inverse) is practically impossible. This is called the _discrete logarithm problem_ and there are currently no known trapdoors. _Elliptic curve cryptography_ is used extensively in modern computer systems and is the basis of Ethereum's (and other cryptocurrencies') use of private keys and digital signatures.
 
 [TIP]
 ====
@@ -47,45 +47,53 @@ https://en.wikipedia.org/wiki/Integer_factorization
 Discrete Logarithm:
 https://en.wikipedia.org/wiki/Discrete_logarithm
 
-Elliptic Curve Cryptography: https://en.wikipedia.org/wiki/Elliptic_curve_cryptography
+Elliptic Curve Cryptography:
+https://en.wikipedia.org/wiki/Elliptic_curve_cryptography
 ====
 
-In Ethereum, we use public key cryptography to create a key pair that controls access to ether and allows us to authenticate to contracts. The key pair consists of a private key, a unique public key, and are considered a "pair" because the public key is derived from the private key. The public key is used to receive funds and the private key is used to create digital signatures to sign transactions to spend the funds. Digital signatures are also used to authenticate owners or users of contracts, as we will see in <<contract_authentication>>.
+((("cryptography", "asymmetric")))((("digital signatures", "asymmetric cryptography and")))((("asymmetric cryptography")))In Ethereum, we use public key cryptography (also known as asymmetric cryptography) to create the public-private key pair we have been talking about in this chapter. They are considered a "pair" because the public key is derived from the private key. Together, they represent an Ethereum account by providing, respectively, a publicly accessible account handle (the address) and private control over access of any ether in the account and over any authentication the account needs when using smart contracts. The private key controls access by being the unique piece of information needed to create _digital signatures_, which are needed to sign transactions to spend any funds in the account. Digital signatures are also used to authenticate owners or users of contracts, as we will see in <<contract_authentication>>.
 
-There is a mathematical relationship between the public and the private key that allows the private key to be used to generate signatures on messages. This signature can be validated against the public key without revealing the private key.
-
-When spending ether, the current owner presents her public key and a signature (different each time, but created from the same private key) in a transaction. Through the presentation of the public key and signature, everyone in the Ethereum system can independently verify and accept the transaction as valid, confirming that the person transferring the ether owned them at the time of the transfer.
+A digital signature can be created to sign any message. For Ethereum transactions, it is the details of the transaction itself that is used as "the message". The mathematics of cryptography, and in this case, elliptic curve cryptography, provides a way for the message (i.e. the transaction details) to be combined with the private key to create a code that can only be produced with knowledge of the private key. That
+code is called the digital signature. Note that an Ethereum transaction is basically a request to access a particular account with a particular Ethereum address. When a transaction is sent to the Ethereum network in order to move funds or interact with smart contracts, it needs to be sent with a digital signature created with the private key corresponding to the Ethereum address in question. Elliptic curve mathematics means that _anyone_ can verify that a transaction is valid, by checking that the digital signature matches the transaction details _and_ the Ethereum address to which access is being requested. The verification doesn't involve the private key at all - that remains private. However, the verification process determines beyond doubt that the transaction could have only come from someone with the private key that corresponds to the public key behind the Ethereum address. This is the "magic" of public key cryptography.
 
 [TIP]
 ====
 ((("keys and addresses", "overview of", "key pairs")))In most wallet implementations, the private and public keys are stored together as a _key pair_ for convenience. However, the public key can be trivially calculated from the private key, so storing only the private key is also possible.
 ====
 
-.Why Use Asymmetric Cryptography (Public/Private Keys)?
-****
-((("cryptography", "asymmetric")))((("digital signatures", "asymmetric cryptography and")))((("asymmetric cryptography")))Why is asymmetric cryptography used in Ethereum? It's not used to "encrypt" (make secret) the transactions. Rather, the useful property of asymmetric cryptography is the ability to generate _digital signatures_. A private key can be applied to the digital fingerprint of a transaction to produce a numerical signature. This signature can only be produced by someone with knowledge of the private key. However, anyone with access to the public key and the transaction fingerprint can use them to _verify_ the signature. This useful property of asymmetric cryptography makes it possible for anyone to verify every signature on every transaction, while ensuring that only the owners of private keys can produce valid signatures.
-****
+[TIP]
+====
+There is no encryption as part of the Ethereum protocol, i.e. all messages that are sent as part of the operation of the Ethereum network can (necessarily) be read by everyone. As such, private keys are only used to create digital signatures for transaction authentication.
+====
 
 [[private_keys]]
 === Private keys
 
-((("keys and addresses", "overview of", "private key generation")))((("warnings and cautions", "private key protection")))A private key is simply a number, picked at random. Ownership and control over the private key is the root of user control over all funds associated with the corresponding Ethereum address, as well as access to contracts that authorize that address. The private key is used to create signatures that are required to spend ether by proving ownership of funds used in a transaction. The private key must remain secret at all times, because revealing it to third parties is equivalent to giving them control over the ether and contracts secured by that key. The private key must also be backed up and protected from accidental loss. If it's lost, it cannot be recovered and the funds secured by it are lost forever too.
+((("keys and addresses", "overview of", "private key generation")))((("warnings and cautions", "private key protection")))A private key is simply a number, picked at random. Ownership and control over the private key is the root of user control over all funds associated with the corresponding Ethereum address, as well as access to contracts that authorize that address. The private key is used to create signatures that are required to spend ether by proving ownership of funds used in a transaction. The private key must remain secret at all times, because revealing it to third parties is equivalent to giving them control over the ether and contracts secured by that private key. The private key must also be backed up and protected from accidental loss. If it's lost, it cannot be recovered and the funds secured by it are lost forever too. For more information on how to keep private keys safe and secure, see <<ethereum_clients_chapter>>.
 
 [TIP]
 ====
-The Ethereum private key is just a number. You can pick your private keys randomly using just a coin, pencil, and paper: toss a coin 256 times and you have the binary digits of a random private key you can use in an Ethereum wallet. The public key and address can then be generated from the private key.
+The Ethereum private key is just a number. One way to pick your private keys randomly is to simply use a coin, pencil, and paper: toss a coin 256 times and you have the binary digits of a random private key you can use in an Ethereum wallet (probably - see below). The public key and address can then be generated from the private key.
 ====
 
 [[generating_private_key]]
 === Generating a private key from a random number
 
-The first and most important step in generating keys is to find a secure source of entropy, or randomness. Creating an Ethereum private key is essentially the same as "Pick a number between 1 and 2^256^." The exact method you use to pick that number does not matter as long as it is not predictable or repeatable. Ethereum software uses the underlying operating system's random number generator to produce 256 bits of entropy (randomness). Usually, the OS random number generator is initialized by a human source of randomness, which is why you may be asked to wiggle your mouse around for a few seconds, or press random keys on your keyboard.
+The first and most important step in generating keys is to find a secure source of entropy, or randomness. Creating an Ethereum private key is essentially the same as "pick a number between 1 and 2^256^". The exact method you use to pick that number does not matter as long as it is not predictable or deterministic. Ethereum software uses the underlying operating system's random number generator to produce 256 random bits. Usually, the OS random number generator is initialized by a human source of randomness, which is why you may be asked to wiggle your mouse around for a few seconds, or press random keys on your keyboard. An alternative could be cosmic radiation noise on the computer's microphone channel.
 
-More precisely, the range of possible private keys is slightly less than 2^256^. The private key can be any number between +1+ and +n - 1+, where n is a constant (n = 1.158 * 10^77^, slightly less than 2^256^) defined as the order of the elliptic curve used in Ethereum (see <<elliptic_curve>>). To create such a key, we randomly pick a 256-bit number and check that it is less than +n - 1+. In programming terms, this is usually achieved by feeding a larger string of random bits, collected from a cryptographically secure source of randomness, into a 256-bit hash algorithm such as Keccak-256 or SHA256 (see <<cryptographic_hash_algorithm>>), which will conveniently produce a 256-bit number. If the result is less than +n - 1+, we have a suitable private key. Otherwise, we simply try again with another random number.
+More precisely, private keys can be any non-zero number up to a very large number slightly less than 2^256^ - a huge 78-digit number, roughly 1.158 * 10^77^. The exact number shares the first 38 digits with 2^256^ and is defined as the order of the elliptic curve used in Ethereum (see <<elliptic_curve>>). To create a private key, we randomly pick a 256-bit number and check that it is within the valid range. In programming terms, this is usually achieved by feeding an even larger string of random bits (collected from a cryptographically secure source of randomness) into a 256-bit hash algorithm such as Keccak-256 or SHA256 (see <<cryptographic_hash_algorithm>>), both of which will conveniently produce a 256-bit number. If the result within the valid range, we have a suitable private key. Otherwise, we simply try again with another random number.
+
+Note that the private key generation process is an off-line one; it does not require any communication with the Ethereum network, or indeed any communication with anyone at all. As such, in order to pick a number that no-one else will ever pick, it needs to be truly random. If you choose the number yourself, the chance someone else will try it (and then run off with your ether) is too high. Using a bad random number generator (like the pseudo-random +rand()+ function is most programming languages) is even worse, because it is even more obvious and even easier to replicate. Just like with passwords for online accounts, it needs to be unguessable. Fortunately, you never need to remember your private key, so you can take the best possible approach for picking your private key, namely true randomness.
+
+[TIP]
+====
+The size of Ethereum's private key space, (roughly 2^256^) is an unfathomably large number. It is approximately 10^77^ in decimal - that is a number with 77 digits. For comparison, the visible universe is estimated to contain 10^80^ atoms, i.e. there are almost enough private keys to give every atom in the universe an Ethereum account. If you pick a private key randomly, there is no conceivable way anyone will ever guess it or pick it themselves.
+====
+
 
 [WARNING]
 ====
-((("random numbers", "random number generation")))((("entropy", "random number generation")))Do not write your own code to create a random number or use a "simple" random number generator offered by your programming language. Use a cryptographically secure pseudo-random number generator (CSPRNG) with a seed from a source of sufficient entropy. Study the documentation of the random number generator library you choose to make sure it is cryptographically secure. Correct implementation of the CSPRNG is critical to the security of the keys.
+((("random numbers", "random number generation")))((("entropy", "random number generation")))Do not write your own code to create a random number or use a "simple" random number generator offered by your programming language. It is vital that you use a cryptographically secure pseudo-random number generator (such as +CSPRNG+) with a seed from a source of sufficient entropy. Study the documentation of the random number generator library you choose to make sure it is cryptographically secure. Correct implementation of the +CSPRNG+ library is critical to the security of the keys.
 ====
 
 The following is a randomly generated private key (k) shown in hexadecimal format (256 bits shown as 64 hexadecimal digits, each 4 bits):
@@ -94,12 +102,6 @@ The following is a randomly generated private key (k) shown in hexadecimal forma
 ----
 f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
 ----
-
-
-[TIP]
-====
-The size of Ethereum's private key space, (2^256^) is an unfathomably large number. It is approximately 10^77^ in decimal. For comparison, the visible universe is estimated to contain 10^80^ atoms.
-====
 
 
 [[pubkey]]
@@ -111,10 +113,10 @@ In simpler terms, an Ethereum public key is two numbers, joined together. These 
 
 [[WARNING]]
 ====
-MATH is about to happen! Don't panic. If you find it hard to read the previous paragraph, you can skip the next few sections. There are many tools and libraries that will do the math for you.
+MATH is about to happen! Don't panic. If you start to get lost at any point in the following paragraphs, you can skip the next few sections. There are many tools and libraries that will do the math for you.
 ====
 
-The public key is calculated from the private key using elliptic curve multiplication, which is irreversible: _K_ = _k_ * _G_, where _k_ is the private key, _G_ is a constant point called the _generator point_, and _K_ is the resulting public key. The reverse operation, known as "finding the discrete logarithm"—calculating _k_ if you know _K_—is as difficult as trying all possible values of _k_, i.e., a brute-force search.
+The public key is calculated from the private key using elliptic curve multiplication, which is practically irreversible: _K_ = _k_ * _G_, where _k_ is the private key, _G_ is a constant point called the _generator point_, _K_ is the resulting public key and "*" is the special elliptic curve "multiplication" operator. Note the elliptic curve multiplication is not like normal multiplication. It shares functional attributes with normal multiplication, but that is about it. For example, the reverse operation (which would be division for normal numbers), known as "finding the discrete logarithm" - i.e. calculating _k_ if you know _K_ - is as difficult as trying all possible values of _k_, i.e. a brute-force search that will likely take more time than this universe will allow for.
 
 In simpler terms: arithmetic on the elliptic curve is different from "regular" integer arithmetic. A point (G) can be multiplied by an integer (k) to produce another point (K). But there is no such thing as _division_, so it is not possible to simply "divide" the public key K by the point G to calculate the private key k. This is the one-way mathematical function described in <<pkc>>.
 
@@ -161,7 +163,7 @@ or
 \end{equation}
 ++++
 
-The _mod p_ (modulo prime number p) indicates that this curve is over a finite field of prime order _p_, also written as latexmath:[\( \mathbb{F}_p \)], where p = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, a very large prime number.
+The _mod p_ (modulo prime number p) indicates that this curve is over a finite field of prime order _p_, also written as latexmath:[\( \mathbb{F}_p \)], where p = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, which is a very large prime number.
 
 Because this curve is defined over a finite field of prime order instead of over the real numbers, it looks like a pattern of dots scattered in two dimensions, which makes it difficult to visualize. However, the math is identical to that of an elliptic curve over real numbers. As an example, <<ecc-over-F17-math>> shows the same elliptic curve over a much smaller finite field of prime order 17, showing a pattern of dots on a grid. The +secp256k1+ Ethereum elliptic curve can be thought of as a much more complex pattern of dots on an unfathomably large grid.
 
@@ -198,23 +200,23 @@ Type "help", "copyright", "credits" or "license" for more information.
 [[EC_math]]
 === Elliptic curve arithmetic operations
 
-A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of adding numbers is adding points on the curve. Once we have the addition operator, we can also define multiplication of a point and a whole number, such that it is equivalent to repeated addition.
+A lot of elliptic curve math looks and works very much like the integer arithmetic we learned at school. Specifically, we can define an addition operator, which instead of jumping along the number line is jumping to other points on the curve. Once we have the addition operator, we can also define multiplication of a point and a whole number, such that it is equivalent to repeated addition.
 
-Addition is defined such that given two points P~1~ and P~2~ on the elliptic curve, there is a third point P~3~ = P~1~ + P~2~, also on the elliptic curve.
+Elliptic curve addition is defined such that given two points P~1~ and P~2~ on the elliptic curve, there is a third point P~3~ = P~1~ + P~2~, also on the elliptic curve.
 
-Geometrically, this third point P~3~ is calculated by drawing a line between P~1~ and P~2~. This line will intersect the elliptic curve in exactly one additional place. Call this point P~3~' = (x, y). Then reflect in the x-axis to get P~3~ = (x, –y).
+Geometrically, this third point P~3~ is calculated by drawing a line between P~1~ and P~2~. This line will intersect the elliptic curve in exactly one additional place (amazingly). Call this point P~3~' = (x, y). Then reflect in the x-axis to get P~3~ = (x, –y).
 
-In elliptic curve math, there is a point called the "point at infinity," which roughly corresponds to the role of the number zero in addition. On computers, it's sometimes represented by x = y = 0 (which doesn't satisfy the elliptic curve equation, but it's an easy separate case that can be checked). There are a couple of special cases that explain the need for the "point at infinity."
+If P~1~ and P~2~ are the same point, the line "between" P~1~ and P~2~ should extend to be the tangent on the curve at this point P~1~. This tangent will intersect the curve in exactly one new point. You can use techniques from calculus to determine the slope of the tangent line. Curiously, these techniques work, even though we are restricting our interest to points on the curve with two integer coordinates!
 
-If P~1~ and P~2~ are the same point, the line "between" P~1~ and P~2~ should extend to be the tangent on the curve at this point P~1~. This tangent will intersect the curve in exactly one new point. You can use techniques from calculus to determine the slope of the tangent line. These techniques curiously work, even though we are restricting our interest to points on the curve with two integer coordinates!
+In elliptic curve math, there is also a point called the "point at infinity," which roughly corresponds to the role of the number zero in addition. On computers, it's sometimes represented by x = y = 0 (which doesn't satisfy the elliptic curve equation, but it's an easy separate case that can be checked). There are a couple of special cases that explain the need for the "point at infinity".
 
-In some cases (i.e., if P~1~ and P~2~ have the same x values but different y values), the tangent line will be exactly vertical, in which case P3 = "point at infinity."
+In some cases (e.g. if P~1~ and P~2~ have the same x values but different y values), the line will be exactly vertical, in which case P3 = "point at infinity."
 
 If P~1~ is the "point at infinity," then P~1~ + P~2~ = P~2~. Similarly, if P~2~ is the point at infinity, then P~1~ + P~2~ = P~1~. This shows how the point at infinity plays the role that zero plays in "normal" arithmetic.
 
-It turns out that pass:[+] is associative, which means that (A pass:[+] B) pass:[+] C = A pass:[+] (B pass:[+] C). That means we can write A pass:[+] B pass:[+] C without parentheses and without ambiguity.
+It turns out that pass:[+] is associative, which means that (A pass:[+] B) pass:[+] C = A pass:[+] (B pass:[+] C). That means we can write A pass:[+] B pass:[+] C (without parentheses) without ambiguity.
 
-Now that we have defined addition, we can define multiplication in the standard way that extends addition. For a point P on the elliptic curve, if k is a whole number, then k pass:[*] P = P + P + P + ... + P (k times). Note that k is sometimes confusingly called an "exponent" in this case
+Now that we have defined addition, we can define multiplication in the standard way that extends addition. For a point P on the elliptic curve, if k is a whole number, then k pass:[*] P = P pass:[+] P pass:[+] P pass:[+] ... pass:[+] P (k times). Note that k is sometimes (perhaps confusingly) called an "exponent" in this case
 
 [[public_key_derivation]]
 === Generating a public key
@@ -230,7 +232,7 @@ Now that we have defined addition, we can define multiplication in the standard 
 
 where _k_ is the private key, _G_ is the generator point, and _K_ is the resulting public key, a point on the curve. Because the generator point is always the same for all Ethereum users, a private key _k_ multiplied with _G_ will always result in the same public key _K_. The relationship between _k_ and _K_ is fixed, but can only be calculated in one direction, from _k_ to _K_. That's why an Ethereum address (derived from _K_) can be shared with anyone and does not reveal the user's private key (_k_).
 
-As we described in <<EC_math>>, the multiplication of k * G is equivalent to repeated addition, so G + G + G + ... + G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
+As we described in <<EC_math>>, the multiplication of k * G is equivalent to repeated addition, so G pass:[+] G pass:[+] G pass:[+] ... pass:[+] G, repeated k times. In summary, to produce a public key _K_, from a private key _k_, we add the generator point _G_ to itself, _k_ times.
 
 [TIP]
 ====
@@ -296,27 +298,27 @@ There are a couple of implementations of the secp256k1 elliptic curve that are u
 [[hash_functions]]
 === Cryptographic hash functions
 
-((("hash function")))Cryptographic hash functions are used throughout Ethereum. In fact, hash functions are used extensively in almost all cryptographic systems, a fact captured by cryptographer Bruce Schneier who said "Much more than encryption algorithms, one-way hash functions are the workhorses of modern cryptography."
+((("hash function")))((("digital fingerprint")))Cryptographic hash functions are used throughout Ethereum. In fact, hash functions are used extensively in almost all cryptographic systems, a fact captured by cryptographer Bruce Schneier who said "Much more than encryption algorithms, one-way hash functions are the workhorses of modern cryptography."
 
-In this section we will discuss hash functions, understand their basic properties and how those properties make them so useful in so many areas of modern cryptography. We address hash functions here, because they are part of the transformation of Ethereum public keys into addresses.
+In this section we will discuss hash functions, understand their basic properties and how those properties make them so useful in so many areas of modern cryptography. We address hash functions here, because they are part of the transformation of Ethereum public keys into addresses. They can also be used to create _digital fingerprints_ which aid in the verification of data.
 
-In simple terms, "a hash function is any function that can be used to map data of arbitrary size to data of fixed size." https://en.wikipedia.org/wiki/Hash_function[Source: Wikipedia]. The input to a hash function is called a ((("pre image")))_pre-image_ or _message_. The output is called a _hash_, or _digest_. A special sub-category of hash functions is _cryptographic hash functions_, which have specific properties that are useful to cryptography.
+In simple terms, "a hash function is any function that can be used to map data of arbitrary size to data of fixed size." https://en.wikipedia.org/wiki/Hash_function[Source: Wikipedia]. The input to a hash function is called a ((("pre image")))_pre-image_, the _message_ or simply the _input data_. The output is called the _hash_. A special sub-category of hash functions is _cryptographic hash functions_, which have specific properties that are useful to secure platforms, such as Ethereum.
 
-A cryptographic hash function is a _one way_ hash function that maps data of arbitrary size to a fixed-size bit string, where it is computationally infeasible to recreate the input if one knows the output. The only way to determine the input is to conduct a brute-force search of possible inputs, checking for a matching output.
+A cryptographic hash function is a _one way_ hash function that maps data of arbitrary size to a fixed-size string of bits. The "one way" nature means that it is computationally infeasible to recreate the input data if one only knows the output hash. The only way to determine a possible input is to conduct a brute-force search, checking each candidate for a matching output; given that the search space is infinite, it is easy to understand the practical impossibility of the task. Even if you find some input data that creates a matching hash, it may not be the original input data: hash functions are "many to one" functions. Finding two sets of input data that hash to the same output is called finding a "hash collision". Roughly speaking, the better the hash function, the rarer hash collisions are. For Ethereum, they are effectively impossible.
 
 Cryptographic hash functions have five main properties (https://en.wikipedia.org/wiki/Cryptographic_hash_function[Source: Wikipedia/Cryptographic Hash Function]):
 
-Determinism:: Any input message always produces the same hash digest.
+Determinism:: Any input message always produces the same hash output.
 
 Verifiability:: Computing the hash of a message is efficient (linear performance).
 
 Uncorrelated:: A small change to the message (e.g. one bit change) should change the hash output so extensively that it cannot be correlated to the hash of the original message.
 
-Irreversibility (resistance to first pre-image):: Computing the message from a hash is infeasible, equivalent to a brute force search through possible messages.
+Irreversibility:: Computing the message from a hash is infeasible, equivalent to a brute force search through possible message inputs.
 
-Collision Protection (resistance to second pre-image):: It should be infeasible to calculate two different messages that produce the same hash output.
+Collision Protection:: It should be infeasible to calculate two different messages that produce the same hash output.
 
-Resistance to second pre-image is primarily important to prevent digital signature forgery in Ethereum.
+Resistance to hash collisions is particularly important for avoiding digital signature forgery in Ethereum.
 
 The combination of these properties make cryptographic hash functions useful for a broad range of security applications including:
 
@@ -325,7 +327,7 @@ The combination of these properties make cryptographic hash functions useful for
 * Proof-of-Work
 * Authentication (password hashing and key stretching)
 * Pseudo-random number generators
-* Pre-image commitment
+* Message commitment (commit-reveal mechanisms)
 * Unique identifiers
 
 We will find many of these in Ethereum, as we progress through the various layers of the system.
@@ -335,11 +337,11 @@ We will find many of these in Ethereum, as we progress through the various layer
 
 ((("SHA-3 Hash Function")))((("Keccak Hash Function")))((("Keccak-256")))Ethereum uses the _Keccak-256_ cryptographic hash function in many places. Keccak-256 was designed as a candidate for the SHA-3 Cryptographic Hash Function Competition held in 2007 by the ((("NIST")))National Institute of Science and Technology (NIST). Keccak was the winning algorithm that became standardized as ((("FIPS")))Federal Information Processing Standard (FIPS) ((("FIPS-202")))202 in 2015.
 
-However, during the period when Ethereum was developed, NIST standardization was being finalized. NIST adjusted some of the parameters of Keccak after the completion of the standards process, allegedly to improve its efficiency. This was occurring at the same time as heroic whistleblower ((("Edward Snowden")))Edward Snowden revealed documents that imply that NIST may have been improperly influenced by the National Security Agency to intentionally weaken the ((("Dual_EC_DRBG")))Dual_EC_DRBG random-number generator standard, effectively placing a backdoor in the standard random number generator. The result of this controversy was a backlash against the proposed changes and a significant delay in the standardization of SHA-3. At the time, the Ethereum Foundation decided to implement the original Keccak algorithm, as proposed by its inventors, rather than the SHA-3 standard as modified by NIST.
+However, during the period when Ethereum was developed, the NIST standardization was not yet finalized. NIST adjusted some of the parameters of Keccak after the completion of the standards process, allegedly to improve its efficiency. This was occurring at the same time as heroic whistleblower ((("Edward Snowden")))Edward Snowden revealed documents that imply that NIST may have been improperly influenced by the National Security Agency to intentionally weaken the ((("Dual_EC_DRBG")))Dual_EC_DRBG random-number generator standard, effectively placing a backdoor in the standard random number generator. The result of this controversy was a backlash against the proposed changes and a significant delay in the standardization of SHA-3. At the time, the Ethereum Foundation decided to implement the original Keccak algorithm, as proposed by its inventors, rather than the SHA-3 standard as modified by NIST.
 
 [WARNING]
 ====
-While you may see "SHA3" mentioned throughout Ethereum documents and code, many if not all of those instances actually refer to Keccak-256, not the finalized FIPS-202 SHA-3 standard. The implementation differences are slight, having to do with padding parameters, but they are significant in that Keccak-256 produces different hash output than FIPS-202 SHA-3 given the same input.
+While you may see "SHA3" mentioned throughout Ethereum documents and code, many if not all of those instances actually refer to Keccak-256, not the finalized FIPS-202 SHA-3 standard. The implementation differences are slight, having to do with padding parameters, but they are significant in that Keccak-256 produces radically different hash output than FIPS-202 SHA-3 given the same input.
 ====
 
 Due to the confusion created by the difference between the hash function used in Ethereum (Keccak-256) and the finalized standard (FIP-202 SHA-3), there is an effort underway to rename all instances of +sha3+ in all code, opcodes and libraries to +keccak256+. See https://github.com/ethereum/EIPs/issues/59[ERC-59] for details.
@@ -368,7 +370,7 @@ Next, let's examine the first application of Keccak-256 in Ethereum, which is to
 [[eth_address]]
 === Ethereum addresses
 
-Ethereum addresses are _unique identifiers_ that are derived from public keys or contracts using a one-way hash function (specifically Keccak-256).
+Ethereum addresses are _unique identifiers_ that are derived from public keys or contracts using the Keccak-256 one-way hash function.
 
 In our previous examples, we started with a private key and used elliptic curve multiplication to derive a public key:
 
@@ -418,7 +420,7 @@ Unlike Bitcoin addresses which are encoded in the user interface of all clients 
 
 The rationale behind that decision was that Ethereum addresses would eventually be hidden behind abstractions (such as name services) at higher layers of the system and that checksums should be added at higher layers if necessary.
 
-In retrospect, this design choice lead to a number of problems, including the loss of funds due to mistyped addresses and input validation errors. Ethereum name services were developed slower than initially expected and alternative encodings such as ICAP were adopted very slowly by wallet developers.
+In reality, these higher layers were developed too slowly and this design choice lead to a number of problems in the early days of the ecosystem, including the loss of funds due to mistyped addresses and input validation errors. Furthermore, because Ethereum name services were developed slower than initially expected, alternative encodings such as ICAP were adopted very slowly by wallet developers.
 
 [[ICAP]]
 ==== Inter Exchange Client Address Protocol (ICAP)
@@ -429,17 +431,17 @@ Read about ICAP on the Ethereum Wiki:https://github.com/ethereum/wiki/wiki/ICAP:
 
 IBAN is an international standard for identifying bank account numbers, mostly used for wire transfers. It is broadly adopted in the European Single Euro Payments Area (SEPA) and beyond. IBAN is a centralized and heavily regulated service. ICAP is a decentralized but compatible implementation for Ethereum addresses.
 
-An IBAN consists of up to 34 alphanumeric characters (case-insensitive) string containing a country code, checksum, and bank account identifier (which is country-specific).
+An IBAN consists of a string of up to 34 alphanumeric characters (case-insensitive) comprising a country code, checksum, and bank account identifier (which is country-specific).
 
 ICAP uses the same structure by introducing a non-standard country code "XE" that stands for "Ethereum", followed by a two-character checksum and 3 possible variations of an account identifier:
 
-Direct:: Up to 30 alphanumeric character big-endian base-36 integer representing the least significant bits of an Ethereum address. Because this encoding fits less than 155 bits, it only works for Ethereum addresses that start with one or more zero bytes. The advantage is that it is compatible with IBAN, in terms of the field length and checksum. Example: +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 characters long)
+Direct:: Up to 30 alphanumeric character big-endian base-36 integer representing the least significant bits of an Ethereum address. Because this encoding fits less than the full 155 bits of a general Ethereum address, it only works for Ethereum addresses that start with one or more zero bytes. The advantage is that it is compatible with IBAN, in terms of the field length and checksum. Example: +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 characters long)
 
 Basic:: Same as the "Direct" encoding except that it is 31 characters long. This allows it to encode any Ethereum address, but makes it incompatible with IBAN field validation. Example: +XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P+ (35 characters long)
 
-Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. Uses 16 alphanumeric characters, composed of an _asset identifier_ (e.g. ETH), a name service (e.g. XREG) and a 9-character name (e.g. KITTYCATS), which is a human-readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
+Indirect:: Encodes an identifier that resolves to an Ethereum address through a name registry provider. It uses 16 alphanumeric characters, comprising an _asset identifier_ (e.g. ETH), a name service (e.g. XREG) and a 9-character name (e.g. KITTYCATS), which is a human-readable name. Example: +XEpass:[##]ETHXREGKITTYCATS+ (20 characters long), where the "##" should be replaced by the two computed checksum characters.
 
-We can use the +helpeth+ command-line tool to create ICAP addresses. Let's try with our example private key (prefixed with 0x and passed as a parameter to helpeth):
+We can use the +helpeth+ command-line tool to create ICAP addresses. Let's try with our example private key (prefixed with 0x and passed as a parameter to +helpeth+):
 
 [[create_ICAP]]
 ----
@@ -471,7 +473,7 @@ At this time, ICAP is unfortunately only supported by a few wallets.
 [[EIP55]]
 ==== Hex encoding with checksum in capitalization (EIP-55)
 
-Due to the slow deployment of ICAP or name services, a new standard was proposed with Ethereum Improvement Proposal 55 (EIP-55). You can read the details at:
+Due to the slow deployment of ICAP or name services, a standard was proposed with Ethereum Improvement Proposal 55 (EIP-55). You can read the details at:
 
 https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md
 
@@ -548,7 +550,7 @@ Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9")
 5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
 ----
 
-As you can see, even though the address has only changed by one character (in fact, only one bit as "e" and "f" are 1-bit apart), the hash of the address has changed radically. That's the property of hash functions that makes them so useful for checksums!
+As you can see, even though the address has only changed by one character (in fact, only one bit as "e" and "f" are 1 bit apart), the hash of the address has changed radically. That's the property of hash functions that makes them so useful for checksums!
 
 Now, let's line up the two and check the capitalization:
 
@@ -561,3 +563,11 @@ Now, let's line up the two and check the capitalization:
 It's all wrong! Several of the alphabetic characters are incorrectly capitalized. Remember that the capitalization is the encoding of the _correct_ checksum.
 
 The capitalization of the address we input doesn't match the checksum just calculated, meaning something has changed in the address, and an error has been introduced.
+
+
+[[keys-addresses-roundup]]
+=== Chapter Round-up
+
+In this chapter we had a brief survey of cryptography and focussed on the use of public and private keys in Ethereum and the use of cryptographic tools, such as hash functions, in the creation and verification of Ethereum addresses.
+
+We will look into the other uses we touched on elsewhere in this book.
