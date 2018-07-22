@@ -1,37 +1,6 @@
 [[vyper_chap]]
 == Vyper: A contract-oriented programming language
 
-////
-Source: https://github.com/ethereum/vyper/blob/master/README.md
-License: The MIT License (MIT)
-Added by: @tpmccallum
-////
-
-////
-Source: http://vyper.readthedocs.io/en/latest/
-License: The MIT License (MIT)
-Added by: @tpmccallum
-////
-
-////
-Source: http://solidity.readthedocs.io/en/v0.4.21/common-patterns.html
-License: The MIT License (MIT)
-Added by: @tpmccallum
-////
-
-////
-Source: https://arxiv.org/pdf/1802.06038.pdf
-License: https://arxiv.org/licenses/nonexclusive-distrib/1.0/license.html
-Added by: @tpmccallum
-////
-
-////
-Source: https://github.com/ethereum/solidity/blob/release/docs/contracts.rst#inheritance
-License: The MIT License (MIT)
-Added by: @tpmccallum
-////
-
-
 Research shows that smart contracts, with trace vulnerabilities, can result in unexpected execution. https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed 970,898 contracts. It outlined three basic categories of trace vulnerabilities (which have already resulted in the catastrophic loss of funds for Ethereum users). These categories include the following.
 
 Suicidal contracts:: Suicidal contracts are those which can be killed by arbitrary addresses
@@ -48,7 +17,7 @@ Vyper is an experimental, contract-oriented programming language which targets t
 
 This section is a reference for those who are considering developing smart contracts using the Vyper programming language. The section mainly compares and contrasts Vyper against Solidity; outlining, with sound reasoning, why Vyper does NOT include the following traditional Object Oriented Programming (OOP) concepts:
 
-Modifiers:: In Solidity, you can write a function using modifiers. For example, the following function called `changeOwner` will run the code in a modifier, called `onlyBy`, as part of its execution. 
+Modifiers:: In Solidity, you can write a function using modifiers. For example, the following function called `changeOwner` will run the code in a modifier, called `onlyBy`, as part of its execution.
 
 [source,javascript]
 ----
@@ -99,18 +68,18 @@ function f(uint _in, bytes32 _key) public pure returns (uint out) {
 
 The first function (named f) accepts an input argument of type uint, however the second function (also named f) accepts two arguments, one of type uint and one of type bytes32. Having multiple function definitions with the same name and different argument options could cause confusion and it is primarily for this reason that Vyper does not support function overloading.
 
-Variable typecasting:: 
+Variable typecasting::
 
-There are two modalities of typecasting. 
+There are two modalities of typecasting.
 
 Implicit typecasting is often performed at compile time. For example if a type conversion is semantically sound and no information is likely to be lost, the compiler can perform an implicit conversion, such as converting a variable of type uint8 to uint16. Whilst the earliest versions of Vyper entertained implicit typecasting of variables, the most recent version of the Vyper programming language does not support implicit typecasting.
 
-Explicit typecasting can be performed by a software developer in their source code. Unfortunately, explicit typecasting in code can often lead to unexpected behaviour. For example, if an explicit type conversion transposes a uint32 type to the smaller type of uint16, the higher-order bits are simply cut off as demonstrated below. 
+Explicit typecasting can be performed by a software developer in their source code. Unfortunately, explicit typecasting in code can often lead to unexpected behaviour. For example, if an explicit type conversion transposes a uint32 type to the smaller type of uint16, the higher-order bits are simply cut off as demonstrated below.
 
 [source,javascript]
 ----
 uint32 a = 0x12345678;
-uint16 b = uint16(a); 
+uint16 b = uint16(a);
 //Variable b is 0x5678 now
 ----
 
@@ -156,7 +125,7 @@ def to_int128(expr, args, kwargs, context):
         return byte_array_to_num(in_node, expr, 'int128')
 ----
 
-As you can see, the conversion is handled strictly (with the appropriate exceptions). The conversion code accounts for any truncating as well as other anomolies which would ordinarily take place, without one's knowledge, in an implicit typecasting situation. As mentioned above, implicit typecasting between integer types in arithmetic and comparison can not only be confusing, but can also reduce auditability. 
+As you can see, the conversion is handled strictly (with the appropriate exceptions). The conversion code accounts for any truncating as well as other anomolies which would ordinarily take place, without one's knowledge, in an implicit typecasting situation. As mentioned above, implicit typecasting between integer types in arithmetic and comparison can not only be confusing, but can also reduce auditability.
 
 Choosing explicit, over implicit, typecasting means that the developer is responsible for performing the variable typecasting up front. While this approach does produce more verbose code, it also improves the safety and auditability of smart contracts.
 
@@ -172,7 +141,7 @@ Vyper handles pre-conditions, post-conditions and state changes explicitly. Whil
 [[a_new_programming_paradigm_sec]]
 === A new programming paradigm
 
-Vyper's creation opens the door to a new programming paradigm. For example, Vyper is removing class inheritance, as well as other functionality, and therefore it can be said that Vyper is leaning away from the traditional Object Oriented Programming (OOP) paradigm, which is fine. 
+Vyper's creation opens the door to a new programming paradigm. For example, Vyper is removing class inheritance, as well as other functionality, and therefore it can be said that Vyper is leaning away from the traditional Object Oriented Programming (OOP) paradigm, which is fine.
 
 Historically OOP has provided a mechanism for representing real world objects. For example, OOP allows the instantiation of an employee object which can inherit from a person class. However, from a value-transfer and/or smart-contract perspective, those who aspire to the functional programming paradigm would concur that transactional programming in no way lends itself to the aforementioned traditional OOP paradigm. Put simply, transactional computations are worlds apart from real world objects. For example, when was the last time you held a transaction or a forward chaining business rule in your hand?
 
@@ -210,7 +179,7 @@ vyper -f json ~/hello_world.v.py
 [[protecting_against_overflows_sec]]
 === Protecting against overflow errors at the compiler level
 
-Overflow errors in software can be catastrophic when dealing with real value. This https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction] shows the malicious transfer of over 57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,000 BEC tokens. The transaction, which occured in mid April of 2018, is the result of an integer overflow issue in BeautyChain's ERC20 token contract (BecToken.sol). Solidity developers do have libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol[SafeMath] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril]. However, unfortunately in cases such as the aforementioned BEC token contract situation, developers are not forced to use the safety tools. Put simply, if safety is not enforced, developers are still able to write arbitrary code (outside of the help provided) which can then be successfully compiled and later on successfully executed. Even if the outcome is detrimental. 
+Overflow errors in software can be catastrophic when dealing with real value. This https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction] shows the malicious transfer of over 57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,000 BEC tokens. The transaction, which occured in mid April of 2018, is the result of an integer overflow issue in BeautyChain's ERC20 token contract (BecToken.sol). Solidity developers do have libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/math/SafeMath.sol[SafeMath] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril]. However, unfortunately in cases such as the aforementioned BEC token contract situation, developers are not forced to use the safety tools. Put simply, if safety is not enforced, developers are still able to write arbitrary code (outside of the help provided) which can then be successfully compiled and later on successfully executed. Even if the outcome is detrimental.
 
 
 Vyper strives to provide overflow protection which is actually built into the programming language. Vyper's built-in functionality, which provides protection against overflow errors, is implemented in a two prong approach. Firstly Vyper provides https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275[a SafeMath equivalent] which includes the necessary exception cases for integers arithmetic. In addition to this, Vyper also uses clamps which are enforced whenever a literal constant is loaded, a value is passed into a function, or when a variable is assigned. Clamps are implemented via custom functions in the Low-level Lisp-like Language (LLL) compiler. The safety measures that the clamps provide via LLL can not be turned off. In Vyper, the LLL layer serves an Intermediate Representation (IR). This IR layer (which is conducive for further processing) actually sits between the Vyper source code (which the developer writes) and the bytecode (which the EVM executes). Therefore, developers who code and compile using the Vyper programming language will automatically be protected against integer overflow issues.
