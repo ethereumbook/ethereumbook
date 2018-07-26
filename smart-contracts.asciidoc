@@ -1567,7 +1567,7 @@ deterministic, in fact the address is calculated from the hash of the
 address creating the contract and the transaction nonce which creates
 the contract. i.e. of the form:
 `address = sha3(rlp.encode([account_address,transaction_nonce]))` (see
-link:#keyless-eth[Keyless Ether] for some fun use cases of this). This
+https://blog.sigmaprime.io/solidity-security.html#keyless-eth[Keyless Ether] for some fun use cases of this). This
 means, anyone can calculate what a contract address will be before it is
 created and thus send ether to that address. When the contract does get
 created it will have a non-zero ether balance.
@@ -1620,7 +1620,7 @@ contract EtherGame {
 ----
 
 This contract represents a simple game (which would naturally invoke
-link:#race-conditions[race-conditions]) whereby players send `0.5 ether`
+race-conditions) whereby players send `0.5 ether`
 quanta to the contract in hope to be the player that reaches one of
 three milestones first. Milestone’s are denominated in ether. The first
 to reach the milestone may claim a portion of the ether when the game
@@ -1838,7 +1838,7 @@ on line [21] to specify that we wish to run the `fibonacci(uint256)`
 function. The second argument in `delegatecall` is the parameter we are
 passing to the function. Secondly, we assume that the address for the
 `FibonacciLib` library is correctly referenced in the constructor
-(section link:#deployment[Deployment Attack Vectors] discuss some
+(section *External Contract Referencing* discusses some
 potential vulnerabilities relating to this kind if contract reference
 initialisation).
 
@@ -2131,7 +2131,7 @@ Essentially, the multi-sig wallet (which can be found
 https://github.com/paritytech/parity/blob/4d08e7b0aec46443bf26547b17d10cb302672835/js/src/contracts/snippets/enhanced-wallet.sol[here])
 is constructed from a base `Wallet` contract which calls a library
 contract containing the core functionality (as was described in
-link:#dc-example[===== Real-World Example: Parity Multisig (Second Hack)]).
+the *Real-World Example: Parity Multisig (Second Hack)* section).
 The library contract contains the code to initialise the wallet as can
 be seen from the following snippet
 
@@ -2726,6 +2726,7 @@ about how Etherpot failed to implement this correctly). However this
 contract also suffered from an unchecked call value. Notice the
 function, `cash()` on line [80] of lotto.sol:
 
+.lotto.sol: Code snippet 
 [source,solidity,linenums]
 ----
 ...
@@ -2774,7 +2775,7 @@ could be used to attack the contract.
 The combination of external calls to other contracts and the multi-user
 nature of the underlying blockchain gives rise to a variety of potential
 Solidity pitfalls whereby users _race_ code execution to obtain
-unexpected states. link:#reentrancy[Re-Entrancy] is one example of such
+unexpected states. Re-Entrancy is one example of such
 a race condition. In this section we will talk more generally about
 different kinds of race conditions that can occur on the Ethereum
 blockchain. There is a variety of good posts on this area, a few are:
@@ -2799,9 +2800,10 @@ attacker. The attacker can then get the data from this transaction and
 create a transaction of their own with a higher `gasPrice` and get their
 transaction included in a block before the original.
 
-Let’s see how this could work with a simple example. Consider the
-contract `FindThisHash.sol`:
+Let’s see how this could work with a simple example. Consider the following
+contract,
 
+.FindThisHash.sol:
 [source,solidity,linenums]
 ----
 contract FindThisHash {
@@ -2930,8 +2932,8 @@ differences. This attack has been addressed by the Bancor team.
 This category is very broad, but fundamentally consists of attacks where
 users can leave the contract inoperable for a small period of time, or
 in some cases, permanently. This can trap ether in these contracts
-forever, as was the case with the link:#dc-example[Second Parity
-MultiSig hack]
+forever, as was the case with the *Second Parity
+MultiSig hack*
 
 ===== The Vulnerability
 
@@ -3065,7 +3067,7 @@ that the 1100 ether was finally obtained with a transaction that used
 
 Block timestamps have historically been used for a variety of
 applications, such as entropy for random numbers (see the
-link:#entropy[Entropy Illusion] section for further details), locking
+*Entropy Illusion* section for further details), locking
 funds for periods of time and various state-changing conditional
 statements that are time-dependent. Miner’s have the ability to adjust
 timestamps slightly which can prove to be quite dangerous if block
@@ -3083,8 +3085,7 @@ Exchange Question],
 they have some incentive to do so. Lets construct a simple game, which
 would be vulnerable to miner exploitation,
 
-`roulette.sol`:
-
+.roulette.sol:
 [source,solidity]
 ----
 contract Roulette {
@@ -3116,7 +3117,7 @@ miner who solves a block is incentivised to choose a timestamp such that
 `block.timestamp` or `now` modulo 15 is `0`. In doing so they may win
 the ether locked in this contract along with the block reward. As there
 is only one person allowed to bet per block, this is also vulnerable to
-link:#race-conditions[front-running] attacks.
+front-running attacks (see the *Front-Running section for further details).
 
 In practice, block timestamps are monotonically increasing and so miners
 cannot choose arbitrary block timestamps (they must be larger than their
@@ -3267,6 +3268,7 @@ later) or unintentional vulnerabilities.
 
 Let’s consider the following, relatively simple name registrar contract:
 
+.NameRegistrar.sol
 [source,solidity,linenums]
 ----
 // A Locked Name Registrar
@@ -3303,6 +3305,9 @@ initially locked and the `require` on line [23] prevents `register()`
 from adding name records. There is however a vulnerability in this
 contract, that allows name registration regardless of the `unlocked`
 variable.
+
+// TODO: Andreas to check if this introduction is required as another section
+// of the book may be able to be referenced 
 
 To discuss this vulnerability, first we need to understand how storage
 works in Solidity. As a high level overview (without any proper
@@ -3472,7 +3477,7 @@ doesn’t use any extended precision, however, it deals with `wei`. So
 this contract will have issues of rounding, but only at the `wei` level
 of precision. It has some more serious flaws, but these are relating
 back to the difficulty in getting entropy on the blockchain (see
-link:#entropy-illusion[Entropty Illusion]). For a further discussion on
+*Entropty Illusion*). For a further discussion on
 the Ethstick contract, I’ll refer you to another post of Peter Venesses,
 https://vessenes.com/ethereum-contracts-are-going-to-be-candy-for-hackers/[Ethereum
 Contracts Are Going to be Candy For Hackers].
@@ -3500,7 +3505,7 @@ typically vulnerable to phishing attacks which can trick users into
 performing authenticated actions on the vulnerable contract.
 
 Consider the simple contract,
-
+.Phishable.sol
 [source,solidity,linenums]
 ----
 contract Phishable {
