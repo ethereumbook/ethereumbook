@@ -1047,9 +1047,9 @@ https://solidity.readthedocs.io/en/latest/contracts.html?highlight=fallback#fall
 function]. Thus, when a contract sends ether to this address, it will
 invoke the malicious code. Typically the malicious code executes a
 function on the vulnerable contract, performing operations not expected
-by the developer. The name ``re-entrancy'' comes from the fact that the
+by the developer. The name "re-entrancy" comes from the fact that the
 external malicious contract calls back a function on the vulnerable
-contract and ``__re-enters__'' code execution at an arbitrary location
+contract and "__re-enters__" code execution at an arbitrary location
 on the vulnerable contract.
 
 To clarify this, consider the simple vulnerable contract, which acts as
@@ -1085,11 +1085,11 @@ contract EtherStore {
 This contract has two public functions. `depositFunds()` and
 `withdrawFunds()`. The `depositFunds()` function simply increments the
 senders balances. The `withdrawFunds()` function allows the sender to
-specify the amount of wei to withdraw. It will only succeed if the
-requested amount to withdraw is less than 1 ether and a withdrawal
-hasn’t occurred in the last week. Or does it?…
+specify the amount of wei to withdraw. This function is intended to succeed
+only if the requested amount to withdraw is less than 1 ether and a withdrawal
+has not occurred in the last week. 
 
-The vulnerability comes on line [17] where we send the user their
+The vulnerability comes on line [17] where the contract sends the user their
 requested amount of ether. Consider a malicious attacker creating the
 following contract,
 
@@ -1106,7 +1106,7 @@ contract Attack {
       etherStore = EtherStore(_etherStoreAddress);
   }
   
-  function pwnEtherStore() public payable {
+  function attackEtherStore() public payable {
       // attack to the nearest ether
       require(msg.value >= 1 ether);
       // send eth to the depositFunds() function
@@ -1128,15 +1128,15 @@ contract Attack {
 }
 ----
 
-Let us see how this malicious contract can exploit our `EtherStore`
+Let us examine how this malicious contract can exploit the `EtherStore`
 contract. The attacker would create the above contract (let’s say at the
-address `0x0...123`) with the `EtherStore`’s contract address as the
+address `0x0...123`) with the `EtherStore`’s contract address as the sole
 constructor parameter. This will initialize and point the public
-variable `etherStore` to the contract we wish to attack.
+variable `etherStore` to the contract to be attacked.
 
-The attacker would then call the `pwnEtherStore()` function, with some
-amount of ether (greater than or equal to 1), lets say `1 ether` for
-this example. In this example we assume a number of other users have
+The attacker would then call the `attackEtherStore()` function, with some
+amount of ether (greater than or equal to 1), let us assume `1 ether` for
+the time being. In this example, we will also assume a number of other users have
 deposited ether into this contract, such that it’s current balance is
 `10 ether`. The following would then occur:
 
@@ -1148,7 +1148,7 @@ sender (`msg.sender`) will be our malicious contract (`0x0...123`). Thus,
 2. *Attack.sol - Line [17]* - The malicious contract will then call the
 `withdrawFunds()` function of the `EtherStore` contract with a parameter of `1
 ether`. This will pass all the requirements (Lines [12]-[16] of the
-    `EtherStore` contract) as we have made no previous withdrawals.
+    `EtherStore` contract) as no previous withdrawals have been made.
 
 3. *EtherStore.sol - Line [17]* - The contract will then send `1 ether` back to
 the malicious contract. 
@@ -1160,21 +1160,21 @@ then execute the fallback function.
 `10 ether` and is now `9 ether` so this if statement passes. 
 
 6. *Attack.sol - Line [27]* - The fallback function then calls the `EtherStore`
-`withdrawFunds()` function again and ``__re-enters__'' the `EtherStore`
+`withdrawFunds()` function again and '__re-enters__' the `EtherStore`
 contract. 
 
-7. *EtherStore.sol - Line [11]* - In this second call to `withdrawFunds()`, our
-balance is still `1 ether` as line [18] has not yet been executed. Thus, we
+7. *EtherStore.sol - Line [11]* - In this second call to `withdrawFunds()`, the
+attacking contract's balance is still `1 ether` as line [18] has not yet been executed. Thus, we
 still have `balances[0x0..123] = 1 ether`. This is also the case for the
 `lastWithdrawTime` variable. Again, we pass all the requirements. 
 
-8. *EtherStore.sol - Line [17]* - We withdraw another `1 ether`.
+8. *EtherStore.sol - Line [17]* - The attacking contract withdraws another `1 ether`.
 
 9. *Steps 4-8 will repeat* - until `EtherStore.balance >= 1` as dictated by
 line [26] in `Attack.sol`. 
 
 10. *Attack.sol - Line [26]* - Once there less 1 (or less) ether left in the
-`EtherStore` contract, this if statement will fail.  This will then allow lines
+`EtherStore` contract, this if statement will fail. This will then allow lines
 [18] and [19] of the `EtherStore` contract to be executed (for each call to the
     `withdrawFunds()` function).
 
@@ -1192,7 +1192,7 @@ re-entrancy vulnerabilities in smart contracts. The first is to (
 whenever possible) use the built-in
 http://solidity.readthedocs.io/en/latest/units-and-global-variables.html#address-related[transfer()]
 function when sending ether to external contracts. The transfer function
-only sends `2300 gas` which isn’t enough for the destination
+only sends `2300 gas` with the external call, which is not enough for the destination
 address/contract to call another contract (i.e. re-enter the sending
 contract).
 
@@ -1288,17 +1288,19 @@ in the number `255`. This is an underflow. We have assigned a number
 below the range of the `uint8`, the result _wraps around_ and gives the
 largest number a `uint8` can store. Similarly, adding `2^8=256` to a
 `uint8` will leave the variable unchanged as we have wrapped around the
-entire length of the `uint` (for the mathematicians, this is similar to
-adding latexmath:[$2\pi$] to the angle of a trigonometric function,
-latexmath:[$\sin(x) = \sin(x+2\pi)$]). Adding numbers larger than the
-data type’s range is called an overflow. For clarity, adding `257` to a
-`uint8` that currently has a zero value will result in the number `1`.
-It’s sometimes instructive to think of fixed type variables being
-cyclic, where we start again from zero if we add numbers above the
+entire length of the `uint`. Two simple analogies of this behaviour are;
+speedometers in cars which measure distance travelled (they restart to 0, after 
+the largest number, i.e. 999999 is surpassed) and periodic mathematical functions
+(adding 2*Pi to the argument of sin() leaves the value unchanged). 
+
+Adding numbers larger than the data type’s range is called an overflow. For
+clarity, adding `257` to a `uint8` that currently has a zero value will result
+in the number `1`.  It is sometimes instructive to think of fixed type variables
+being cyclic, where we start again from zero if we add numbers above the
 largest possible stored number, and vice-versa for zero (where we start
 counting down from the largest number the more we subtract from 0).
 
-These kinds of vulnerabilities allow attackers to misuse code and create
+These kinds of numerical caveats allow attackers to misuse code and create
 unexpected logic flows. For example, consider the time locking contract
 below.
 
@@ -1330,16 +1332,15 @@ contract TimeLock {
 
 This contract is designed to act like a time vault, where users can
 deposit ether into the contract and it will be locked there for at least
-a week. The user may extend the time longer than 1 week if they choose,
+a week. The user may extend the wait time to longer than 1 week if they choose,
 but once deposited, the user can be sure their ether is locked in safely
-for at least a week. Or can they?…
+for at least a week, or so this contract intends. 
 
-In the event a user is forced to hand over their private key (think
-hostage situation) a contract such as this may be handy to ensure ether
-is unobtainable in short periods of time. If a user had locked in
-`100 ether` in this contract and handed their keys over to an attacker,
-an attacker could use an overflow to receive the ether, regardless of
-the `lockTime`.
+In the event a user is forced to hand over their private key a contract such as
+this may be handy to ensure ether is unobtainable in short periods of time. If
+a user had locked in `100 ether` in this contract and handed their keys over to
+an attacker, an attacker could use an overflow to receive the ether, regardless
+of the `lockTime`.
 
 The attacker could determine the current `lockTime` for the address they
 now hold the key for (its a public variable). Let’s call this
@@ -1352,7 +1353,7 @@ be added to the current `userLockTime` and cause an overflow, resetting
 Let’s look at another example, this one from the
 https://github.com/OpenZeppelin/ethernaut[Ethernaut Challanges].
 
-*SPOILER ALERT:* _If you’ve not yet done the Ethernaut challenges, this
+*SPOILER ALERT:* _If you have not yet done the Ethernaut challenges, this
 gives a solution to one of the levels_.
 
 [source,solidity]
@@ -1400,8 +1401,8 @@ example, we have achieved free tokens due to an underflow vulnerability.
 The (currently) conventional technique to guard against under/overflow
 vulnerabilities is to use or build mathematical libraries which replace
 the standard math operators; addition, subtraction and multiplication
-(division is excluded as it doesn’t cause over/under flows and the EVM
-throws on division by 0).
+(division is excluded as it does not cause over/under flows and the EVM
+reverts on division by 0).
 
 https://github.com/OpenZeppelin/zeppelin-solidity[OppenZepplin] have
 done a great job in building and auditing secure libraries which can be
@@ -1475,23 +1476,21 @@ performs any operation which is capable of doing an under/over flow.
 
 ===== Real-World Examples: PoWHC and Batch Transfer Overflow (CVE-2018–10299)
 
-A 4chan group decided it was a great idea to build a ponzi scheme on
-Ethereum, written in Solidity. They called it the Proof of Weak Hands
-Coin (PoWHC). Unfortunately it seems that the author(s) of the contract
-hadn’t seen over/under flows before and consequently, 866 ether was
+Proof of Weak Hands Coin (PoWHC), originally devised as a joke of sorts, was a
+ponzi scheme written by an internet collective. Unfortunately it seems that the author(s) of the contract
+had not seen over/under flows before and consequently, 866 ether was
 liberated from its contract. A good overview of how the underflow occurs
 (which is not too dissimilar to the Ethernaut challenge above) is given
 in
 https://blog.goodaudience.com/how-800k-evaporated-from-the-powh-coin-ponzi-scheme-overnight-1b025c33b530[Eric
 Banisadar’s post].
 
-Some developers also implemented a `batchTransfer()` function into some
-https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20] token
+Another example comes from the implementation of a `batchTransfer()` function
+into a group of https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20] token
 contracts. The implementation contained an overflow.
 https://medium.com/@peckshield/alert-new-batchoverflow-bug-in-multiple-erc20-smart-contracts-cve-2018-10299-511067db6536[This
-post] explains it, however I think the title is misleading, in that it
-has nothing to do with the ERC20 standard, rather some ERC20 token
-contracts have a vulnerable `batchTransfer()` function implemented.
+post] details the overflow further, which now has it's own CVE
+(https://www.cvedetails.com/cve/CVE-2018-10299/[CVE-2018–10299]).
 
 ==== Unexpected Ether
 
@@ -1523,23 +1522,22 @@ token. As no functions should modify this invariant, one could add a
 check to the `transfer()` function that ensures the `totalSupply`
 remains unmodified to ensure the function is working as expected.
 
-There is one apparent _``invariant''_, in particular, that may tempt
-developers to use, but can in fact be manipulated by external users,
-regardless of the rules put in place in the smart contract. This is the
-current ether stored in the contract. Often, when developers first learn
-Solidity, they have the misconception that a contract can only accept or
-obtain ether via payable functions. This misconception can lead to
-contracts that have false assumptions about the ether balance within
-them which can lead to a range of vulnerabilities. The smoking gun for
-this vulnerability is the (incorrect) use of `this.balance`. As we will
-see, incorrect uses of `this.balance` can lead to serious
-vulnerabilities of this type.
+In particular, there is one apparent _invariant_, that may be tempting to use
+but can in fact be manipulated by external users (regardless of the rules put
+in place in the smart contract). This is the current ether stored in the
+contract. Often when developers first learn Solidity they have the
+misconception that a contract can only accept or obtain ether via payable
+functions. This misconception can lead to contracts that have false assumptions
+about the ether balance within them which can lead to a range of
+vulnerabilities. The smoking gun for this vulnerability is the (incorrect) use
+of `this.balance`. As we will see, incorrect uses of `this.balance` can lead to
+serious vulnerabilities of this type.
 
 There are two ways in which ether can (forcibly) be sent to a contract
 without using a `payable` function or executing any code on the
 contract. These are listed below.
 
-*Self Destruct / Suicide*
+Self Destruct / Suicide::
 
 Any contract is able to implement the
 http://solidity.readthedocs.io/en/latest/introduction-to-smart-contracts.html#self-destruct[`selfdestruct(address)`]
@@ -1556,18 +1554,17 @@ excellent
 http://martin.swende.se/blog/Ethereum_quirks_and_vulns.html[blog post]
 describing some quirks of the self-destruct opcode (Quirk #2) along with
 a description of how client nodes were checking incorrect invariants
-which could have lead to a rather catastrophic nuking of clients.
+which could have lead to a rather catastrophic crash of the Ethereum network. 
 
-*Pre-sent Ether*
+Pre-sent Ether::
 
-The second way a contract can obtain ether without using a
-`selfdestruct()` function or calling any payable functions is to
-pre-load the contract address with ether. Contract addresses are
-deterministic, in fact the address is calculated from the hash of the
-address creating the contract and the transaction nonce which creates
-the contract. i.e. of the form:
-`address = sha3(rlp.encode([account_address,transaction_nonce]))` (see
-https://blog.sigmaprime.io/solidity-security.html#keyless-eth[Keyless Ether] for some fun use cases of this). This
+The second way a contract can obtain ether without using a `selfdestruct()`
+function or calling any payable functions is to pre-load the contract address
+with ether. Contract addresses are deterministic, in fact the address is
+calculated from the keccak256 (commonly synonymous with sha3) hash of the
+address creating the contract and the transaction nonce which creates the
+contract. Specifically, it is of the form: `address = sha3(rlp.encode([account_address,transaction_nonce]))` 
+(see https://blog.sigmaprime.io/solidity-security.html#keyless-eth[Keyless Ether] for some fun use cases of this). This
 means, anyone can calculate what a contract address will be before it is
 created and thus send ether to that address. When the contract does get
 created it will have a non-zero ether balance.
@@ -1708,12 +1705,12 @@ track of the known ether deposited, and it is this variable to which we
 perform our requirements and tests. Notice, that we no longer have any
 reference to `this.balance`.
 
-===== Real-World Example: Unknown
+===== Further Examples: 
 
-I’m yet to find and example of this that has been exploited in the wild.
-However, a few examples of exploitable contracts were given in the
+A few examples of exploitable contracts were given in the
 https://github.com/Arachnid/uscc/tree/master/submissions-2017/[Underhanded
-Solidity Contest].
+Solidity Contest], which also provides extended examples of a number of the
+pitfalls raised in this section. 
 
 ==== Delegatecall
 
@@ -1749,9 +1746,9 @@ vulnerabilities can arise. Let’s see a fairly complex example of this,
 using Fibonacci numbers.
 
 Consider the following library which can generate the Fibonacci sequence
-and sequences of similar form. `FibonacciLib.sol`footnote:[This code was
+and sequences of similar form footnote:[This code was
 modified from
-https://github.com/web3j/web3j/blob/master/codegen/src/test/resources/solidity/fibonacci/Fibonacci.sol[web3j]]
+https://github.com/web3j/web3j/blob/master/codegen/src/test/resources/solidity/fibonacci/Fibonacci.sol[web3j]].
 
 .FibonacciLib.sol
 [source,solidity,linenums]
@@ -1780,11 +1777,11 @@ contract FibonacciLib {
 ----
 
 This library provides a function which can generate the _n_-th Fibonacci
-number in the sequence. It allows users to change the 0-th `start`
-number and calculate the _n_-th Fibonacci-like numbers in this new
+number in the sequence. It allows users to change the starting number of the
+sequence (`start`) and calculate the _n_-th Fibonacci-like numbers in this new
 sequence.
 
-Let’s now consider a contract that utilises this library.
+Let us now consider a contract that utilises this library.
 
 .FibonacciBalance.sol:
 [source,solidity,linenums]
@@ -1827,10 +1824,13 @@ participant gets 1 ether, the second also gets 1, the third gets 2, the
 forth gets 3, the fifth 5 and so on (until the balance of the contract
 is less than the Fibonacci number being withdrawn).
 
+// TODO: Andreas to decide if this into is necessary, or to simple refer to
+// another section of the book.
+
 There are a number of elements in this contract that may require some
 explanation. Firstly, there is an interesting-looking variable,
 `fibSig`. This holds the first 4 bytes of the Keccak (SHA-3) hash of the
-string ``fibonacci(uint256)''. This is known as the
+string `'setFibonacci(uint256)'`. This is known as the
 https://solidity.readthedocs.io/en/latest/abi-spec.html#function-selector[function
 selector] and is put into `calldata` to specify which function of a
 smart contract will be called. It is used in the `delegatecall` function
@@ -1842,7 +1842,7 @@ passing to the function. Secondly, we assume that the address for the
 potential vulnerabilities relating to this kind if contract reference
 initialisation).
 
-Can you spot any error(s) in this contract? If you put this into remix,
+Can you spot any error(s) in this contract? If one were to deploy this contract,
 fill it with ether and call `withdraw()`, it will likely revert.
 
 You may have noticed that the state variable `start` is used in both the
@@ -1862,12 +1862,15 @@ not (and cannot) modify the `start` variable in the `FibonacciBalance`
 contract. The underlying vulnerability in this contract is significantly
 worse than just modifying the `start` variable.
 
+// TODO: Andreas to decide if this into is necessary, or to simple refer to
+// another section of the book.
+
 Before discussing the actual issue, we take a quick detour to
 understanding how state variables (`storage` variables) actually get
 stored in contracts. State or `storage` variables (variables that
 persist over individual transactions) are placed into `slots`
 sequentially as they are introduced in the contract. (There are some
-complexities here, and I encourage the reader to read
+complexities here, and the reader is encouraged to read
 http://solidity.readthedocs.io/en/latest/miscellaneous.html#layout-of-state-variables-in-storage[Layout
 of State Variables in Storage] for a more thorough understanding).
 
@@ -1885,7 +1888,7 @@ value of `fibonacci(n)`.
 
 Now lets look at the `FibonacciBalance` contract. Storage `slot[0]` now
 corresponds to `fibonacciLibrary` address and `slot[1]` corresponds to
-`calculatedFibNumber`. It is here where the vulnerability appears.
+`calculatedFibNumber`. It is in this incorrect mapping that the vulnerability occurs.
 `delegatecall` *preserves contract context*. This means that code that
 is executed via `delegatecall` will act on the state (i.e. storage) of
 the calling contract.
@@ -1903,7 +1906,7 @@ it references `start` (`slot[0]`) which in the current calling context
 is the `fibonacciLibrary` address (which will often be quite large, when
 interpreted as a `uint`). Thus it is likely that the `withdraw()`
 function will revert as it will not contain `uint(fibonacciLibrary)`
-amount of ether, which is what `calcultedFibNumber` will return.
+amount of ether, which is what `calculatedFibNumber` will return.
 
 Even worse, the `FibonacciBalance` contract allows users to call all of
 the `fibonacciLibrary` functions via the fallback function on line [26].
@@ -1911,7 +1914,7 @@ As we discussed earlier, this includes the `setStart()` function. We
 discussed that this function allows anyone to modify or set storage
 `slot[0]`. In this case, storage `slot[0]` is the `fibonacciLibrary`
 address. Therefore, an attacker could create a malicious contract (an
-example of one is below), convert the address to a `uint` (this can be
+example of one is given below), convert the address to a `uint` (this can be
 done in python easily using `int('<address>',16)`) and then call
 `setStart(<attack_contract_address_as_uint>)`. This will change
 `fibonacciLibrary` to the address of the attack contract. Then, whenever
@@ -2209,7 +2212,7 @@ hashes, timestamps, blocknumber or gas limit. The issue with these are
 that they are controlled by the miner who mines the block and as such
 are not truly random. Consider, for example, a roulette smart contract
 with logic that returns a black number if the next block hash ends in an
-even number. A miner (or miner pool) could bet \$1M on black. If they
+even number. A miner (or miner pool) could bet $1M on black. If they
 solve the next block and find the hash ends in an odd number, they would
 happily not publish their block and mine another until they find a
 solution with the block hash being an even number (assuming the block
@@ -2238,17 +2241,16 @@ Arseny Reutov wrote a
 https://blog.positive.com/predicting-random-numbers-in-ethereum-smart-contracts-e5358c6b8620[blog
 post] after he analysed 3649 live smart contracts which were using some
 sort of pseudo random number generator (PRNG) and found 43 contracts
-which could be exploited. This post discusses the pitfalls of using
-block variables as entropy in further detail.
+which could be exploited. 
 
 ==== External Contract Referencing
 
-One of the benefits of Ethereum _global computer_ is the ability to
+One of the benefits of the Ethereum _global computer_ is the ability to
 re-use code and interact with contracts already deployed on the network.
 As a result, a large number of contracts reference external contracts
 and in general operation use external message calls to interact with
 these contracts. These external message calls can mask malicious actors
-intentions in some non-obvious ways, which we will discuss.
+intentions in some non-obvious ways, which will be discussed in this section.
 
 ===== The Vulnerability
 
@@ -2304,10 +2306,10 @@ contract Rot13Encryption {
 ----
 
 This code simply takes a string (letters a-z, without validation) and
-encrypts it by shifting each character 13 places to the right (wrapping
-around `z'); i.e. `a' shifts to `n' and `x' shifts to `k'. The assembly
-in here is not important, so don’t worry if it doesn’t make any sense at
-this stage.
+_encrypts_ it by shifting each character 13 places to the right (wrapping
+around `z`); i.e. `a` shifts to `n` and `x` shifts to `k`. The assembly
+in the above contract does not need to be understood to appreciate the issue
+being discussed, so the reader unfamiliar with assembly can safely ignore it.  
 
 Consider the following contract which uses this code for its encryption,
 
@@ -2378,9 +2380,10 @@ contract Rot26Encryption {
 }
 ----
 
-which implements the rot26 cipher (shifts each character by 26 places,
-get it? :p). Again, there is no need to understand the assembly in this
-contract. The deployer could have also linked the following contract:
+which implements the rot26 cipher, which shifts each character by 26 places
+(i.e. does nothing). Again, there is no need to understand the assembly in this
+contract. A more elegant deployer could have also linked the following simpler
+contract to the same effect:
 
 [source,solidity,linenums]
 ----
@@ -2414,13 +2417,13 @@ line `encryptionLibrary.rot13Encrypt()`, if the contract specified by
  }
 ----
 
-then an event with the text ``Here'' would be emitted. Thus if users can
+then an event with the text `Here` would be emitted. Thus if users can
 alter contract libraries, they can in principle get users to unknowingly
 run arbitrary code.
 
-_Note: Don’t use encryption contracts such as these, as the input
-parameters to smart contracts are visible on the blockchain. Also the
-Rot cipher is not a recommended encryption technique :p_
+_Note: The contracts represented here are for demonstrative purposes only and
+do not represent actual encryption. These should not be implemented for any
+kind of serious encryption._ 
 
 ===== Preventative Techniques
 
@@ -2452,7 +2455,7 @@ are known.
 In general, code that calls external contracts should always be looked
 at carefully. As a developer, when defining external contracts, it can
 be a good idea to make the contract addresses public (which is not the
-case in the honey-pot example) to allow users to easily examine which
+case in the honey-pot example given below) to allow users to easily examine which
 code is being referenced by the contract. Conversely, if a contract has
 a private variable contract address it can be a sign of someone behaving
 maliciously (as shown in the real-world example). If a privileged (or
@@ -2464,7 +2467,7 @@ in/out with the new contract address.
 
 ===== Real-World Example: Re-Entrancy Honey Pot
 
-A number of recent honey pots have been released on the main net. These
+A number of recent honey pots have been released on the mainnet. These
 contracts try to outsmart Ethereum hackers who try to exploit the
 contracts, but who in turn end up getting ether lost to the contract
 they expect to exploit. One example employs the above attack by
@@ -2542,14 +2545,14 @@ contract Log
 This
 https://www.reddit.com/r/ethdev/comments/7x5rwr/tricked_by_a_honeypot_contract_or_beaten_by/[post]
 by one reddit user explains how they lost 1 ether to this contract
-trying to exploit the re-entrancy bug they expected to be present in the
+by trying to exploit the re-entrancy bug they expected to be present in the
 contract.
 
 ==== Short Address/Parameter Attack
 
 This attack is not specifically performed on Solidity contracts
-themselves but on third party applications that may interact them. I add
-this attack for completeness and to be aware of how parameters can be
+themselves but on third party applications that may interact with them. This
+section is added for completeness and to give the reader an awareness of how parameters can be
 manipulated in contracts.
 
 For further reading, see
@@ -2605,11 +2608,11 @@ Notice that the hex `56bc75e2d63100000` at the end corresponds to 100
 tokens (with 18 decimal places, as specified by the `REP` token
 contract).
 
-Ok, so now lets look at what happens if we were to send an address that
+Let us now look at what happens if one were to send an address that
 was missing 1 byte (2 hex digits). Specifically, let’s say an attacker
-sends `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde`as an address (missing
+sends `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde` as an address (missing
 the last two digits) and the same `100` tokens to withdraw. If the
-exchange doesn’t validate this input, it would get encoded as
+exchange does not validate this input, it would get encoded as
 `a9059cbb000000000000000000000000deaddeaddeaddeaddeaddeaddeaddeaddeadde00000000000000`
 `00000000000000000000000000000000056bc75e2d6310000000`. The difference
 is subtle. Note that `00` has been padded to the end of the encoding, to
@@ -2620,7 +2623,7 @@ as `56bc75e2d6310000000` (notice the two extra `0`’s). This value is
 now, `25600` tokens (the value has been multiplied by `256`). In this
 example, if the exchange held this many tokens, the user would withdraw
 `25600` tokens (whilst the exchange thinks the user is only withdrawing
-`100`) to the modified address. Obviously the attacker wont posses the
+`100`) to the modified address. Obviously the attacker wont possess the
 modified address in this example, but if the attacker where to generate
 any address which ended in `0`’s (which can be easily brute forced) and
 used this generated address, they could easily steal tokens from the
@@ -2628,20 +2631,16 @@ unsuspecting exchange.
 
 ===== Preventative Techniques
 
-I suppose it is obvious to say that validating all inputs before sending
-them to the blockchain will prevent these kinds of attacks. It should
-also be noted that parameter ordering plays an important role here. As
-padding only occurs at the end, careful ordering of parameters in the
-smart contract can potentially mitigate some forms of this attack.
-
-===== Real-World Example: Unknown
-
-I do not know of any publicised attack of this kind in the wild.
+All input parameters in external applications should be validated before
+sending them to the blockchain. It should
+also be noted that parameter ordering plays an important role here. As padding
+only occurs at the end, careful ordering of parameters in the smart contract
+can potentially mitigate some forms of this attack.
 
 ==== Unchecked CALL Return Values
 
 There a number of ways of performing external calls in solidity. Sending
-ether to external accounts is commonly done via the `transfer()` method.
+ether to external accounts is commonly performed via the `transfer()` method.
 However, the `send()` function can also be used and, for more versatile
 external calls, the `CALL` opcode can be directly employed in solidity.
 The `call()` and `send()` functions return a boolean indicating if the
@@ -2687,12 +2686,10 @@ This contract represents a Lotto-like contract, where a `winner`
 receives `winAmount` of ether, which typically leaves a little left over
 for anyone to withdraw.
 
-The bug exists on line [11] where a `send()` is used without checking
+The vulnerability exists on line [11] where a `send()` is used without checking
 the response. In this trivial example, a `winner` whose transaction
-fails (either by running out of gas, being a contract that intentionally
-throws in the fallback function or via a
-https://github.com/ethereum/wiki/wiki/Safety#call-depth-attack-deprecated[call
-stack depth attack]) allows `payedOut` to be set to `true` (regardless
+fails (either by running out of gas or being a contract that intentionally
+throws in the fallback function) allows `payedOut` to be set to `true` (regardless
 of whether ether was sent or not). In this case, the public can withdraw
 the `winner`’s winnings via the `withdrawLeftOver()` function.
 
@@ -2778,7 +2775,7 @@ Solidity pitfalls whereby users _race_ code execution to obtain
 unexpected states. Re-Entrancy is one example of such
 a race condition. In this section we will talk more generally about
 different kinds of race conditions that can occur on the Ethereum
-blockchain. There is a variety of good posts on this area, a few are:
+blockchain. There is a variety of good posts on this subject, a few are:
 https://github.com/ethereum/wiki/wiki/Safety#race-conditions[Ethereum
 Wiki - Safety], http://www.dasp.co/#item-7[DASP - Front-Running] and the
 https://consensys.github.io/smart-contract-best-practices/known_attacks/#race-conditions[Consensus
@@ -2851,7 +2848,7 @@ in a block how they see fit). A contract that is vulnerable to the first
 class (users), is significantly worse-off than one vulnerable to the
 second (miners) as miner’s can only perform the attack when they solve a
 block, which is unlikely for any individual miner targeting a specific
-block. Here I’ll list a few mitigation measures with relation to which
+block. Here we’ll list a few mitigation measures with relation to which
 class of attackers they may prevent.
 
 One method that can be employed is to create logic in the contract that
@@ -2933,17 +2930,16 @@ This category is very broad, but fundamentally consists of attacks where
 users can leave the contract inoperable for a small period of time, or
 in some cases, permanently. This can trap ether in these contracts
 forever, as was the case with the *Second Parity
-MultiSig hack*
+MultiSig hack*.
 
 ===== The Vulnerability
 
-There are various ways a contract can become inoperable. Here I will
+There are various ways a contract can become inoperable. Here we
 only highlight some potentially less-obvious Blockchain nuanced Solidity
 coding patterns that can lead to attackers performing DOS attacks.
 
-*1. Looping through externally manipulated mappings or arrays* - In my
-adventures I’ve seen various forms of this kind of pattern. Typically it
-appears in scenarios where an `owner` wishes to distribute tokens
+Looping through externally manipulated mappings or arrays::
+This kind of pattern typically appears in scenarios where an `owner` wishes to distribute tokens
 amongst their investors, and do so with a `distribute()`-like function
 as can be seen in the example contract:
 
@@ -2977,7 +2973,8 @@ the `investor` array large. In principle this can be done such that the
 gas required to execute the for loop exceeds the block gas limit,
 essentially making the `distribute()` function inoperable.
 
-*2. Owner operations* - Another common pattern is where owner’s have
+Owner operations::
+Another common pattern is where owners have
 specific privileges in contracts and must perform some task in order for
 the contract to proceed to the next state. One example would be an ICO
 contract that requires the owner to `finalize()` the contract which then
@@ -3010,15 +3007,16 @@ the `owner` cannot call `finalize()` no tokens can be transferred;
 i.e. the entire operation of the token ecosystem hinges on a single
 address.
 
-*3. Progressing state based on external calls* - Contracts are sometimes
-written such that in order to progress to a new state requires sending
-ether to an address, or waiting for some input from an external source.
-These patterns can lead to DOS attacks, when the external call fails, or
-is prevented for external reasons. In the example of sending ether, a
-user can create a contract which doesn’t accept ether. If a contract
-needs to send ether to this address in order to progress to a new state,
-the contract will never achieve the new state as ether can never be sent
-to the contract.
+Progressing state based on external calls:: Contracts are sometimes written
+such that in order to progress to a new state requires sending ether to an
+address, or waiting for some input from an external source.  These patterns can
+lead to DOS attacks when the external call fails or is prevented for external
+reasons. In the example of sending ether, a user can create a contract which
+does not accept ether. If a contract requires ether to be withdrawn (consider a
+time-locking contract that requires all ether to be withdrawn before being
+useable again) in order to progress to a new state, the contract will never
+achieve the new state as ether can never be sent to the user's contract which
+does not accept ether. 
 
 ===== Preventative Techniques
 
@@ -3043,8 +3041,7 @@ progression in the event that the desired call never comes.
 _Note: Of course there are centralised alternatives to these suggestions
 where one can add a `maintenanceUser` who can come along and fix
 problems with DOS-based attack vectors if need be. Typically these kinds
-of contracts contain trust issues over the power of such an entity, but
-that is not a conversation for this section._
+of contracts contain trust issues over the power of such an entity._
 
 ===== Real-World Examples: GovernMental
 
@@ -3061,7 +3058,7 @@ https://etherscan.io/address/0xf45717552f12ef7cb65e95476f217ea008167ae3[0xF45717
 and you can see from transaction
 https://etherscan.io/tx/0x0d80d67202bd9cb6773df8dd2020e7190a1b0793e8ec4fc105257e8128f0506b[0x0d80d67202bd9cb6773df8dd2020e7190a1b0793e8ec4fc105257e8128f0506b]
 that the 1100 ether was finally obtained with a transaction that used
-2.5M gas.
+2.5M gas (after the block gas limit allowed such a transaction).
 
 ==== Block Timestamp Manipulation
 
@@ -3077,7 +3074,7 @@ Some useful references for this are:
 http://solidity.readthedocs.io/en/latest/units-and-global-variables.html#block-and-transaction-properties[The
 Solidity Docs], this
 https://ethereum.stackexchange.com/questions/413/can-a-contract-safely-rely-on-block-timestamp?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa[Stack
-Exchange Question],
+Exchange Question].
 
 ===== The Vulnerability
 
@@ -3117,7 +3114,7 @@ miner who solves a block is incentivised to choose a timestamp such that
 `block.timestamp` or `now` modulo 15 is `0`. In doing so they may win
 the ether locked in this contract along with the block reward. As there
 is only one person allowed to bet per block, this is also vulnerable to
-front-running attacks (see the *Front-Running section for further details).
+front-running attacks (see the *Front-Running* section for further details).
 
 In practice, block timestamps are monotonically increasing and so miners
 cannot choose arbitrary block timestamps (they must be larger than their
@@ -3172,14 +3169,14 @@ development, if the constructor name isn’t changed, it becomes a normal,
 callable function. As you can imagine, this can (and has) lead to some
 interesting contract hacks.
 
-For further reading, I suggest the reader attempt the
+For further insight, the reader may be interested attempting the
 https://github.com/OpenZeppelin/ethernaut[Ethernaught Challenges] (in
 particular the Fallout level).
 
 ===== The Vulnerability
 
 If the contract name gets modified, or there is a typo in the
-constructors name such that it no longer matches the name of the
+constructor's name such that it no longer matches the name of the
 contract, the constructor will behave like a normal function. This can
 lead to dire consequences, especially if the constructor is performing
 privileged operations. Consider the following contract
@@ -3307,11 +3304,12 @@ contract, that allows name registration regardless of the `unlocked`
 variable.
 
 // TODO: Andreas to check if this introduction is required as another section
-// of the book may be able to be referenced 
+// of the book may be able to be referenced. The language may also need to be 
+// adjusted.
 
 To discuss this vulnerability, first we need to understand how storage
 works in Solidity. As a high level overview (without any proper
-technical detail - I suggest reading the Solidity docs for a proper
+technical detail - we suggest reading the Solidity docs for a proper
 review), state variables are stored sequentially in _slots_ as they
 appear in the contract (they can be grouped together, but not in this
 example, so we wont worry about that). Thus, `unlocked` exists in
@@ -3322,7 +3320,7 @@ complexities with mappings which we ignore for now). The boolean
 `false` or `0x000...1`(63 `0`’s) for `true`. As you can see, there is a
 significant waste of storage in this particular example.
 
-The next piece of information that we need, is that Solidity defaults
+The next piece of the puzzle, is that Solidity defaults
 complex data types, such as `structs`, to `storage` when initialising
 them as local variables. Therefore, `newRecord` on line [16] defaults to
 `storage`. The vulnerability is caused by the fact that `newRecord` is
@@ -3358,7 +3356,7 @@ A honey pot named OpenAddressLottery
 (https://etherscan.io/address/0x741f1923974464efd0aa70e77800ba5d9ed18902#code[contract
 code]) was deployed that used this uninitialised storage variable querk
 to collect ether from some would-be hackers. The contract is rather
-in-depth, so I will leave the discussion to this
+in-depth, so we will leave the analysis to this
 https://www.reddit.com/r/ethdev/comments/7wp363/how_does_this_honeypot_work_it_seems_like_a/[reddit
 thread] where the attack is quite clearly explained.
 
@@ -3460,20 +3458,14 @@ precisions in external apps (this is essentially how the `decimals`
 variable works in
 https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20 Token]
 contracts). To see examples of how this can be done and the libraries to
-do this, I recommend looking at the
+do this, we recommend looking at the
 https://github.com/dapphub/ds-math[Maker DAO DSMath]. They use some
 funky naming, `WAD`’s and `RAY`’s but the concept is useful.
 
 ===== Real-World Example: Ethstick
 
-I couldn’t find a good example where rounding has caused a severe issue
-in a contract, but I’m sure there are plenty out there. Feel free to
-update this if you have a good one in mind.
-
-For lack of a good example, I want to draw your attention to
-https://etherscan.io/address/0xbA6284cA128d72B25f1353FadD06Aa145D9095Af#code[Ethstick]
-mainly because I like the cool naming within the contract. This contract
-doesn’t use any extended precision, however, it deals with `wei`. So
+The contract https://etherscan.io/address/0xbA6284cA128d72B25f1353FadD06Aa145D9095Af#code[Ethstick]
+ does not use any extended precision, however, it deals with `wei`. So
 this contract will have issues of rounding, but only at the `wei` level
 of precision. It has some more serious flaws, but these are relating
 back to the difficulty in getting entropy on the blockchain (see
@@ -3505,6 +3497,7 @@ typically vulnerable to phishing attacks which can trick users into
 performing authenticated actions on the vulnerable contract.
 
 Consider the simple contract,
+
 .Phishable.sol
 [source,solidity,linenums]
 ----
@@ -3542,7 +3535,7 @@ contract AttackContract {
         attacker = _attackerAddress;
     }
     
-    function () { 
+    function () payable { 
         phishableContract.withdrawAll(attacker); 
     }
 }
@@ -3554,7 +3547,8 @@ of ether. The attacker may disguise this contract as their own private
 address and social engineer the victim to send some form of transaction
 to the address. The victim, unless being careful, may not notice that
 there is code at the attacker’s address, or the attacker may pass it off
-as being a multisignature wallet or some advanced storage wallet.
+as being a multisignature wallet or some advanced storage wallet (remember
+source code of public contracts is not available by default).
 
 In any case, if the victim sends a transaction (with enough gas) to the
 `AttackContract` address, it will invoke the fallback function, which in
@@ -3576,10 +3570,6 @@ they could implement a `require` of the from
 `require(tx.origin == msg.sender)`. This prevents intermediate contracts
 being used to call the current contract, limiting the contract to
 regular code-less addresses.
-
-===== Real-World Example: Not Known
-
-I do not know of any publicised exploits of this form in the wild.
 
 [[security_best_practices_sec]]
 ==== Security best practices
