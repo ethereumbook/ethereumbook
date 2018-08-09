@@ -15,9 +15,9 @@ As a result of Ethereum's clear formal specification, there are a number of inde
 
 There exist a variety of Ethereum-based networks which largely conform to the formal specification defined in the Ethereum "Yellow Paper," but which may or may not interoperate with each other.
 
-Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, and many others. While mostly compatible on a protocol-level, these networks often have features or attributes that require maintainers of Ethereum client software to make small changes in order to support each network. Because of this, not every version of Ethereum client software runs every Ethereum-based blockchain.
+Among these Ethereum-based networks are: Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, and many others. While mostly compatible at the protocol level, these networks often have features or attributes that require maintainers of Ethereum client software to make small changes in order to support each network. Because of this, not every version of Ethereum client software runs every Ethereum-based blockchain.
 
-Currently, there are six main implementations of the Ethereum protocol written in six different languages:
+Currently, there are six main implementations of the Ethereum protocol, written in six different languages:
 
 * Parity, written in Rust
 * Geth, written in Go
@@ -26,7 +26,7 @@ Currently, there are six main implementations of the Ethereum protocol written i
 * Mantis, written in Scala,
 * and Harmony, written in Java.
 
-In this section, we will look at the two most common clients, Parity and Geth. We'll learn to set up a node using each client and explore some of their command-line and application programming interfaces (APIs).
+In this section, we will look at the two most common clients, Parity and Geth. We'll learn how to set up a node using each client, and explore some of their command-line and application programming interfaces (APIs).
 
 [[full_node_importance]]
 ==== Should I run a full node?
@@ -37,11 +37,11 @@ However, running a full node will incur a cost in hardware resources and bandwid
 
 A full node running on a live _mainnet_ network is not necessary for Ethereum development. You can do almost everything you need to do with a _testnet_ node (which connects you to one of the smaller public test blockchains), with a local private blockchain (see <<ganache>>), or with a cloud-based Ethereum client offered by a service provider (see <<infura>>).
 
-You also have the option of running a remote client which does not store a local copy of the blockchain or validate blocks and transactions. These clients offer the functionality of a wallet and can create and broadcast transactions. Remote clients can be used to connect to existing networks, such as your own full node, a public blockchain, a public or permissioned (PoA) testnet, or a private local blockchain. In practice, you will likely use a remote client such as MetaMask, Emerald Wallet, MyEtherWallet or MyCrypto as a convenient way to switch between all of the different node options.
+You also have the option of running a remote client, which does not store a local copy of the blockchain or validate blocks and transactions. These clients offer the functionality of a wallet and can create and broadcast transactions. Remote clients can be used to connect to existing networks, such as your own full node, a public blockchain, a public or permissioned (Proof-of-Authority) testnet, or a private local blockchain. In practice, you will likely use a remote client such as MetaMask, Emerald Wallet, MyEtherWallet or MyCrypto as a convenient way to switch between all of the different node options.
 
-The terms "remote client" and "wallet" are used interchangeably, though there are some differences. Usually, a remote client offers an API (such as the web3js API) in addition to the transaction functionality of a wallet.
+The terms "remote client" and "wallet" are used interchangeably, though there are some differences. Usually, a remote client offers an API (such as the web3.js API) in addition to the transaction functionality of a wallet.
 
-Do not confuse the concept of a remote wallet in Ethereum with that of a _light client_ (which is analogous to a Simplified Payment Verification (SPV) client in Bitcoin). Light clients validate block headers and use Merkle proofs to validate the inclusion of transactions in the blockchain and determine their effects, rendering them of a similar level of security to a full node. Conversely, Ethereum remote clients do not validate block headers or transactions. They entirely trust a full client operated by a third party (which could be you) to give them RPC access to the blockchain and as such lose significant security and anonymity guarantees.
+Do not confuse the concept of a remote wallet in Ethereum with that of a _light client_ (which is analogous to a Simplified Payment Verification client in Bitcoin). Light clients validate block headers and use Merkle proofs to validate the inclusion of transactions in the blockchain and determine their effects, giving them a similar level of security to a full node. Conversely, Ethereum remote clients do not validate block headers or transactions. They entirely trust a full client to give them access to the blockchain, and hence lose significant security and anonymity guarantees. You can mitigate these problems by using a full client you run yourself.
 
 [[full_node_adv_disadv]]
 ==== Full Node Advantages and Disadvantages
@@ -52,15 +52,15 @@ Choosing to run a full node helps with the operation of the networks you connect
 
 * Supports the resilience and censorship resistance of Ethereum-based networks.
 * Authoritatively validates all transactions.
-* Can interact with any contract on the public blockchain (without requiring an intermediary).
-* Can query (read-only) the blockchain status (accounts, contracts, etc.) offline, if necessary.
+* Can interact with any contract on the public blockchain without an intermediary.
+* Can directly deploy contracts into the public blockchain without an intermediary.
+* Can query (read-only) the blockchain status (accounts, contracts, etc.) offline.
 * Can query the blockchain without letting a third party know the information you're reading.
-* Can directly deploy your own contracts into the public blockchain (without requiring an intermediary).
 
 *Disadvantages:*
 
 * Requires significant and growing hardware and bandwidth resources.
-* Requires several hours or days to fully sync for the first initial download.
+* May require several days to fully sync when first started.
 * Must be maintained, upgraded and kept online to remain synced.
 
 [[pub_test_adv_disadv]]
@@ -77,19 +77,18 @@ Whether or not you choose to run a full node, you will probably want to run a pu
 
 *Disadvantages:*
 
-* You can't use "real" money on a testnet, it runs on test ether.
-* Consequently, you can't test security against real adversaries, as there is nothing at stake.
-* There are some aspects of a public blockchain that you cannot test realistically on testnet. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet since gas is free. And the testnets do not experience network congestion like the public mainnet sometimes does.
+* You can't use "real" money on a testnet; it runs on test ether. Consequently, you can't test security against real adversaries, as there is nothing at stake.
+* There are some aspects of a public blockchain that you cannot test realistically on testnet. For example, transaction fees, although necessary to send transactions, are not a consideration on testnet, since gas is free. Further, the testnets do not experience network congestion like the public mainnet sometimes does.
 
 [[localtest_adv_dis]]
 ==== Local Instance (ganache) Advantages and Disadvantages
 
-For many testing purposes, the best option is to launch a single instance private blockchain, using the +ganache+ local test blockchain. Ganache (formerly named +testrpc+) creates a local-only, private blockchain that you can interact with, without any other participants. It shares many of the advantages and disadvantages of the public testnet, but also has some differences.
+For many testing purposes, the best option is to launch a single-instance private blockchain, using the +ganache+ local test blockchain. Ganache (formerly named +testrpc+) creates a local-only, private blockchain that you can interact with, without any other participants. It shares many of the advantages and disadvantages of the public testnet, but also has some differences.
 
 *Advantages:*
 
 * No syncing and almost no data on disk. You mine the first block yourself.
-* No need to find test ether, you "award" yourself mining rewards that you can use for testing.
+* No need to obtain test ether: you "award" yourself mining rewards that you can use for testing.
 * No other users, just you.
 * No other contracts, just the ones you deploy after you launch it.
 
@@ -104,7 +103,7 @@ For many testing purposes, the best option is to launch a single instance privat
 [[running_client]]
 === Running an Ethereum client
 
-If you have the time and resources, you should attempt to run a full node, even if only to learn more about the process. In the next few sections we will download, compile, and run the Ethereum clients Parity and Geth. This requires some familiarity with using the command-line interface on your operating system. It's worth installing these clients whether you choose to run them as full nodes, as testnet nodes, or as clients to a local private blockchain.
+If you have the time and resources, you should attempt to run a full node, even if only to learn more about the process. In the next few sections we will download, compile, and run the Ethereum clients Parity and Geth. This requires some familiarity with using the command-line interface on your operating system. It's worth installing these clients, whether you choose to run them as full nodes, as testnet nodes, or as clients to a local private blockchain.
 
 [[requirements]]
 ==== Hardware Requirements for a Full Node
@@ -122,7 +121,7 @@ Syncing the Ethereum blockchain is very input-output (I/O) intensive. It is best
 
 These are the minimum requirements to sync a full (but pruned) copy of an Ethereum-based blockchain.
 
-At the time of writing (April 2018) the Parity codebase is lighter on resources, so if you're running with limited hardware you'll likely see the better results using Parity.
+At the time of writing (April 2018) the Parity codebase is lighter on resources, so if you're running with limited hardware you'll likely see better results using Parity.
 
 If you want to sync in a reasonable amount of time and store all the development tools, libraries, clients, and blockchains we discuss in this book, you will want a more capable computer.
 
@@ -135,6 +134,12 @@ If you want to sync in a reasonable amount of time and store all the development
 
 It’s difficult to predict how fast a blockchain's size will increase and when more disk space will be required, so it’s recommended to check the blockchain's latest size before you start syncing.
 
+////
+
+TODO: If I look at bitinfocharts.com, it currently quotes 667GB for the Ethereum database. Presumably this is unpruned? But there's no "pruned" figure separately listed. (I assume the requirement hasn't gone up from 80GB to 667GB since April!) Hence, it would be good for users to explain how to estimate a pruned figure, and perhaps explain more about the difference here. (Indeed, I find no mention of pruning anywhere else.)
+
+////
+
 *Ethereum:* https://bitinfocharts.com/ethereum/
 
 *Ethereum Classic:* https://bitinfocharts.com/ethereum%20classic/
@@ -142,7 +147,7 @@ It’s difficult to predict how fast a blockchain's size will increase and when 
 [[sw_reqs]]
 ==== Software Requirements for Building and Running a Client (Node)
 
-This section covers Parity and Geth client software. It also assumes you are using a Unix-like command-line environment. The examples show the output and commands as entered on an Ubuntu Linux operating system running the Bash shell (command-line execution environment).
+This section covers Parity and Geth client software. It also assumes you are using a Unix-like command-line environment. The examples show the commands and output as they appear on an Ubuntu GNU/Linux operating system running the Bash shell (command-line execution environment).
 
 Typically every blockchain will have their own version of Geth, while Parity provides support for multiple Ethereum-based blockchains (Ethereum, Ethereum Classic, Ellaism, Expanse, Musicoin) with the same client download.
 
@@ -151,7 +156,21 @@ Typically every blockchain will have their own version of Geth, while Parity pro
 ((("$ symbol")))((("shell commands")))((("terminal applications")))In many of the examples in this chapter, we will be using the operating system's command-line interface (also known as a "shell"), accessed via a "terminal" application. The shell will display a prompt; you type a command, and the shell responds with some text and a new prompt for your next command. The prompt may look different on your system, but in the following examples, it is denoted by a +$+ symbol. In the examples, when you see text after a +$+ symbol, don't type the +$+ symbol but type the command immediately following it, then press Enter to execute the command. In the examples, the lines below each command are the operating system's responses to that command. When you see the next +$+ prefix, you'll know it's a new command and you should repeat the process.
 =====
 
-Before we get started, we may need to get some prerequisites satisfied. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For the examples that follow, you will need to install +git+, the source-code management system; +golang+, the Go programming language and standard libraries; and Rust, a systems programming language.
+Before we get started, you need to check some software is installed. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For the examples that follow, you will need to install +git+, the source-code management system; +golang+, the Go programming language and standard libraries; and Rust, a systems programming language.
+
+////
+
+TODO The level of instructions are a bit all over the place. For example, you explain in very basic terms how to use a terminal, but then you simply give URLs to install Go/Rust/Git from source. Not all the websites pointed to are easy to install from directly. (On the other hand, the instructions for installing the Ethereum clients are beautifully detailed.)
+
+It's admirable that you use Ubuntu as your main example, but I guess a lot more readers of the book will have macOS. Therefore, it would seem reasonable to give more detailed explanations about installation of dependencies on macOS too, using brew, for example. And giving even a hint to Windows users, for example about how to install Ubuntu on Windows, would be a big help too.
+
+Then, you'd only have to give higher-level instructions for two systems: Ubuntu and macOS, and you can give them at the +apt+/+brew install+ level. For Go, golang 1.10 is available in Ubuntu backports for 16.04, and in main for 18.04; that seems recent enough to me (again, I'd specifically point to documentation on how to enable backports for 16.04 users); for Rust, I agree that it's easier to point to the Rust web site, because 1.27 is required for Parity, and the instructions for installation are trivial (though they do assume curl is installed—probably safe?).
+
+In my experience, nothing beats sitting down with a few users who aren't experienced with these tools (I get surprising results even with experienced developers! for example a good friend of mine who uses Ubuntu full-time for Python and Rust development came unstuck trying to execute what I thought were obvious install instructions for a C/autotools-based project of mine) and running over your instructions until a couple of (fresh) volunteers can complete them without a hitch.
+
+You might also give an explicit reference to an online version of the installation instructions, so that, both as the dependencies change, and as you find new problems that some users have, you can improve and update them faster than new editions of the book are issued.
+
+////
 
 Git can be installed by following the instructions here:
 https://git-scm.com/
@@ -171,10 +190,10 @@ https://www.rustup.rs/
 
 [NOTE]
 =====
-Parity requires Rust version 1.24 or greater.
+Parity requires Rust version 1.27 or greater.
 =====
 
-Parity also requires some software libraries, such as OpenSSL and libudev. To install these on a Linux (Debian) compatible system:
+Parity also requires some software libraries, such as OpenSSL and libudev. To install these on a Ubuntu or Debian GNU/Linux compatible system:
 
 [[install_parity_dependencies]]
 ----
@@ -188,7 +207,13 @@ Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's g
 [[parity]]
 ==== Parity
 
-Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language with the aim of building a modular, secure, and scalable Ethereum client. Parity is developed by Parity Tech, a UK company, and is released under a GPLv3 open source license.
+////
+
+TODO Seems also to need cmake to build
+
+////
+
+Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language, with the aim of building a modular, secure, and scalable Ethereum client. Parity is developed by Parity Tech, a UK company, and is released under the GPLv3 free software license.
 
 [NOTE]
 =====
@@ -243,6 +268,12 @@ $
 
 Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
 
+////
+
+TODO This will not work, since parity is not yet installed. Since running `cargo install` seems to recompile everything (at least, it takes ages, even in a built tree, on my machine, and emits lots of "Compiling…" lines), I suggest running `cargo install` above, rather than `cargo build` as a second step. Further, this will probably not happen for all users, but on my system, user-wide autoconf configuration causes the +install+ command, which builds with different flags, to fail if the +build+ command is run first.
+
+////
+
 [[run_parity]]
 ----
 $ parity --version
@@ -287,7 +318,7 @@ You can also skip these instructions and install a precompiled binary for your p
 [[cloning_repo]]
 ===== Cloning the repository
 
-Our first step is to clone the git repository, so as to get a copy of the source code.
+Our first step is to clone the git repository, to get a copy of the source code.
 
 To make a local clone of this repository, use the +git+ command as follows, in your home directory or under any directory you use for development:
 
@@ -342,7 +373,7 @@ Run "build/bin/geth" to launch geth.
 $
 ----
 
-Let's run +geth+ to make sure it works before stopping it and changing it's configuration:
+Let's make sure +geth+ works without actually starting it running:
 
 [[run_geth]]
 ----
@@ -365,6 +396,12 @@ Your +geth version+ command may show slightly different information, but you sho
 
 Finally, we may want to copy the +geth+ command to our operating system's application directory (or a directory on the command-line execution path). On Linux, we'd use the following command:
 
+////
+
+TODO Wiser to copy to a user directory? Ubuntu's default setup adds +~/bin+ to +PATH+ if it exists. So, you could instead `mkdir -p ~/bin` then `cp ./build/bin/geth ~/bin`. Otherwise, suitable `chmod` and `chown` commands should be added to the following:  `chown root.root /usr/local/bin/geth` and `chmod 755 /usr/local/bin/geth` (the latter is necessary on systems where, like me, users have modified their default umask).
+
+////
+
 [[copy_geth_binary]]
 ----
 $ sudo cp ./build/bin/geth /usr/local/bin
@@ -377,11 +414,11 @@ Don't start running +geth+ yet, because it will start synchronizing the blockcha
 
 Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the very start, i.e. from the genesis block.
 
-While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high computing resource requirements (much more RAM and faster storage).
+While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high resource requirements (it will need much more RAM, and will take a very long time indeed if you don't have fast storage).
 
 Many Ethereum-based blockchains were the victim of a Denial-of-Service (DoS) attack at the end of 2016. Blockchains affected by this attack will tend to sync slowly when doing a full sync.
 
-For example, on Ethereum, a new client will make rapid progress until it reaches block 2,283,397. This block was mined on 2016/09/18 and marks the beginning of the DoS attacks. From this block and until block 2,700,031 (2016/11/26), the validation of transactions becomes extremely slow, memory intensive, and I/O intensive. This results in validation times exceeding 1 minute per block. Ethereum implemented a series of upgrades, using hard forks, to address the underlying vulnerabilities that were exploited in the denial of service attacks. These upgrades also cleaned up the blockchain by removing some 20 million empty accounts created by spam transactions. <<[1]>>
+For example, on Ethereum, a new client will make rapid progress until it reaches block 2,283,397. This block was mined on 2016/09/18 and marks the beginning of the DoS attacks. From this block to block 2,700,031 (2016/11/26), the validation of transactions becomes extremely slow, memory intensive, and I/O intensive. This results in validation times exceeding 1 minute per block. Ethereum implemented a series of upgrades, using hard forks, to address the underlying vulnerabilities that were exploited in the denial of service attacks. These upgrades also cleaned up the blockchain by removing some 20 million empty accounts created by spam transactions. <<[1]>>
 
 If you are syncing with full validation, your client will slow down and may take several days, or perhaps even longer, to validate the blocks affected by this DoS attack.
 
@@ -389,7 +426,7 @@ Fortunately, most Ethereum clients include an option to perform a "fast" synchro
 
 For Geth, the option to enable fast synchronization is typically called +--fast+. You may need to refer to the specific instructions for your chosen Ethereum chain.
 
-For Parity, the option is +--warp+ for older versions (< 1.6) and is enabled by default (no need to set a configuration option) on newer versions (>= 1.6).
+Parity does fast synchronization by default.
 
 [NOTE]
 =====
@@ -400,11 +437,17 @@ Geth can only operate fast synchronization when starting with an empty block dat
 [[json_rpc]]
 ==== JSON-RPC Interface
 
-Ethereum clients offer an Application Programming Interface (API) and a set of Remote Procedure Call (RPC) commands, which are encoded as JavaScript Object Notation (JSON). You will see this referred to as the _JSON-RPC API_. Essentially, the JSON-RPC API is an interface that allows us to write programs that use an Ethereum client as a _gateway_ into an Ethereum network and blockchain.
+Ethereum clients offer an Application Programming Interface (API) and a set of Remote Procedure Call (RPC) commands, which are encoded as JavaScript Object Notation (JSON). You will see this referred to as the _JSON-RPC API_. Essentially, the JSON-RPC API is an interface that allows us to write programs that use an Ethereum client as a _gateway_ to an Ethereum network and blockchain.
 
 Usually, the RPC interface is offered over as an HTTP service on port +8545+. For security reasons it is restricted, by default, to only accept connections from localhost (the IP address of your own computer which is +127.0.0.1+).
 
-To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth configured and running, then switch to a new terminal window (e.g. with +<ctrl>\+<shift>\+n+ or +<ctrl>\+<shift>\+t++ in an existing terminal window):
+////
+
+TODO the following para says "ensure that you have Geth configured and running", but we've not been told how to do that yet! Searching, I can't find any text that actually explains how to set up a running instance of Geth or Parity.
+
+////
+
+To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth configured and running, then switch to a new terminal window (e.g. with `<Ctrl>+<Shift>+N` or `<Ctrl>+<Shift>+T` in an existing terminal window):
 
 [[curl_web3]]
 .Using curl to call the web3_clientVersion function over JSON-RPC
@@ -461,7 +504,7 @@ http://localhost:8545
 
 {"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
 ----
-The response, +0x430e23400+, tells us that the current gas price is 1.8 Gwei (gigawei or billion wei). If, like me, you can't read off hexadecimal instinctively, you can convert it on the command line with a little bash-fu:
+The response, +0x430e23400+, tells us that the current gas price is 1.8 Gwei (gigawei or billion wei). If, like me, you don't think in hexadecimal, you can convert it to decimal on the command line with a little bash-fu:
 
 [[convert_hex_to_dec]]
 ----
@@ -501,24 +544,24 @@ A remote client offers one or more of the following functions:
 * Use a web3 instance provided/injected into the browser by another client.
 * Access RPC services on a local or remote Ethereum node.
 
-Some remote clients, for example mobile (smartphone) wallets, offer only basic wallet functionality. Other remote clients are fully-developed DApp browsers. Remote clients commonly offer some of the functions of a full node Ethereum client without synchronizing a local copy of the Ethereum blockchain by connecting to a full node being run elsewhere, e.g. by you locally on your machine or on a web server, or by a third party on their servers.
+Some remote clients, for example mobile (smartphone) wallets, offer only basic wallet functionality. Other remote clients are full-blown DApp browsers. Remote clients commonly offer some of the functions of a full node Ethereum client without synchronizing a local copy of the Ethereum blockchain by connecting to a full node being run elsewhere, e.g. by you locally on your machine or on a web server, or by a third party on their servers.
 
 Let's look at some of the most popular remote clients and the functions they offer.
 
 [[mobile_wallets]]
 === Mobile (Smartphone) Wallets
 
-All mobile wallets are remote clients because smartphones do not have adequate resources to run a full Ethereum client. Light clients are in development and not in general use for Ethereum. In the case of Parity, it is marked "experimental" and can be used by running parity with the +--light+ option.
+All mobile wallets are remote clients, because smartphones do not have adequate resources to run a full Ethereum client. Light clients are in development and not in general use for Ethereum. In the case of Parity, it is marked "experimental" and can be used by running parity with the +--light+ option.
 
 Popular mobile wallets include Jaxx, Status, and Trust Wallet. We list these as examples of popular mobile wallets (this is not an endorsement or an indication of the security or functionality of these wallets).
 
-Jaxx:: A multi-currency mobile wallet based on BIP39 mnemonic seeds, with support for Bitcoin, Litecoin, Ethereum, Ethereum Classic, ZCash, a variety of ERC20 tokens and many other currencies. Jaxx is available on Android, iOS, as a browser plugin wallet, and a desktop wallet for a variety of operating systems. Find it at https://jaxx.io
+Jaxx:: A multi-currency mobile wallet based on BIP39 mnemonic seeds, with support for Bitcoin, Litecoin, Ethereum, Ethereum Classic, ZCash, a variety of ERC20 tokens, and many other currencies. Jaxx is available on Android, iOS, as a browser plugin wallet, and as a desktop wallet for a variety of operating systems. Find it at https://jaxx.io
 
-Status:: A mobile wallet and DApp browser, with support for a variety of tokens and popular DApps. Available for iOS and Android smartphones. Find it at https://status.im
+Status:: A mobile wallet and DApp browser, with support for a variety of tokens and popular DApps. Available for iOS and Android. Find it at https://status.im
 
-Trust Wallet:: A mobile Ethereum and Ethereum Classic wallet, that supports ERC20 and ERC223 tokens. Trust Wallet is available for iOS and Android smartphones. Find it at https://trustwalletapp.com/
+Trust Wallet:: A mobile Ethereum and Ethereum Classic wallet that supports ERC20 and ERC223 tokens. Trust Wallet is available for iOS and Android. Find it at https://trustwalletapp.com/
 
-Cipher Browser::  A full-featured Ethereum-enabled mobile DApp browser and wallet. Allows integration with Ethereum apps and tokens. Available for iOS and Android smartphones. Find it at https://www.cipherbrowser.com
+Cipher Browser::  A full-featured Ethereum-enabled mobile DApp browser and wallet. Allows integration with Ethereum apps and tokens. Available for iOS and Android. Find it at https://www.cipherbrowser.com
 
 [[browser_wallets]]
 === Browser wallets
@@ -530,18 +573,14 @@ Some of the more popular ones are MetaMask, Jaxx, and MyEtherWallet/MyCrypto.
 [[MetaMask]]
 ==== MetaMask
 
-MetaMask was introduced in <<intro>>, and is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera, and Brave Browser. Find MetaMask at:
+MetaMask was introduced in <<intro>>, and is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera, and Brave Browser. Find MetaMask at https://metamask.io
 
-https://metamask.io
-
-At first glance, MetaMask is a browser-based wallet. But, unlike other browser wallets, MetaMask injects a web3 instance into the browser, acting as an RPC client that connects to a variety of Ethereum blockchains (e.g. mainnet, Ropsten testnet, Kovan testnet, local RPC node, etc.). The ability to inject a web3 instance and act as a gateway to external RPC services, makes MetaMask a very powerful tool for developers and users alike. It can be combined, for example, with MyEtherWallet or MyCrypto, acting as an web3 provider and RPC gateway for those tools.
+At first glance, MetaMask is a browser-based wallet. But, unlike other browser wallets, MetaMask injects a web3 instance into the browser, acting as an RPC client that connects to a variety of Ethereum blockchains (mainnet, Ropsten testnet, Kovan testnet, local RPC node, etc.). The ability to inject a web3 instance and act as a gateway to external RPC services makes MetaMask a very powerful tool for developers and users alike. It can be combined, for example, with MyEtherWallet or MyCrypto, acting as an web3 provider and RPC gateway for those tools.
 
 [[Jaxx]]
 ==== Jaxx
 
-Jaxx, which was introduced as a mobile wallet in <<mobile_wallets>>, is also available as a Chrome and Firefox extension, and as a desktop wallet. Find it at:
-
-https://jaxx.io
+Jaxx, which was introduced as a mobile wallet in <<mobile_wallets>>, is also available as a Chrome and Firefox extension, and as a desktop wallet. Find it at https://jaxx.io
 
 [[MEW]]
 ==== MyEtherWallet (MEW)
@@ -556,27 +595,21 @@ MyEtherWallet is a browser-based JavaScript remote client that offers:
 
 MyEtherWallet is very useful for testing and as an interface to hardware wallets. It should not be used as a primary software wallet, as it is exposed to threats via the browser environment and is not a secure key storage system.
 
-You must be very careful when accessing MyEtherWallet and other browser-based JavaScript wallets, as they are frequent targets for phishing. Always use a bookmark and not a search engine or link to access the correct web URL. MyEtherWallet can be found at:
-
-https://myetherwallet.com
+You must be very careful when accessing MyEtherWallet and other browser-based JavaScript wallets, as they are frequent targets for phishing. Always use a bookmark and not a search engine or link to access the correct web URL. MyEtherWallet can be found at https://myetherwallet.com
 
 [[MyCrypto]]
 ==== MyCrypto
 
-Just prior to publication of the first edition of this book, the MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork" as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and MyCrypto. At the time of the split, MyCrypto offered identical functionality as MyEtherWallet. It is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
+Just prior to publication of the first edition of this book, the MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork", as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and MyCrypto. At the time of the split, MyCrypto offered identical functionality as MyEtherWallet. It is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
 
 As with MyEtherWallet, you must be very careful when accessing MyCrypto in your browser. Always use a bookmark, or type the URL very carefully (then bookmark it for future use).
 
-MyCrypto can be found at:
-
-https://mycrypto.com
+MyCrypto can be found at https://mycrypto.com
 
 [[Mist]]
 ==== Mist
 
-Mist is the first ever Ethereum enabled browser, built by the Ethereum Foundation. It also contains a browser-based wallet that was the first ever implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer of Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-155, see <<eip-155>>). Mist runs a full node, and offers a full DApp browser with support for Swarm based storage and ENS addresses. Find it at:
-
-https://github.com/ethereum/mist
+Mist was the first Ethereum-enabled browser, built by the Ethereum Foundation. It also contains a browser-based wallet that was the first implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer of Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-155, see <<eip-155>>). Mist runs a full node, and offers a full DApp browser with support for Swarm based storage and ENS addresses. Find it at https://github.com/ethereum/mist
 
 [[Parity]]
 ==== Parity
