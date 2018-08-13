@@ -83,7 +83,7 @@ uint16 b = uint16(a);
 //Variable b is 0x5678 now
 ----
 
-It is for this reason that Vyper has implemented a convert()function. The convert() function allows developers to perform explicit typecasting in their code. The convert function (found on line 82 of the https://github.com/ethereum/vyper/blob/master/vyper/types/convert.py[convert.py] file) is as follows.
+It is for this reason that Vyper has implemented a convert()function. The convert() function allows developers to perform explicit typecasting in their code. The convert function (found on line 98 of the https://github.com/ethereum/vyper/blob/master/vyper/types/convert.py[convert.py] file) is as follows.
 
 [source,python]
 ----
@@ -95,7 +95,7 @@ def convert(expr, context):
         raise Exception("Conversion to {} is invalid.".format(output_type))
 ----
 
-You may notice the conversion_table, which is mentioned in the above code. The conversion_table (found on line 90 of the same file) looks like this.
+You may notice the conversion_table, which is mentioned in the above code. The conversion_table (found on line 106 of the same file) looks like this.
 
 [source,python]
 ----
@@ -111,15 +111,16 @@ When a developer originally calls the convert function, the convert function ref
 
 [source,python]
 ----
-@signature(('int128', 'uint256', 'bytes32', 'bytes'), 'str_literal')
+@signature(('uint256', 'bytes32', 'bytes'), 'str_literal')
 def to_int128(expr, args, kwargs, context):
     in_node = args[0]
     typ, len = get_type(in_node)
-    if typ in ('int128', 'uint256', 'bytes32'):
-        if in_node.typ.is_literal and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+    if typ in ('uint256', 'bytes32'):
+        if in_node.typ.is_literal and not SizeLimits.in_bounds('int128', in_node.value):
             raise InvalidLiteralException("Number out of range: {}".format(in_node.value), expr)
         return LLLnode.from_list(
-            ['clamp', ['mload', MemoryPositions.MINNUM], in_node, ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'), pos=getpos(expr)
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node,
+                        ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128', in_node.typ.unit), pos=getpos(expr)
         )
     else:
         return byte_array_to_num(in_node, expr, 'int128')
