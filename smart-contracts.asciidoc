@@ -40,9 +40,9 @@ While it is possible to program smart contracts directly in bytecode, EVM byteco
 
 While any high-level language could be adapted to write smart contracts, adapting an arbitrary language to be compilable to EVM bytecode is quite a cumbersome exercise and would in general lead to some amount of confusion. Smart contracts operate in a highly constrained and minimalistic execution environment (the EVM). In addition, a special set of EVM-specific system variables and functions need to be available. As such, it is easier to build a smart contract language from scratch than it is to make a general-purpose language suitable for writing smart contracts. As a result, a number of special-purpose languages have emerged for programming smart contracts. Ethereum has several such languages, together with the compilers needed to produce EVM-executable bytecode.
 
-In general, programming languages can be classified into two broad programming paradigms: declarative and imperative, also known as “functional” and “procedural”, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are “hybrid”, meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables”_.
+In general, programming languages can be classified into two broad programming paradigms: declarative and imperative, also known as "functional" and "procedural", respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are "hybrid", meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no "variables"_.
 
-While imperative programming is more commonly used by programmers, it can be very difficult to write programs that execute _exactly as expected_. The ability of any part of the program to change the state of any other makes it difficult to reason about a program’s execution and introduces many opportunities for bugs. Declarative programming by comparison makes it easier to understand how a program will behave: since it has no side effects, any part of a program can be understood in isolation.
+While imperative programming is more commonly used by programmers, it can be very difficult to write programs that execute _exactly as expected_. The ability of any part of the program to change the state of any other makes it difficult to reason about a program's execution and introduces many opportunities for bugs. Declarative programming by comparison makes it easier to understand how a program will behave: since it has no side effects, any part of a program can be understood in isolation.
 
 In smart contracts, bugs literally cost money. As a result, it is critically important to write smart contracts without unintended effects. To do that, you must be able to clearly reason about the expected behavior of the program. So, declarative languages play a much bigger role in smart contracts than they do in general-purpose software. Nevertheless, as you will see below, the most widely-used language for smart contracts (Solidity) is imperative. Programmers, like most humans, resist change!
 
@@ -181,7 +181,7 @@ All that is needed for an application to interact with a contract is an ABI and 
 
 As we saw in <<compile_Faucet_with_solc>>, our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version +0.4.19+ and we tried to compile it with +0.4.18+?
 
-To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
+To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let's look at an example:
 
 [[compiler_version]]
 ----
@@ -190,7 +190,7 @@ pragma solidity ^0.4.19;
 
 The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of +0.4.19+. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above +0.4.19+, e.g. +0.4.20+, but not +0.5.0+ (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
 
-Let’s add a pragma directive to our +Faucet+ contract. We will name the new file +Faucet2.sol+, to keep track of our changes as we proceed through these examples:
+Let's add a pragma directive to our +Faucet+ contract. We will name the new file +Faucet2.sol+, to keep track of our changes as we proceed through these examples:
 
 .Faucet2.sol : Adding the version pragma to Faucet
 [source,solidity,linenums]
@@ -1148,15 +1148,15 @@ contract Attack {
 ----
 
 Let us examine how this malicious contract can exploit the `EtherStore`
-contract. The attacker would create the above contract (let’s say at the
-address `0x0...123`) with the `EtherStore`’s contract address as the sole
+contract. The attacker would create the above contract (let's say at the
+address `0x0...123`) with the `EtherStore`'s contract address as the sole
 constructor parameter. This will initialize and point the public
 variable `etherStore` to the contract to be attacked.
 
 The attacker would then call the `attackEtherStore()` function, with some
 amount of ether (greater than or equal to 1), let us assume `1 ether` for
 the time being. In this example, we will also assume a number of other users have
-deposited ether into this contract, such that it’s current balance is
+deposited ether into this contract, such that it's current balance is
 `10 ether`. The following would then occur:
 
 1. *Attack.sol - Line 15* - The `depositFunds()` function of the EtherStore
@@ -1271,7 +1271,7 @@ held over $150 million USD. Re-entrancy played a major role in the
 attack, which ultimately led to the hard fork that created Ethereum
 Classic (ETC). For a good analysis of the DAO exploit, see
 http://hackingdistributed.com/2016/06/18/analysis-of-the-dao-exploit/[Phil
-Daian’s post].
+Daian's post].
 
 ==== Arithmetic Over/Underflows
 
@@ -1296,7 +1296,7 @@ Solidity and integer overflows: programming blockchains like 1970]
 
 An over/underflow occurs when an operation is performed that requires a
 fixed size variable to store a number (or piece of data) that is outside
-the range of the variable’s data type.
+the range of the variable's data type.
 
 For example, subtracting `1` from a `uint8` (unsigned integer of 8 bits,
 i.e. non-negative) variable whose value is `0` will result
@@ -1309,7 +1309,7 @@ speedometers in cars which measure distance travelled (they restart to 0, after
 the largest number, i.e. 999999 is surpassed) and periodic mathematical functions
 (adding 2π to the argument of sin() leaves the value unchanged). 
 
-Adding numbers larger than the data type’s range is called an overflow. For
+Adding numbers larger than the data type's range is called an overflow. For
 clarity, adding `257` to a `uint8` that currently has a value of `0` will result
 in the number `1`.  It is sometimes instructive to think of fixed-size variables
 being cyclic, where we start again from zero if we add numbers above the
@@ -1358,14 +1358,14 @@ an attacker, an attacker could use an overflow to receive the ether, regardless
 of the `lockTime`.
 
 The attacker could determine the current `lockTime` for the address they
-now hold the key for (its a public variable). Let’s call this
+now hold the key for (its a public variable). Let's call this
 `userLockTime`. They could then call the `increaseLockTime` function and
 pass as an argument the number `2^256 - userLockTime`. This number would
 be added to the current `userLockTime` and cause an overflow, resetting
 `lockTime[msg.sender]` to `0`. The attacker could then simply call the
 `withdraw` function to obtain their reward.
 
-Let’s look at another example, this one from the
+Let's look at another example, this one from the
 https://github.com/OpenZeppelin/ethernaut[Ethernaut Challanges].
 
 *SPOILER ALERT:* _If you have not yet done the Ethernaut challenges, this
@@ -1425,7 +1425,7 @@ https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/math/Saf
 Math Library] can be used to avoid under/overflow vulnerabilities.
 
 To demonstrate how these libraries are used in Solidity, let us correct
-the `TimeLock` contract, using Open Zepplin’s `SafeMath` library. The
+the `TimeLock` contract, using Open Zepplin's `SafeMath` library. The
 overflow-free version of the contract is:
 
 [source,solidity,linenums]
@@ -1496,7 +1496,7 @@ liberated from its contract. A good overview of how the underflow occurs
 (which is not too dissimilar to the Ethernaut challenge above) is given
 in
 https://blog.goodaudience.com/how-800k-evaporated-from-the-powh-coin-ponzi-scheme-overnight-1b025c33b530[Eric
-Banisadar’s post].
+Banisadar's post].
 
 Another example comes from the implementation of a `batchTransfer()` function
 into a group of https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20] token
@@ -1582,7 +1582,7 @@ means anyone can calculate what a contract's address will be before it is
 created and thus send ether to that address. When the contract is
 created it will have a non-zero ether balance.
 
-Let’s explore some pitfalls that can arise given the above knowledge.
+Let's explore some pitfalls that can arise given the above knowledge.
 
 Consider the overly-simple contract,
 
@@ -1639,7 +1639,7 @@ reached; users can then claim their rewards.
 
 The issues with the `EtherGame` contract come from the poor use of
 `this.balance` in both lines 14 (and by association 16) and 32. A
-mischievous attacker could forcibly send a small amount of ether, let’s
+mischievous attacker could forcibly send a small amount of ether, let's
 say `0.1 ether` via the `selfdestruct()` function (discussed above) to
 prevent any future players from reaching a milestone. As all legitimate
 players can only send `0.5 ether` increments, `this.balance` would no
@@ -1649,7 +1649,7 @@ and 24 from being true.
 
 Even worse, a vengeful attacker who missed a milestone could forcibly
 send `10 ether` (or an equivalent amount of ether that pushes the
-contract’s balance above the `finalMileStone`), which would lock all
+contract's balance above the `finalMileStone`), which would lock all
 rewards in the contract forever. This is because the `claimReward()`
 function will always revert, due to the require on line 32 (i.e.
 `this.balance` is greater than `finalMileStone`).
@@ -1754,7 +1754,7 @@ As a result of the context-preserving nature of `DELEGATECALL`, building
 vulnerability-free custom libraries is not as easy as one might think.
 The code in libraries themselves can be secure and vulnerability-free;
 however, when run in the context of another application new
-vulnerabilities can arise. Let’s see a fairly complex example of this,
+vulnerabilities can arise. Let's see a fairly complex example of this,
 using Fibonacci numbers.
 
 Consider the following library, which can generate the Fibonacci sequence
@@ -1892,9 +1892,9 @@ complexities here, and the reader is encouraged to read
 http://solidity.readthedocs.io/en/latest/miscellaneous.html#layout-of-state-variables-in-storage[Layout
 of State Variables in Storage] for a more thorough understanding).
 
-As an example, let’s look at the library contract. It has two state
+As an example, let's look at the library contract. It has two state
 variables, `start` and `calculatedFibNumber`. The first variable is
-`start`; being first, it is stored in the contract’s storage at `slot[0]`
+`start`; being first, it is stored in the contract's storage at `slot[0]`
 (i.e. the first slot). The second variable, `calculatedFibNumber`, is
 placed in the next available storage slot, `slot[1]`. If we look at the
 function `setStart()`, it takes an input and sets `start` to whatever
@@ -1938,7 +1938,7 @@ done in Python easily using `int('<address>',16)`), and then call
 `fibonacciLibrary` to the address of the attack contract. Then, whenever
 a user calls `withdraw()` or the fallback function, the malicious
 contract will run (which can steal the entire balance of the contract)
-because we’ve modified the actual address for `fibonacciLibrary`. An
+because we've modified the actual address for `fibonacciLibrary`. An
 example of such an attack contract would be:
 
 [source,solidity,linenums]
@@ -1979,7 +1979,7 @@ stateless and non-self-destructable. Forcing libraries to be stateless
 mitigates the complexities of storage context demonstrated in this
 section. Stateless libraries also prevent attacks whereby attackers
 modify the state of the library directly in order to affect the
-contracts that depend on the library’s code. As a general rule of thumb,
+contracts that depend on the library's code. As a general rule of thumb,
 when using `DELEGATECALL` pay careful attention to the possible calling
 context of both the library contract and the calling contract, and
 whenever possible build state-less libraries.
@@ -1997,7 +1997,7 @@ exchange question] and
 http://hackingdistributed.com/2017/07/22/deep-dive-parity-bug/[An
 In-Depth Look at the Parity Multisig Bug].
 
-To add to these references, let’s explore the contracts that were
+To add to these references, let's explore the contracts that were
 exploited. The library and wallet contract can be found on the parity
 GitHub
 https://github.com/paritytech/parity/blob/b640df8fbb964da7538eef268dffc125b081a82f/js/src/contracts/snippets/enhanced-wallet.sol[here].
@@ -2420,7 +2420,7 @@ constructor, the `encryptPrivateData()` function would simply produce an
 event which prints the unencrypted private data. Although in this
 example a library-like contract was set in the constructor, it is often
 the case that a privileged user (such as an `owner`) can change library
-contract addresses. If a linked contract doesn’t contain the function
+contract addresses. If a linked contract doesn't contain the function
 being called, the fallback function will execute. For example, with the
 line `encryptionLibrary.rot13Encrypt()`, if the contract specified by
 `encryptionLibrary` was:
@@ -2596,11 +2596,11 @@ hex chars (20 bytes)). In such a scenario, the EVM will add zeros to the
 end of the encoded parameters to make up the expected length.
 
 This becomes an issue when third party applications do not validate
-inputs. The clearest example is an exchange which doesn’t verify the
+inputs. The clearest example is an exchange which doesn't verify the
 address of an
 https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20] token
 when a user requests a withdrawal. This example is covered in more
-detail in Peter Vessenes’s post,
+detail in Peter Vessenes's post,
 http://vessenes.com/the-erc20-short-address-attack-explained/[The ERC20
 Short Address Attack Explained] mentioned above.
 
@@ -2613,7 +2613,7 @@ transfer function interface, noting the order of the parameters:
 function transfer(address to, uint tokens) public returns (bool success);
 ----
 
-Now consider, an exchange, holding a large amount of a token (let’s say
+Now consider, an exchange, holding a large amount of a token (let's say
 `REP`) and a user who wishes to withdraw their share of 100 tokens. The user
 would submit their address, `0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead`
 and the number of tokens, `100`. The exchange would encode these
@@ -2630,7 +2630,7 @@ tokens (with 18 decimal places, as specified by the `REP` token
 contract).
 
 Let us now look at what happens if one were to send an address that
-was missing 1 byte (2 hex digits). Specifically, let’s say an attacker
+was missing 1 byte (2 hex digits). Specifically, let's say an attacker
 sends `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde` as an address (missing
 the last two digits) and the same `100` tokens to withdraw. If the
 exchange does not validate this input, it would get encoded as
@@ -2640,13 +2640,13 @@ is subtle. Note that `00` has been added to the end of the encoding, to
 make up for the short address that was sent. When this gets sent to the
 smart contract, the `address` parameters will read as
 `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde00` and the value will be read
-as `56bc75e2d6310000000` (notice the two extra `0`’s). This value is
+as `56bc75e2d6310000000` (notice the two extra `0`'s). This value is
 now, `25600` tokens (the value has been multiplied by `256`). In this
 example, if the exchange held this many tokens, the user would withdraw
 `25600` tokens (whilst the exchange thinks the user is only withdrawing
 `100`) to the modified address. Obviously the attacker won't possess the
 modified address in this example, but if the attacker were to generate
-any address which ended in `0`’s (which can be easily brute-forced) and
+any address which ended in `0`'s (which can be easily brute-forced) and
 used this generated address, they could steal tokens from the
 unsuspecting exchange.
 
@@ -2711,7 +2711,7 @@ the response. In this trivial example, a `winner` whose transaction
 fails (either by running out of gas or by being a contract that intentionally
 throws in the fallback function) allows `payedOut` to be set to `true` (regardless
 of whether ether was sent or not). In this case, anyone can withdraw
-the `winner`’s winnings via the `withdrawLeftOver()` function.
+the `winner`'s winnings via the `withdrawLeftOver()` function.
 
 ////
 
@@ -2743,7 +2743,7 @@ code for Etherpot can be found here:
 https://github.com/etherpot/contract/blob/master/app/contracts/lotto.sol[lotto.sol].
 The downfall of this contract was primarily due to incorrect use of
 block hashes (only the last 256 block hashes are useable, see Aakil
-Fernandes’s
+Fernandes's
 http://aakilfernandes.github.io/blockhashes-are-only-good-for-256-blocks[post]
 about how Etherpot failed to take account of this correctly). However, this
 contract also suffered from an unchecked call value. Consider the
@@ -2780,7 +2780,7 @@ function `cash()`:
 ...
 ----
 
-Notice that on line 21 the `send` function’s return value is not
+Notice that on line 21 the `send` function's return value is not
 checked, and the following line then sets a boolean indicating that the
 winner has been sent their funds. This bug can allow a state where the
 winner does not receive their ether, but the state of the contract can
@@ -2817,13 +2817,13 @@ The miner who solves the block also chooses which transactions from the
 pool will be included in the block, typically ordered by the
 `gasPrice` of each transaction. Here is a potential attack vector. An
 attacker can watch the transaction pool for transactions which may
-contain solutions to problems, modify or revoke the attacker’s
+contain solutions to problems, modify or revoke the attacker's
 permissions or change state in a contract detrimentally to the
 attacker. The attacker can then get the data from this transaction and
 create a transaction of their own with a higher `gasPrice` so their
 transaction is included in a block before the original.
 
-Let’s see how this could work with a simple example. Consider the following
+Let's see how this could work with a simple example. Consider the following
 contract,
 
 .FindThisHash.sol:
@@ -2883,7 +2883,7 @@ in a block how they see fit). A contract that is vulnerable to the first
 class (users) is significantly worse off than one vulnerable to the
 second (miners) as miners can only perform the attack when they solve a
 block, which is unlikely for any individual miner targeting a specific
-block. Here we’ll list a few mitigation measures relative to both
+block. Here we'll list a few mitigation measures relative to both
 classes of attackers.
 
 One method is to place an upper bound on the `gasPrice`.
@@ -2914,7 +2914,7 @@ willing to spend.
 A further suggestion by Lorenz, Phil, Ari and Florian is to use
 http://hackingdistributed.com/2017/08/28/submarine-sends/[Submarine
 Sends]. An efficient implementation of this idea requires the `CREATE2`
-opcode, which currently hasn’t been adopted, but seems likely in
+opcode, which currently hasn't been adopted, but seems likely in
 upcoming hard forks.
 
 ===== Real-World Examples: ERC20 and Bancor
@@ -2936,15 +2936,15 @@ function approve(address _spender, uint256 _value) returns (bool success)
 This function allows a user to permit other users to transfer tokens on
 their behalf. The front-running vulnerability occurs in the scenario where
 a user Alice _approves_ her friend `Bob` to spend `100 tokens`. Alice
-later decides that she wants to revoke `Bob`’s approval to spend
-`100 tokens`, so she creates a transaction that sets `Bob`’s allocation
+later decides that she wants to revoke `Bob`'s approval to spend
+`100 tokens`, so she creates a transaction that sets `Bob`'s allocation
 to `50 tokens`. `Bob`, who has been carefully watching the chain, sees
 this transaction and builds a transaction of his own spending the
 `100 tokens`. He puts a higher `gasPrice` on his transaction than
-`Alice`’s, so gets his transaction prioritised over hers. Some
+`Alice`'s, so gets his transaction prioritised over hers. Some
 implementations of `approve()` would allow `Bob` to transfer his
-`100 tokens`, then when `Alice`’s transaction is committed, resets
-`Bob`’s approval to `50 tokens`, in effect giving `Bob` access to
+`100 tokens`, then when `Alice`'s transaction is committed, resets
+`Bob`'s approval to `50 tokens`, in effect giving `Bob` access to
 `150 tokens`. Ways to mitigate this attack are given
 in the document linked above.
 
@@ -3194,7 +3194,7 @@ be more secure, as miners are unable easily to manipulate the block number. The
 https://etherscan.io/address/0x0d8775f648430679a709e98d2b0cb6250d2887ef#code[BAT
 ICO] contract employed this strategy.
 
-This can be unnecessary if contracts aren’t particularly concerned with
+This can be unnecessary if contracts aren't particularly concerned with
 miner manipulations of the block timestamp, but it is something to be
 aware of when developing contracts.
 
@@ -3217,7 +3217,7 @@ Constructors are special functions which often perform critical,
 privileged tasks when initialising contracts. Before Solidity v0.4.22,
 constructors were defined as functions that had the same name as the
 contract that contained them. Thus, when a contract name is changed in
-development, if the constructor name isn’t changed, it becomes a normal,
+development, if the constructor name isn't changed, it becomes a normal,
 callable function. As you can imagine, this can (and has) led to some
 interesting contract hacks.
 
@@ -3275,7 +3275,7 @@ Rubixi
 code]) was another pyramid scheme that exhibited this kind of
 vulnerability. It was originally called `DynamicPyramid` but the
 contract name was changed before deployment to `Rubixi`. The
-constructor’s name wasn’t changed, allowing any user to become the
+constructor's name wasn't changed, allowing any user to become the
 `creator`. Some interesting discussion related to this bug can be found
 on this https://bitcointalk.org/index.php?topic=1400536.60[Bitcointalk
 Thread]. Ultimately, it allowed users to fight for `creator` status to
@@ -3312,7 +3312,7 @@ depending on their type. Uninitialised local `storage` variables may
 contain the value of other storage variables in the contract; this fact
 can cause unintentional vulnerabilities, or be exploited deliberately.
 
-Let’s consider the following, relatively simple name registrar contract:
+Let's consider the following, relatively simple name registrar contract:
 
 .NameRegistrar.sol
 [source,solidity,linenums]
@@ -3365,8 +3365,8 @@ example, so we won't worry about that). Thus, `unlocked` exists in
 `slot 0`, `registeredNameRecord` exists in `slot 1` and `resolve` in
 `slot 2` etc. Each of these slots is 32 bytes in size (there are added
 complexities with mappings which we ignore for now). The boolean
-`unlocked` will look like `0x000...0` (64 `0`’s, excluding the `0x`) for
-`false` or `0x000...1`(63 `0`’s) for `true`. As you can see, there is a
+`unlocked` will look like `0x000...0` (64 `0`'s, excluding the `0x`) for
+`false` or `0x000...1`(63 `0`'s) for `true`. As you can see, there is a
 significant waste of storage in this particular example.
 
 The next piece of the puzzle is that Solidity by default puts
@@ -3394,7 +3394,7 @@ if you use a `_name` of the form:
 
 The Solidity compiler shows a warning for unintialised storage variables;
 developers should pay careful attention to these warnings when
-building smart contracts. The current version of mist (0.10), doesn’t
+building smart contracts. The current version of mist (0.10), doesn't
 allow these contracts to be compiled. It is often good practice to
 explicitly use the `memory` or `storage` specifiers when dealing with complex types,
 to ensure they behave as expected.
@@ -3412,7 +3412,7 @@ thread] where the attack is quite clearly explained.
 Another honey pot, CryptoRoulette
 (https://etherscan.io/address/0x8685631276cfcf17a973d92f6dc11645e5158c0c#code[contract
 code]) also utilises this trick to try and collect some ether. If you
-can’t figure out how the attack works, see
+can't figure out how the attack works, see
 https://medium.com/@jsanjuas/an-analysis-of-a-couple-ethereum-honeypot-contracts-5c07c95b0a8d[An
 analysis of a couple Ethereum honeypot contracts] for an overview of
 this contract and others.
@@ -3505,7 +3505,7 @@ TODO I assert above that Solidity performs arithmetic operations in the order in
 Finally, when defining arbitrary precision for numbers it can be a good
 idea to convert values to higher precision, perform all
 mathematical operations, then finally, convert back down to
-the precision required for output. Typically `uint256`’s are used (as they are
+the precision required for output. Typically `uint256`'s are used (as they are
 optimal for gas usage) which give approximately 60 orders of magnitude
 in their range, some of which can be dedicated to the precision of
 mathematical operations. It may be the case that it is better to keep
@@ -3526,7 +3526,7 @@ this contract will have issues of rounding, but only at the `wei` level
 of precision. It has some more serious flaws, but these are relating
 back to the difficulty in getting entropy on the blockchain (see
 *Entropy Illusion*). For a further discussion on
-the Ethstick contract, I’ll refer you to another post of Peter Vessenes,
+the Ethstick contract, I'll refer you to another post of Peter Vessenes,
 https://vessenes.com/ethereum-contracts-are-going-to-be-candy-for-hackers/[Ethereum
 Contracts Are Going to be Candy For Hackers].
 
@@ -3608,7 +3608,7 @@ the owner of the `Phishable` contract to send this contract some amount
 of ether. The attacker may disguise this contract as their own private
 address and socially engineer the victim to send some form of transaction
 to the address. The victim, unless careful, may not notice that
-there is code at the attacker’s address, or the attacker may pass it off
+there is code at the attacker's address, or the attacker may pass it off
 as being a multisignature wallet or some advanced storage wallet (remember
 that the source code of public contracts is not available by default).
 
@@ -3625,7 +3625,7 @@ will be equal to `owner` and the `require` on line 11 of the
 ===== Preventative Techniques
 
 `tx.origin` should not be used for authorisation in smart contracts.
-This isn’t to say that the `tx.origin` variable should never be used. It
+This isn't to say that the `tx.origin` variable should never be used. It
 does have some legitimate use cases in smart contracts. For example, if
 one wanted to deny external contracts from calling the current contract,
 they could implement a `require` of the from
