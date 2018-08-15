@@ -3,6 +3,10 @@
 
 In this section we will explore the world of _Decentralized Applications_ or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic (and payment functions) of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming etc.
 
+[[image_web3_suite]]
+.Web3: A decentralized web using smart contracts and P2P Technologies
+image::images/web3suite.png["Web3: A decentralized web using smart contracts and P2P Technologies"]
+
 While decentralized apps describe an audacious vision of the future, the term DApp is often applied to projects that fall short of that vision. In fact, any smart contract with a web front end is called a DApp. Some of these are highly centralized applications (CApps?) in every way, yet they get called "DApps" anyway. Beware of false DApps!
 
 In this section, we will also develop and deploy a decentralized auction platform, as an example DApp. You can find the source code for that in the book's repository under +code/auction_dapp+. We will look at each apsect of an auction application and see how we can decentralize the application as much as possible.
@@ -60,196 +64,352 @@ Due to high gas costs and the currently low block gas limit, smart contracts are
 Decentralized P2P storage is ideal for storing and distributing large static assets such as images, videos, and the resources of the application's front-end web interface (HTML, CSS, JavaScript, etc).
 
 [[ipfs_sec]]
-===== IPFS
+===== Inter-Planetary File System (IPFS)
 
-////
-TODO: add paragraph
-////
+The _Inter-Planetary File System (IPFS)_ is a decentralized content-addressable storage system that distributes stored objects among peers in a P2P network. "Content Addressable" means that each piece of content (file) is hashed and the hash is used to identify that file. You can then retrieve any file from any IPFS node, by requesting it by its hash.
+
+IPFS aims to replace HTTP as the protocol of choice for delivery of web applications. Instead of storing a web application on a single server, the files are stored on IPFS and can be retrieved from any IPFS node.
+
+More information about IPFS can be found at:
+https://ipfs.io
+
 
 [[swarm_sec]]
 ===== Swarm
 
-Swarm is a decentralized data disemination protocol. Here are pointers to resources where you can find out more:
+Swarm is another content-addressable P2P storage system, similar to IPFS. Swarm is built by the Ethereum Foundation, as part of the Go-Ethereum suite of tools. Like IPFS, Swarm allows you to store files that get disseminated and replicated by Swarm nodes. You can access any Swarm file by referring to it by a hash. Swarm allows you to access a web site from a decentralized P2P system, instead of a central web server.
 
-* Swarm home page: http://swarm-gateways.net/bzz:/theswarm.eth/
-* Read the docs: https://swarm-guide.readthedocs.io/en/latest/index.html
-* Swarm developer's onboarding guide: https://github.com/ethersphere/swarm/wiki/swarm
-* The swarm engine room: https://gitter.im/ethersphere/orange-lounge
-* Similarities/differences between Ethereum's Swarm and IPFS: https://github.com/ethersphere/go-ethereum/wiki/IPFS-&-SWARM
+The home page for Swarm is itself stored on Swarm and accessible on your Swarm node or a gateway:
+http://swarm-gateways.net/bzz:/theswarm.eth/
+
 
 [[interdapp_coammunications_protocol_sec]]
-==== Inter-DApp communications protocol
+==== Decentralized message communications protocols
 
+Another major component of any application is inter-process communication. That means being able to exchange messages between applications, between different instances of the application, or between users of the application. Traditionally, this is achieved by reliance on a centralized server.
 
-
-[[whisper_sec]]
-===== Whisper
-
-////
-TODO: add paragraph
-////
+There are a variety of decentralized alternatives to a server-based protocols, offering messaging over a P2P network. The most notable P2P messaging protocol for DApps is _Whisper_, which is part of the Ethereum Foundation's Go-Ethereum suite of tools. More information about Whisper can be found here:
 https://github.com/ethereum/wiki/wiki/Whisper
 
-https://github.com/ethereum/wiki/wiki/Whisper-Overview
+[[auction_dapp_intro]]
+=== A basic DApp example: Auction DApp
 
+In this section we will start building an example DApp, to explore the various decentralization tools. Our DApp will implement a decentralized auction.
 
+The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark registration, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During the auction, users can join a chat room, created specifically for each auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
 
+The overall auction process can be seen in here:
+[[auction_dapp_overview]]
+.Auction DApp: A simple example auction DApp
+image::code/auction_dapp/auction_diagram.png["Auction DApp: A simple example auction DApp"]
 
-[[dapp_frameworks_sec]]
-=== DApp frameworks
+The main components of our Auction DApp are:
 
-There are many different Development frameworks and libraries written in many languages which allows for a better developer experience in creating and deploying a DApp.
+* A smart contract implementing ERC721 non-fungible "deed" tokens (+DeedRepository+).
+* A smart contract implementing an Auction (+AuctionRepository+) to sell the deeds.
+* A web front-end using the Vue/Vuetify Javascript framework.
+* The web3.js library to connect to Ethereum chains (via MetaMask or other providers).
+* A Swarm client, to store resources such as images on Swarm.
+* A Whisper client, to create per-auction chat rooms for all participants
 
-[[truffle_sec]]
-==== Truffle
-Truffle is a DApp development environment. It is a popular choice and provides an application management environment, testing framework and asset pipeline for Ethereum.
+You can find the source code for the auction DApp in the book's repository:
+https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp
 
-With Truffle, you get:
+==== Auction DApp: Back-end smart Contracts
 
-* Built-in smart contract compilation, linking, deployment and binary management.
-* Automated contract testing with Mocha and Chai.
-* Configurable build pipeline with support for custom build processes.
-* Scriptable deployment & migrations framework.
-* Network management for deploying to many public & private networks.
-* Interactive console for direct contract communication.
-* Instant rebuilding of assets during development.
-* External script runner that executes scripts within a Truffle environment.
+Our Auction DApp example is supported by two smart contracts that we need to deploy on an Ethereum blockchain in order to support the application: +AuctionRepository+ and +DeedRepository+.
 
-Here are some links to get you started:
+Let's start by looking at +DeedRepository+. This contract is an ERC-721 compatible "non-fungible token" (See <<erc721>>). Here's the source code for that contract:
 
-* Documentation: http://truffleframework.com/docs
-* Github link: https://github.com/trufflesuite/truffle
-* Website link: https://truffleframework.com
+.DeedRepository.sol : An ERC721 deed token for use in an auction
+[source,solidity]
+----
+include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
+----
 
-[[embark_sec]]
-==== Embark
-The Embark Framework focuses on serverless Decentralized Applications using Ethereum, IPFS and other platforms. Embark currently integrates with all EVM-based blockchains (of which Ethereum is the most prominent, of course), decentralized storages services (including IPFS), and decentralized communication platforms (including Whisper and Orbit).
+As you can see, the +DeedRepository+ contract is a straightforward implementation of an ERC721 compatible token.
 
-With Embark you can:
+Our Auction DApp uses the +DeedRepository+ contract to issue and track tokens for each auction. The auction itself is orchestrated by the +AuctionRepository+ contract, which can be found here:
 
-** Blockchain (Ethereum)
-* Automatically deploy contracts and make them available in your JS code. Embark watches for changes, and if you update a contract, Embark will automatically redeploy the contracts (if needed) and the DApp.
-* Contracts are available in JS with Promises.
-* Do Test Driven Development with Contracts using Javascript.
-* Keep track of deployed contracts; deploy only when truly needed.
-* Manage different chains (e.g testnet, private net, livenet)
-* Easily manage complex systems of interdependent contracts.
+https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp/backend/contracts/AuctionRepository.sol
 
-** Decentralized storage (IPFS)
-* Easily store & retrieve data on the DApp through EmbarkJS, including uploading and retrieving files.
-* Deploy the full application to IPFS or Swarm.
+The +AuctionRepository+ contract is too long to include here in full, but here is the main definition of the contract and data structures:
 
+.AuctionRepository.sol : The main Auction DApp smart contract
+[source,solidity]
+----
+contract AuctionRepository {
 
-** Decentralized Communication (Whisper, Orbit)
-* Easily send/receive messages through channels in P2P through Whisper or Orbit.
+    // Array with all auctions
+    Auction[] public auctions;
 
-** Web Technologies
-* Integrate with any web technology including React, Foundation, etc.
-* Use any build pipeline or tool you wish, including grunt, gulp and webpack.
+    // Mapping from auction index to user bids
+    mapping(uint256 => Bid[]) public auctionBids;
 
+    // Mapping from owner to a list of owned auctions
+    mapping(address => uint[]) public auctionOwner;
 
-Getting started & documentation; https://embark.readthedocs.io
+    // Bid struct to hold bidder and amount
+    struct Bid {
+        address from;
+        uint256 amount;
+    }
 
-Github link; https://github.com/embark-framework/embark
+    // Auction struct which holds all the required info
+    struct Auction {
+        string name;
+        uint256 blockDeadline;
+        uint256 startPrice;
+        string metadata;
+        uint256 deedId;
+        address deedRepositoryAddress;
+        address owner;
+        bool active;
+        bool finalized;
+    }
+----
 
-Website link; https://github.com/embark-framework/embark
+The +AuctionRepository+ contract manages all auctions with the following functions:
 
-==== Emerald
+----
+getCount()
+getBidsCount(uint _auctionId)
+getAuctionsOf(address _owner)
+getCurrentBid(uint _auctionId)
+getAuctionsCountOfOwner(address _owner)
+getAuctionById(uint _auctionId)
+createAuction(address _deedRepositoryAddress, uint256 _deedId, string _auctionTitle, string _metadata, uint256 _startPrice, uint _blockDeadline)
+approveAndTransfer(address _from, address _to, address _deedRepositoryAddress, uint256 _deedId)
+cancelAuction(uint _auctionId)
+finalizeAuction(uint _auctionId)
+bidOnAuction(uint _auctionId)
+----
 
-Emerald Platform is a framework and set of tools to simplify development of a Dapps and integration of existing services with Ethereum based blockchain.
+We can deploy these contracts to the Ethereum blockchain of our choice (e.g. Ropsten), using truffle in the book's repository:
 
-Emerald provides:
+----
+cd code/auction_dapp/backend
+truffle init
+truffle compile
+truffle migrate --network ropsten
+----
 
-* Javascript library and React components to build a Dapp
-* SVG icons common for blockchain projects
-* Rust library to manage private keys, including hardware wallets, and sign transactions
-* Ready to use components/services that can be integrated into existing app thought command line or JSON RPC API
-* Accompanied with SputnikVM, a standalone EVM implementation that can be used for development and testing
+==== Auction DApp: Front-end user interface
 
-It's platform agnostic and provides tools for various targets:
+Once the Auction DApp contracts are deployed, you can interact with them using your favorite Javascript console and web3.js, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify Javascript framework from Google.
 
-* Desktop app bundled with Electron
-* Mobile apps
-* Web apps
-* Command line apps and scripting tools
+You can find the user interface code in the +code/auction_dapp/frontend+ folder in the book's repository. The directory has the following structure and contents:
 
-Getting started & documentation; https://docs.etcdevteam.com
+----
+frontend/
+|-- build
+|   |-- build.js
+|   |-- check-versions.js
+|   |-- logo.png
+|   |-- utils.js
+|   |-- vue-loader.conf.js
+|   |-- webpack.base.conf.js
+|   |-- webpack.dev.conf.js
+|   `-- webpack.prod.conf.js
+|-- config
+|   |-- dev.env.js
+|   |-- index.js
+|   `-- prod.env.js
+|-- index.html
+|-- package.json
+|-- package-lock.json
+|-- README.md
+|-- src
+|   |-- App.vue
+|   |-- components
+|   |   |-- Auction.vue
+|   |   `-- Home.vue
+|   |-- config.js
+|   |-- contracts
+|   |   |-- AuctionRepository.json
+|   |   `-- DeedRepository.json
+|   |-- main.js
+|   |-- models
+|   |   |-- AuctionRepository.js
+|   |   |-- ChatRoom.js
+|   |   `-- DeedRepository.js
+|   `-- router
+|       `-- index.js
+----
 
-Github link; https://github.com/etcdevteam/emerald-platform
+Once you have deployed the contracts, edit the front-end configuration in +frontend/src/config.js+ and enter the address of the +DeedRepository+ and +AuctionRepository+ contracts, as deployed. The front-end application also needs access to an Ethereum node offering a +JSON-RPC+ and +websockets+ interface. Once you've configured the front-end, launch it with a web server on your local machine:
 
-Website link; https://emeraldplatform.io
+----
+npm install
+npm run dev
+----
 
+The Auction DApp front-end will launch and will be accessible via any web browser at:
 
+http://localhost:8080
 
-[[dapp_development_tool_sec]]
-==== DApp (development tool)
-DApp is a simple command line tool for smart contract development. It supports these common usecases:
+If all goes well, you should see the Auction DApp running in your web browser:
 
+[[auction_dapp_screen]]
+.Auction DApp User interface
+image::images/auction_dapp_home_screen.png["Auction DApp User interface"]
 
-* Easily use any version of the C++ Solidity compiler
-* Run unit tests and interactively debug contracts in a native EVM execution environment
-* Create persistent testnets using the Go Ethereum client
-* Easily deploy your dapp to any EVM blockchain
-
-It was created in the spirit of the Unix design philosophy, which means it's a good citizen of the command-line and can be easily composed with other tools. To get started, visit https://dapp.tools/dapp
-
-
-
-////
-TODO: add paragraph
-////
-
-[[live_dapps_sec]]
-=== Live DApps
-
-Here are listed different live DApps on the Ethereum network:
-
-////
-TODO: add paragraph
-////
-
-[[populous_sec]]
-==== Populous
-An Ethereum based blockchain project aiming to disrupt the multi-million dollar invoice financing industry by creating a peer-to-peer blockchain based lending service.
-
-Website link; https://populous.co/
-
-[[ethpm_sec]]
-==== EthPM
-A project aimed at bringing package management to the Ethereum ecosystem.
-
-Website link; https://www.ethpm.com/
-
-[[radar_relay_sec]]
-==== Radar Relay
-DEX (Decentralized Exchange) focused on trading Ethereum tokens directly from wallet to wallet.
-
-Website link; https://radarrelay.com/
-
-[[cryptokitties_sec]]
-==== CryptoKitties
-A game deployed on Ethereum that allows players to purchase, collect, breed and sell various types of virtual cats
-It represents one of the earliest attempts to deploy blockchain technology for recreational and leisurely purposes.
-
-Website link; https://www.cryptokitties.co
-
-[[ethlance_sec]]
-==== Ethlance
-Ethlance is a platform for connecting freelancers and developers, both paying and receiving ether.
-
-Website link; https://ethlance.com/
-
-[[decentraland_sec]]
-==== Decentraland
-Decentraland is a virtual reality platform powered by the Ethereum blockchain. Users can create, experience, and monetize content and applications.
-
-Website link; https://decentraland.org/
-
-[[makerdao_sec]]
-==== MakerDAO
-
-One of Ethereum's oldest projects, MakerDAO creates the Dai stablecoin: an asset-backed hard currency for the 21st century. A stablecoin is a cryptocurrency that has low volatility against the world’s most important national currencies, potentially unlocking large benefits for the entire Internet.
-
-The MakerDAO system allows users to lock up their valuable Ethereum tokens as collateral and issue Dai against them. When they want to retrieve their assets later, they simply return the Dai they issued plus a fee based on how long it was outstanding. This simple principle means that each Dai is backed by some valuable asset held in the secure MakerDAO smart contract platform.
-
-Dai has been operational since December 2017. For a much more detailed description of the system, visit https://makerdao.com
+//
+// [[dapp_frameworks_sec]]
+// === DApp frameworks
+//
+// There are many different Development frameworks and libraries written in many languages which allows for a better developer experience in creating and deploying a DApp.
+//
+// [[truffle_sec]]
+// ==== Truffle
+// Truffle is a DApp development environment. It is a popular choice and provides an application management environment, testing framework and asset pipeline for Ethereum.
+//
+// With Truffle, you get:
+//
+// * Built-in smart contract compilation, linking, deployment and binary management.
+// * Automated contract testing with Mocha and Chai.
+// * Configurable build pipeline with support for custom build processes.
+// * Scriptable deployment & migrations framework.
+// * Network management for deploying to many public & private networks.
+// * Interactive console for direct contract communication.
+// * Instant rebuilding of assets during development.
+// * External script runner that executes scripts within a Truffle environment.
+//
+// Here are some links to get you started:
+//
+// * Documentation: http://truffleframework.com/docs
+// * Github link: https://github.com/trufflesuite/truffle
+// * Website link: https://truffleframework.com
+//
+// [[embark_sec]]
+// ==== Embark
+// The Embark Framework focuses on serverless Decentralized Applications using Ethereum, IPFS and other platforms. Embark currently integrates with all EVM-based blockchains (of which Ethereum is the most prominent, of course), decentralized storages services (including IPFS), and decentralized communication platforms (including Whisper and Orbit).
+//
+// With Embark you can:
+//
+// ** Blockchain (Ethereum)
+// * Automatically deploy contracts and make them available in your JS code. Embark watches for changes, and if you update a contract, Embark will automatically redeploy the contracts (if needed) and the DApp.
+// * Contracts are available in JS with Promises.
+// * Do Test Driven Development with Contracts using Javascript.
+// * Keep track of deployed contracts; deploy only when truly needed.
+// * Manage different chains (e.g testnet, private net, livenet)
+// * Easily manage complex systems of interdependent contracts.
+//
+// ** Decentralized storage (IPFS)
+// * Easily store & retrieve data on the DApp through EmbarkJS, including uploading and retrieving files.
+// * Deploy the full application to IPFS or Swarm.
+//
+//
+// ** Decentralized Communication (Whisper, Orbit)
+// * Easily send/receive messages through channels in P2P through Whisper or Orbit.
+//
+// ** Web Technologies
+// * Integrate with any web technology including React, Foundation, etc.
+// * Use any build pipeline or tool you wish, including grunt, gulp and webpack.
+//
+//
+// Getting started & documentation; https://embark.readthedocs.io
+//
+// Github link; https://github.com/embark-framework/embark
+//
+// Website link; https://github.com/embark-framework/embark
+//
+// ==== Emerald
+//
+// Emerald Platform is a framework and set of tools to simplify development of a Dapps and integration of existing services with Ethereum based blockchain.
+//
+// Emerald provides:
+//
+// * Javascript library and React components to build a Dapp
+// * SVG icons common for blockchain projects
+// * Rust library to manage private keys, including hardware wallets, and sign transactions
+// * Ready to use components/services that can be integrated into existing app thought command line or JSON RPC API
+// * Accompanied with SputnikVM, a standalone EVM implementation that can be used for development and testing
+//
+// It's platform agnostic and provides tools for various targets:
+//
+// * Desktop app bundled with Electron
+// * Mobile apps
+// * Web apps
+// * Command line apps and scripting tools
+//
+// Getting started & documentation; https://docs.etcdevteam.com
+//
+// Github link; https://github.com/etcdevteam/emerald-platform
+//
+// Website link; https://emeraldplatform.io
+//
+//
+//
+// [[dapp_development_tool_sec]]
+// ==== DApp (development tool)
+// DApp is a simple command line tool for smart contract development. It supports these common usecases:
+//
+//
+// * Easily use any version of the C++ Solidity compiler
+// * Run unit tests and interactively debug contracts in a native EVM execution environment
+// * Create persistent testnets using the Go Ethereum client
+// * Easily deploy your dapp to any EVM blockchain
+//
+// It was created in the spirit of the Unix design philosophy, which means it's a good citizen of the command-line and can be easily composed with other tools. To get started, visit https://dapp.tools/dapp
+//
+//
+//
+// ////
+// TODO: add paragraph
+// ////
+//
+// [[live_dapps_sec]]
+// === Live DApps
+//
+// Here are listed different live DApps on the Ethereum network:
+//
+// ////
+// TODO: add paragraph
+// ////
+//
+// [[populous_sec]]
+// ==== Populous
+// An Ethereum based blockchain project aiming to disrupt the multi-million dollar invoice financing industry by creating a peer-to-peer blockchain based lending service.
+//
+// Website link; https://populous.co/
+//
+// [[ethpm_sec]]
+// ==== EthPM
+// A project aimed at bringing package management to the Ethereum ecosystem.
+//
+// Website link; https://www.ethpm.com/
+//
+// [[radar_relay_sec]]
+// ==== Radar Relay
+// DEX (Decentralized Exchange) focused on trading Ethereum tokens directly from wallet to wallet.
+//
+// Website link; https://radarrelay.com/
+//
+// [[cryptokitties_sec]]
+// ==== CryptoKitties
+// A game deployed on Ethereum that allows players to purchase, collect, breed and sell various types of virtual cats
+// It represents one of the earliest attempts to deploy blockchain technology for recreational and leisurely purposes.
+//
+// Website link; https://www.cryptokitties.co
+//
+// [[ethlance_sec]]
+// ==== Ethlance
+// Ethlance is a platform for connecting freelancers and developers, both paying and receiving ether.
+//
+// Website link; https://ethlance.com/
+//
+// [[decentraland_sec]]
+// ==== Decentraland
+// Decentraland is a virtual reality platform powered by the Ethereum blockchain. Users can create, experience, and monetize content and applications.
+//
+// Website link; https://decentraland.org/
+//
+// [[makerdao_sec]]
+// ==== MakerDAO
+//
+// One of Ethereum's oldest projects, MakerDAO creates the Dai stablecoin: an asset-backed hard currency for the 21st century. A stablecoin is a cryptocurrency that has low volatility against the world’s most important national currencies, potentially unlocking large benefits for the entire Internet.
+//
+// The MakerDAO system allows users to lock up their valuable Ethereum tokens as collateral and issue Dai against them. When they want to retrieve their assets later, they simply return the Dai they issued plus a fee based on how long it was outstanding. This simple principle means that each Dai is backed by some valuable asset held in the secure MakerDAO smart contract platform.
+//
+// Dai has been operational since December 2017. For a much more detailed description of the system, visit https://makerdao.com
