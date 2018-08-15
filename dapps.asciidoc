@@ -1,295 +1,415 @@
 [[decentralized_applications_chap]]
 == Decentralized Applications (DApps)
 
-The peer-to-peer movement has enabled millions of Internet users to connect. +USENET+, a distributed messaging system that is described as the first peer-to-peer architecture, was established in 1979. It was built as an alternative and complement to the first 'Internet', +ARPANET+. +ARPANET+ was a client–server network where participants ran nodes requesting and serving content, but, as it lacked the ability to provide any means for context beyond simple address-based routing, +USENET+ emerged, promising a decentralized model of control. The +USENET+ model was a client–server model from the user perspective, but offered a self-organizing approach to the newsgroup servers. This made news servers communicate with one another as peers to propagate +USENET+ news articles over the entire group of network servers. This is also like SMTP email, in which the core e-mail-relaying network of mail transfer agents has a peer-to-peer character, in contrast to the periphery of e-mail clients and their direct connections which is strictly a client–server relationship.
+In this section we will explore the world of _Decentralized Applications_ or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic (and payment functions) of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming etc.
 
-In 1999 the famous music- and file-sharing application called Napster arose. Napster was the beginning of the peer-to-peer networks movement, evolving into BitTorrent, where participating users established a virtual network with no intrinsic authorities or other administrative restrictions.
+[[image_web3_suite]]
+.Web3: A decentralized web using smart contracts and P2P Technologies
+image::images/web3suite.png["Web3: A decentralized web using smart contracts and P2P Technologies"]
 
-As peer-to-peer mechanisms can be used to access any kind of distributed resources, they play a central role in decentralized applications.
+While decentralized apps describe an audacious vision of the future, the term DApp is often applied to projects that fall short of that vision. In fact, any smart contract with a web front end is called a DApp. Some of these are highly centralized applications (CApps?) in every way, yet they get called "DApps" anyway. Beware of false DApps!
 
-////
-Source: https://en.wikipedia.org/wiki/Peer-to-peer
-License: CC0
-Added by: @dcoldeira
-////
+In this section, we will also develop and deploy a decentralized auction platform, as an example DApp. You can find the source code for that in the book's repository under +code/auction_dapp+. We will look at each apsect of an auction application and see how we can decentralize the application as much as possible.
 
 [[what_is_a_dapp_sec]]
 === What is a DApp?
 
-Unlike a traditional software application, a Decentralized Application (DApp) is not offered by a single provider or server. Instead, the whole stack is deployed and operated in a distributed fashion on a peer-to-peer (P2P) network.
+A Decentralized Application, or _DApp_, is an application which is mostly or entirely decentralized.
 
-A typical DApp stack consists of front-end, back-end and data storage. There are many advantages to a DApp compared to a centralized architecture:
+Consider all the possible aspects of an application that may be decentralized:
 
-1. Resiliency: by having the business logic controlled by a smart contract, a DApp back-end will be fully distributed over a blockchain platform, will not suffer downtime, and will continue to be available for as long as the platform is still operating.
+* Front-end software
+* Back-end software (logic)
+* Data storage
+* Name resolution
+* Message communications
 
-2. Transparency: the on-chain nature of a DApp allows everyone to inspect the code and see how it works. Similarly, all interactions with the the DApp will be stored forever in the blockchain state history.
+Each of these can be somewhat centralized or somewhat decentralized. For example, a front-end can be developed as a proprietary application, or as an open web application. The back-end and storage can be on private servers and proprietary databases, or a smart contract and P2P storage.
 
-3. Censorship Resistance: as long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference. No service provider, even the owner of the smart contract, can alter the code once it is deployed on the network.
+There are many advantages to creating a DApp that a typical centralized architecture can not provide:
 
-It is worth noting that, once deployed, a smart contract becomes publicly viewable, so anyone can take the contract's bytecode and re-deploy it themselves. This makes developing successful business models that depend on clever coding tricks hard on blockchain platforms; but the advantages of such platforms more than compensate in many cases.
+1) Resiliency: by having the business-logic controlled by a smart contract, a DApp back-end will be fully distributed and managed on a blockchain platform. Unlike deploying an application on a centralized server, a DApp will have no downtime and will continue to persist as long as the platform is still operating.
 
-It is also worth noting that understanding compiled bytecode, even using tools such as decompilers, can be tricky. To make their contracts' behavior fully transparent, developers should publish the source code for users to read, compile and verify.
+2) Transparency: the on-chain nature of a DApp allows everyone to inspect the code and be more sure about its function. On the same note, any interaction with the the DApp will be stored forever in the blockchain.
 
+3) Censorship Resistance: as long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference from any centralized control. No service provider, or even the owner of the smart contract, could alter the code once it is deployed on the network.
 
-[[components_of_a_dapp_sec]]
-=== Components of a DApp
-
-A DApp comprises several key components:
-
-* Decentralized (i.e. on-chain) computation, related state, and value transfer, aka smart contracts
-* Decentralized data storage, such as IPFS or Swarm
-* Decentralized messaging, such as Whisper
-* User front-end interface(s), usually written in the same languages as web interfaces and rendered in a web browser
-
-In the Ethereum ecosystem as it stands today, there are very few truly decentralized apps - most still rely on centralized service and servers for some part of their operation. For example, the storage of front-end assets on servers owned and operated by the developer, or the provision of "real-world" information, such as the current price of ether. In the future, we expect that it will be possible for every part of any DApp to be operated in a truly and fully decentralized way, including access to "real world" data, such as prices or weather data. Data providers in our blockchain context are called "oracles" and their implementation poses a not insignificant challenge to the move to decentralization. Nevertheless, we are already on the way with the launch of Oraclize and other similar oracle services. We discussed oracles in <<oracles_chap>>.
+In the Ethereum ecosystem as it stands today, there are very few trully decentralized apps - most still rely on centralized service and servers for some part of their operation. In the future, we expect that it will be possible for every part of any DApp to be operated in a fully decentralized way.
 
 [[blockchain_smart_contracts_sec]]
-==== On-chain Computation (Smart Contracts)
+==== Smart contracts "back end"
 
-The smart contract is used to store the business logic (program code) and the related state of your decentralized application; in the first instance, you can think of a smart contract as a server-side component in a regular application. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept to a minimum.
+In a DApp, smart contracts are used to store the business logic (program code) and the related state of your application. You can think of a smart contract replacing  a server-side (a.k.a. "back end") component in a regular application. This is an oversimplification, of course. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept as minimal as possible. It is therefore important to identify which aspects of the application need a trusted and decentralized execution platform.
 
-The design of Ethereum DApp architectures can go well beyond simple decision tree logic: Ethereum smart contracts allow you to build almost arbitrarily complex architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go. We have to add "almost" in our description, because the amount of computation that can be done in one atomic unit (transaction) will always be limited to some degree, as specified by the (possibly very large) block gas limit. Once you deploy your smart contract, your business logic could well be used by many other developers in the future, without any effort on your part!
+Ethereum smart contracts allow you to build almost arbitrarily complex architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go. We have to add "almost" in our description, because the amount of computation that can be done in one transaction will always be limited to some degree, as specified by the block gas limit. After deploying your smart contract, your business logic could well be used by many other developers in the future.
 
-A major consideration of smart contract design is the inability to change the code of a smart contract once it is deployed. It can be deleted if it is programmed with an accessible +SELFDESTRUCT+ opcode, but other than complete removal the code cannot be changed in any way. One reason why the Ethereum platform is designed this way is to maximize the degree to which users can know what smart contract–based services will do; it would undermine this to allow smart contract code to be changed in any way after creation. For example, a contract owner could write a contract that accepts ether deposits which will be returned in full after a fixed period of time, then wait until someone issues a transaction to deposit a large amount and change the code to allow them to withdraw the whole deposit for themselves. This is clearly a wholly undesirable feature for an otherwise immutable smart contract platform.
+One major consideration of smart contract architecture design is the inability to change the code of a smart contract once it is deployed. It can be deleted if it is programmed with an accessible +SELFDESTRUCT+ opcode, but other than complete removal, the code cannot be changed in any way.
 
-Nevertheless, it is possible for one smart contract to call another specified by a state variable. If the variable is changed, a different contract is called, which gives a maintenance and upgrade path for DApps. You may wonder, after thinking about the malign example above, why anyone would ever use a contract that they can see allows for parts of its operation to be changed; the reason is that one can always see how and to what extent a given contract allows possible code changes. For example, a DApp might make contract call address changes only after being approved by a special council or user vote, or they can be designed to separate computation from ether spending, so that the transfer of any deposit you have given it always needs your approval (and the code to ensure this is fixed). Great care is needed when employing this strategy, but it is very powerful.
-
-The second major consideration of smart contract architecture is DApp size; a really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g. from a centralized server) would mean your users will have to trust these externalities. The effort needed to gain this trust could end up being more costly than paying for on-chain resources: an interesting trade-off.
+The second major consideration of smart contract architecture design is DApp size; a really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g. from a centralized server) would mean your users will have to trust these external resources.
 
 [[front_end_web_ui_cec]]
-==== Front end (Web User Interface (UI))
+==== Front end (Web User Interface)
 
-Unlike the business logic of the DApp, which requires a developer who understands the EVM and new languages such as Solidity, the client side interface of a DApp can use basic web front end technologies (HTML, CSS, JavaScript, etc). This allows a traditional web developer to use familiar tools, libraries and frameworks. Interactions with the DApp such as signing messages, sending transactions and key management are often conducted through the browser itself, using tools such as the Mist browser or the MetaMask browser extension.
+Unlike the business logic of the DApp that requires a developer to understand the EVM and new languages such as Solidity, the client side interface of a DApp can use basic web technologies (HTML, CSS, JavaScript, etc). This allows a traditional web developer to utilize the tools, libraries and frameworks they are familiar with using on a regular basis. Interactions with Ethereum, such as signing messages, sending transactions and key management are often conducted through the web browser, via an extension such as MetaMask.
 
-Although it is possible to create mobile DApps, currently there are few resources to help create mobile DApp front-ends, mainly due to the lack of mobile clients that can serve as a light client with key management functionality.
+Although it is possible to create a mobile DApp as well, currently there are few resources to help create mobile DApp front-ends, mainly due to the lack of mobile clients that can serve as a light client with key management functionality.
+
+The front-end is usually linked to Ethereum via the web3.js Javascript library, which is bundled with the front-end resources and served to a browser by a web server.
 
 [[data_storage_sec]]
 ==== Data storage
 
-Due to high gas costs and the currently low block gas limit, smart contracts are not suited to store or process large amounts of data. Hence, most DApps will use off-chain data storage services, ideally on decentralized platforms such as IPFS or Swarm. This is ideal for storing and distributing large static assets such as images, videos, and the rest of the client side application (HTML, CSS, JavaScript, etc).
+Due to high gas costs and the currently low block gas limit, smart contracts are not suited to store or process large amounts of data. Hence, most DApps will utilize off-chain data storage services, meaning they store the bulky data off the Ethereum chain, on a data storage platform. That data storage platform can be centralized, such as a database and web server hosted by a company. Or, the data can be decentralized, stored on a P2P platform such as the _Interplanetary File System (IPFS)_, or Ethereum's own _Swarm_ platform.
 
-Decentralized storage platforms work by using hashes of the file contents as file handles for reference and retrieval. The hashes of the content (or derivatives thereof) are often stored as bytes within the smart contract so that a user can be sure they are being served the correct content.
-
-
-[[on_chain_vs_off_chain_data_sec]]
-===== On-chain vs. off-chain
-
-////
-TODO: add paragraph
-////
+Decentralized P2P storage is ideal for storing and distributing large static assets such as images, videos, and the resources of the application's front-end web interface (HTML, CSS, JavaScript, etc).
 
 [[ipfs_sec]]
-===== IPFS
+===== Inter-Planetary File System (IPFS)
 
-////
-TODO: add paragraph
-////
+The _Inter-Planetary File System (IPFS)_ is a decentralized content-addressable storage system that distributes stored objects among peers in a P2P network. "Content Addressable" means that each piece of content (file) is hashed and the hash is used to identify that file. You can then retrieve any file from any IPFS node, by requesting it by its hash.
+
+IPFS aims to replace HTTP as the protocol of choice for delivery of web applications. Instead of storing a web application on a single server, the files are stored on IPFS and can be retrieved from any IPFS node.
+
+More information about IPFS can be found at:
+https://ipfs.io
+
 
 [[swarm_sec]]
 ===== Swarm
 
-Swarm is a decentralized data dissemination protocol.
+Swarm is another content-addressable P2P storage system, similar to IPFS. Swarm is built by the Ethereum Foundation, as part of the Go-Ethereum suite of tools. Like IPFS, Swarm allows you to store files that get disseminated and replicated by Swarm nodes. You can access any Swarm file by referring to it by a hash. Swarm allows you to access a web site from a decentralized P2P system, instead of a central web server.
 
-* Home page: http://swarm-gateways.net/bzz:/theswarm.eth/
-* Documentation: https://swarm-guide.readthedocs.io/en/latest/index.html
-* Developer's onboarding guide: https://github.com/ethersphere/swarm/wiki/swarm
-* The swarm engine room: https://gitter.im/ethersphere/orange-lounge
-* Comparison between Swarm and IPFS: https://github.com/ethersphere/go-ethereum/wiki/IPFS-&-SWARM
+The home page for Swarm is itself stored on Swarm and accessible on your Swarm node or a gateway:
+http://swarm-gateways.net/bzz:/theswarm.eth/
 
-[[centralized_db_sec]]
-===== Centralized databases
-
-Centralized databases store data indexed for fast retrieval, on a server with a single access point. They use a client–server network architecture and can allow users to modify stored data. Access control (e.g. read and write privileges) and the coordination of data changes by users is much easier than in a decentralized context. However, the centralization of control means that attackers can access and control the data with potentially simple and inexpensive techniques, such as social engineering.
-
-////
-Source:
-https://dcoldeira.github.io/database-the-decentralized-control-revolution.html
-License: CC0
-Added by: @dcoldeira
-////
-
-[[oracle_sec]]
-===== Oracle
-
-////
-TODO: add paragraph
-////
 
 [[interdapp_coammunications_protocol_sec]]
-==== Inter-DApp communications protocol
+==== Decentralized message communications protocols
 
+Another major component of any application is inter-process communication. That means being able to exchange messages between applications, between different instances of the application, or between users of the application. Traditionally, this is achieved by reliance on a centralized server.
 
-
-[[whisper_sec]]
-===== Whisper
-
-////
-TODO: add paragraph
-////
+There are a variety of decentralized alternatives to a server-based protocols, offering messaging over a P2P network. The most notable P2P messaging protocol for DApps is _Whisper_, which is part of the Ethereum Foundation's Go-Ethereum suite of tools. More information about Whisper can be found here:
 https://github.com/ethereum/wiki/wiki/Whisper
 
-https://github.com/ethereum/wiki/wiki/Whisper-Overview
+[[auction_dapp_intro]]
+=== A basic DApp example: Auction DApp
 
-////
+In this section we will start building an example DApp, to explore the various decentralization tools. Our DApp will implement a decentralized auction.
 
-TODO The following list of development tools overlaps with that in dev-tools.asciidoc. I suggest merging this list into that, and putting a cross-reference here instead.
+The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark registration, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During the auction, users can join a chat room, created specifically for each auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
 
-////
+The overall auction process can be seen in here:
+[[auction_dapp_overview]]
+.Auction DApp: A simple example auction DApp
+image::code/auction_dapp/auction_diagram.png["Auction DApp: A simple example auction DApp"]
 
+The main components of our Auction DApp are:
 
-[[dapp_frameworks_sec]]
-=== DApp frameworks
+* A smart contract implementing ERC721 non-fungible "deed" tokens (+DeedRepository+).
+* A smart contract implementing an Auction (+AuctionRepository+) to sell the deeds.
+* A web front-end using the Vue/Vuetify Javascript framework.
+* The web3.js library to connect to Ethereum chains (via MetaMask or other providers).
+* A Swarm client, to store resources such as images on Swarm.
+* A Whisper client, to create per-auction chat rooms for all participants
 
-There are many development frameworks and libraries written in various languages that make it easier to create and deploy a DApp.
+You can find the source code for the auction DApp in the book's repository:
+https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp
 
-[[truffle_sec]]
-==== Truffle
-Truffle is a popular Ethereum-focused DApp development environment. It provides an application management environment, testing framework and asset pipeline.
+==== Auction DApp: Back-end smart Contracts
 
-With Truffle, you get:
+Our Auction DApp example is supported by two smart contracts that we need to deploy on an Ethereum blockchain in order to support the application: +AuctionRepository+ and +DeedRepository+.
 
-* Smart contract compilation, linking, deployment and binary management.
-* Automated contract testing with Mocha and Chai.
-* Configurable build pipeline with support for custom build processes.
-* Scriptable deployment & migrations framework.
-* Network management for deploying to many public & private networks.
-* Interactive console for direct contract communication.
-* Instant rebuilding of assets during development.
-* External script runner that executes scripts within a Truffle environment.
+Let's start by looking at +DeedRepository+. This contract is an ERC-721 compatible "non-fungible token" (See <<erc721>>). Here's the source code for that contract:
 
-Documentation: http://truffleframework.com/docs
+.DeedRepository.sol : An ERC721 deed token for use in an auction
+[source,solidity]
+----
+include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
+----
 
-GitHub: https://github.com/trufflesuite/truffle
+As you can see, the +DeedRepository+ contract is a straightforward implementation of an ERC721 compatible token.
 
-Website: https://truffleframework.com
+Our Auction DApp uses the +DeedRepository+ contract to issue and track tokens for each auction. The auction itself is orchestrated by the +AuctionRepository+ contract, which can be found here:
 
-[[embark_sec]]
-==== Embark
-The Embark Framework focuses on serverless DApps. Embark integrates with all EVM-based blockchains (of which Ethereum is the most prominent, of course), decentralized storages services (including IPFS), and decentralized communication platforms (including Whisper and Orbit).
+https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp/backend/contracts/AuctionRepository.sol
 
-With Embark you can:
+The +AuctionRepository+ contract is too long to include here in full, but here is the main definition of the contract and data structures:
 
-** Blockchain (EVM-based)
-* Automatically deploy contracts and make them available in your JavaScript code. Embark watches for changes, and if you update a contract Embark will automatically redeploy the contracts (if needed) and the DApp.
-* Access contracts from JavaScript, with Promises.
-* Do test-driven development of contracts using JavaScript.
-* Keep track of deployed contracts; deploy only when needed.
-* Manage different chains (e.g testnet, private net, livenet).
-* Easily manage complex systems of interdependent contracts.
+.AuctionRepository.sol : The main Auction DApp smart contract
+[source,solidity]
+----
+contract AuctionRepository {
 
-** Decentralized storage (IPFS)
-* Easily store & retrieve data in the DApp through EmbarkJS, including uploading and retrieving files.
-* Deploy the full application to IPFS or Swarm.
+    // Array with all auctions
+    Auction[] public auctions;
 
+    // Mapping from auction index to user bids
+    mapping(uint256 => Bid[]) public auctionBids;
 
-** Decentralized Communication (Whisper, Orbit)
-* Easily send and receive messages through P2P channels.
+    // Mapping from owner to a list of owned auctions
+    mapping(address => uint[]) public auctionOwner;
 
-** Web Technologies
-* Integrate with any web technology including React, Foundation, etc.
-* Use any build pipeline or tool you wish, including grunt, gulp and webpack.
+    // Bid struct to hold bidder and amount
+    struct Bid {
+        address from;
+        uint256 amount;
+    }
 
-Getting started & documentation: https://embark.readthedocs.io
+    // Auction struct which holds all the required info
+    struct Auction {
+        string name;
+        uint256 blockDeadline;
+        uint256 startPrice;
+        string metadata;
+        uint256 deedId;
+        address deedRepositoryAddress;
+        address owner;
+        bool active;
+        bool finalized;
+    }
+----
 
-GitHub: https://github.com/embark-framework/embark
+The +AuctionRepository+ contract manages all auctions with the following functions:
 
-Website: https://github.com/embark-framework/embark
+----
+getCount()
+getBidsCount(uint _auctionId)
+getAuctionsOf(address _owner)
+getCurrentBid(uint _auctionId)
+getAuctionsCountOfOwner(address _owner)
+getAuctionById(uint _auctionId)
+createAuction(address _deedRepositoryAddress, uint256 _deedId, string _auctionTitle, string _metadata, uint256 _startPrice, uint _blockDeadline)
+approveAndTransfer(address _from, address _to, address _deedRepositoryAddress, uint256 _deedId)
+cancelAuction(uint _auctionId)
+finalizeAuction(uint _auctionId)
+bidOnAuction(uint _auctionId)
+----
 
-==== Emerald
+We can deploy these contracts to the Ethereum blockchain of our choice (e.g. Ropsten), using truffle in the book's repository:
 
-Emerald Platform is a framework and set of tools to simplify the development of DApps and the integration of existing services with Ethereum-based blockchains.
+----
+cd code/auction_dapp/backend
+truffle init
+truffle compile
+truffle migrate --network ropsten
+----
 
-Emerald provides:
+==== Auction DApp: Front-end user interface
 
-* JavaScript library and React components to build a DApp
-* SVG icons common for blockchain projects
-* Rust library to manage private keys, including hardware wallets, and sign transactions
-* Ready to use components and services that can be integrated into existing apps via the command line or JSON RPC API
-* SputnikVM, a standalone EVM implementation that can be used for development and testing
+Once the Auction DApp contracts are deployed, you can interact with them using your favorite Javascript console and web3.js, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify Javascript framework from Google.
 
-It's platform agnostic and provides tools for various targets:
+You can find the user interface code in the +code/auction_dapp/frontend+ folder in the book's repository. The directory has the following structure and contents:
 
-* Desktop app (using Electron)
-* Mobile apps
-* Web apps
-* Command-line apps and scripting tools
+----
+frontend/
+|-- build
+|   |-- build.js
+|   |-- check-versions.js
+|   |-- logo.png
+|   |-- utils.js
+|   |-- vue-loader.conf.js
+|   |-- webpack.base.conf.js
+|   |-- webpack.dev.conf.js
+|   `-- webpack.prod.conf.js
+|-- config
+|   |-- dev.env.js
+|   |-- index.js
+|   `-- prod.env.js
+|-- index.html
+|-- package.json
+|-- package-lock.json
+|-- README.md
+|-- src
+|   |-- App.vue
+|   |-- components
+|   |   |-- Auction.vue
+|   |   `-- Home.vue
+|   |-- config.js
+|   |-- contracts
+|   |   |-- AuctionRepository.json
+|   |   `-- DeedRepository.json
+|   |-- main.js
+|   |-- models
+|   |   |-- AuctionRepository.js
+|   |   |-- ChatRoom.js
+|   |   `-- DeedRepository.js
+|   `-- router
+|       `-- index.js
+----
 
-Getting started & documentation: https://docs.etcdevteam.com
+Once you have deployed the contracts, edit the front-end configuration in +frontend/src/config.js+ and enter the address of the +DeedRepository+ and +AuctionRepository+ contracts, as deployed. The front-end application also needs access to an Ethereum node offering a +JSON-RPC+ and +websockets+ interface. Once you've configured the front-end, launch it with a web server on your local machine:
 
-Github: https://github.com/etcdevteam/emerald-platform
+----
+npm install
+npm run dev
+----
 
-Website: https://emeraldplatform.io
+The Auction DApp front-end will launch and will be accessible via any web browser at:
 
+http://localhost:8080
 
+If all goes well, you should see the Auction DApp running in your web browser:
 
-[[dapp_development_tool_sec]]
-==== DApp (development tool)
-DApp is a simple command line tool for smart contract development. It supports these common use cases:
+[[auction_dapp_screen]]
+.Auction DApp User interface
+image::images/auction_dapp_home_screen.png["Auction DApp User interface"]
 
-* Easily use any version of `solc`
-* Run unit tests and interactively debug contracts in a native EVM execution environment
-* Create persistent testnets using Geth
-* Easily deploy your dapp to any EVM blockchain
-
-It was created in the spirit of the Unix design philosophy, which means it's a good citizen of the command line and can be easily composed with other tools. To get started, visit https://dapp.tools/dapp
-
-
-
-////
-TODO: add paragraph
-////
-
-[[live_dapps_sec]]
-=== Live DApps
-
-Here are some live DApps on the Ethereum network.
-
-////
-TODO: add paragraph
-////
-
-[[populous_sec]]
-==== Populous
-An Ethereum-based project aiming to disrupt the multi-million dollar invoice financing industry by creating a peer-to-peer blockchain based lending service.
-
-Website: https://populous.co/
-
-[[ethpm_sec]]
-==== EthPM
-A project aimed at bringing package management to the Ethereum ecosystem.
-
-Website: https://www.ethpm.com/
-
-[[radar_relay_sec]]
-==== Radar Relay
-DEX (Decentralized Exchange) focused on trading Ethereum tokens directly from wallet to wallet.
-
-Website: https://radarrelay.com/
-
-[[cryptokitties_sec]]
-==== CryptoKitties
-A game deployed on Ethereum that allows players to purchase, collect, breed and sell various types of virtual cats.
-It represents one of the earliest attempts to deploy blockchain technology for recreational and leisurely purposes.
-
-Website: https://www.cryptokitties.co
-
-[[ethlance_sec]]
-==== Ethlance
-Ethlance is a platform for connecting freelancers and developers, both paying and receiving ether.
-
-Website: https://ethlance.com/
-
-[[decentraland_sec]]
-==== Decentraland
-Decentraland is a virtual reality platform powered by the Ethereum blockchain. Users can create, experience, and monetize content and applications.
-
-Website: https://decentraland.org/
-
-[[makerdao_sec]]
-==== MakerDAO
-
-One of Ethereum's oldest projects, MakerDAO offers the Dai stablecoin: an asset-backed hard currency for the 21st century. A stablecoin is a cryptocurrency that has low volatility against the world’s most important national currencies, thereby combining the advantages of a cryptocurrency and of a major fiat currency.
-
-The MakerDAO system allows users to lock up their valuable Ethereum tokens as collateral and issue Dai against them. When they want to retrieve their assets later, they simply return the Dai they issued plus a fee based on how long it was outstanding. This simple principle means that each Dai is backed by some valuable asset held in the secure MakerDAO smart contract platform.
-
-Dai has been operational since December 2017. For more details, see https://makerdao.com
+//
+// [[dapp_frameworks_sec]]
+// === DApp frameworks
+//
+// There are many different Development frameworks and libraries written in many languages which allows for a better developer experience in creating and deploying a DApp.
+//
+// [[truffle_sec]]
+// ==== Truffle
+// Truffle is a DApp development environment. It is a popular choice and provides an application management environment, testing framework and asset pipeline for Ethereum.
+//
+// With Truffle, you get:
+//
+// * Built-in smart contract compilation, linking, deployment and binary management.
+// * Automated contract testing with Mocha and Chai.
+// * Configurable build pipeline with support for custom build processes.
+// * Scriptable deployment & migrations framework.
+// * Network management for deploying to many public & private networks.
+// * Interactive console for direct contract communication.
+// * Instant rebuilding of assets during development.
+// * External script runner that executes scripts within a Truffle environment.
+//
+// Here are some links to get you started:
+//
+// * Documentation: http://truffleframework.com/docs
+// * Github link: https://github.com/trufflesuite/truffle
+// * Website link: https://truffleframework.com
+//
+// [[embark_sec]]
+// ==== Embark
+// The Embark Framework focuses on serverless Decentralized Applications using Ethereum, IPFS and other platforms. Embark currently integrates with all EVM-based blockchains (of which Ethereum is the most prominent, of course), decentralized storages services (including IPFS), and decentralized communication platforms (including Whisper and Orbit).
+//
+// With Embark you can:
+//
+// ** Blockchain (Ethereum)
+// * Automatically deploy contracts and make them available in your JS code. Embark watches for changes, and if you update a contract, Embark will automatically redeploy the contracts (if needed) and the DApp.
+// * Contracts are available in JS with Promises.
+// * Do Test Driven Development with Contracts using Javascript.
+// * Keep track of deployed contracts; deploy only when truly needed.
+// * Manage different chains (e.g testnet, private net, livenet)
+// * Easily manage complex systems of interdependent contracts.
+//
+// ** Decentralized storage (IPFS)
+// * Easily store & retrieve data on the DApp through EmbarkJS, including uploading and retrieving files.
+// * Deploy the full application to IPFS or Swarm.
+//
+//
+// ** Decentralized Communication (Whisper, Orbit)
+// * Easily send/receive messages through channels in P2P through Whisper or Orbit.
+//
+// ** Web Technologies
+// * Integrate with any web technology including React, Foundation, etc.
+// * Use any build pipeline or tool you wish, including grunt, gulp and webpack.
+//
+//
+// Getting started & documentation; https://embark.readthedocs.io
+//
+// Github link; https://github.com/embark-framework/embark
+//
+// Website link; https://github.com/embark-framework/embark
+//
+// ==== Emerald
+//
+// Emerald Platform is a framework and set of tools to simplify development of a Dapps and integration of existing services with Ethereum based blockchain.
+//
+// Emerald provides:
+//
+// * Javascript library and React components to build a Dapp
+// * SVG icons common for blockchain projects
+// * Rust library to manage private keys, including hardware wallets, and sign transactions
+// * Ready to use components/services that can be integrated into existing app thought command line or JSON RPC API
+// * Accompanied with SputnikVM, a standalone EVM implementation that can be used for development and testing
+//
+// It's platform agnostic and provides tools for various targets:
+//
+// * Desktop app bundled with Electron
+// * Mobile apps
+// * Web apps
+// * Command line apps and scripting tools
+//
+// Getting started & documentation; https://docs.etcdevteam.com
+//
+// Github link; https://github.com/etcdevteam/emerald-platform
+//
+// Website link; https://emeraldplatform.io
+//
+//
+//
+// [[dapp_development_tool_sec]]
+// ==== DApp (development tool)
+// DApp is a simple command line tool for smart contract development. It supports these common usecases:
+//
+//
+// * Easily use any version of the C++ Solidity compiler
+// * Run unit tests and interactively debug contracts in a native EVM execution environment
+// * Create persistent testnets using the Go Ethereum client
+// * Easily deploy your dapp to any EVM blockchain
+//
+// It was created in the spirit of the Unix design philosophy, which means it's a good citizen of the command-line and can be easily composed with other tools. To get started, visit https://dapp.tools/dapp
+//
+//
+//
+// ////
+// TODO: add paragraph
+// ////
+//
+// [[live_dapps_sec]]
+// === Live DApps
+//
+// Here are listed different live DApps on the Ethereum network:
+//
+// ////
+// TODO: add paragraph
+// ////
+//
+// [[populous_sec]]
+// ==== Populous
+// An Ethereum based blockchain project aiming to disrupt the multi-million dollar invoice financing industry by creating a peer-to-peer blockchain based lending service.
+//
+// Website link; https://populous.co/
+//
+// [[ethpm_sec]]
+// ==== EthPM
+// A project aimed at bringing package management to the Ethereum ecosystem.
+//
+// Website link; https://www.ethpm.com/
+//
+// [[radar_relay_sec]]
+// ==== Radar Relay
+// DEX (Decentralized Exchange) focused on trading Ethereum tokens directly from wallet to wallet.
+//
+// Website link; https://radarrelay.com/
+//
+// [[cryptokitties_sec]]
+// ==== CryptoKitties
+// A game deployed on Ethereum that allows players to purchase, collect, breed and sell various types of virtual cats
+// It represents one of the earliest attempts to deploy blockchain technology for recreational and leisurely purposes.
+//
+// Website link; https://www.cryptokitties.co
+//
+// [[ethlance_sec]]
+// ==== Ethlance
+// Ethlance is a platform for connecting freelancers and developers, both paying and receiving ether.
+//
+// Website link; https://ethlance.com/
+//
+// [[decentraland_sec]]
+// ==== Decentraland
+// Decentraland is a virtual reality platform powered by the Ethereum blockchain. Users can create, experience, and monetize content and applications.
+//
+// Website link; https://decentraland.org/
+//
+// [[makerdao_sec]]
+// ==== MakerDAO
+//
+// One of Ethereum's oldest projects, MakerDAO creates the Dai stablecoin: an asset-backed hard currency for the 21st century. A stablecoin is a cryptocurrency that has low volatility against the world’s most important national currencies, potentially unlocking large benefits for the entire Internet.
+//
+// The MakerDAO system allows users to lock up their valuable Ethereum tokens as collateral and issue Dai against them. When they want to retrieve their assets later, they simply return the Dai they issued plus a fee based on how long it was outstanding. This simple principle means that each Dai is backed by some valuable asset held in the secure MakerDAO smart contract platform.
+//
+// Dai has been operational since December 2017. For a much more detailed description of the system, visit https://makerdao.com
