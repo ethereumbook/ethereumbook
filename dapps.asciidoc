@@ -194,6 +194,18 @@ truffle compile
 truffle migrate --network ropsten
 ----
 
+===== DApp governance
+
+If you read through the two smart contracts of the Auction DApp you will notice something important:
+
+There is no special account or role that has special privileges over the DApp. Each auction has an owner with some special capabilities, but the Auction DApp itself has no privileged user.
+
+This is a deliberate choice to decentralize the governance of the DApp and relinquish any control once it has been deployed. Some DApps, by comparison, have one or more privileged accounts, with special capabilities, such as the ability to terminate the DApp contract, to override or change its configuration, or to "veto" certain operations. Usually, these governance functions are introduced in the DApp in order to avoid unknown problems that might arise due to a bug.
+
+The issue of governance is a particularly difficult one to solve. It represents a double-edged sword: On one side, privileged accounts are dangerous - if compromised they can subvert the security of the DApp. On the other side, without any privileged account, there are no recovery options if a bug is found. We have seen both of these risks manifest in Ethereum DApps. In the case of The DAO, there were some privileged accounts called the "curators", but they were very limited in their capabilities. Those accounts were not able to override the DAO attacker's withdrawal of the funds. In a more recent case, the decentralized exchange Bancor experienced a massive theft because a privileged management account was compromised. Turns out, Bancor was not as decentralized as initially assumed.
+
+When building a DApp, you have to decide if you want to make the smart contracts truly independent, launching them and then having no control, or creating privileged accounts and running the risk of those being compromised. Either choice carries risk, but in the long run, true DApps cannot have specialized access for privileged accounts - that's not decentralized.
+
 ==== Auction DApp: Front-end user interface
 
 Once the Auction DApp contracts are deployed, you can interact with them using your favorite Javascript console and web3.js, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify Javascript framework from Google.
@@ -253,6 +265,169 @@ If all goes well, you should see the Auction DApp running in your web browser:
 [[auction_dapp_screen]]
 .Auction DApp User interface
 image::images/auction_dapp_home_screen.png["Auction DApp User interface"]
+
+=== Further Decentralizing the Auction DApp
+
+Our DApp is already quite decentralized, but we can improve things.
+
+The AuctionRepository contract operates independently of any "oversight", open to anyone. Once deployed it cannot be stopped, nor can any auction be censored. Each auction has a separate chat room that allows anyone to communicate about the auction without censorship or identification. The various auction assets, such as the description and associated image are stored on Swarm, making them resilient.
+
+Anyone can interact with the DApp by constructing transactions manually or by running the Vue frontend on their local machine. The DApp code itself is open-source and developed collaboratively on a public repository. Th
+
+But we can do more to make this DApp decentralized and resilient:
+
+* Store all the application code on Swarm or IPFS
+* Access the DApp by reference to a name, using the Ethereum Name Service
+
+In the next sections we will further decentralize the Auction DApp.
+
+=== Storing the Auction DApp on Swarm
+
+We introduce Swarm in <<swarm>>, earlier in this chapter. Our Auction DApp already uses Swarm to store the icon image for each auction. This is a much more efficient solution than attempting to store data on Ethereum, which is expensive. It is also a lot more resilient than if these images were stored on a centralized service like a web server or file server.
+
+But we can take things one step further. We can store the entire front-end of the DApp itself in Swarm and run it from a Swarm node directly, instead of running a local web server.
+
+==== Preparing Swarm
+
+To get started, we need to install Swarm and initialize our Swarm node. Swarm is part of the Ethereum Foundation's Go-Ethereum suite of tools. Refer to the instructions for installing go-ethereum in <<go_ethereum_geth>>, or to install a Swarm binary release, follow these instructions:
+
+https://swarm-guide.readthedocs.io/en/latest/installation.html
+
+Once you have installed Swarm, you can check that it is working correctly by running it with the +version+ command:
+
+----
+$ swarm version
+Version: 0.3
+Git Commit: 37685930d953bcbe023f9bc65b135a8d8b8f1488
+Go Version: go1.10.1
+OS: linux
+----
+
+To start running Swarm, you must tell it how to connect to an instance of Geth, to access the JSON-RPC API. Get it started by following the instructions here:
+
+https://swarm-guide.readthedocs.io/en/latest/gettingstarted.html
+
+When you start swarm, you should see something like this:
+
+----
+Maximum peer count                       ETH=25 LES=0 total=25
+Starting peer-to-peer node               instance=swarm/v0.3.1-225171a4/linux-amd64/go1.10
+connecting to ENS API                    url=http://127.0.0.1:8545
+swarm[5955]: [189B blob data]
+Starting P2P networking
+UDP listener up                          self=enode://f50c8e19ff841bcd5ce7d2d...
+Updated bzz local addr                   oaddr=9c40be8b83e648d50f40ad3d35f... uaddr=e
+Starting Swarm service
+9c40be8b hive starting
+detected an existing store. trying to load peers
+hive 9c40be8b: peers loaded
+Swarm network started on bzz address: 9c40be8b83e648d50f40ad3d35f...
+Pss started
+Streamer started
+IPC endpoint opened                      url=/home/ubuntu/.ethereum/bzzd.ipc
+RLPx listener up                         self=enode://f50c8e19ff841bcd5ce7d2d...
+----
+
+You can confirm that your Swarm node is running correctly by connecting to the local Swarm gateway web interface:
+http://localhost:8500
+
+You should see your local Swarm gateway and be able to query any Swarm hash or ENS name:
+
+[[image_swarm_gateway]]
+.Swarm gateway on localhost
+image::images/swarm-gateway.png["Swarm gateway on localhost"]
+
+==== Uploading files to swarm
+
+Once you have your local Swarm node and gateway running, you can upload to Swarm and the files will be accessible on any Swarm node, simply by reference to the file hash.
+
+Let's test this by uploading a file!
+
+----
+swarm up code/auction_dapp/README.md
+ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c
+----
+
+Swarm has uploaded the +README.md+ file, and returned a hash. We can now use this hash to access the +README.md+ from any Swarm node. For example, we could use the public Swarm gateway:
+
+https://swarm-gateways.net/bzz:/ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c/
+
+While uploading one file is relatively straightforward, it is a bit more complex to upload an entire DApp front-end. That's because the various DApp resources (HTML, CSS, Javascript, libraries etc.) have embedded references to each other. Normally, a web server translates URLs to local files and serves the correct resources. We can achieve the same for Swarm, by packaging our DApp.
+
+In the Auction DApp, there's a script for packaging all the resources:
+
+----
+$ cd code/auction_dapp/frontend
+$ npm run build
+
+> frontend@1.0.0 build /home/aantonop/Dev/ethereumbook/code/auction_dapp/frontend
+> node build/build.js
+
+Hash: 9ee134d8db3c44dd574d
+Version: webpack 3.10.0
+Time: 25665ms
+Asset     Size  Chunks                    Chunk Names
+static/js/vendor.77913f316aaf102cec11.js  1.25 MB       0 [emitted]  [big]  vendor
+static/js/app.5396ead17892922422d4.js   502 kB       1  [emitted]  [big]  app
+static/js/manifest.87447dd4f5e60a5f9652.js  1.54 kB       2  [emitted]         manifest
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css  1.13 kB       1  [emitted]         app
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map  2.54 kB          [emitted]
+static/js/vendor.77913f316aaf102cec11.js.map  4.74 MB       0  [emitted]         vendor
+static/js/app.5396ead17892922422d4.js.map   893 kB       1  [emitted]         app
+static/js/manifest.87447dd4f5e60a5f9652.js.map  7.86 kB       2  [emitted]         manifest
+index.html  1.15 kB          [emitted]
+
+Build complete.
+
+----
+
+The result of this command will be a new directory +code/auction_dapp/frontend/dist+ that contains the entire Auction DApp frontend, packed together:
+
+----
+dist/
+|-- index.html
+`-- static
+    |-- css
+    |   |-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css
+    |   `-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map
+    `-- js
+        |-- app.5396ead17892922422d4.js
+        |-- app.5396ead17892922422d4.js.map
+        |-- manifest.87447dd4f5e60a5f9652.js
+        |-- manifest.87447dd4f5e60a5f9652.js.map
+        |-- vendor.77913f316aaf102cec11.js
+        `-- vendor.77913f316aaf102cec11.js.map
+
+----
+
+Now we can upload the entire DApp to Swarm, by using the +up+ command and the +recursive+ option. We will also tell Swarm that +index.html+ is the +defaultpath+ for loading this DApp:
+
+----
+swarm --bzzapi http://localhost:8500 --recursive --defaultpath dist/index.html up dist/
+
+ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+----
+
+Now, our entire Auction DApp is hosted on Swarm and accessible by the Swarm URL:
+
+bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+
+=== ENS and DApps
+
+The _Ethereum Name Service (ENS)_ is another critical component of decentralization. ENS is implemented as a set of smart contracts on the Ethereum blockchain and allows us to manage names as part of the virtual top-level +.eth+ domain, as we saw in <<ens_chapter>>.
+
+We will now use ENS to give our Auction DApp a name, making it easier to find on Swarm. using ENS also increases security as it allows us to bind a single name securely to the Swarm resources and smart contract, thereby preventing any attempt to direct users to a fake site or compromised auction contract.
+
+==== Registering a sub-domain for the DApp
+
+==== Registering a domain resolver
+
+==== Linking the name to a Swarm resource
+
+
+
+
+
 
 //
 // [[dapp_frameworks_sec]]
