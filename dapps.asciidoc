@@ -527,6 +527,7 @@ While in theory this could work for +.com+ the only domain that this has been im
 
 +.eth+ domains are distributed via an auction system. There is no reserved list or priority, and the only way to acquire a name is to use the system. The auction system is a complex piece of code (over 500 lines); most of the early development efforts (and bugs!) in ENS were in this part of the system, but it's also replaceable and upgradeable (without risk to the funds—more on that later).
 
+[[vickrey_auction]]
 ===== Vickrey Auctions
 
 Names are distributed via a modified Vickrey Auction. In a traditional Vickrey auction, every bidder submits a sealed bid, and all of them are revealed simultaneously, at which point the highest bidder wins the auction, but only pays the second-highest bid. Therefore bidders are incentivized not to bid less than the true value of the name to them, since bidding their true value increases the chance they will win but does not affect the price they will eventually pay.
@@ -536,12 +537,6 @@ On a blockchain, some changes are required:
 * To ensure bidders don't submit bids they have no intention of paying, they must lock up a value equal or higher than their bid beforehand, to guarantee the bid is valid.
 * Because you can't hide secrets on a blockchain, bidders must execute at least two transactions (a commit–reveal process), in order to hide the original value and name they bid on.
 * Since you can't reveal all bids simultaneously in a decentralized system, bidders must reveal their own bids themselves; if they don't, they forfeit their locked-up funds. Without this forfeit, one could make many bids and choose to reveal only one or two, turning a sealed-bid auction into a traditional increasing price auction.
-
-////
-
-TODO Cross-ref to smart-contracts for "commit–reveal"?
-
-////
 
 Therefore, the auction is a four-step process:
 
@@ -570,14 +565,80 @@ The Deed Contract is very simple (about 50 lines of code) and it only allows the
 This approach drastically reduces the attack surface where bugs can put the funds at risk.
 
 ==== Registering a name
+
+Registering a name in ENS is a four-step process, as we saw in  <<vickrey_auction>>. First we place a bid for any available name, then we reveal our bid after 48 hours to secure the name. Here's a diagram showing the timeline of registration:
+
+[[ens_registration_timeline]]
 .ENS timeline for registration
 image::images/ens-flow.png[]
 
-////
-Image with permission from Chris Remus, Nick Johnson and Alex Van de Sande, via article by Chris Remus
-////
+Let's register our first name!
 
-==== Resolving a name
+We will use one of several available user-friendly interfaces to search for available names, place a bid on the name +ethereumbook.eth+, reveal the bid and secure the name.
+
+There are a number of web-based interfaces to ENS that allow us to interact with the ENS DApp. For this example, we will use the +mycrypto.com+ interface, in conjunction with MetaMask as our wallet.
+
+
+
+First, we need to make sure the name we want is available. While writing this book, we really wanted to register the name +mastering.eth+, but alas, it was already taken! Because ENS registrations only last one year, it might become possible to secure that name in the future. In the mean time, let's search for +ethereumbook.eth+:
+
+[[ens-name-search]]
+.Searching for ENS names on MyCrypto.com
+image::images/ens-checkname.png["Searching for ENS names on MyCrypto.com"]
+
+Ok, the name is available. Next, we unlock MetaMask and start an auction for +ethereumbook.eth+:
+
+
+[[ens-auction]]
+.Starting an auction for an ENS name
+image::images/ens-auction.png["Starting an auction for an ENS name"]
+
+[WARNING]
+====
+As mentioned in <<vickrey_auction>>, you must reveal your bid within 48hrs after the auction is complete, or you *lose the funds in your bid*. Did we forget to do this and lose 0.1 ETH ourselves? You bet we did. Put a reminder on your calendar.
+====
+
+Let's make our bid:
+
+
+[[ens-bid]]
+.Placing a bid for an ENS name
+image::images/ens-bid.png["Placing a bid for an ENS name"]
+
+Take a screenshot, save your secret phrase (as a backup for your bid), and *add a reminder in your calendar for the reveal date and time*, so you don't forget and lose your funds.
+
+When you're ready, submit the transaction and make your bid:
+
+[[ens-metamask-bid]]
+.MetaMask transaction containing your bid
+image::images/ens-metamask-bid.png["MetaMask transaction containing your bid"]
+
+If all goes well, return and reveal the bid in 48 hours and the name is now registered to your Ethereum address.
+
+==== Managing your ENS name
+
+Now that we have registered an ENS name, we can manage it using another user-friendly interface, by visiting:
+https://manager.ens.domains/
+
+Once there, enter the name you want to manage in the search box. You need to have your Ethereum wallet  (e.g. MetaMask) unlocked, so that the ENS manager DApp can manage the name on your behalf:
+
+[[ens-manager]]
+.The ENS Manager web interface
+image::images/ens-manager.png["The ENS Manager web interface"]
+
+From this interface, we can create subdomains, set a resolver contracts (more on that later) and connect each name to the appropriate resource, such as the Swarm address of a DApp front-end.
+
+===== Creating an ENS subdomain
+
+First, let's create a subdomain for our example Auction DApp. We will name the subdomain +auction+, so the fully qualified name will be +auction.ethereumbook.eth+:
+
+[[ens-manager-add-subdomain]]
+.Adding the subdomain auction.ethereumbook.eth
+image::images/ens_manager_add_subdomain.png["Adding the subdomain auction.ethereumbook.eth"]
+
+Once you create the subdomain, you enter +auction.ethereumbook.eth+ in the search box and now you can manage the subdomain, just as we managed the domain +ethereumbook.eth+ previously.
+
+==== ENS Resolvers
 
 In ENS, resolving a name is a two-step process:
 
@@ -586,27 +647,44 @@ If the record exists, the registry returns the address of its resolver.
 
 2. The resolver is called, using the method appropriate to the resource being requested. The resolver returns the desired result.
 
-==== Setting an ENS name resolver
+This two-step process has several benefits. By separating the functionality of resolvers from the naming system itself, we have a lot more flexibility. The owners of names can use custom resolvers to resolve any type or resource, extending the functionality of ENS. For example, if in the future you wanted to link a geolocation resource (longitude/lattitude) to an ENS name, you could create a new resolver that answers a +geolocation+ query. Who knows what applications might be useful in the future? With custom resolvers, the only limitation is your imagination.
 
-===== Types of resolvers
+For convenience, there is a default public resolver that can resolve a variety of resources including:
 
-===== Address resolver
+* Address (for wallets or contracts)
+* Content (a Swarm hash for DApps or contract source code)
 
-===== Smart contract resolver
+Since we want to link our Auction DApp to a Swarm hash, we can use the public resolver, which supports +content+ resolution, and don't need to code or deploy a custom resolver.
 
-===== Swarm object resolver
+Let's set our auction.ethereumbook.eth name to use the public resolver:
 
-==== ENS subdomains
+[[ens-manager-set-default-resolver]]
+.Set the default public resolver for auction.ethereumbook.eth
+image::images/ens-manager-set-default-resolver.png["Set the default public resolver for auction.ethereumbook.eth"]
 
-===== Creating a subdomains
+==== Resolving a name to a Swarm hash (content)
 
-==== ENS secondary markets
+Once the resolver for +auction.ethereumbook.eth+ is set to be the public resolver, we can set it to return the Swarm hash as the content of our name:
 
-===== Buying and selling names
+[[ens-set-content]]
+.Set the 'content' return for auction.ethereumbook.eth
+image::images/ens-manager-set-content.png["Set the 'content' return for auction.ethereumbook.eth"]
 
-===== Renting a name
+Wait a short time for your transaction to be confirmed and you should be able to resolve the name correctly. Before setting a name, our Auction DApp could be found on a Swarm gateway by it's hash:
 
-==== Conclusion
+https://swarm-gateways.net/bzz:ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+
+or by searching in a DApp browser or Swarm gateway for the Swarm URL:
+
+bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+
+Now that we have attached it to a name, it is much easier:
+
+http://swarm-gateways.net/bzz:/auction.ethereumbook.eth/
+
+or, by search for "auction.ethereumbook.eth" in any ENS compatible wallet or DApp browser (e.g. Mist).
+
+
 
 
 Links:
