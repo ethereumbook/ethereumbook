@@ -412,44 +412,19 @@ Now, our entire Auction DApp is hosted on Swarm and accessible by the Swarm URL:
 
 bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
 
-We've made some progress in decentralizing our DApp, but we've made it harder to use. A URL like that is much harder to use than a web server with a nice name like +auction_dapp.com+. Are we forced to sacrifice usability in order to gain decentralization? Not necessarily. In the next section we will examine the _Ethereum Name Service (ENS)_, which allows us to use easy-to-read names but still preserves the decentralized nature of our application.
+We've made some progress in decentralizing our DApp, but we've made it harder to use. A URL like that is much harder to use than a web server with a nice name like +auction_dapp.com+. Are we forced to sacrifice usability in order to gain decentralization? Not necessarily. In the next section we will examine the _Ethereum Naming System (ENS)_, which allows us to use easy-to-read names but still preserves the decentralized nature of our application.
 
-=== Ethereum Name Service (ENS)
+=== Ethereum Naming System (ENS)
 
 You can design the best smart contract in the world, but if you don't provide a good interface for users, they won't be able to access it.
 
-Contracts on the blockchain can be considered the back end of your application, and you can write the front end using any language or platform you like. Most of the apps described in this book use a traditional server model for the front end, but if you want to truly decentralize your application, you can also use decentralized hosting services like BitTorrent, Swarm or IPFS to host the front end.
+On the traditional internet, the Domain Name system (DNS), allows us to use human-readable names in the browser, while resolving those names to IP addresses or other identifiers behind the scenes. On the Ethereum blockchain, the _Ethereum Naming System (ENS)_ solves the same problem, but in a decentralized manner.
 
-On the traditional web, you ultimately access content by the IP address of its server.
-For instance, _91.198.174.192_ is the IP address of +wikipedia.org+. That number has no information on what sort of content you will find, only the address of a computer that will serve you Wikipedia's content.
+For example, the Ethereum Foundation donation address is +0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359+; in a wallet that supports ENS, it's simply +ethereum.eth+.
 
-////
+ENS is more than a smart contract. ENS is a fundamental DApp itself, offering a decentralized name service. Furthermore, ENS is supported by a number of DApps for registration, management, and auctions of registered names. ENS demonstrates how DApps can work together: A DApp built to serve other DApps, supported by an ecosystem of DApps, embedded in other DApps, etc.
 
-TODO The address below doesn't work for me (`ipfs cat Qmf…` just hangs). I have no problem with the test "cat.jpg" given at https://ipfs.io/docs/getting-started/
-
-////
-
-Content-addressed systems are different, in that their addresses reflect the content itself, not its location. For instance, +QmfXeApFP1mCrMTT1JX5XLtUvLxS5eNsegqDpBYUZPhXEQ+ is the address of an image that you can download from any computer on the IPFS network: the address describes the image, not where to get it. On a different system, e.g. Swarm, the address of the same image may be different, but in each case _the address describes the content, not its location_. This allows greater flexibility and decentralization, because as long as you can connect to a network node that has a copy of the image (or is connected to a node that has a copy of it), you can access it.
-
-This process allows accessing any files that will make up your interface (HTML, JavaScript, CSS, images, etc.) in a decentralized manner, but has a huge drawback: hex addresses are not very human friendly.
-They consist of large mumbles of letters and numbers, which are neither memorable nor easy to type.
-
-On the traditional internet, this was solved by the Domain Name system (DNS), a hierarchical system ultimately run by ICANN, a US-based non-profit that controls the distribution of top level domains, like +.com+ or +.org+. On the blockchain an attempt to solve the same problem but in a decentralized manner is the Ethereum Naming System (ENS).
-
-Names can be used for other purposes: for example, the Ethereum Foundation donation contract address is +0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359+; in a wallet that supports ENS, it's simply +ethereum.eth+.
-
-////
-
-TODO I have commented out this section as it appears to serve no useful purpose, unless it is itself a TODO. In particular, it doesn't seem to outline the structure of the following sections (and the first bullet point is arguably covered by the previous section).
-==== Name resolution services
-
-* What is a name resolution service?
-* Why another one?
-* Why are they needed? (addresses, contracts, swarm objects, etc.)
-* Benefits (security, disambiguation, redirection/upgrade, readability/user experience)
-* Concerns about squatting, trademarks, dispute resolution
-
-////
+In this section we will look at how ENS works, how we can set up our own name and link it to a wallet or Ethereum address, how we can embed ENS in another DApp and how we can use ENS to name our DApp resources to make them easier to use.
 
 ==== History of Ethereum name services
 
@@ -463,13 +438,13 @@ ENS was launched on Star Wars day, May 4, 2017 (after a failed attempt to launch
 
 ENS is specified mainly in three Ethereum Improvement Proposals (EIPs), namely ERC137, which specifies the basic functions of ENS, ERC162, which describes the auction system for the +.eth+ root, and ERC181, which specifies reverse registration of addresses.
 
-ENS follows a sandwich design philosophy: a very simple layer on the bottom, followed by layers of more complex but replaceable code, with a very simple top layer that keeps all the funds in separate accounts.
+ENS follows a "sandwich" design philosophy: a very simple layer on the bottom, followed by layers of more complex but replaceable code, with a very simple top layer that keeps all the funds in separate accounts.
 
-==== Bottom of the sandwich: Name Owners and resolvers
+==== Bottom layer: Name Owners and resolvers
 
 The ENS operates on "nodes" instead of human-readable names: a human-readable name is converted to a node using the "Namehash" algorithm.
 
-The base layer of the sandwich is a cleverly simple contract (less than 50 lines of code) defined by ERC137 that allows only nodes' owners to set information about their names and to create subnodes (the ENS equivalent of DNS subdomains).
+The base layer of the ENS is a cleverly simple contract (less than 50 lines of code) defined by ERC137 that allows only nodes' owners to set information about their names and to create subnodes (the ENS equivalent of DNS subdomains).
 
 The only functions on the base layer are those that enable a node owner to set information about their own node (specifically the resolver, time to live or transferring the ownership) and to create owners of new subnodes.
 
@@ -583,9 +558,9 @@ Every time the bid is revealed the current winner is recalculated, therefore the
 1. Clean up after: if you are the winner, you can finalize the auction in order to get back the difference between your bid and the second highest.
 If you forgot to reveal you can make a late reveal and recover a little of your bid.
 
-===== Top layer of the sandwich: the Deeds
+===== Top layer of the ENS: the Deeds
 
-The top layer of the sandwich is yet another super-simple contract with a single purpose: to hold the funds.
+The top layer of the ENS is yet another super-simple contract with a single purpose: to hold the funds.
 
 When you win a name, the funds are not actually sent anywhere, but are just locked up for the period you want to hold the name (at least a year).
 This works like a guaranteed buy-back: if the owner does not want the name any more they can sell it back to the system and recover their ether (so the cost of holding the name is the opportunity cost of doing something with a return greater than zero).
