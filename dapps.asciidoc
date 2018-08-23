@@ -1,15 +1,15 @@
 [[decentralized_applications_chap]]
 == Decentralized Applications (DApps)
 
-In this section we will explore the world of _Decentralized Applications_ or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic (and payment functions) of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming etc.
+In this chapter we will explore the world of _Decentralized Applications_ or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic and payment functions of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming etc.
 
 [[image_web3_suite]]
 .Web3: A decentralized web using smart contracts and P2P Technologies
 image::images/web3suite.png["Web3: A decentralized web using smart contracts and P2P Technologies"]
 
-While decentralized apps describe an audacious vision of the future, the term DApp is often applied to projects that fall short of that vision. In fact, any smart contract with a web front end is called a DApp. Some of these are highly centralized applications (CApps?) in every way, yet they get called "DApps" anyway. Beware of false DApps!
+While "decentralized apps" are an audacious vision of the future, the term "DApp" is often applied to any smart contract with a web front end. Some of these so-called DApps are highly centralized applications (CApps?). Beware of false DApps!
 
-In this section, we will also develop and deploy a decentralized auction platform, as an example DApp. You can find the source code for that in the book's repository under +code/auction_dapp+. We will look at each apsect of an auction application and see how we can decentralize the application as much as possible.
+In this section we will develop and deploy a DApp: an auction platform. You can find the source code in the book's repository under +code/auction_dapp+. We will look at each apsect of an auction application and see how we can decentralize the application as much as possible.
 
 [[what_is_a_dapp_sec]]
 === What is a DApp?
@@ -19,47 +19,47 @@ A Decentralized Application, or _DApp_, is an application which is mostly or ent
 Consider all the possible aspects of an application that may be decentralized:
 
 * Front-end software
-* Back-end software (logic)
+* Back-end software (application logic)
 * Data storage
 * Name resolution
 * Message communications
 
-Each of these can be somewhat centralized or somewhat decentralized. For example, a front-end can be developed as a proprietary application, or as an open web application. The back-end and storage can be on private servers and proprietary databases, or a smart contract and P2P storage.
+Each of these can be somewhat centralized or somewhat decentralized. For example, a front-end can be developed a web app that runs on a centralized server, or as a mobile app that runs on your device. The back-end and storage can be on private servers and proprietary databases, or a smart contract and P2P storage.
 
 There are many advantages to creating a DApp that a typical centralized architecture can not provide:
 
-1) Resiliency: by having the business-logic controlled by a smart contract, a DApp back-end will be fully distributed and managed on a blockchain platform. Unlike deploying an application on a centralized server, a DApp will have no downtime and will continue to persist as long as the platform is still operating.
+1) Resiliency: by having the business-logic controlled by a smart contract, a DApp back-end will be fully distributed and managed on a blockchain platform. Unlike deploying an application on a centralized server, a DApp will have no downtime and will continue to be available as long as the platform is still operating.
 
-2) Transparency: the on-chain nature of a DApp allows everyone to inspect the code and be more sure about its function. On the same note, any interaction with the the DApp will be stored forever in the blockchain.
+2) Transparency: the on-chain nature of a DApp allows everyone to inspect the code and be more sure about its function. Any interaction with the the DApp will be stored forever in the blockchain.
 
-3) Censorship Resistance: as long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference from any centralized control. No service provider, or even the owner of the smart contract, could alter the code once it is deployed on the network.
+3) Censorship Resistance: as long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference from any centralized control. No service provider, or even the owner of the smart contract, can alter the code once it is deployed on the network.
 
-In the Ethereum ecosystem as it stands today, there are very few trully decentralized apps - most still rely on centralized service and servers for some part of their operation. In the future, we expect that it will be possible for every part of any DApp to be operated in a fully decentralized way.
+In the Ethereum ecosystem as it stands today, there are very few truly decentralized apps - most still rely on centralized services and servers for some part of their operation. In the future, we expect that it will be possible for every part of any DApp to be operated in a fully decentralized way.
 
 [[blockchain_smart_contracts_sec]]
 ==== Smart contracts "back end"
 
-In a DApp, smart contracts are used to store the business logic (program code) and the related state of your application. You can think of a smart contract replacing  a server-side (a.k.a. "back end") component in a regular application. This is an oversimplification, of course. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept as minimal as possible. It is therefore important to identify which aspects of the application need a trusted and decentralized execution platform.
+In a DApp, smart contracts are used to store the business logic (program code) and the related state of your application. You can think of a smart contract replacing a server-side (a.k.a. "back-end") component in a regular application. This is an oversimplification, of course. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept as minimal as possible. It is therefore important to identify which aspects of the application need a trusted and decentralized execution platform.
 
-Ethereum smart contracts allow you to build almost arbitrarily complex architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go. We have to add "almost" in our description, because the amount of computation that can be done in one transaction will always be limited to some degree, as specified by the block gas limit. After deploying your smart contract, your business logic could well be used by many other developers in the future.
+Ethereum smart contracts allow you to build architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go, their complexity restricted only by the block gas limit. After deploying your smart contract, your business logic could well be used by many other developers in the future.
 
 One major consideration of smart contract architecture design is the inability to change the code of a smart contract once it is deployed. It can be deleted if it is programmed with an accessible +SELFDESTRUCT+ opcode, but other than complete removal, the code cannot be changed in any way.
 
-The second major consideration of smart contract architecture design is DApp size; a really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g. from a centralized server) would mean your users will have to trust these external resources.
+The second major consideration of smart contract architecture design is DApp size; a really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off-chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g. from a centralized server) means your users will have to trust these external resources.
 
 [[front_end_web_ui_cec]]
 ==== Front end (Web User Interface)
 
-Unlike the business logic of the DApp that requires a developer to understand the EVM and new languages such as Solidity, the client side interface of a DApp can use basic web technologies (HTML, CSS, JavaScript, etc). This allows a traditional web developer to utilize the tools, libraries and frameworks they are familiar with using on a regular basis. Interactions with Ethereum, such as signing messages, sending transactions and key management are often conducted through the web browser, via an extension such as MetaMask.
+Unlike the business logic of the DApp, which requires a developer to understand the EVM and new languages such as Solidity, the client side interface of a DApp can use standard web technologies (HTML, CSS, JavaScript, etc). This allows a traditional web developer to use familiar tools, libraries and frameworks. Interactions with Ethereum, such as signing messages, sending transactions and key management are often conducted through the web browser, via an extension such as MetaMask.
 
 Although it is possible to create a mobile DApp as well, currently there are few resources to help create mobile DApp front-ends, mainly due to the lack of mobile clients that can serve as a light client with key management functionality.
 
-The front-end is usually linked to Ethereum via the web3.js Javascript library, which is bundled with the front-end resources and served to a browser by a web server.
+The front-end is usually linked to Ethereum via the +web3.js+ Javascript library, which is bundled with the front-end resources and served to a browser by a web server.
 
 [[data_storage_sec]]
 ==== Data storage
 
-Due to high gas costs and the currently low block gas limit, smart contracts are not suited to store or process large amounts of data. Hence, most DApps will utilize off-chain data storage services, meaning they store the bulky data off the Ethereum chain, on a data storage platform. That data storage platform can be centralized, such as a database and web server hosted by a company. Or, the data can be decentralized, stored on a P2P platform such as the _Interplanetary File System (IPFS)_, or Ethereum's own _Swarm_ platform.
+Due to high gas costs and the currently low block gas limit, smart contracts are not suited to store or process large amounts of data. Hence, most DApps will utilize off-chain data storage services, meaning they store the bulky data off the Ethereum chain, on a data storage platform. That data storage platform can be centralized, for example a typical cloud database. Or, the data can be decentralized, stored on a P2P platform such as the _Interplanetary File System (IPFS)_, or Ethereum's own _Swarm_ platform.
 
 Decentralized P2P storage is ideal for storing and distributing large static assets such as images, videos, and the resources of the application's front-end web interface (HTML, CSS, JavaScript, etc).
 
@@ -70,8 +70,7 @@ The _Inter-Planetary File System (IPFS)_ is a decentralized content-addressable 
 
 IPFS aims to replace HTTP as the protocol of choice for delivery of web applications. Instead of storing a web application on a single server, the files are stored on IPFS and can be retrieved from any IPFS node.
 
-More information about IPFS can be found at:
-https://ipfs.io
+More information about IPFS can be found at https://ipfs.io
 
 
 [[swarm_sec]]
@@ -96,9 +95,9 @@ https://github.com/ethereum/wiki/wiki/Whisper
 
 In this section we will start building an example DApp, to explore the various decentralization tools. Our DApp will implement a decentralized auction.
 
-The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark registration, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During the auction, users can join a chat room, created specifically for each auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
+The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During the auction, users can join a chat room, created specifically for each auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
 
-The overall auction process can be seen in here:
+The overall auction process can be seen here:
 [[auction_dapp_overview]]
 .Auction DApp: A simple example auction DApp
 image::code/auction_dapp/auction_diagram.png["Auction DApp: A simple example auction DApp"]
@@ -108,9 +107,9 @@ The main components of our Auction DApp are:
 * A smart contract implementing ERC721 non-fungible "deed" tokens (+DeedRepository+).
 * A smart contract implementing an Auction (+AuctionRepository+) to sell the deeds.
 * A web front-end using the Vue/Vuetify Javascript framework.
-* The web3.js library to connect to Ethereum chains (via MetaMask or other providers).
-* A Swarm client, to store resources such as images on Swarm.
-* A Whisper client, to create per-auction chat rooms for all participants
+* The +web3.js+ library to connect to Ethereum chains (via MetaMask or other clients).
+* A Swarm client, to store resources such as images.
+* A Whisper client, to create per-auction chat rooms for all participants.
 
 You can find the source code for the auction DApp in the book's repository:
 https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp
@@ -127,7 +126,7 @@ Let's start by looking at +DeedRepository+. This contract is an ERC-721 compatib
 include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
 ----
 
-As you can see, the +DeedRepository+ contract is a straightforward implementation of an ERC721 compatible token.
+As you can see, the +DeedRepository+ contract is a straightforward implementation of an ERC721-compatible token.
 
 Our Auction DApp uses the +DeedRepository+ contract to issue and track tokens for each auction. The auction itself is orchestrated by the +AuctionRepository+ contract, which can be found here:
 
@@ -208,7 +207,7 @@ When building a DApp, you have to decide if you want to make the smart contracts
 
 ==== Auction DApp: Front-end user interface
 
-Once the Auction DApp contracts are deployed, you can interact with them using your favorite Javascript console and web3.js, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify Javascript framework from Google.
+Once the Auction DApp contracts are deployed, you can interact with them using your favorite Javascript console and +web3.js+, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify Javascript framework from Google.
 
 You can find the user interface code in the +code/auction_dapp/frontend+ folder in the book's repository. The directory has the following structure and contents:
 
@@ -270,9 +269,9 @@ image::images/auction_dapp_home_screen.png["Auction DApp User interface"]
 
 Our DApp is already quite decentralized, but we can improve things.
 
-The AuctionRepository contract operates independently of any "oversight", open to anyone. Once deployed it cannot be stopped, nor can any auction be censored. Each auction has a separate chat room that allows anyone to communicate about the auction without censorship or identification. The various auction assets, such as the description and associated image are stored on Swarm, making them resilient.
+The AuctionRepository contract operates independently of any oversight, open to anyone. Once deployed it cannot be stopped, nor can any auction be censored. Each auction has a separate chat room that allows anyone to communicate about the auction without censorship or identification. The various auction assets, such as the description and associated image, are stored on Swarm, making them hard to censor or block.
 
-Anyone can interact with the DApp by constructing transactions manually or by running the Vue frontend on their local machine. The DApp code itself is open-source and developed collaboratively on a public repository. Th
+Anyone can interact with the DApp by constructing transactions manually or by running the Vue frontend on their local machine. The DApp code itself is open source and developed collaboratively on a public repository.
 
 But we can do more to make this DApp decentralized and resilient:
 
@@ -283,9 +282,9 @@ In the next sections we will further decentralize the Auction DApp.
 
 === Storing the Auction DApp on Swarm
 
-We introduce Swarm in <<swarm>>, earlier in this chapter. Our Auction DApp already uses Swarm to store the icon image for each auction. This is a much more efficient solution than attempting to store data on Ethereum, which is expensive. It is also a lot more resilient than if these images were stored on a centralized service like a web server or file server.
+We introduced Swarm in <<swarm>>, earlier in this chapter. Our Auction DApp already uses Swarm to store the icon image for each auction. This is a much more efficient solution than attempting to store data on Ethereum, which is expensive. It is also a lot more resilient than if these images were stored on a centralized service like a web server or file server.
 
-But we can take things one step further. We can store the entire front-end of the DApp itself in Swarm and run it from a Swarm node directly, instead of running a local web server.
+But we can take things one step further. We can store the entire front-end of the DApp itself in Swarm and run it from a Swarm node directly, instead of running a web server.
 
 ==== Preparing Swarm
 
@@ -337,14 +336,14 @@ You should see your local Swarm gateway and be able to query any Swarm hash or E
 .Swarm gateway on localhost
 image::images/swarm-gateway.png["Swarm gateway on localhost"]
 
-==== Uploading files to swarm
+==== Uploading files to Swarm
 
 Once you have your local Swarm node and gateway running, you can upload to Swarm and the files will be accessible on any Swarm node, simply by reference to the file hash.
 
 Let's test this by uploading a file!
 
 ----
-swarm up code/auction_dapp/README.md
+$ swarm up code/auction_dapp/README.md
 ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c
 ----
 
@@ -352,7 +351,7 @@ Swarm has uploaded the +README.md+ file, and returned a hash. We can now use thi
 
 https://swarm-gateways.net/bzz:/ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c/
 
-While uploading one file is relatively straightforward, it is a bit more complex to upload an entire DApp front-end. That's because the various DApp resources (HTML, CSS, Javascript, libraries etc.) have embedded references to each other. Normally, a web server translates URLs to local files and serves the correct resources. We can achieve the same for Swarm, by packaging our DApp.
+While uploading one file is relatively straightforward, it is a bit more complex to upload an entire DApp front-end. That's because the various DApp resources (HTML, CSS, Javascript, libraries etc.) have embedded references to each other. Normally, a web server translates URLs to local files and serves the correct resources. We can achieve the same for Swarm by packaging our DApp.
 
 In the Auction DApp, there's a script for packaging all the resources:
 
