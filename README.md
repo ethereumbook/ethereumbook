@@ -19,22 +19,22 @@ Here's what is available now:
 |-------|------|:------:|
 | [Preface](preface.asciidoc) | #### ||
 | [Glossary](glossary.asciidoc) | ######## | :heavy_check_mark: |
-| [What is Ethereum](what-is.asciidoc) | ######### | :heavy_check_mark: |
-| [Introduction](intro.asciidoc) | ############# | :heavy_check_mark: |
-| [Ethereum Clients](clients.asciidoc) | ########## | :heavy_check_mark: |
+| [What is Ethereum](what-is.asciidoc) | ########## | :heavy_check_mark: |
+| [Introduction](intro.asciidoc) | ############### | :heavy_check_mark: |
+| [Ethereum Clients](clients.asciidoc) | ############ | :heavy_check_mark: |
 | [Ethereum Testnets](ethereum-testnets.asciidoc) | #### ||
-| [Keys and Addresses](keys-addresses.asciidoc) | ############# | :heavy_check_mark: |
-| [Wallets](wallets.asciidoc) | ########### | :heavy_check_mark: |
-| [Transactions](transactions.asciidoc) | ############### | :heavy_check_mark: |
-| [Smart Contracts](smart-contracts.asciidoc) | ########################## | :heavy_check_mark: |
+| [Keys and Addresses](keys-addresses.asciidoc) | ############### | :heavy_check_mark: |
+| [Wallets](wallets.asciidoc) | ############ | :heavy_check_mark: |
+| [Transactions](transactions.asciidoc) | ################## | :heavy_check_mark: |
+| [Smart Contracts](smart-contracts.asciidoc) | ###################################################### | :heavy_check_mark: |
 | [Dev Tools and Frameworks](dev-tools.asciidoc) | ########## | :heavy_check_mark: |
-| [Tokens](tokens.asciidoc) | ################### | :heavy_check_mark: |
-| [DApps](dapps.asciidoc) | #### ||
-| [Oracles](oracles.asciidoc) | ####### | :heavy_check_mark: |
-| [Accounting & Gas](gas.asciidoc) | #### | :heavy_check_mark: |
-| [EVM](evm.asciidoc) | ####### | :heavy_check_mark: |
-| [Consensus](consensus.asciidoc) | ####### | :heavy_check_mark: |
-| [Vyper](vyper.asciidoc) | ##### | :heavy_check_mark: |
+| [Tokens](tokens.asciidoc) | #################### | :heavy_check_mark: |
+| [DApps](dapps.asciidoc) | ############## | :heavy_check_mark: |
+| [Oracles](oracles.asciidoc) | ########### | :heavy_check_mark: |
+| [Accounting & Gas](gas.asciidoc) | ##### | :heavy_check_mark: |
+| [EVM](evm.asciidoc) | ########### | :heavy_check_mark: |
+| [Consensus](consensus.asciidoc) | ######## | :heavy_check_mark: |
+| [Vyper](vyper.asciidoc) | ###### | :heavy_check_mark: |
 | [DevP2P Protocol](devp2p-protocol.asciidoc) | ### | :heavy_check_mark: |
 | [Ethereum Standards (EIPs/ERCs)](standards-eip-erc.asciidoc) | #### | :heavy_check_mark: |
 | [Forks History (DAO/ETC)](forks-history.asciidoc) | ###### | :heavy_check_mark: |
