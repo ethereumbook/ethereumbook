@@ -16,7 +16,7 @@ Vyper is an experimental, contract-oriented programming language for the Ethereu
 [[comparison_to_solidity_sec]]
 === Comparison to Solidity
 
-One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. In this section we explain what those features are and why they're omitted, for those considering developing smart contracts in Vyper.
+One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. It is important for those considering developing smart contracts, in Vyper, to understand what features Vyper does _not_ have, and why. Therefore, in this next section, we will explore those features and provide justification for why they have been omitted.
 
 ==== Modifiers
 
@@ -32,7 +32,54 @@ function changeOwner(address _newOwner)
 }
 ----
 
-As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. Whilst modifiers are powerful, they can also be misleading: they change the environment of the function they modify, because they wrap the modified function's code, and their effects may not be obvious.
+As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. As you can see, this particular modifier acts as a mechanism to perform a pre-check on behalf of the `changeOwner` function. 
+
+[source,javascript]
+----
+modifier onlyBy(address _account)
+{
+    require(msg.sender == _account);
+    _;
+}
+----
+
+Modifiers are not just there to perform checks, as shown above. In fact, as modifiers, they can significantly change a smart contract's environment, in the context of the calling function. Put simply, modifiers are pervasive. 
+
+Let's look at another Solidity style example.
+
+[source, javascript]
+----
+enum Stages {
+    SafeStage
+    DangerStage,
+    FinalStage
+}
+
+uint public creationTime = now;
+Stages public stage = Stages.SafeStage;
+
+function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+}
+
+modifier stageTimeConfirmation() {
+    if (stage == Stages.SafeStage &&
+                now >= creationTime + 10 days)
+        nextStage();
+    _;
+}
+
+function a()
+    public
+    stageTimeConfirmation
+    // More code goes here
+{
+}
+----
+
+On one hand, developers should always check any other code, which their own code is calling. However, it is possible that under certain situations (like time constraints or exhaustion, resulting in lack of concentration) a developer may overlook a single line of code. This is especially the case if a developer has to jump around inside a large file whilst mentally keeping track of the function call hierarchy and committing the state of smart contract variables to memory.
+
+Let's look at the above example, in a bit more depth. Imagine that a developer is writing a public function called `a`. The developer is new to this contract and is utilizing a modifier written by someone else. At a glance it appears that the `stageTimeConfirmation` modifier is simply performing some checks in relation to the age of the contract in relation to the calling function. What the developer may _not_ realize is that the modifier is also calling another function; `nextStage`. In this, simplistic demonstration scenario, the overall result of simply calling the public function `a`, results in the smart contract's `stage` variable moving from `SafeStage` to `DangerStage`.
 
 ////
 
@@ -48,16 +95,18 @@ One could also argue that for auditing purposes an IDE could just as easily show
 
 ////
 
-[source,javascript]
-----
-modifier onlyBy(address _account)
-{
-    require(msg.sender == _account);
-    _;
-}
-----
+////
 
-Modifiers are typically used to perform a single check before a function's execution. Hence, Vyper's recommendation is to do away with modifiers altogether and simply use in-line checks and asserts as part of a function. Doing this improves auditability and readability, as the reader doesn't have to mentally (or manually) "wrap" the modifier code around the function to see what it does.
+RESPONSE:
+Yes, your points are totally valid. I guess this simply comes down to (as you pointed out) the pervasiveness of the modifier. Perhaps a busy developer might call a modifier, thinking it is like an assert (pre safety check), when in reality it makes a significant change to say a contract enum etc. 
+
+You are right in saying that a developer should simply check and understand the modifiers if and when they are going to use them. However there is a risk that a developer will be busy or tired or both and skim read without thoroughly testing the modifier. There may also be a case when collaborating with a team of developers that one of the developers writes a poorly named modifier that does something different (like alters a smart contract variable value) to what its name suggests. For example perhaps a developer thinks that they are confirming that a stage exists when perhaps the modifier is advancing the stage (pushing contract variable called stage from gate 1 to gate 2 etc).
+
+I have also rewritten the above paragraph. I really hope this clears the topic of modifiers up. Thank you ever so much for your feedback, very useful!
+
+////
+
+Vyper's has done away with modifiers altogether. The recommendations from Vyper are as follows. If only performing assertions with modifiers, then simply use in-line checks and asserts as part of the function. If modifying smart contract state and so forth, then again, make these changes explicitly part of the function. Doing this improves audit-ability and readability, as the reader doesn't have to mentally (or manually) "wrap" the modifier code around the function to see what it does.
 
 ==== Class inheritance
 
@@ -188,7 +237,7 @@ Decorators like `@private` `@public` `@constant` and `@payable` may be used at t
 
 +@payable+ decorator:: Only functions with the `@payable` decorator are allowed to transfer value.
 
-Vyper implements the logic of decorators explicitly. For example, the Vyper compilation process will fail if a function has both a `@payable` decorator and a `@constant` decorator. This makes sense because a function that transfers value has by definition updated the state, so cannot be `@constant`. Each Vyper function must be decorated with either `@public` or `@private` (but not both!).
+Vyper implements [the logic of decorators](https://github.com/ethereum/vyper/blob/master/vyper/signatures/function_signature.py#L93) explicitly. For example, the Vyper compilation process will fail if a function has both a `@payable` decorator and a `@constant` decorator. This makes sense because a function that transfers value has by definition updated the state, so cannot be `@constant`. Each Vyper function must be decorated with either `@public` or `@private` (but not both!).
 
 [[online_code_editor_and_compiler_sec]]
 === Online code editor and compiler
