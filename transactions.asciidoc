@@ -26,7 +26,7 @@ data:: Variable length binary data payload.
 
 v,r,s:: The three components of an ECDSA digital signature of the originating EOA.
 
-The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme (see <<rlp>>), which was created specifically for simple, byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded as big-endian integers, of lengths that are multiples of 8 bits.
+The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme, which was created specifically for simple, byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded as big-endian integers, of lengths that are multiples of 8 bits.
 
 Note that the field labels ("to", "gas limit", etc.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, therefore, belongs to the next field in the structure.
 
@@ -37,7 +37,7 @@ For example, you may notice there is no "+from+" data in the address identifying
 [[tx_nonce]]
 ==== The transaction nonce
 
-The nonce is one of the most important and least understood components of a transaction. The definition in the Yellow Paper (see <<yellow_paper>>) reads:
+The nonce is one of the most important and least understood components of a transaction. The definition in the Yellow Paper reads:
 
  nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
@@ -48,14 +48,14 @@ There are two scenarios where the existence of a transaction-counting nonce is i
 1. Imagine you wish to make two transactions. You have an important payment to make of 6 ether, and also another payment of 8 ether. You sign and broadcast the 6 ether transaction first, because it is the more important one, and then you sign and broadcast the second, 8 ether transaction. Sadly, you have overlooked the fact that your account contains only 10 ether, so the network can't accept both transactions: one of them will fail. Because you sent the more important 6 ether one first, you understandably expect that one to go through and the 8 ether one to be rejected. However, in a decentralized system like Ethereum, nodes may receive the transactions in either order; there is no guarantee that a particular node will have one transaction propagated to it before the other. As such, it will almost certainly be the case that some nodes receive the 6 ether transaction first and others receive the 8 ether transaction first. Without the nonce, it would be random as to which one gets accepted and which rejected. However, with the nonce included, the first transaction you sent will have a nonce of, let's say 3, while the 8 ether transaction has the next nonce value, i.e. 4, and so will be ignored until the transactions with nonces from 0 to 3 have been processed, even if the 8 ether transaction is received first. Phew!
 
 
-2. Now imagine you have an account with 100 ether. Fantastic! You find someone online who will accept payment in ether for a mcguffin-widget that you really want to buy. You send them 2 ether and they send you the mcguffin-widget. Lovely. To make that 2 ether payment, you signed a transaction sending 2 ether from your account to their account, and then broadcast it to the Ethereum network to be verified and included on the blockchain. Now, without a nonce value in the transaction, a second transaction sending 2 ether to the same address a second time will look exactly the same as the first transaction. This would mean that anyone who saw your transaction on the Ethereum network (which means everyone, including the recipient, or your enemies) can "replay" the transaction again and again and again until all your ether is gone simply by copy-pasting your original transaction and resending it to the network. However, with the nonce value included in the transaction data, _every single transaction is unique_, even when sending the same amount of ether to the send recipient address multiple times. This means that by having the incrementing nonce as part of the transaction it is simply no possible for anyone to "duplicate" a payment you have made.
+2. Now imagine you have an account with 100 ether. Fantastic! You find someone online who will accept payment in ether for a mcguffin-widget that you really want to buy. You send them 2 ether and they send you the mcguffin-widget. Lovely. To make that 2 ether payment, you signed a transaction sending 2 ether from your account to their account, and then broadcast it to the Ethereum network to be verified and included on the blockchain. Now, without a nonce value in the transaction, a second transaction sending 2 ether to the same address a second time will look exactly the same as the first transaction. This would mean that anyone who saw your transaction on the Ethereum network (which means everyone, including the recipient, or your enemies) can "replay" the transaction again and again and again until all your ether is gone simply by copy-pasting your original transaction and resending it to the network. However, with the nonce value included in the transaction data, _every single transaction is unique_, even when sending the same amount of ether to the send recipient address multiple times. This means that by having the incrementing nonce as part of the transaction it is simply not possible for anyone to "duplicate" a payment you have made.
 
 In summary, it is important to note that the use of the nonce is actually vital for an _account-based_ protocol, in contrast to the "UTXO" mechanism of the Bitcoin protocol.
 
 [[tracking_nonce]]
 ===== Keeping track of nonces
 
-In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e. on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface:
+In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e. on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a Javascript console in a browser with MetaMask running, or use the +truffle console+ command to access the Javascript web3 library, then type:
 
 [[nonce_getTransactionCount]]
 .Retrieving the transaction count of our example address
@@ -64,14 +64,9 @@ web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")
 40
 ----
 
-////
-TODO: introduce the web3 interface, i.e. where to type in the above command to get the transaction count
-////
-
-
 [TIP]
 ====
-The nonce is a zero-based counter, meaning the first transaction has nonce 0. In <<nonce_getTransactionCount>>, we have a transaction count of 40, meaning nonces 0 through 39 have been seen. The next transaction's nonce will need to be 40.
+The nonce is a zero-based counter, meaning the first transaction has nonce 0. In the example above, we have a transaction count of 40, meaning nonces 0 through 39 have been seen. The next transaction's nonce will need to be 40.
 ====
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
@@ -140,11 +135,7 @@ Concurrency is a complex aspect of computer science, and it crops up unexpectedl
 
 In simple terms, concurrency is when you have simultaneous computation by multiple independent systems. These can be in the same program (e.g. multi-threading), on the same CPU (e.g. multi-processing), or on different computers (i.e. distributed systems). Ethereum, by definition, is a system that allows concurrency of operations (nodes, clients, DApps), but enforces a singleton state through consensus.
 
-Now, imagine that we have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals from the exchange's hot wallet. Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing and broadcasting transactions from the same hot wallet account coordinate?
-
-////
-TODO: introduce "hot wallets" and "cold storage" more explicitly in <<wallets>>
-////
+Now, imagine that we have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals from the exchange's hot wallet (a wallet whose keys are stored online, in contrast to a cold wallet where the keys are never online). Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing and broadcasting transactions from the same hot wallet account coordinate?
 
 You could use a single computer to assign nonces, on a first-come first-served basis to computers signing transactions. However, this computer is now a single point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all subsequent transactions get stuck.
 
@@ -158,12 +149,6 @@ In the end, these concurrency problems, on top of the difficulty of tracking acc
 We discuss _gas_ in detail in <<gas>>. However, let's cover some basics about the role of the +gasPrice+ and +gasLimit+ components of a transaction.
 
 Gas is the fuel of Ethereum. Gas is not ether - it's a separate virtual currency with its own exchange rate against ether. Ethereum uses gas to control the amount of resources that a transaction can use, since it will be processed on thousands of computers around the world. The open-ended (Turing complete) computation model requires some form of metering in order to avoid denial of service attacks or inadvertently resource-devouring transactions.
-
-////
-
-TODO Explain how gas being a separate currency from ether allows the ratios of the costs between the various resources to be managed. (That would seem to be a separate problem that involves changing their relative prices, which could as easily be done in ether as in gas.)
-
-////
 
 Gas is separate from ether in order to protect the system from the volatility that might arise along with rapid changes in the value of ether, and also as a way to manage the important and sensitive ratios between the costs of the various resources that gas pays for (namely, computation, memory and storage).
 
@@ -196,15 +181,9 @@ truffle(mainnet)> web3.eth.getGasPrice(function(err, res) {console.log(res*21000
 truffle(mainnet)> 210000000000000
 ----
 
-////
+If your transaction's destination address is a contract, then the amount of gas needed can be estimated but cannot be determined with accuracy. That's because a contract can evaluate different conditions that lead to different execution paths, with different total gas costs. That means that the contract may execute only a simple computation or a more complex one, depending on conditions that are outside of your control and cannot be predicted. To demonstrate this, let's look at an example: we can write a smart contract that increments a counter each time it is called and executes a particular loop a number of times equal to the call count. Maybe on the 100th call it gives out a special prize, like a lottery, but needs additional computation to calculate the prize. If you call the contract 99 times one thing happens, but on the 100th something very different happens. The amount of gas you would pay for that depends on how many other transactions have called that function before your transaction is included in a block. Perhaps your estimate is based on being the 99th transaction and just before your transaction is confirmed, someone else calls the contract for the 99th time. Now you're the 100th transaction to call and the computation effort (and gas cost) is much higher.
 
-TODO: "special price": do you mean "special prize"? I'm not sure I really understand either way.
-
-////
-
-If your transaction's destination address is a contract, then the amount of gas needed can be estimated but cannot be determined with accuracy. That's because a contract can evaluate different conditions that lead to different execution paths, with different total gas costs. That means that the contract may execute only a simple computation or a more complex one, depending on conditions that are outside of your control and cannot be predicted. To demonstrate this, let's look at an example: we can write a smart contract that increments a counter each time it is called and executes a particular loop a number of times equal to the call count. Maybe on the 100th call it gives out a special price that needs extra calculations. If you call the contract 99 times one thing happens, but on the 100th something very different happens. The amount of gas you would pay for that depends on how many other transactions have called that function before your transaction is included in a block. Perhaps your estimate is based on being the 99th transaction and just before your transaction is confirmed, someone else calls the contract for the 99th time. Now you're the 100th transaction to call and the computation effort (and gas cost) is much higher.
-
-To borrow a common analogy used in Ethereum, you can think of gasLimit as the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey, such as a diversion (a more complex execution path), which increase fuel consumption.
+To borrow a common analogy used in Ethereum, you can think of +gasLimit+ as the capacity of the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey, such as a diversion (a more complex execution path), which increase fuel consumption.
 
 The analogy to a fuel tank is somewhat misleading, however. It's actually more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * gas+ fee. But the amount is not actually deducted from your account until the transaction finishes executing. You are only billed for gas actually consumed by your transaction, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.
 
@@ -220,14 +199,14 @@ Ethereum does no further validation of this field. Any 20-byte value is consider
 The Ethereum protocol does not validate recipient addresses in transactions. You can send to an address that has no corresponding private key or contract, thereby "burning" the ether, rendering it forever unspendable. Validation should be done at the user interface level.
 ====
 
-Sending a transaction to the wrong address will probably _burn_ the ether sent, rendering it forever inaccessible (unspendable), since most addresses do not have a known private key and therefore no signature can be generated to spend it. It is assumed that validation of the address happens at the user interface level (see <<eip-55>> or <<icap>>). In fact, there are a number of valid reasons for burning ether, for example as a disincentive to cheating in payment channels and other smart contracts, and, since the amount of ether is finite, burning ether effectively distributes the value burned to all ether holders (in proportion to the amount of ether they hold).
+Sending a transaction to the wrong address will probably _burn_ the ether sent, rendering it forever inaccessible (unspendable), since most addresses do not have a known private key and therefore no signature can be generated to spend it. It is assumed that validation of the address happens at the user interface level (see <<eip55>>). In fact, there are a number of valid reasons for burning ether, for example as a disincentive to cheating in payment channels and other smart contracts, and, since the amount of ether is finite, burning ether effectively distributes the value burned to all ether holders (in proportion to the amount of ether they hold).
 
 [[tx_value_data]]
 === Transaction value and data
 
 The main "payload" of a transaction is contained in two fields: +value+ and +data+. Transactions can have both value and data, only value, only data, or neither value nor data. All four combinations are valid.
 
-A transaction with only value is a _payment_. A transaction with only data is an _invocation_. A transaction with neither value nor data - well that's probably just a waste of gas! But it is still possible.
+A transaction with only value is a _payment_. A transaction with only data is an _invocation_. A transaction with both value and data is both a payment and an invocation. A transaction with neither value nor data - well that's probably just a waste of gas! But it is still possible.
 
 Let's try all of the above combinations:
 
@@ -315,7 +294,7 @@ When you construct an Ethereum transaction that contains value, it is the equiva
 
 For EOA addresses, or rather for any address that isn't flagged as a contract on the blockchain, Ethereum will record a state change, adding the value you sent to the balance of the address. If the address has not been seen before, it will be added to the client's internal representation of the state and its balance initialized to the value of your payment.
 
-If the destination address (+to+) is a contract, then the EVM will execute the contract. As most contracts follow the ABI specification, it will likely attempt to call the function named in the data payload of your transaction (see <<invocation>>). If there is no data in your transaction, the contract will probably call its _fallback_ function and, if that function is payable, will execute it to determine what to do next.
+If the destination address (+to+) is a contract, then the EVM will execute the contract and will attempt to call the function named in the data payload of your transaction. If there is no data in your transaction, the EVM will call a _fallback_ function and, if that function is payable, will execute it to determine what to do next. If there is no fallback function, then the effect of the transaction will be to increase the balance of the contract, exactly like a payment to a wallet.
 
 A contract can reject incoming payments by throwing an exception immediately when a function is called, or as determined by conditions coded in a function. If the function terminated successfully (without an exception), then the contract's state is updated to reflect an increase in the contract's ether balance.
 
@@ -332,9 +311,9 @@ A function selector:: The first 4 bytes of the Keccak256 hash of the function's 
 
 The function arguments:: The function's arguments, encoded according to the rules for the various elementary types defined in the ABI specification.
 
-[[withdraw_function_src]]
-Let's look at a simple example, drawn from our <<solidity_faucet_example>>. In +Faucet.sol+, we defined a single function for withdrawals:
+In <<solidity_faucet_example>>, we defined a function for withdrawals:
 
+[[withdraw_function_src]]
 ----
 function withdraw(uint withdraw_amount) public {
 ----
@@ -378,7 +357,7 @@ That's the +data+ payload for our transaction, invoking the +withdraw+ function 
 
 There is one special case of a transaction: contract creation. This is a transaction that _creates_ a new contract on the blockchain, deploying it for future use. Contract creation transactions are sent to a special destination address: the zero address; the +to+ field in a contract registration transaction contains the address +0x0+. This address represents neither an EOA (there is no corresponding private–public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "create this contract".
 
-While the zero address is intended only for contract creation, it sometimes receives payments from various addresses. There are two explanations for this: either it is by accident, resulting in the loss of ether, or it is an intentional _ether burn_ (see <<burning_ether>>). However, if you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
+While the zero address is intended only for contract creation, it sometimes receives payments from various addresses. There are two explanations for this: either it is by accident, resulting in the loss of ether, or it is an intentional _ether burn_ (deliberately destroying ether by sending it to an address from which it can never be spent). However, if you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
 
 [[burn_address]]
 ----
@@ -387,12 +366,12 @@ While the zero address is intended only for contract creation, it sometimes rece
 
 [WARNING]
 ====
-Any ether sent to the contract registration address +0x0+ or the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
+Any ether sent to the designated burn address +0x0...dEaD+ above will become unspendable and lost forever.
 ====
 
-A contract creation transaction need only contain a data payload that contains the compiled bytecode which will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the +value+ field if you want to set the new contract up with a starting balance, but that is entirely optional.
+A contract creation transaction need only contain a data payload that contains the compiled bytecode which will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the +value+ field if you want to set the new contract up with a starting balance, but that is entirely optional. If you send value (ether) to the contract creation address without a data payload (no contract), then the effect is the same as sending to a burn address - there is no contract to credit so the ether is lost.
 
-As an example, we can publish +Faucet.sol+ used in <<intro>>. The contract needs to be compiled into a binary hexadecimal representation. This can be done with the Solidity compiler.
+As an example, we can create the +Faucet.sol+ contract used in <<intro>>, by manually creating a transaction to the zero address and the contract in the data payload. The contract needs to be compiled into a bytecode representation. This can be done with the Solidity compiler.
 
 ----
 > solc --bin Faucet.sol
@@ -415,7 +394,6 @@ Now we can create the transaction.
 ----
 
 It is good practice to always specify a +to+ parameter, even in the case of the zero address contract creation, because the cost of accidentally sending your ether to +0x0+ and losing it forever is too great. You should also specify +gasPrice+ and the +gas+ limit.
-
 
 Once the contract is mined we can see it on etherscan block explorer
 
@@ -476,7 +454,7 @@ image::images/published_contract_transactions.png["Etherscan showing the transac
 
 ((("digital signatures", "algorithm used")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)")))The digital signature algorithm used in Ethereum is the _Elliptic Curve Digital Signature Algorithm_, or _ECDSA_. ECDSA is the algorithm used for digital signatures based on elliptic curve private–public key pairs, as described in <<elliptic_curve>>.
 
-((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see the following sidebar). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (non-repudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
+((("digital signatures", "purposes of")))A digital signature serves three purposes in Ethereum (see <<digital_signature_definition>>). First, the signature proves that the owner of the private key, who is by implication the owner of an Ethereum account, has _authorized_ the spending of ether, or execution of a contract. Secondly, the proof of authorization is _undeniable_ (non-repudiation). Thirdly, the signature proves that the transaction data have not and _cannot be modified_ by anyone after the transaction has been signed.
 
 [[digital_signature_definition]]
 .Wikipedia's Definition of a "Digital Signature"
@@ -596,14 +574,14 @@ The special signature variable +v+ indicates two things: the chain ID and the re
 
 [TIP]
 ====
-At block #2,675,000, Ethereum implemented the "Spurious Dragon" hard fork that, among other changes, introduced a new signing scheme that includes transaction replay protection (preventing transactions meant for one network being replayed on others). This new signing scheme is specified in EIP-155 (see <<eip155>>). This change affects the form of the transaction and its signature, so attention must be paid to the first of the three signature variables (i.e. +v+), which takes one of two forms and indicates the data fields included in the transaction message being hashed.
+At block #2,675,000, Ethereum implemented the "Spurious Dragon" hard fork that, among other changes, introduced a new signing scheme that includes transaction replay protection (preventing transactions meant for one network being replayed on others). This new signing scheme is specified in EIP-155. This change affects the form of the transaction and its signature, so attention must be paid to the first of the three signature variables (i.e. +v+), which takes one of two forms and indicates the data fields included in the transaction message being hashed.
 ====
 
 
 [[raw_tx]]
 ==== Raw transaction creation and signing
 
-Let's create a raw transaction and sign it, using the +ethereumjs-tx+ library. The source code for this example is in +raw_tx_demo.js+ in the GitHub repository:
+Let's create a raw transaction and sign it, using the +ethereumjs-tx+ library. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in +raw_tx_demo.js+ in the GitHub repository:
 
 [[raw_tx_demo_source]]
 .raw_tx_demo.js: Creating and signing a raw transaction in JavaScript
@@ -689,15 +667,17 @@ To make things more efficient, the transaction signature includes a prefix value
 
 Once a transaction is signed, it is ready to transmit to the Ethereum network. The three steps of creating, signing, and broadcasting a transaction normally happen as a single operation, for example using +web3.eth.sendTransaction+. However, as we saw in <<raw_tx>>, you can create and sign the transaction in two separate steps. Once you have a signed transaction, you can then transmit it using +web3.eth.sendSignedTransaction+, which takes a hex-encoded and signed transaction and transmits it on the Ethereum network.
 
-Why would you want to separate the signing and transmission of transactions? The most common reason is security: the computer that signs a transaction must have unlocked private keys loaded in memory. The computer that does the transmiting must be connected to the internet (and be running an Ethereum client). If these two functions are on one computer, then you have private keys on an online system, which is quite dangerous. Separating the functions of signing and transmitting and performing them on different machines (on an offline and online device, respectively) is called _offline signing_ and is a common security practice. The full procedure looks like this:
+Why would you want to separate the signing and transmission of transactions? The most common reason is security: the computer that signs a transaction must have unlocked private keys loaded in memory. The computer that does the transmitting must be connected to the internet (and be running an Ethereum client). If these two functions are on one computer, then you have private keys on an online system, which is quite dangerous. Separating the functions of signing and transmitting and performing them on different machines (on an offline and online device, respectively) is called _offline signing_ and is a common security practice.
 
-1. Creation: can be using an online or offline device, but online is easier because the current state of the account to be used can be checked, notably the current nonce and funds available.
-2. Signing: transfer the constructed transaction to an "air-gapped" offline device for transaction signing, e.g. via QR code scanning.
-3. Transmission: transfer the signed transaction (back) to an online device for broadcasting on the Ethereum client, e.g. via QR scanning or USB memory.
+[[offline_signing]]
+.Offline signing of Ethereum transactions
+image::images/offline_signing.png["Offline signing of Ethereum transactions"]
 
-////
-TODO: perhaps a diagram showing the offline signing process
-////
+<<offline_signing>> shows the process:
+
+1. Create unsigned transaction: On the online computer where the current state of the account, notably the current nonce and funds available, can be retrieved.
+2. Signing: transfer the unsigned transaction to an "air-gapped" offline device for transaction signing, e.g. via a QR code or USB flash drive.
+3. Transmission: transfer the signed transaction (back) to an online device for broadcast on the Ethereum blockchain, e.g. via QR code or USB flash drive.
 
 Depending on the level of security you need, your "offline signing" computer can have varying degrees of separation from the online computer, ranging from an isolated and firewalled subnet (online but segregated) to a completely offline system known as an _air-gapped_ system. In an air-gapped system there is no network connectivity at all - the computer is separated from the online environment by a gap of "air". To sign transactions you transfer them to and from the air-gapped computer using data storage media or (better) a webcam and QR code. Of course, this means you must manually transfer every transaction you want signed, and this doesn't scale.
 
@@ -717,17 +697,16 @@ Within just a few seconds, an Ethereum transaction propagates to all the Ethereu
 
 While all the nodes in Ethereum are equal peers, some of them are operated by _miners_ and are feeding transactions and blocks to _mining farms_, which are computers with high-performance Graphical Processing Units (GPUs). The mining computers add transactions to a candidate block and attempt to find a _Proof-of-Work_ that makes the candidate block valid. We will discuss this in more detail in <<consensus>>.
 
-Without going into too much detail, valid transactions will eventually be included in a block of transactions and, thus, recorded in the Ethereum blockchain. Once mined into a block, transactions also modify the state of the Ethereum singleton, either by modifying the balance of an account (in the case of a simple payment), or by invoking contracts that change their internal state. These changes are recorded alongside the transaction, in the form of a transaction _receipt_, which may also include _events_. We will examine all this in much more detail in <<evm>>
+Without going into too much detail, valid transactions will eventually be included in a block of transactions and, thus, recorded in the Ethereum blockchain. Once mined into a block, transactions also modify the state of the Ethereum singleton, either by modifying the balance of an account (in the case of a simple payment), or by invoking contracts that change their internal state. These changes are recorded alongside the transaction, in the form of a transaction _receipt_, which may also include _events_. We will examine all this in much more detail in <<evm_chapter>>
 
 Our transaction has completed its journey from creation to signing by an EOA, propagation, and finally mining. It has changed the state of the singleton and left an indelible mark on the blockchain.
 
 === Multiple signatures (multisig) transactions
 
-If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's basic EOA value transactions have no provisions for multiple signatures; however, arbitrary signing restrictions can be enforced by smart contracts with any conditions you can think of, to handle the transfer of ether and tokens alike. This is one of the main advantages of the Ethereum protocol: fully programmable money.
+If you are familiar with Bitcoin's scripting capabilities, you know that it is possible to create a Bitcoin multisig account which can only spend funds when multiple parties sign the transaction (e.g. 2 of 2 or 3 of 4 signatures). Ethereum's basic EOA value transactions have no provisions for multiple signatures; however, arbitrary signing restrictions can be enforced by smart contracts with any conditions you can think of, to handle the transfer of ether and tokens alike.
 
 To take advantage of this capability, ether has to be transferred to a "wallet contract" that is programmed with the spending rules desired, such as multi-signature requirements or spending limits (or combinations of the two). The wallet contract then sends the funds when prompted by an authorized EOA once the spending conditions have been satisfied. For example, to protect your ether under a multisig condition, transfer the ether to a multisig contract. Whenever you want to send funds to another account, all the required users will need to send transactions to the contract using a regular wallet app, effectively authorizing the contract to perform the final transaction.
 
 These contracts can also be designed to require multiple signatures before executing local code or to trigger other contracts. The security of the scheme is ultimately determined by the multisig contract code.
 
-Discussion and Grid reference implementation:
-https://blog.gridplus.io/toward-an-ethereum-multisig-standard-c566c7b7a3f6
+The ability to implement multi-signature transactions as a smart contract demonstrates the flexiblity of Ethereum. However, it is a double-edged sword, as the extra flexibility can lead to bugs that undermine the security of multi-signature schemes. There are, in fact, a number of proposals to create a multi-signature command in the EVM that removes the need for smart contracts, at least for the simple M-of-N multi-signature schemes. This would be equivalent to Bitcoin's multi-signature system that is part of the core consensus rules and has proven to be robust and secure.
