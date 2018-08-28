@@ -5,7 +5,7 @@
 
 At a high level, a wallet is a software application that serves as the primary user interface to Ethereum. The wallet controls access to a user's money, managing keys and addresses, tracking the balance, and creating and signing transactions. In addition, some Ethereum wallets can also interact with contracts, such as ERC20 tokens.
 
-More narrowly, from a programmer's perspective, the word "wallet" refers to the system used to store and manage a user's keys. Every "wallet" has a key management component. For some wallets, that's all there is. Other wallets are part of a much broader category, that of "browsers", which are interfaces to Ethereum-based decentralized applications, or "DApps". There are no clear lines of distinction between the various categories that are conflated under the term "wallet".
+More narrowly, from a programmer's perspective, the word _wallet_ refers to the system used to store and manage a user's keys. Every wallet has a key management component. For some wallets, that's all there is. Other wallets are part of a much broader category, that of _browsers_, which are interfaces to Ethereum-based decentralized applications, or _DApps_, which we will examine in more detail in <<decentralized_applications_chap>>. There are no clear lines of distinction between the various categories that are conflated under the term wallet.
 
 In this section we will look at wallets as containers for private keys, and as systems for managing these keys.
 
@@ -14,17 +14,13 @@ In this section we will look at wallets as containers for private keys, and as s
 
 In this section we summarize the various technologies used to construct user-friendly, secure, and flexible Ethereum wallets.
 
-////
-
-TODO Explain why creating a new address for each transaction is expensive if you deal a lot with tokens.
-
-////
+One key consideration in designing wallets is balancing convenience and privacy. The most convenient Ethereum wallet is one with a single private key and address that you re-use for everything. Unfortunately, such a solution is a privacy nightmare, as anyone can easily track and correlate all your transactions. Using a new key for every transaction is best for privacy, but becomes very difficult to manage. The correct balance is difficult to achieve, but that's why good wallet design is paramount.
 
 ((("wallets", "contents of")))A common misconception about Ethereum is that Ethereum wallets contain ether or tokens. In fact, very strictly speaking, the wallet holds only keys. The ether or other tokens are recorded on the Ethereum blockchain. Users control the tokens on the network by signing transactions with the keys in their wallets. ((("keychains")))In a sense, an Ethereum wallet is a _keychain_. Having said that, given that the keys held by the wallet are the only things that are needed to transfer ether or tokens to others, in practice this distinction is fairly irrelevant. Where the difference does matter is in changing one's mindset from dealing with the centralized system of conventional banking (where only you, and the bank, can see the money in your account, and you only need convince the bank that you want to move funds to make a transaction) to the decentralized system of blockchain platforms (where everyone can see the ether balance of an account, although they probably don't know the account's owner, and everyone needs to be convinced the owner wants to move funds for a transaction to be enacted). In practice this means that there is an independent way to check an account's balance, without needing its wallet. Moreover, you can move your account handling from your current wallet to a different wallet, if you grow to dislike the wallet app you started out using.
 
 [TIP]
 ====
-Ethereum wallets contain keys, not ether or tokens. Wallets are like keychains containing pairs of private and public keys (see <<private_public_keys>>). Users sign transactions with the private keys, thereby proving they own the ether. The ether is stored on the blockchain.
+Ethereum wallets contain keys, not ether or tokens. Wallets are like keychains containing pairs of private and public keys. Users sign transactions with the private keys, thereby proving they own the ether. The ether is stored on the blockchain.
 ====
 
 ((("wallets", "types of", "primary distinctions")))There are two primary types of wallets, distinguished by whether the keys they contain are related to each other or not.
@@ -141,10 +137,6 @@ These standards may change or may be obsoleted by future developments, but for n
 
 The standards have been adopted by a broad range of software and hardware wallets, making all these wallets interoperable. A user can export a mnemonic generated in one of these wallets and import it to another wallet, recovering all keys and addresses.
 
-////
-TODO: More complete list of BIP-39/32/43/44 wallets in Ethereum
-////
-
 Some examples of software wallets supporting these standards include (listed alphabetically) Jaxx, MetaMask, MyCrypto, and MyEtherWallet (MEW). ((("hardware wallets")))((("hardware wallets", see="also wallets")))Examples of hardware wallets supporting these standards include (listed alphabetically) Keepkey, Ledger, and Trezor.
 
 The following sections examine each of these technologies in detail.
@@ -167,10 +159,6 @@ If you are implementing an Ethereum wallet, it should be built as an HD wallet, 
 
 Mnemonic codes are defined in BIP-39. Note that BIP-39 is one implementation of a mnemonic code standard. There is a different standard, _with a different set of words_, used by the Electrum Bitcoin wallet and predating BIP-39. BIP-39 was proposed by the company behind the Trezor hardware wallet and is incompatible with Electrum's implementation. However, BIP-39 has now achieved broad industry support across dozens of interoperable implementations and should be considered the _de facto_ industry standard. Furthermore, BIP-39 can be used to produce multicurrency wallets supporting Ethereum, whereas Electrum seeds cannot.
 
-////
-TODO: Make sure Electrum seeds are not usable for Ethereum
-////
-
 BIP-39 defines the creation of a mnemonic code and seed, which we describe here in nine steps. For clarity, the process is split into two parts: steps 1 through 6 are shown in <<generating_mnemonic_words>> and steps 7 through 9 are shown in <<mnemonic_to_seed>>.
 
 [[generating_mnemonic_words]]
@@ -182,16 +170,10 @@ Mnemonic words are generated automatically by the wallet using the standardized 
 2. Create a checksum of S by taking the first length-of-S ÷ 32 bits of the SHA256 hash of S.
 3. Add the checksum to the end of the random sequence S.
 4. Divide the sequence-and-checksum concatenation into sections of 11 bits.
-5. Map each 11-bit value to a word from the predefined dictionary of 2048 words.
+5. Map each 11 bit value to a word from the predefined dictionary of 2048 words.
 6. The mnemonic code is the sequence of words, maintaining the order.
 
 <<generating_entropy_and_encoding>> shows how entropy is used to generate mnemonic words.
-
-////
-
-TODO: In the image, "11 bits" and "132 bits" should not be hyphenated.
-
-////
 
 [[generating_entropy_and_encoding]]
 [role="smallerseventy"]
@@ -226,7 +208,7 @@ The process described in steps 7 through 9 continues from the process described 
 8. The second parameter to the PBKDF2 key-stretching function is a _salt_. The salt is composed of the string constant +"mnemonic"+ concatenated with an optional user-supplied passphrase.
 9. PBKDF2 stretches the mnemonic and salt parameters using 2048 rounds of hashing with the HMAC-SHA512 algorithm, producing a 512-bit value as its final output. That 512-bit value is the seed.
 
-<<fig_5_7>> shows how a mnemonic is used to generate a seed.
+<<mnemonic_to_seed_figure>> shows how a mnemonic is used to generate a seed.
 
 [[mnemonic_to_seed_figure]]
 .From mnemonic to seed
@@ -347,13 +329,13 @@ http://bip32.org/
 
 [NOTE]
 ====
-The standalone BIP-32 generator is not an HTTPS site. That's to remind you that the use of this tool is not secure. It is only for testing. You should not use the keys produced by this site in with real funds.
+The standalone BIP-32 generator is not an HTTPS site. That's to remind you that the use of this tool is not secure. It is only for testing. You should not use the keys produced by this site with real funds.
 ====
 
 [[extended_keys]]
 ===== Extended public and private keys
 
-In BIP-32 terminology, keys can be "extended" so that they can produce "children". In this way, keys become _extended keys_. With the right mathematical operations, extended "parent" keys can be used to derive "child" keys and thus produce the hierarchy of keys and addresses described earlier in this chapter. A parent key doesn't have to be at the top of the tree. They can be picked out from anywhere in the tree hierarchy. "Extending" a key involves taking the key itself and appending a special "chain code" to it.
+In BIP-32 terminology, keys can be "extended" so that they can produce "children". In this way, keys become _extended keys_. With the right mathematical operations, extended "parent" keys can be used to derive "child" keys and thus produce the hierarchy of keys and addresses described earlier in this chapter. A parent key doesn't have to be at the top of the tree. They can be picked out from anywhere in the tree hierarchy. Extending a key involves taking the key itself and appending a special _chain code_ to it. A chain code is a 256 bit binary string that is mixed with each key to produce child keys.
 
 If the key is a private key, it is an _extended private key_ distinguished by the prefix _xprv_:
 
@@ -368,10 +350,6 @@ An _extended public key_ is distinguished by the prefix _xpub_:
 ----
 xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn4urGJ6b264DfTGKr8zjmYDjyDTi9U7iyT
 ----
-
-////
-TODO: say a bit more about "chain codes"?
-////
 
 A very useful characteristic of HD wallets is the ability to derive child public keys from parent public keys, _without_ having the private keys. This gives us two ways to derive a child public key: either directly from the child private key, or from the parent public key.
 
