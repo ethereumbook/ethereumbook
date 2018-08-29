@@ -3,8 +3,8 @@ import glob
 import re
 
 markup_files = glob.glob('*.asciidoc')
-anchor_re = re.compile("\[\[([^\]]*)\]\]")
-ref_re = re.compile("\<\<([^>]*)\>\>")
+anchor_re = re.compile("\[\[(.*)\]\]")
+ref_re = re.compile(".*\<\<([^\>]*)\>\>.")
 
 refs = []
 anchors = []
@@ -29,5 +29,9 @@ for markup_file in markup_files:
 print("\nAnchors: ", len(anchors))
 print("\nDuplicated Anchors: ", len(dup_anchors))
 print(dup_anchors)
-print("\nAnchors missing references: ", set(anchors) -  set(refs))
-print("\nReferences without anchors: ", set(refs) - set(anchors))
+print("\nReferences: ", len(refs))
+print(refs)
+broken_refs = list(set(refs) - set(anchors))
+print("\nBroken references: ", len(broken_refs), broken_refs)
+missing_refs = list(set(anchors) -  set(refs))
+print("\nUn-referenced Anchors: ", len(missing_refs), missing_refs)
