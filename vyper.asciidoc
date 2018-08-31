@@ -239,6 +239,61 @@ Decorators like `@private` `@public` `@constant` and `@payable` may be used at t
 
 Vyper implements https://github.com/ethereum/vyper/blob/master/vyper/signatures/function_signature.py#L93[the logic of decorators] explicitly. For example, the Vyper compilation process will fail if a function has both a `@payable` decorator and a `@constant` decorator. This makes sense because a function that transfers value has by definition updated the state, so cannot be `@constant`. Each Vyper function must be decorated with either `@public` or `@private` (but not both!).
 
+[[order_of_functions_sec]]
+=== Function and variable ordering
+
+Each individual Vyper smart contract consists of a single Vyper file only. In other words, all of a given Vyper smart contract's code, including all functions, variables and so forth exist in one place. Vyper requires that each smart contract's function and variable declarations are physically written in a particular order. Solidity does not have this requirement at all. Let's take a quick look at a Solidity example.
+
+[source,javascript]
+----
+pragma solidity ^0.4.0;
+
+contract ordering {
+    
+    function topFunction()
+    external
+    returns (bool) { 
+        initiatizedBelowTopFunction = this.lowerFunction();
+        return initiatizedBelowTopFunction;
+    }
+    
+    bool initiatizedBelowTopFunction;
+    bool lowerFunctionVar;
+    
+    function lowerFunction()
+    external
+    returns (bool) {
+        lowerFunctionVar = true;
+        return lowerFunctionVar; 
+    }
+
+}
+----
+
+In the above Solidity example the function called _topFunction_ is calling another function _lowerFunction_. This function called _topFunction_ is also assigning a value to a variable called _initiatizedBelowTopFunction_. As you can see, Solidity does not require these functions and variables to be physically declared before being called upon by the excecuting code. The above is valid Solidity code which will compile succesfully.
+
+Vyper's ordering requirements are not a new thing, in fact these ordering requirements have always been present in Python programming. The ordering, required by Vyper, is straight forward and logical as we will see in this next example.
+
+[source,python]
+----
+# Declare a variable called theBool
+theBool: public(bool)
+
+# Declare a function called topFunction
+@public
+def topFunction() -> bool:
+    # Assign a value to the already declared function called theBool
+    self.theBool = True
+    return self.theBool
+
+# Declare a function called lowerFunction
+@public
+def lowerFunction():
+    # Call the already declared function called topFunction
+    assert self.topFunction()
+----
+The above Vyper syntax example shows the correct ordering of functions and variables in a Vyper smart contract. Note how the variable _theBool_ and the function _topFunction_ are declared before they are assigned a value and called respectively. If _theBool_ was declared below _topFunction_ or if _topFunction_ was declared below _lowerFunction_ this contract would not compile.
+
 [[online_code_editor_and_compiler_sec]]
 === Online code editor and compiler
 Vyper has its own https://vyper.online[online code editor and compiler], which allows you to write and then compile your smart contracts into Bytecode, ABI and LLL using only your web browser. The Vyper online compiler has a variety of prewritten smart contracts for your convenience. These include a simple open auction, safe remote purchases, ERC20 token and more.
