@@ -1,5 +1,11 @@
 [[vyper_chap]]
-== Vyper: A contract-oriented programming language
+== Smart contracts and Vyper
+
+Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine (EVM) which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+
+In this chapter we will look at common problems with smart contracts, introduce the Vyper contract programming language and compare it to Solidity, demonstrating the differences.
+
+=== Vulnerabilities and Vyper
 
 https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed nearly one million deployed, Ethereum, smart contracts and found that many of these smart contracts contained serious vulnerabilities. During their analysis, the researchers outlined three basic categories of trace vulnerabilities. The categories include:
 
@@ -9,9 +15,7 @@ Greedy contracts:: Smart contracts which can reach a state in which they cannot 
 
 Prodigal contracts:: Smart contracts which can be made to release Ether to arbitrary addresses
 
-Vulnerabilities are introduced into smart contracts via code. It may be strongly argued that these and other vulnerabilities are not intentionally introduced into smart contracts. Nevertheless, undesirable smart contract code evidently results in the unexpected loss of funds for Ethereum users, and this is not ideal.
-
-Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine (EVM) which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+Vulnerabilities are introduced into smart contracts via code. It may be strongly argued that these and other vulnerabilities are not intentionally introduced into smart contracts. Nevertheless, undesirable smart contract code evidently results in the unexpected loss of funds for Ethereum users, and this is not ideal. As mentioned previously, Vyper is designed to make it easier to write secure code, or equally to make it more difficult to accidentally write misleading or vulnerable code. 
 
 [[comparison_to_solidity_sec]]
 === Comparison to Solidity
@@ -32,7 +36,7 @@ function changeOwner(address _newOwner)
 }
 ----
 
-As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. As you can see, this particular modifier acts as a mechanism to perform a pre-check on behalf of the `changeOwner` function. 
+As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. As you can see, this particular modifier acts as a mechanism to perform a pre-check on behalf of the `changeOwner` function.
 
 [source,javascript]
 ----
@@ -43,7 +47,7 @@ modifier onlyBy(address _account)
 }
 ----
 
-Modifiers are not just there to perform checks, as shown above. In fact, as modifiers, they can significantly change a smart contract's environment, in the context of the calling function. Put simply, modifiers are pervasive. 
+Modifiers are not just there to perform checks, as shown above. In fact, as modifiers, they can significantly change a smart contract's environment, in the context of the calling function. Put simply, modifiers are pervasive.
 
 Let's look at another Solidity style example.
 
@@ -98,7 +102,7 @@ One could also argue that for auditing purposes an IDE could just as easily show
 ////
 
 RESPONSE:
-Yes, your points are totally valid. I guess this simply comes down to (as you pointed out) the pervasiveness of the modifier. Perhaps a busy developer might call a modifier, thinking it is like an assert (pre safety check), when in reality it makes a significant change to say a contract enum etc. 
+Yes, your points are totally valid. I guess this simply comes down to (as you pointed out) the pervasiveness of the modifier. Perhaps a busy developer might call a modifier, thinking it is like an assert (pre safety check), when in reality it makes a significant change to say a contract enum etc.
 
 You are right in saying that a developer should simply check and understand the modifiers if and when they are going to use them. However there is a risk that a developer will be busy or tired or both and skim read without thoroughly testing the modifier. There may also be a case when collaborating with a team of developers that one of the developers writes a poorly named modifier that does something different (like alters a smart contract variable value) to what its name suggests. For example perhaps a developer thinks that they are confirming that a stage exists when perhaps the modifier is advancing the stage (pushing contract variable called stage from gate 1 to gate 2 etc).
 
@@ -249,22 +253,22 @@ Each individual Vyper smart contract consists of a single Vyper file only. In ot
 pragma solidity ^0.4.0;
 
 contract ordering {
-    
+
     function topFunction()
     external
-    returns (bool) { 
+    returns (bool) {
         initiatizedBelowTopFunction = this.lowerFunction();
         return initiatizedBelowTopFunction;
     }
-    
+
     bool initiatizedBelowTopFunction;
     bool lowerFunctionVar;
-    
+
     function lowerFunction()
     external
     returns (bool) {
         lowerFunctionVar = true;
-        return lowerFunctionVar; 
+        return lowerFunctionVar;
     }
 
 }
