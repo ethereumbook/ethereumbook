@@ -1,3 +1,5 @@
+[appendix]
+[[dev_tools_frameworks]]
 == Development Tools, Frameworks and Libraries
 
 === Frameworks
@@ -192,18 +194,6 @@ Faucet
 
 We can now ask truffle to compile the contract for us:
 
-////
-
-TODO I get, obviously enough:
-
-Compilation warnings encountered:
-
-/home/rrt/.local/var/repo/ethereumbook/Faucet/contracts/Faucet.sol:2:1: Warning: Source file does not specify required compiler version!Consider adding "pragma solidity ^0.4.24;"
-contract Faucet {
-^ (Relevant source part starts here and spans across multiple lines).
-
-////
-
 ----
 $ truffle compile
 Compiling ./contracts/Faucet.sol...
@@ -221,14 +211,7 @@ We have only one contract, +Faucet.sol+, which means that the migration system i
 
 Truffle's +migrations+ directory is where the migration scripts are found. Right now, there's only one script +1_initial_migration.js+, which deploys the +Migrations.sol+ contract itself:
 
-////
-
-TODO The following lines appear in the PDF; is it because of the leading '1'? Ditto for 2_deploy_contract.js.
-
-////
-
 [[1_initial_migration]]
-.1_initial_migration.js - the migration script for Migrations.sol
 [source,javascript,linenums]
 ----
 include::code/truffle/Faucet/migrations/1_initial_migration.js[]
@@ -237,7 +220,6 @@ include::code/truffle/Faucet/migrations/1_initial_migration.js[]
 We need a second migration script, to deploy +Faucet.sol+. Let's call it +2_deploy_contracts.js+. It is very simple, just like +1_initial_migration.js+, with only a few small changes. In fact, you can copy the contents of +1_initial_migration.js+ and simply replace all instances of +Migrations+ with +Faucet+:
 
 [[2_deploy_contracts]]
-.2_deploy_contracts.js - the migration script for Faucet.sol
 [source,javascript,linenums]
 ----
 include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
@@ -367,20 +349,15 @@ truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.t
 StatusError: Transaction: 0xe147ae9e3610334ada8d863c9028c12bd0501be2d0cfd05865c18612b92d3f9c exited with an error (status 0).
 ----
 
-
 ==== Embark
+
 Embark is a framework built to allow developers to easily develop and deploy Decentralized Applications.
 Embark integrates with Ethereum, IPFS, whisper and Swarm to offer the following features:
 * Automatically deploy contracts and make them available in JS code.
 * Watch for changes and update contracts to redeploy if needed.
 * Manage and interact with different chains (e.g testnet, local, mainnet).
 * Manage complex systems of interdependent contracts.
-////
-
-TODO There's something missing between "data" and "EmbarkJS", but I can't tell what.
-
-////
-* Store and Retrieve data EmbarkJS, including uploading and retrieving files hosted in IPFS.
+* Store and Retrieve data, including uploading and retrieving files hosted in IPFS.
 * Ease the process of deploying the full application to IPFS or Swarm.
 * Send and receive messages through Whisper.
 
@@ -419,15 +396,7 @@ Let's make an ERC20 token that's mintable, meaning that the initial supply start
 include::code/OpenZeppelin/contracts/SampleToken.sol[]
 ----
 
-////
-
-TODO The security advice below seems a bit disingenuous, as so far you've given the reader the barest introduction to Solidity. Even supposing they are an expert developer in other languages, they are not yet in any position to evaluate Solidity code, so essentially this is just a big disclaimer. At least give some more pointers to resources for learning good Solidity practices (quite possibly there are more of those later in the book, so you could put a cross-reference here).
-
-////
-
-OpenZeppelin already provides a MintableToken contract that we can use as a base for our token, so we only define the details that are specific to our case. You can trust that the community has put great effort to ensure the correctness of the contract, but it's always better to verify this by ourselves. Take a look at the source code for https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/MintableToken.sol[MintableToken], https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/token/ERC20/StandardToken.sol[StandardToken], and https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/ownership/Ownable.sol[Ownable] to understand the implementation details of your new token and the capabilities it supports. Also, take a look at the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/test/token/ERC20/MintableToken.test.js[automated tests] it has, to make sure that all the possible scenarios have been covered and that the code is safe.
-
-Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[RefundableCrowdsale] contract. Maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[IncreasingPriceCrowdsale] contract just for that. Or maybe end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[CappedCrowdsale]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[TimedCrowdsale] contract, or a whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[WhitelistedCrowdsale] contract.
+OpenZeppelin already provides a MintableToken contract that we can use as a base for our token, so we only define the details that are specific to our case. Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[RefundableCrowdsale] contract. Maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[IncreasingPriceCrowdsale] contract just for that. Or maybe end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[CappedCrowdsale]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[TimedCrowdsale] contract, or a whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[WhitelistedCrowdsale] contract.
 
 As we said before, the OpenZeppelin contracts are basic building blocks. These crowdsale contracts have been designed to be combined; just read the source code of the base https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/Crowdsale.sol[Crowdsale] contract for directions on how to extend it. For the crowdsale of our token, we need to mint tokens when ether is received by the crowdsale contract, so let's use https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/emission/MintedCrowdsale.sol[MintedCrowdsale] as a base. And to make it more interesting, let's make it also a https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol[PostDeliveryCrowdsale] so the tokens can only be withdrawn after the crowdsale ends. Write the following into `contracts/SampleCrowdsale.sol`:
 
@@ -629,3 +598,75 @@ Emerald Platform provides libraries and UI components to build DApps on top of E
 Github: https://github.com/etcdevteam/emerald-platform
 
 Documentation: https://docs.etcdevteam.com
+
+[[testing_frameworks]]
+=== Testing smart contracts
+
+There are several commonly-used test frameworks for smart contract development, summarized in <<testing_frameworks_table>>, below.
+
+[[testing_frameworks_table]]
+.Smart Contract Test Frameworks
+|=======
+|Framework | Test Language(s)    | Testing Framework | Chain Emulator       | Website
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | truffleframework.com
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | embark.readthedocs.io
+|DApp      | Solidity            | ds-test (custom)  | Ethrun (Parity)      | dapp.readthedocs.io
+|Populus   | Python              | Pytes             | Python chain emulator| populus.readthedocs.io
+|=======
+
+
+Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in JavaScript (Mocha based) or Solidity. These tests are run against Ganache.
+
+Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts, and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts only when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like +assert.equal()+. The command +embark test+ will run any test files under directory +test+.
+
+DApp:: DApp uses native Solidity code (a library called ds-test) and a Parity-built Rust library called Ethrun to execute Ethereum bytecode and then assert correctness. The ds-test library provides assertion functions for validating correctness and events for logging data in the console.
+
+Assertions functions include:
+
+----
+assert(bool condition)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+----
+
+Logging commands will log information to the console, making them useful for debugging:
+
+----
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+----
+
+Populus:: Populus uses Python and its own chain emulator to run contracts written in Solidity. Unit tests are written in Python with the +pytest+ library. Populus supports writing contracts specifically for testing. These contract filenames should match the glob pattern +Test*.sol+ and be located anywhere under the project tests directory +tests+.
+
+
+[[on_blockchain_testing_sec]]
+==== On-Blockchain Testing
+
+Although most testing shouldn't occur on deployed contracts, a contract's behavior can be checked via Ethereum clients.  The following commands can be used to assess a smart contract's state. These commands should be typed at the '+geth+' terminal, although any web3 console will also support these commands.
+
+....
+eth.getTransactionReceipt(txhash);
+....
+Gets the address of a contract at `+txhash+`.
+....
+eth.getCode(contractaddress)
+....
+Gets the code of a contract deployed at `+contractaddress+`. This can be used to verify proper deployment.
+....
+eth.getPastLogs(options)
+....
+Gets the full logs of the contract located at the address specified in +options+. This is helpful for viewing the history of a contract's calls.
+....
+eth.getStorageAt(address, position)
+....
+Gets the storage located at +address+ with an offset of +position+.
