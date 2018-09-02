@@ -189,7 +189,6 @@ If you examine any ERC20 implementation, it will contain two data structures, on
 The first data mapping implements an internal table of token balances, by owner. This allows the token contract to keep track of who owns the tokens. Each transfer is a deduction from one balance and an addition to another balance.
 
 [[balance_mapping]]
-.Balances: a mapping from address (owner) to amount (balance)
 ----
 mapping(address => uint256) balances;
 ----
@@ -197,7 +196,6 @@ mapping(address => uint256) balances;
 The second data structure is a data mapping of allowances. As we will see in <<transfer_workflows>>, with ERC20 tokens an owner of a token can delegate authority to a spender, allowing them to spend a specific amount (allowance) from the owner's balance. The ERC20 contract keeps track of the allowances with a two-dimensional mapping, with the primary key being the address of the token owner, mapping to a spender address and an allowance amount:
 
 [[allowance_mapping]]
-.Allowances: a mapping from address (owner) to address (spender) to amount (allowance)
 ----
 mapping (address => mapping (address => uint256)) public allowed;
 ----
@@ -212,7 +210,7 @@ ERC20 allows for two different workflows. The first is a single-transaction, str
 
 Executing the transfer contract is very simple. If Alice wants to send 10 tokens to Bob, her wallet sends a transaction to the token contract's address, calling the +transfer+ function with Bob's address and "10" as the arguments. The token contract adjusts Alice's balance (-10) and Bob's balance (\+10) and issues a +Transfer+ event.
 
-The second workflow is a two-transaction workflow that uses +approve+ followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an Initial Coin Offering, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token as illustrated in <<approve_transferFrom_workflow>>.
+The second workflow is a two-transaction workflow that uses +approve+ followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an Initial Coin Offering or ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token as illustrated in <<approve_transferFrom_workflow>>.
 
 ////
 TODO: Probably the first time "ICO" is mentioned in the book. Link to a reference? Add a brief explanation?
@@ -278,7 +276,7 @@ https://github.com/ethereumbook/ethereumbook/blob/develop/code/truffle/METoken/t
 
 If you use the example +truffle-config.js+, remember to create a file +.env+ in the +METoken+ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as Ropsten or Kovan. You can export your test network private key from MetaMask.
 
-After that your directory look like:
+After that your directory should look like:
 
 [[truffle_directory_metoken]]
 ----
@@ -315,7 +313,7 @@ Next, let's write our token contract. Create a new file +METoken.sol+ and copy t
 
 https://github.com/ethereumbook/ethereumbook/blob/develop/code/truffle/METoken/contracts/METoken.sol
 
-Our contract is very simple, as it inherits all its functionality from the OpenZeppelin StandardToken library:
+Our <<solidity_token_example>> contract is very simple, as it inherits all its functionality from the OpenZeppelin StandardToken library:
 
 [[solidity_token_example]]
 .METoken.sol : A Solidity contract implementing an ERC20 token
@@ -382,7 +380,7 @@ Saving artifacts...
 
 ----
 
-On the +ganache+ console, we should see that our deployment has created 4 new transactions:
+On the +ganache+ console, we should see that our deployment has created 4 new transactions as depicted in <<ganache_METoken>>:
 
 [[ganache_METoken]]
 .METoken deployment on Ganache
@@ -485,7 +483,7 @@ METoken has 2 decimals of precision, meaning that 1 METoken is 100 units in the 
 
 As you can see, in the console, +account[0]+ now has 20,999,000 MET, and +account[1]+ has 1000 MET.
 
-If you switch to the +ganache+ graphical user interface, you will see the transaction that called the +transfer+ function:
+If you switch to the +ganache+ graphical user interface, as shown in <<ganache_METoken_transfer>>, you will see the transaction that called the +transfer+ function:
 
 [[ganache_METoken_transfer]]
 .METoken transfer on Ganache
@@ -582,13 +580,14 @@ Our +Faucet+ contract couldn't handle ERC20 tokens. Sending tokens to it using t
 
 For this example, we make a copy of the +truffle+ project directory, call it +METoken_METFaucet+, initialize +truffle+, npm, install OpenZeppelin dependencies and copy the +METoken.sol+ contract. See our first example <<METoken_example>> for the detailed instructions.
 
-Now, let's create a new faucet contract, call it +METFaucet.sol+. It will look like this:
+Now, let's create a new faucet contract, call it +METFaucet.sol+. It will look like <<METFaucet>>:
 
 [[METFaucet]]
 .METFaucet.sol: a faucet for METoken
+
 [source,solidity,linenums]
 ----
-include::code/METoken_METFaucet/contracts/METFaucet.sol
+include::code/truffle/METoken_METFaucet/contracts/METFaucet.sol
 ----
 
 We've made quite a few changes to the basic faucet example. Since +METFaucet+ will use the +transferFrom+ function in +METoken+, it will need two additional variables. One will hold the address of the deployed +METoken+ contract. The other will hold the address of the owner of MET who will approve the faucet withdrawals. The +METFaucet+ will call +METoken.transferFrom+ and instruct it to move MET from the owner to the address where the faucet withdrawal request came from.
@@ -938,10 +937,10 @@ This dilemma is not easy to resolve. Standards necessarily restrict your ability
 
 As part of this consideration is an even bigger issue: the value of interoperability and broad adoption. If you choose to use an existing standard, you gain the value of all the systems designed to work with that standard. If you choose to depart from the standard, you have to consider the cost of building all of the support infrastructure on your own, or persuading others to support your implementation as a new standard. The tendency to forge your own path and ignore existing standards is known as "Not Invented Here" and is antithetical to open source culture. On the other hand, progress and innovation depends on departing from tradition sometimes. It's a tricky choice, so consider it carefully!
 
-.Wikipedia "Not Invented Here" (https://en.wikipedia.org/wiki/Not_invented_here)
-____
- Not invented here is a stance adopted by social, corporate, or institutional cultures that avoid using or buying already existing products, research, standards, or knowledge because of their external origins and costs, such as royalties.
-____
+[NOTE]
+====
+*Not invented here* is a stance adopted by social, corporate, or institutional cultures that avoid using or buying already existing products, research, standards, or knowledge because of their external origins and costs, such as royalties. See https://en.wikipedia.org/wiki/Not_invented_here.
+====
 
 
 [[security_maturity]]
@@ -952,6 +951,12 @@ Beyond the choice of standard, there is the parallel choice of _implementation_.
 Existing implementations are "battle tested". While it is impossible to prove that they are secure, many of them underpin millions of dollars of tokens. They have been attacked, repeatedly and vigorously. So far, no significant vulnerabilities have been discovered. Writing your own is not easy - there are many subtle ways that a contract can be compromised. It is much safer to use a well-tested widely-used implementation. In our examples above, we used the OpenZeppelin implementation of the ERC20 standard, as this implementation is security-focused from the ground up.
 
 If you use an existing implementation you can also extend it. Again, be careful with this impulse. Complexity is the enemy of security. Every single line of code you add expands the _attack surface_ of your contract and could represent a vulnerability lying in wait. You may not notice a problem until you put a lot of value on top of the contract and someone breaks it.
+
+[TIP]
+====
+Standards and implementation choices are important parts of overall secure smart contract design, but they're not the only considerations. See <<smart_contract_security>>.
+====
+
 
 [[extend_token_interface]]
 === Extensions to token interface standards

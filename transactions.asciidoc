@@ -37,7 +37,7 @@ For example, you may notice there is no "+from+" data in the address identifying
 [[tx_nonce]]
 ==== The transaction nonce
 
-The nonce is one of the most important and least understood components of a transaction. The definition in the Yellow Paper reads:
+The nonce is one of the most important and least understood components of a transaction. The definition in the <<yellow_paper_ref>> reads:
 
  nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
@@ -58,7 +58,6 @@ In summary, it is important to note that the use of the nonce is actually vital 
 In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e. on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a Javascript console in a browser with MetaMask running, or use the +truffle console+ command to access the Javascript web3 library, then type:
 
 [[nonce_getTransactionCount]]
-.Retrieving the transaction count of our example address
 ----
 web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")
 40
@@ -213,7 +212,6 @@ Let's try all of the above combinations:
 [[src_dest_address]]
 First, we set the source and destination addresses from our wallet, just to make the demo easier to read:
 
-.Set the source and destination addresses
 [source,javascript]
 ----
 src = web3.eth.accounts[0];
@@ -224,13 +222,12 @@ dst = web3.eth.accounts[1];
 ==== Transaction with value (payment), and no data payload
 
 [[tx_value_nodata_src]]
-.Value, no data
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, value: web3.toWei(0.01, "ether"), data: ""});
 ----
 
-Our wallet shows a confirmation screen, indicating the value to send, and no data payload:
+Our wallet shows a confirmation screen, indicating the value to send, and no data payload, as shown in <<parity_txdemo_value_nodata>>:
 
 [[parity_txdemo_value_nodata]]
 .Parity wallet showing a transaction with value, but no data
@@ -241,13 +238,12 @@ image::images/parity_txdemo_value_nodata.png["Parity wallet showing a transactio
 ==== Transaction with value (payment), and a data payload
 
 [[tx_value_data_src]]
-.Value and data
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, value: web3.toWei(0.01, "ether"), data: "0x1234"});
 ----
 
-Our wallet shows a confirmation screen, indicating the value to send and a data payload:
+Our wallet shows a confirmation screen, indicating the value to send and a data payload, as shown in <<parity_txdemo_value_data>>:
 
 [[parity_txdemo_value_data]]
 .Parity wallet showing a transaction with value and data
@@ -255,16 +251,15 @@ image::images/parity_txdemo_value_data.png["Parity wallet showing a transaction 
 
 
 [[tx_novalue_data]]
-===== Transaction with 0 value, only a data payload
+==== Transaction with 0 value, only a data payload
 
 [[tx_novalue_data_src]]
-.No value, only data
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
 ----
 
-Our wallet shows a confirmation screen, indicating the value as 0 and a data payload:
+Our wallet shows a confirmation screen, indicating the value as 0 and a data payload, as shown in <<parity_txdemo_novalue_data>>:
 
 [[parity_txdemo_novalue_data]]
 .Parity wallet showing a transaction with no value, only data
@@ -275,13 +270,12 @@ image::images/parity_txdemo_novalue_data.png["Parity wallet showing a transactio
 ===== Transaction with neither value (payment), nor data payload
 
 [[tx_novalue_nodata_src]]
-.No value, no data
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
 ----
 
-Our wallet shows a confirmation screen, indicating 0 value and no data:
+Our wallet shows a confirmation screen, indicating 0 value and no data, as shown in <<parity_txdemo_novalue_nodata>>:
 
 [[parity_txdemo_novalue_nodata]]
 .Parity wallet showing a transaction with no value, and no data
@@ -371,7 +365,7 @@ Any ether sent to the designated burn address +0x0...dEaD+ above will become uns
 
 A contract creation transaction need only contain a data payload that contains the compiled bytecode which will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the +value+ field if you want to set the new contract up with a starting balance, but that is entirely optional. If you send value (ether) to the contract creation address without a data payload (no contract), then the effect is the same as sending to a burn address - there is no contract to credit so the ether is lost.
 
-As an example, we can create the +Faucet.sol+ contract used in <<intro>>, by manually creating a transaction to the zero address and the contract in the data payload. The contract needs to be compiled into a bytecode representation. This can be done with the Solidity compiler.
+As an example, we can create the +Faucet.sol+ contract used in <<intro_chapter>>, by manually creating a transaction to the zero address and the contract in the data payload. The contract needs to be compiled into a bytecode representation. This can be done with the Solidity compiler.
 
 ----
 > solc --bin Faucet.sol
@@ -395,7 +389,7 @@ Now we can create the transaction.
 
 It is good practice to always specify a +to+ parameter, even in the case of the zero address contract creation, because the cost of accidentally sending your ether to +0x0+ and losing it forever is too great. You should also specify +gasPrice+ and the +gas+ limit.
 
-Once the contract is mined we can see it on etherscan block explorer
+Once the contract is mined we can see it on etherscan block explorer, as shown in <<publish_contract_from_web3>>:
 
 [[publish_contract_from_web3]]
 .Etherscan showing the contract successfully mined
@@ -437,7 +431,7 @@ Here we can see the address of the contract. We can send funds to and receive fu
 "0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
 ----
 
-After a while, both transactions are visible on etherscan
+After a while, both transactions are visible on etherscan, as shown in <<publish_contract_transactions>>:
 
 [[publish_contract_transactions]]
 .Etherscan showing the transactions for sending and receiving funds
@@ -581,16 +575,13 @@ At block #2,675,000, Ethereum implemented the "Spurious Dragon" hard fork that, 
 [[raw_tx]]
 ==== Raw transaction creation and signing
 
-Let's create a raw transaction and sign it, using the +ethereumjs-tx+ library. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in +raw_tx_demo.js+ in the GitHub repository:
+Let's create a raw transaction and sign it, using the +ethereumjs-tx+ library. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in +raw_tx_demo.js+ in the GitHub repository. Download it here:
+https://github.com/ethereumbook/ethereumbook/blob/develop/code/web3js/raw_tx/raw_tx_demo.js
 
 [[raw_tx_demo_source]]
-.raw_tx_demo.js: Creating and signing a raw transaction in JavaScript
 ----
 include::code/web3js/raw_tx/raw_tx_demo.js[]
 ----
-
-Download it here:
-https://github.com/ethereumbook/ethereumbook/blob/develop/code/web3js/raw_tx/raw_tx_demo.js
 
 [[raw_tx_demo_run]]
 Run the example code:
@@ -710,3 +701,7 @@ To take advantage of this capability, ether has to be transferred to a "wallet c
 These contracts can also be designed to require multiple signatures before executing local code or to trigger other contracts. The security of the scheme is ultimately determined by the multisig contract code.
 
 The ability to implement multi-signature transactions as a smart contract demonstrates the flexiblity of Ethereum. However, it is a double-edged sword, as the extra flexibility can lead to bugs that undermine the security of multi-signature schemes. There are, in fact, a number of proposals to create a multi-signature command in the EVM that removes the need for smart contracts, at least for the simple M-of-N multi-signature schemes. This would be equivalent to Bitcoin's multi-signature system that is part of the core consensus rules and has proven to be robust and secure.
+
+////
+TODO - conclusion paragraph
+////
