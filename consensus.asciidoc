@@ -1,133 +1,74 @@
 [[consensus]]
 == Consensus
 
-"Consensus" within the Ethereum network refers to the capacity for multiple nodes, users or agents to agree on the "world state" of Ethereum at a given point in time. This is closely related to but distinct from the conventional definition of consensus, which is defined as a general agreement between individuals or groups around a particular topic or decision. In the blockchain context, the community must solve the challenges of coming to consensus both technically (within the computer-run network) and socially (to ensure that the protocol does not fork or fracture). This chapter will outline some of the technicalities around establishing consensus.
+Throughout this book we have talked about the "consensus rules" that are the rules that everyone must agree to, for the system to operate in a decentralized, yet deterministic, manner. In computer science, the term _consensus_ predates blockchains and is related to the broader problem of synchronizing state in distributed systems, such that different participants in a distributed system all (eventually) agree on a single system-wide state. This is called "reaching consensus".
 
-When it comes to the core function of decentralized record keeping and verification, it can become problematic to rely on trust alone to ensure that information derived from state updates is correct. This rather general challenge is particularly pronounced in decentralized networks because there is no central entity to decide what is true. The lack of a central decision-making entity is one of the main attractions of blockchain platforms, because of the resulting capacity to resist censorship and the lack of dependence on authority for permission to access information. However, these benefits come at a cost: without a trusted arbitrator, any disagreements, deceptions or differences need to be reconciled using other means. Possible approaches here include mathematical, economic and social techniques. A decentralized system is therefore more resilient to attack but can be less decisive in responding to changes.
+When it comes to the core function of decentralized record keeping and verification, it can become problematic to rely on trust alone to ensure that information derived from state updates is correct. This rather general challenge is particularly pronounced in decentralized networks because there is no central entity to decide what is true. The lack of a central decision-making entity is one of the main attractions of blockchain platforms, because of the resulting capacity to resist censorship and the lack of dependence on authority for permission to access information. However, these benefits come at a cost: without a trusted arbitrator, any disagreements, deceptions or differences need to be reconciled using other means. Consensus algorithms are the  mechanism used to reconcile security and decentralization.
 
-The capacity to come to consensus and trust information will have important implications for the future adoption and utility of blockchain platforms as hosts to new asset classes, and blockchain technology as infrastructure. To address this challenge and maintain the valued property of decentralization, the community continues to experiment with different models of consensus. This chapter explores all these issues.
+In blockchains, consensus is a critical property of the system. Simply put, there is money at stake! So, in the context of blockchains, _consensus_ is about being able to arrive at a common state, while maintaining decentralization. In other words, consensus is intended to produce a system of _strict rules without rulers_. There is no one person, organization or group "in charge", rather power and control is diffused across a broad network of participants, whose self interest is served by following the rules and behaving honestly.
 
+The ability to come to consensus across a distributed network, under adversarial conditions, without centralizing control, is the core principle of all open public blockchains. To address this challenge and maintain the valued property of decentralization, the community continues to experiment with different models of consensus. This chapter explores these consensus models and their expected impact on smart contract blockchains such as Ethereum.
 
-=== Consensus Metrics
+=== Consensus via proof of work (PoW)
 
-A consensus metric is a measurable datum on which a blockchain network's nodes must agree in order to establish and maintain consensus for the data contained in each block. In the context of blockchain technology, consensus metrics must be measured and approved by each network node every time a new block is to be added to the chain. As a result of the consensus metric, blockchains act as chains of truth extended from one definitely verifiable fact to the next. Because of the consensus metric, a blockchain protocol's nodes become _mini-notaries_, instantly able to tell a false copy of the blockchain from the true one, and report that fact to the entire network. These measures are required in order to keep bad actors from defrauding the network by submitting blocks containing false information. As a result of the consensus metric of a blockchain, its integrity is not only established but maintained over the long run. Consensus metrics take a variety of forms, but the two most important for this discussion are risk-based metrics and work-based metrics.
+The creator of the original blockchain, Bitcoin, invented a _consensus algorithm_ called _Proof of Work (PoW)_. Arguably, PoW is the most important invention underpinning Bitcoin. The colloquial term for PoW is "mining", which creates a misunderstanding about the primary purpose of consensus. Often people assume that the purpose of mining is the creation of new currency, since the purpose of real-world mining is the extraction of precious metals or other resources. Rather, the real purpose of mining (and all other consensus models) is to *secure the blockchain() while keeping control over the system decentralized and diffused across as many participants as possible. The reward of newly minted currency is an incentive system whose purpose is to reward those who contribute to the security of the system: a means to an end. In that sense, the reward is the means and decentralized security is the end. In PoW consensus there is also a corresponding "punishment", which is the cost of energy required to participate in mining. If participants do not follow the rules and earn the reward, they risk the funds they have already spent on electricity to mine. Thus, PoW consensus is a careful balance of risk and reward that drives participants to behave honestly out of self interest.
 
-=== Hash-Based Metrics
+Ethereum is currently a PoW blockchain, in that it uses a PoW algorithm with the same basic incentive system for the same basic goal: securing the blockchain while decentralizing control. Ethereum's PoW algorithm is slightly different than Bitcoin's and is called _Ethash_. We will examine the function and design characteristics of _Ethash_ in <<ethash>>.
 
-Commonly known as Proof-of-Work (PoW) metrics, these metrics establish consensus because protocols that use them set computers to work on solving hard problems, most commonly using a _hash function_ to find suitable _hashes_. The difficulty in finding a hash that fits the parameters of the network requires nodes to commit processing power and use electricity to compete with other nodes to come up with a valid hash. For the sake of illustration, consider supercomputers whose only job in life is to search all integers for prime numbers. Now consider a whole network of average computers. These computers, when combined, might have the computational power of a supercomputer. The only job for this network of computers is similarly to search possible numbers for another kind of number called a SHA-256 hash. These numbers have unique properties, just like prime numbers, that make them easily identifiable when discovered, despite the significant difficulty in producing a hash that fits the criteria set by the network. One way of imagining the difference between computing a hash and verifying that a hash fits the parameters is to use the analogy of a jigsaw puzzle: the puzzle can be quite difficult and time consuming to do, but it is easy to tell at a glance if it has been completed.
+=== Consensus via proof of stake (PoS)
 
-When SHA-256 hashes are computed accurately they serve as an attestation that a certain amount of computing power has been used to find the number. The most recent prime number to be found is asciimath:[2^(77,232,917) − 1]. It was found by a computer, just as SHA-256 hashes are found by computers. SHA-256 hashes are easier to find than new prime numbers; however, the difficulty inherent in finding hashes gives hash-based metrics their power.
+Historically, proof of work was not the first consensus algorithm proposed. Preceding the introduction of proof of work, many researchers had proposed variations of consensus algorithms based on financial stake, now called _Proof of Stake (PoS)_. In some respect, proof of work was invented as an alternative to proof of stake. After the success shown by Bitcoin, many blockchains have emulated proof of work. Yet, the explosion of research into consensus algorithms has also resurrected proof of stake, significantly advancing the state of the technology. From the beginning, Ethereum founders were hoping to eventually migrate Ethereum's consensus algorithm to proof of stake. In fact, there is a deliberate handicap on Ethereum's proof of work called the _difficulty bomb_, intended to gradually make proof of work mining of Ethereum more and more difficult, thereby forcing the transition to proof of stake.
 
-Every SHA-256 hash has 64 hexadecimal characters in it. For example, here is the SHA-256 hash for the word "yank".
-`SHA256("yank") = 45F1B9FC8FD5F760A2134289579DF920AA55830F2A23DCF50D34E16C1292D7E0`
+At the time of publication of this book, Ethereum is still using proof of work, but the ongoing research towards a proof of stake alternative is nearing completion. Ethereum's planned proof of stake algorithm is called _Casper_. The introduction of Casper as a replacement of Ethash has been postponed several times over the past 2 years, necessitating interventions to defuse the difficulty bomb and postpone it's forced obsolescence of proof of work.
 
-Compare this to the SHA-256 hash of the three letters "yan".
+In general, a PoS algorithm works as follows. The blockchain keeps track of a set of validators, and anyone who holds the blockchain's base cryptocurrency (in Ethereum's case, ether) can become a validator by sending a special type of transaction that locks up their ether into a deposit. The validators take turns proposing and voting on the next valid block, and the weight of each validator's vote depends on the size of its deposit (i.e. stake). Importantly, a validator risks losing their deposit if the block they staked it on is not selected by the majority of validators. Conversely, validators earn a small reward, proportional to their deposited stake, for every block that is accepted by the majority. Thus, PoS forces validators to act honestly and follow the consensus rules, by a system of reward and punishment. The major difference between PoS and PoW is that the punishment in PoS is intrinsic to the blockchain (e.g. loss of staked ether), whereas in PoW the punishment is extrinsic (e.g. loss of funds spent on electricity).
 
-`SHA256("yan")  = 281ACA1A80B52620BD717E8B14A0386B8ADA92AE859AC2C8A2AC222EFA02EDBB`
+=== Ethash: Ethereum's proof of work
 
-Compare this further to the SHA-256 hash of the two letters "ya".
+Ethash is the Ethereum Proof-of-Work (PoW) algorithm and uses a n evolution of the Dagger–Hashimoto Algorithm, which is a combination of Vitalik Buterin's Dagger algorithm and Thaddeus Dryja's Hashimoto algorithm. Ethash is dependent on the generation and analysis of a large dataset, known as a _Directed Acyclic Graph_ or more simply _the DAG_. The DAG had an initial size of about 1GB and will continue to slowly and linearly grow in size, being updated once every _epoch_ (30,000 blocks, or roughly 125 hours).
 
-`SHA256("ya")   = 6663103A3E47EFC879EA31FA38458BE23BE0CE0895F3D8B27B7EA19A1120B3D4`
+The purpose of the DAG is to make the Ethash PoW algorithm dependent on maintaining a large, frequently accessed data structure. This in turn is intended to make Ethash "ASIC resistant", which means that it is more difficult to make _Application Specific Integrated Circuits (ASIC)_ mining equipment that is orders of magnitude faster than a fast _Graphics Processing Unit (GPU)_. Ethereum's founders wanted to avoid centralization in PoW mining, where those with access to specialized silicon fabrication factories and big budgets could dominate the mining infrastructure and undermine the security of the consensus algorithm.
 
-Lastly, compare this to the SHA-256 hash of the single letter "y".
+Use of consumer-level GPUs for carrying out the PoW on the Ethereum network means that more people around the world can participate in the mining process. The more independent miners there are, the more decentralized the mining power and we can avoid a situation like Bitcoin's mining, where much of the mining power is concentrated in the hands of a few large industrial mining operations. The downside of the use of GPUs for mining is that is precipitated a worldwide shortage GPUs in 2017, causing their price to skyrocket and an outcry from gamers. This led to purchase restrictions at retailers limiting buyers to a one or two GPUs per customer.
 
-`SHA256("y")    = A1FCE4363854FF888CFF4B8E7875D600C2682390412A8CF79B37D0B11148B0FA`
+Until recently, the threat of Application-Specific Integrated Circuit (ASIC) miners on the Ethereum network was largely non-existent. To use ASICs for Ethereum requires the design, manufacture, and distribution of highly customized hardware. Producing them requires considerable investment of time and money. The Ethereum developers' long-expressed plans to move to a PoS consensus algorithm likely kept ASIC suppliers away from targeting the Ethereum network for a long time. As soon as Ethereum moves to PoS, ASICs designed for the PoW algorithm will be rendered useless—that is, unless miners can use them to mine other cryptocurrencies instead. The latter possibility is now a reality with a range of other Ethash-based consensus coins available, such as PIRL, Ubiq, and of course Ethereum Classic, which has pledged to remain a PoW blockchain for the foreseeable future. This means that we will likely see ASIC mining begin to become a force on the Ethereum network while is it still operating on PoW consensus.
 
-Notice how, despite the small change in the letters being hashed, the resulting output hashes are vastly different.
+=== Casper: Ethereum's proof of stake
 
-If you hash enough random phrases, eventually you will find a hash that matches a certain pattern. In the case of the hash for "ya", note that it begins with the pattern "666". This is similar to the relatively primitive hash-based metric approach of Bitcoin, except Bitcoin requires that hashes be found by matching the pattern beginning with "000". Candidate hashes are created by tweaking block information and feeding it into the SHA-256 hashing algorithm. As long as the output hash has the right number of leading zeros, the network will accept it and the block reward can be yours. If the output hash doesn't have enough leading zeros, unlucky. You have to tweak some of the information in your block and hash again. The more leading zeros required, the more difficult finding an acceptable hash will be.
+Casper is the proposed name for Ethereum's proof of stake consensus algorithm. It is still under active research and development and is not implemented on the Ethereum blockchain at the time of publication of this book. Casper is being developed in two competing "flavors":
 
-Since the total number of processors wanting to mine Bitcoin seems to be continuously increasing, there is (currently) ever more compute effort per second going into finding SHA-256 hashes to confirm Bitcoin blocks. The Bitcoin protocol deals with this ongoing change by periodically adjusting the difficulty of the consensus metric upwards, requiring a greater number of leading zeros for acceptable blocks. This acts as insurance that new blocks are created in roughly the same increments of time as previous blocks. For the Bitcoin network, that increment is targeted to ten minutes, though it is often less because the Bitcoin network waits for roughly two weeks to adjust the difficultly. In contrast to this, Ethereum re-adjusts its difficultly every block, and thus does a very good job of maintaining the target block separation time average of about 14 seconds.
+* Casper FFG: "The Friendly Finality Gadget"
+* Casper CBC: "The Friendly GHOST / Correct-By-Construction"
 
-////
+Initially, Casper FFG was proposed as a hybrid PoW/PoS algorithm to be implemented first, as a transition to a more permanent "pure PoS" algorithm, later. In June 2018, Vitalik Buterin, who was leading the research work on Casper FFG decided to "scrap" the hybrid model in favor of a pure PoS algorithm. Now, Casper FFG and Casper CBC are both being developed in parallel. As Vitalik explains:
 
-TODO This section is confusing. Its title is "Risk-Based Metrics", and then it says these are "Commonly known as PoS metrics". But that is the title of the next section! Then, after discussing PoS metrics for a bit, the last three paragraphs are an explanation of PoW. Has something gone wrong with the ordering of the text?
+ The main tradeoff between FFG and CBC is that CBC seems to have nicer theoretical properties, but FFG seems to be easier to implement.
 
-////
+More information about Casper's history, ongoing research and future plans can be found at the following links:
 
-=== Risk-Based Metrics
+https://twitter.com/i/moments/1036281460704112645
+https://medium.com/@Vlad_Zamfir/the-history-of-casper-part-1-59233819c9a9
+https://medium.com/@Vlad_Zamfir/the-history-of-casper-chapter-2-8e09b9d3b780
+https://medium.com/@Vlad_Zamfir/the-history-of-casper-chapter-3-70fefb1182fc
+https://medium.com/@Vlad_Zamfir/the-history-of-casper-chapter-4-3855638b5f0e
+https://medium.com/@Vlad_Zamfir/the-history-of-casper-chapter-5-8652959cef58
 
-Commonly known as Proof-of-Stake (PoS) metrics, these establish consensus based on the fact that everyone who chooses to create invalid blocks stands to lose a great deal more than they have to gain by creating valid ones. This metric is manufactured by consensus not about external off-chain data, but about internal on-chain data. Hash-based consensus metrics are primarily concerned with the quality and precise nature of SHA-256 hashes. Risk-based metrics are primarily concerned with the risk which any particular node takes when adding a new block.
+=== Principles of consensus
 
-The metric that all nodes agree upon here is which nodes have created correct blocks and which have not. In a way, this is already built into the Bitcoin protocol. The Bitcoin protocol assumes that the correct block is the one which the most nodes are mining. It assumes that the miners will not choose an incorrect block, as it is not in their best interests to mine bad blocks.
+The principles and assumptions of consensus algorithms can be more clearly understood by asking a few key questions:
 
-Risk-based chains on the other hand, depend upon quick, immediate, and irreversible repercussions to any block creators that fail to create what other nodes in the network consider to be correct blocks. By risking the loss of resources, the hash-based metrics (which also rely on people not wanting to waste resources to work) can be implemented with less work. Research is currently underway to implement this model of consensus metric in Ethereum.
+* Who can change the past and how, also known as _immutability_.
+* Who can change the future and how, also known as _finality_.
+* What is the cost to make such changes?
+* How decentralized is the power to make such changes?
+* Who will know if something has changed and how will they know?
 
-Proof of work is a consensus protocol that considers the valid blockchain in the network to be the chain that was most computationally expensive to create. The computational work that is referred to here is the work that had to be done to add all of the blocks to the current blockchain. This work is done by network nodes, and must be computationally difficult, so as to make the work non-trivial, but must also be feasible, so as to be attainable after a reasonable amount of effort is exerted. Ultimately, the network will rely on nodes providing this PoW in order to maintain the blockchain and it is, therefore, in the best interest of the network to require a sensible PoW.
+Consensus algorithms are evolving rapidly, attempting to answer these questions in increasingly innovative ways.
 
-In the Ethereum network, as well as in many other blockchain networks, obtaining the PoW requires finding a hash of the block that is to be added to the blockchain. This hash is obtained by hashing a string consisting of the block's data and a nonce (the method of creating this string may vary but the overall process is the same). This hash must be less than a certain threshold (determined by the difficulty of the network) and as soon as a node presents a nonce that produces this hash, the corresponding block is accepted and added to the blockchain.
+=== Consensus controversy and competition
 
-The way this valid hash is found is by modifying the nonce, usually initializing it to zero and incrementing at each iteration until a hash that is below the network threshold is produced. This process is called mining. Due to the nature of the hash functions used in mining the only way to find a valid nonce is through brute force, i.e. checking every possible value of the nonce until a hash that meets the network requirements is found. It is for this reason that providing a valid nonce is considered PoW.
+At this point you might be wondering: why do we need so many different consensus algorithms? Which one works better? The answer to that question is at the center of the most exciting are of research in distributed systems of the past decade. It all boils down to what you consider "better", which in the context of computer science is about assumptions, goals, and the unavoidable tradeoffs.
 
-=== Proof-of-Stake (PoS)
+It is likely that no  algorithm can optimize across all dimensions of the problem of decentralized consensus. When someone suggests that a consensus algorithm is "better", you should start asking questions that clarify: Better at what? Immutability, finality, decentralization, cost? There is no clear answer to these questions, at least not yet. Furthermore, the design of consensus algorithms is at the center of a multi-billion dollar industry and generates enormous controversy and heated arguments. In the end, there might not be a "correct" answer, as much as there might be different answers for different applications.
 
-Proof-of-Stake (PoS) is a category of consensus algorithms for public blockchains that depend on a validator's economic stake in the network. In Proof-of-Work (PoW) based public blockchains (e.g. Bitcoin and the current implementation of Ethereum), the algorithm rewards participants who solve cryptographic puzzles in order to validate transactions and create new blocks (i.e. mining). In PoS-based public blockchains (e.g. Ethereum's upcoming Casper implementation), a set of validators take turns proposing and voting on the next block, and the weight of each validator's vote depends on the size of its deposit (i.e. stake). Significant advantages of PoS include security, reduced risk of centralization, and energy efficiency.
-
-In general, a PoS algorithm works as follows. The blockchain keeps track of a set of validators, and anyone who holds the blockchain's base cryptocurrency (in Ethereum's case, ether) can become a validator by sending a special type of transaction that locks up their ether into a deposit. The process of creating and agreeing to new blocks is then done through a consensus algorithm that all current validators can participate in.
-
-There are many kinds of consensus algorithms, and many ways to assign rewards to validators who participate in the consensus algorithm, so there are many "flavors" of proof of stake. From an algorithmic perspective, there are two major types: chain-based proof of stake and Byzantine Fault Tolerance (BFT) style proof of stake.
-
-* In chain-based proof of stake, the algorithm pseudo-randomly selects a validator during each time slot (e.g. every period of 10 seconds might be a time slot), and assigns that validator the right to create a single block; this block must point to some previous block (normally the block at the end of the previously longest chain), and so over time most blocks converge into a single constantly growing chain.
-
-////
-
-TODO It looks to me as though there's a missing step in the reasoning about chain-based PoS: if I understand correctly, from a hint in the following paragraph (about BFT), chain-based PoS relies for confirmation of a given block on future blocks being mined on top of it, and this is incentivized by the consensus rule that a new block must point to the end the of the previously longest chain. Is this correct? If not, then I don't understand the remark below that "consensus on a block [under BFT-style PoS]…does not depend on the length or size of the chain after it".
-
-This also sounds as though BFT-style PoS has a key advantage, in that unlike chained-based PoS (or PoW), it's not necessary to wait for further blocks to be mined to consider a given block confirmed; as the text says, "consensus on a block can come within one block". That should be emphasized, as it reduces the effective transaction delay.
-
-////
-
-* In BFT-style proof of stake, validators are randomly assigned the right to propose blocks, but agreeing on which block is canonical is done through a multi-round process where every validator sends a "vote" for some specific block during each round, and at the end of the process all (honest and online) validators permanently agree on whether or not any given block is part of the chain. Note that blocks may still be chained together; the key difference is that consensus on a block can come within one block, and does not depend on the length or size of the chain after it.
-
-==== PoA
-
-Proof of Authority (PoA) is a subset of PoS consensus algorithms mainly used by testnets and private or consortium networks. In PoA-based blockchains, transaction validity is ultimately determined by a set of approved on-chain accounts, referred to as 'authority nodes'. The criteria for determining authority nodes are decided deterministically through an approach codified in the network's governance structure.
-
-PoA is widely considered to be the fastest route to consensus, but relies on the assumption that the validating node has not been compromised. Non-validating actors can access and use the network just as they would a public Ethereum network.
-
-PoA consensus relies on the validators' reputation and past performance. The idea is that the validator node is staking its identity/reputation to mine. An important aspect of private consortium networks is the link between on-chain addresses and known, real world identities. Thus, we can say that the validating nodes are staking their "identity" or "reputation" (rather than their economic holdings). This creates some level of accountability for validators, and is best suited to enterprise, private, or test networks.
-
-PoA is currently employed by the Kovan test network, and can be configured easily in Parity for private consortia's networks.
-
-==== DPoS
-
-Delegated Proof-of-Stake (DPoS) is a modified form of Proof-of-Stake where network participants vote to elect an array of delegates (also called witnesses) to validate and secure the blockchain. These delegates are somewhat similar to authority nodes in PoA, except their authority may be revoked by the voters.
-
-In DPoS consensus, like in PoS, the weight of the vote is proportional to the amount of stake injected by the user. This creates a scenario where larger token holders have proportionally more voting power than smaller ones. This makes sense from a game theoretical perspective, as those with more economic 'skin in the game' will naturally have a larger incentive to elect the best delegate witnesses.
-
-In addition, delegate witnesses receive a reward for validating each block and thus are incentivized to remain honest and efficient, so as to not be replaced. However, there are ways to make a “bribe” that are quite plausible; for example, an exchange can offer interest for deposits (or, even more ambiguously, use the exchange’s own money to build a great interface and features), with the exchange operator using the large quantity of deposits to vote as they wish in a DPoS consensus.
-
-
-=== Ethash
-
-Ethash is an Ethereum Proof-of-Work (PoW) algorithm that is dependent on the generation and analysis of a large dataset, known as _the DAG_ (simply because it is a directed acyclic graph). The DAG started with a size of about 1GB and will continue to slowly and linearly grow in size evermore, being updated once every _epoch_ (30,000 blocks, or roughly 125 hours). The Ethash PoW algorithm uses a version of the Dagger–Hashimoto Algorithm, which is a combination of Vitalik Buterin's Dagger algorithm and Thaddeus Dryja's Hashimoto algorithm.
-
-==== Seed, Cache, Data Generation
-
-.The PoW algorithm involves:
-- *Seed* is computed for each block by scanning through prior block headers of the DAG. +
-- *Cache* is a 16MB pseudorandom cache that is computed from the seed for storage in Light Clients. +
-- *Data Generation* of the DAG from the cache to use for storage on Full Clients and Miners (where each item in the dataset only depends on a small number of items from the cache). +
-- *Miners* undertake mining by taking random slices of the dataset and hashing them together. Verification may be performed using the stored cache and a little memory to regenerate specific pieces of the dataset required.
-
-.References:
-- Ethash-DAG: https://github.com/ethereum/wiki/wiki/Ethash-DAG
-- Ethash Specification: https://github.com/ethereum/wiki/wiki/Ethash
-- Mining Ethash DAG: https://github.com/ethereum/wiki/wiki/Mining#ethash-dag
-- Dagger–Hashimoto Algorithm: https://github.com/ethereum/wiki/blob/master/Dagger-Hashimoto.md
-- DAG Explanation and Images: https://ethereum.stackexchange.com/questions/1993/what-actually-is-a-dag
-- Ethash in Ethereum Yellowpaper: https://ethereum.github.io/yellowpaper/paper.pdf#appendix.J
-- Ethash C API Example Usage: https://github.com/ethereum/wiki/wiki/Ethash-C-API
-
-==== PoW Function
-
-=== Why does using GPUs matter?
-
-Although Ethereum can be mined using CPUs, using them to mine Ethereum would not be a profitable exercise. Today most mining relies on the use of Graphical Processing Units (GPU). Modern GPUs—while great for 3D graphics and gaming—are also excellent at processing the computation-intensive Dagger–Hashimoto Algorithm which is necessary for PoW consensus on the Ethereum network.
-
-Use of "normal" GPUs for carrying out the PoW on the Ethereum network means that more people around the world can participate in the mining process. The more independent miners there are, the more decentralized the mining power and we can avoid a situation like with Bitcoin where much of the mining power is concentrated in the hands of a few large industrial mining operations. The downside of the use of GPUs for mining is it led to the worldwide shortage GPUs in 2017, causing their price to rocket and an outcry from gamers. This led to purchase restrictions at retailers limiting buyers to a single GPU per customer or two if you are in luck.
-
-Until recently, the threat of Application-Specific Integrated Circuit (ASIC) miners on the Ethereum network was largely non-existent. To use ASICs for Ethereum requires the design, manufacture, and distribution of highly customized hardware. Producing them requires considerable investment of time and money. The Ethereum developers' long-expressed plans to move to a PoS consensus algorithm likely kept ASIC suppliers away from targeting the Ethereum network for a long time. As soon as Ethereum moves to PoS, ASICs designed for the PoW algorithm will be rendered useless—that is, unless miners can use them to mine other cryptocurrencies instead. The latter option is now a reality with a range of other Ethash-based consensus coins available, such as PIRL, Ubiq, and of course Ethereum Classic, which has pledged to remain a PoW coin for the foreseeable future. This means that we will likely see ASIC mining begin to become a force on the Ethereum network while is it still operating on PoW consensus.
-
-
-=== Casper
+The entire blockchain industry is one giant experiment where these questions will be tested under adversarial conditions, with enormous monetary value at stake. In the end, history will answer the controversy.
