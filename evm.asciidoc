@@ -3,6 +3,10 @@
 
 At the heart of the Ethereum protocol and operation is the Ethereum Virtual Machine, or EVM for short. As you might guess from the name, it is a computation engine, not hugely dissimilar to the virtual machines of Microsoft's .NET framework or LLVM, or interpreters of other byte-code–compiled programming languages, such as Java. In this chapter we take a detailed look at the EVM, including its instruction set, structure and operation within the context of Ethereum state updates.
 
+////
+TODO: merge with Gas evm_chapter, keep EVM first. Use halting problem description at the end of EVM.
+////
+
 [[evm_description]]
 === What is it?
 The EVM is the part of Ethereum that handles smart contract deployment and execution. Simple value transfer transactions from one EOA to another don't need to involve it, practically speaking, but everything else will involve a state update computed by the EVM. At a high level, the EVM running on the Ethereum blockchain can be thought of as a global decentralized computer containing millions of executable objects, each with its own permanent data store.
@@ -382,7 +386,6 @@ JUMPI
 
 As we have seen, +PUSH1 0x4+ places +0x4+ onto the top of the stack, which is otherwise empty. +CALLDATASIZE+ gets the size in bytes of the data sent with the transaction (known as the _calldata_) and pushes that number onto the stack. After these operations have been executed the stack looks like this:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -405,7 +408,6 @@ Thus, the function identifier for the +withdraw(uint256)+ function is +0x2e1a7d4
 
 The +PUSH1 0x3f+ instruction pushes the byte +0x3f+ onto the stack. After this instruction, the stack looks like this:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -455,7 +457,6 @@ calldataload(p) //load 32 bytes of calldata starting from byte position p
 
 Since 0 was the index passed to it from the +PUSH1 0x0+ command, +CALLDATALOAD+ reads 32 bytes of calldata starting at byte 0, and then pushes it to the top of the stack (after popping the original +0x0+). After the +PUSH29 0x1000000...+ instruction, the stack is then:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -465,7 +466,6 @@ Since 0 was the index passed to it from the +PUSH1 0x0+ command, +CALLDATALOAD+ 
 
 +SWAP1+ switches the top element on the stack with the _ith_ element after it. In this case, it swaps +0x1000000...+ with the calldata. The new stack is:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -489,7 +489,6 @@ If this part isn’t clear to you, think of it like this: in base~10~, 1234000 /
 
 The result of the +DIV+ (the function identifier) gets pushed on the stack, and our stack is now:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -498,7 +497,6 @@ The result of the +DIV+ (the function identifier) gets pushed on the stack, and 
 
 Since the +PUSH4 0xffffffff+ and +AND+ instructions are redundant, we can ignore them entirely, as the stack will remain the same after they are done. The +DUP1+ instruction duplicates the 1^st^ item on the stack, which is the function identifier. The next instruction, +PUSH4 0x2e1a7d4d+, pushes the pre-calculated function identifier of the +withdraw(uint256)+ function onto the stack. The stack is now:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -511,7 +509,6 @@ The next instruction, +EQ+, pops off the top two items of the stack and compares
 
 Assuming the transaction sent to our contract indeed began with the function identifier for +withdraw(uint256)+, our stack has become:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
@@ -521,7 +518,6 @@ Assuming the transaction sent to our contract indeed began with the function ide
 
 Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)+ function lives in the contract. After this instruction, the stack looks like this:
 
-.Current stack
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Stack
