@@ -15,7 +15,7 @@ The EVM has a stack-based architecture, storing all in-memory values on a stack.
 2. A volatile _memory_, with every location explicitly initialized to zero
 3. A permanent _storage_ that is part of the Ethereum state, also zero-initialized
 
-There is also a set of environment variables and data that are available during execution. We will go through these in more detail in this chapter, but you can see them in the architecture diagram <<EVM_architecture>>:
+There is also a set of environment variables and data that are available during execution. We will go through these in more detail in this chapter, but you can see them in the architecture diagram <<evm_architecture>>:
 
 [[evm_architecture]]
 ////
@@ -158,7 +158,7 @@ GASLIMIT   //Get the block’s gas limit
 [[evm_state_descriptions]]
 ==== Ethereum State
 
-The job of the EVM is to update the Ethereum state by computing valid state transitions as a result of smart contact code execution, as defined by the Ethereum protocol. This aspect leads to the description of Ethereum as a _transaction-based state machine_, which reflects the fact that external actors (i.e. account holders and miners) initiate state transitions by creating, accepting and ordering transactions. It is useful at this point to consider what consitutes the Ethereum state.
+The job of the EVM is to update the Ethereum state by computing valid state transitions as a result of smart contact code execution, as defined by the Ethereum protocol. This aspect leads to the description of Ethereum as a _transaction-based state machine_, which reflects the fact that external actors (i.e. account holders and miners) initiate state transitions by creating, accepting and ordering transactions. It is useful at this point to consider what constitutes the Ethereum state.
 
 At the top level, we have the Ethereum _world state_. The world state is a mapping of Ethereum addresses (160 bit values) to _accounts_. At the lower level, each Ethereum address represents an account comprising an ether _balance_ (stored as the number of Wei owned by the account), a _nonce_ (representing the number of transactions successfully sent from this account if it is an EOA, or the number of contracts created by it if it is a contract account), the account's _storage_ (which is a permanent data store, only used by smart contracts), and the account's _program code_ (again, only if the account is a smart contract account). An EOA will always have no code and an empty storage.
 
@@ -361,7 +361,7 @@ Disassembling EVM bytecode is a great way to understand how high-level Solidity 
 - *Ethersplay* is an EVM plugin for Binary Ninja, a disassembler: https://github.com/trailofbits/ethersplay
 - *IDA-Evm* is an EVM plugin for IDA, another disassembler: https://github.com/trailofbits/ida-evm
 
-In this section, we will be using the Ethersplay plugin for Binary Ninja.
+In this section, we will be using the Ethersplay plugin for Binary Ninja and using it to start <<Faucet_disassembled>>.
 
 After getting the runtime bytecode of `Faucet.sol`, we can feed it into Binary Ninja (after loading the Ethersplay plugin) to see what the EVM instructions look like.
 
@@ -422,7 +422,7 @@ jumpi(label, cond) // Jump to "label" if "cond" is true
 
 In our case, "label" is +0x3f+, which is where our fallback function lives in our smart contract. The "cond" argument is 1, which was the result of the +LT+ instruction earlier. To put this entire sequence into words, the contract jumps to the fallback function if the transaction data is less than 4 bytes.
 
-At +0x3f+, only a "STOP" instruction follows, because, although we declared a fallback function, we kept it empty. Had we not implemented a fallback function, the contract would throw an exception instead.
+At +0x3f+, only a "STOP" instruction follows, because, although we declared a fallback function, we kept it empty. As you can see in <<Faucet_jumpi_instruction>>, had we not implemented a fallback function, the contract would throw an exception instead.
 
 [[Faucet_jumpi_instruction]]
 .JUMPI instruction leading to fallback function
