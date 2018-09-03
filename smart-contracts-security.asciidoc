@@ -43,7 +43,7 @@ https://consensys.github.io/smart-contract-best-practices/known_attacks/#dos-wit
 *The Vulnerability*
 ////
 NOTE to editor
-The Vulnerability & Preventive Techniques have been changed from headings to bold intentionally so as not to clutter the table of contents with repetitive wording
+The section headings "The Vulnerability" & "Preventive Techniques" throughout this chapter have been changed from headings to bold formatting intentionally so as not to clutter the table of contents with repetitive wording.
 ////
 
 This attack can occur when a contract sends ether to an unknown address.
@@ -604,13 +604,8 @@ contract EtherGame {
  }
 ----
 
-////
-TODO: is the word quanta relevant here?
-////
-
 This contract represents a simple game (which would naturally involve
-race-conditions) whereby players send `0.5 ether`
-quanta to the contract in hope to be the player that reaches one of
+race-conditions) whereby players send `0.5 ether` to the contract in hope to be the player that reaches one of
 three milestones first. Milestones are denominated in ether. The first
 to reach the milestone may claim a portion of the ether when the game
 has ended. The game ends when the final milestone (`10 ether`) is
@@ -1672,12 +1667,6 @@ throws in the fallback function) allows `payedOut` to be set to `true` (regardle
 of whether ether was sent or not). In this case, anyone can withdraw
 the `winner`’s winnings via the `withdrawLeftOver()` function.
 
-////
-
-TODO The above example is curious, because a) the design is odd (why would one have a "withdrawLeftover" method in a lottery?) and b) it's not obvious how this is an exploit, rather than just a bug, since only the winner can exploit it (which seems to be to their detriment). It would be good to have a little more explanation.
-
-////
-
 *Preventative Techniques*
 
 Whenever possible, use the `transfer()` function rather than `send()`, as
@@ -1816,25 +1805,7 @@ equivalent transaction with a much higher `gasPrice` than the original
 transaction. The miner who solves the block will likely give the
 attacker preference due to the higher `gasPrice`, and mine their
 transaction before the original solver's. The attacker will take the 1000
-ether and the user who solved the problem will get nothing.
-
-This problem becomes more acute in the design of the future Casper
-implementation. Casper's proof of stake mechanism invokes slashing
-conditions where users who notice validators double-voting or
-misbehaving are incentivised to submit proof that they have done so. The
-validator will be punished and the user rewarded. In such a scenario, it
-is expected that miners and users will front-run all such submissions of
-proof. This issue must be addressed before the final release.
-
-////
-
-TODO I'm not 100% sure I understood the above about Casper. I think it's saying that currently bad actors might look out for problem solutions and then make their own transactions with the same solutions but higher gasPrice, to claim the reward; but in future, all users & miners will be front-running transactions as a matter of course (because of the incentive to report validator misbehavior) so the problem will become worse.
-
-I don't really understand how this makes the problem worse: at present, bad actors are already incentivised to front-run. If all users are incentivised to do the same thing, then clearly solutions must be found (or the system will not work). So it would seem more accurate to say that the problem of front-running must be solved (or at least, a solution must be made standard best practice) before the release of Casper, as otherwise Casper will not work.
-
-In other words, just as at present it's fairly straightforward to avoid under/overflow bugs by using a safe math library, by the time Casper is released it should be straightforward to avoid front-running bugs, because tools and libraries to avoid it will have to have been created in order to make PoS viable.
-
-////
+ether and the user who solved the problem will get nothing. Keep in mind that in this type of "front-running" vulnerability, miners are uniquely incentivized to run these attacks themselves or can be bribed to run these attacks with extravagant fees. The possibility of the attacker being a miner themselves should not be underestimated.
 
 *Preventative Techniques*
 
@@ -2439,13 +2410,6 @@ In the above example, the calculation to purchase tokens was
 before the multiplication. (Solidity, unlike some languages, guarantees to perform operations in the order in which they are written.) This example would have achieved a greater
 precision if the calculation performed the multiplication first and then
 the division, i.e. `msg.value*tokenPerEth/weiPerEth`.
-
-////
-
-TODO I assert above that Solidity performs arithmetic operations in the order in which they are written, but I can't actually find a source for this. I assume it's true as otherwise the discussion above doesn't make sense. Is there a source?
-
-////
-
 
 Finally, when defining arbitrary precision for numbers it can be a good
 idea to convert values to higher precision, perform all

@@ -85,31 +85,6 @@ On one hand, developers should always check any other code, which their own code
 
 Let's look at the above example, in a bit more depth. Imagine that a developer is writing a public function called `a`. The developer is new to this contract and is utilizing a modifier written by someone else. At a glance it appears that the `stageTimeConfirmation` modifier is simply performing some checks in relation to the age of the contract in relation to the calling function. What the developer may _not_ realize is that the modifier is also calling another function; `nextStage`. In this, simplistic demonstration scenario, the overall result of simply calling the public function `a`, results in the smart contract's `stage` variable moving from `SafeStage` to `DangerStage`.
 
-////
-
-TODO: Check the above para. I rewrote the original because a) I couldn't quite understand what it was trying to say, and b) to the extent that I understood it, I didn't agree. Compared to, e.g. Lisp "advice" functions, Solidity modifiers are a) static, and b) explicitly mentioned in the function they modify, so that reasoning is simplified (you can't add a modifier at run-time) and it's obvious that a modifier is used. In this sense, they're no worse than called functions: to understand the behavior of a function, you must study all its callees.
-
-So I tried to work out what is different about modifiers. The only thing I can think of is that, unlike a callee, its effects are pervasive: it can change anything about the environment of the function it modifies.
-
-Forgive me if I've overlooked something!
-
-(FWIW I'd retain modifiers, but restrict them to pure functions ending with an assert or require, remove the magic "_" syntax, and allow them after the "returns" part of the function prototype so they can still be used as post-conditions (in their current position they'd run as pre-conditions). This covers most use cases while making them just as easy to audit as inline code, with the absolute assurance that they can't change the function's execution in any way other than prevent its successful completion. This would prevent modifiers being used to normalise inputs; one might consider allowing assignments just to the arguments to allow that too.
-
-One could also argue that for auditing purposes an IDE could just as easily show a function with all its modifiers "expanded".)
-
-////
-
-////
-
-RESPONSE:
-Yes, your points are totally valid. I guess this simply comes down to (as you pointed out) the pervasiveness of the modifier. Perhaps a busy developer might call a modifier, thinking it is like an assert (pre safety check), when in reality it makes a significant change to say a contract enum etc.
-
-You are right in saying that a developer should simply check and understand the modifiers if and when they are going to use them. However there is a risk that a developer will be busy or tired or both and skim read without thoroughly testing the modifier. There may also be a case when collaborating with a team of developers that one of the developers writes a poorly named modifier that does something different (like alters a smart contract variable value) to what its name suggests. For example perhaps a developer thinks that they are confirming that a stage exists when perhaps the modifier is advancing the stage (pushing contract variable called stage from gate 1 to gate 2 etc).
-
-I have also rewritten the above paragraph. I really hope this clears the topic of modifiers up. Thank you ever so much for your feedback, very useful!
-
-////
-
 Vyper's has done away with modifiers altogether. The recommendations from Vyper are as follows. If only performing assertions with modifiers, then simply use in-line checks and asserts as part of the function. If modifying smart contract state and so forth, then again, make these changes explicitly part of the function. Doing this improves audit-ability and readability, as the reader doesn't have to mentally (or manually) "wrap" the modifier code around the function to see what it does.
 
 ==== Class inheritance
@@ -213,25 +188,6 @@ Vyper handles pre-conditions, post-conditions and state changes explicitly. Whil
 * Condition - What is the current state/condition of the Ethereum state variables?
 * Effects - What effects will this smart contract code have on the condition of the state variables upon execution i.e. what _will_ be affected, and what _will not_ be affected? Are these effects congruent with the smart contract's intentions?
 * Interaction - Now that the first two steps have been exhaustively dealt with, it is time to run the code. Before deployment, logically step through the code and consider all of the possible permanent outcomes, consequences and scenarios of executing the code, including interactions with other contracts.
-
-[[a_new_programming_paradigm_sec]]
-=== A new programming paradigm
-
-////
-PM comment: I would delete this entire section
-////
-
-Vyper's creation opens the door to a new programming paradigm. By removing class inheritance, as well as other functionality, it can be said that Vyper is leaning away from the traditional Object Oriented Programming (OOP) paradigm.
-
-Historically, OOP has provided a mechanism for representing real world objects. For example, OOP allows the instantiation of an employee object which can inherit from a person class. However, it is arguably ill-suited to smart contracts, where the most important aspect is value transfer; what one might call "transactional programming". Put simply, transactional computations are worlds apart from real world objects. For example, when was the last time you held a transaction or a forward chaining business rule in your hand?
-
-Vyper is neither an OOP language nor a functional language (the full list of reasons is beyond the scope of this chapter). For this reason, we might boldly suggest, even at this early stage of development, to describe it as a new software development paradigm, one which endeavors to future-proof blockchain executable code. One which prevents the catastrophic loss of funds. Past disasters have created opportunities for further research and development in this space, which could result in a new paradigm for software development.
-
-////
-
-TODO: The original version of the preceding paragraph was trying to make a point about immutability, but it would need more explanation to make; as it is, it was merely confusing, so I've taken it out.
-
-////
 
 [[decorators_sec]]
 === Decorators
@@ -348,12 +304,6 @@ Vyper implements ERC20 as a precompiled contract, allowing these smart contracts
 token: address(ERC20)
 ----
 
-[[opcodes_sec]]
-=== Opcodes
-The code for smart contracts is mainly written in high level languages like Solidity or Vyper. The compiler is responsible for compiling high level code to EVM bytecode, which is directly implemented by the EVM. The EVM opcodes are of course defined in the Ethereum Yellow Paper.
+=== Conclusions
 
-////
-
-TODO I removed the pointers to and discussion of the opcode enumerations in the Solidity and Vyper compilers, because I can think of no reason for including them. As the text already (and still) says, the opcodes are defined in the Yellow Paper. There is nothing interesting about their "implementation" in a particular compiler, other of course than that it should be correct!
-
-////
+Vyper is a powerful and interesting new contract-oriented programming languages. Its design is biased towards "correctness", at the expense of some flexibility. This may allow programmers to write better smart contracts and avoid certain pitfalls that cause serious vulnerabilities to arise. Next, we will look at smart contract security in more detail. Some of the nuances of Vyper design may become more apparent once you read about all the possible security problems that can arise in smart contracts.

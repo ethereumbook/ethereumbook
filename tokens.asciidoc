@@ -210,11 +210,14 @@ ERC20 allows for two different workflows. The first is a single-transaction, str
 
 Executing the transfer contract is very simple. If Alice wants to send 10 tokens to Bob, her wallet sends a transaction to the token contract's address, calling the +transfer+ function with Bob's address and "10" as the arguments. The token contract adjusts Alice's balance (-10) and Bob's balance (\+10) and issues a +Transfer+ event.
 
-The second workflow is a two-transaction workflow that uses +approve+ followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges. For example, if a company is selling tokens for an Initial Coin Offering or ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token as illustrated in <<approve_transferFrom_workflow>>.
+The second workflow is a two-transaction workflow that uses +approve+ followed by +transferFrom+. This workflow allows a token owner to delegate their control to another address. It is most often used to delegate control to a contract for distribution of tokens, but it can also be used by exchanges.
 
-////
-TODO: Probably the first time "ICO" is mentioned in the book. Link to a reference? Add a brief explanation?
-////
+For example, if a company is selling tokens for an Initial Coin Offering or ICO, they can +approve+ a crowdsale contract address to distribute a certain amount of tokens. The crowdsale contract can then +transferFrom+ the token contract owner balance to each buyer of the token as illustrated in <<approve_transferFrom_workflow>>.
+
+[NOTE]
+====
+An _Initial Coin Offering (ICO)_ is a crowdfunding mechanism used by companies and organizations to raise money by selling tokens. The term is derived from the "Initial Public Offering (IPO)", which is the process by which a public company offers shares for sale to investors on a stock exchange. Unlike the highly regulated IPO markets, ICOs are open, global and messy. The examples and explanations of ICOs in this book are not an endorsement of this type of fundraising.
+====
 
 [[approve_transferFrom_workflow]]
 .The two-step approve & transferFrom workflow of ERC20 tokens
@@ -565,13 +568,7 @@ If you're wondering what to do next, don't. There is no solution to this problem
 
 Perhaps you anticipated this problem. Most likely, you didn't. In fact, neither did hundreds of Ethereum users who accidentally transferred various tokens to contracts that didn't have any ERC20 capability. According to some estimates, tokens worth more than roughly $2.5 million USD (at the time of writing) have been "stuck" like this and are lost forever.
 
-One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer,is when they attempt to transfer to an exchange or another service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts serve a number of different functions, most often sweeping all funds sent to them to "cold storage" or another centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
-
-////
-
-TODO Surely part of the point in the previous para is that the exchange receiving contracts are only meant to receive ether, not ERC20 tokens? Maybe this should be stated?
-
-////
+One of the ways that users of ERC20 tokens can inadvertently lose their tokens in a transfer,is when they attempt to transfer to an exchange or another service. They copy an Ethereum address from the website of an exchange, thinking they can simply send tokens to it. However, many exchanges publish receiving addresses that are actually contracts! These contracts are only meant to receive ether, not ERC20 tokens, most often sweeping all funds sent to them to "cold storage" or another centralized wallet. Despite the many warnings saying "do not send tokens to this address", lots of tokens are lost this way.
 
 [[transfer_workflow_demo]]
 ==== Demonstrating the approve & transferFrom workflow
@@ -631,13 +628,6 @@ function () public payable { revert(); }
 
 Now that our +METFaucet.sol+ code is ready, we need to modify the migration script to deploy it. This migration script will be a bit more complex, as +METFaucet+ depends on the address of +METoken+. We will use a JavaScript promise to deploy the two contracts in sequence. Create +2_deploy_contracts.js+ as follows:
 
-////
-
-TODO: Label 2_deploy_contracts shouldn't start with a digit
-
-////
-
-[[2_deploy_contracts]]
 ----
 var METoken = artifacts.require("METoken");
 var METFaucet = artifacts.require("METFaucet");
