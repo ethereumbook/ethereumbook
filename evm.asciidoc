@@ -3,10 +3,6 @@
 
 At the heart of the Ethereum protocol and operation is the Ethereum Virtual Machine, or EVM for short. As you might guess from the name, it is a computation engine, not hugely dissimilar to the virtual machines of Microsoft's .NET framework or LLVM, or interpreters of other byte-code–compiled programming languages, such as Java. In this chapter we take a detailed look at the EVM, including its instruction set, structure and operation within the context of Ethereum state updates.
 
-////
-TODO: merge with Gas evm_chapter, keep EVM first. Use halting problem description at the end of EVM.
-////
-
 [[evm_description]]
 === What is it?
 The EVM is the part of Ethereum that handles smart contract deployment and execution. Simple value transfer transactions from one EOA to another don't need to involve it, practically speaking, but everything else will involve a state update computed by the EVM. At a high level, the EVM running on the Ethereum blockchain can be thought of as a global decentralized computer containing millions of executable objects, each with its own permanent data store.
@@ -529,23 +525,107 @@ Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)
 The +JUMPI+ instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have +jumpi(0x41, 1)+, which tells the EVM to execute the jump to the location of the +withdraw(uint256)+ function, and the execution of that function's code can proceed.
 
 [[turing_completeness_and_gas]]
-==== Turing completeness and Gas
+=== Turing completeness and Gas
 
 As we have already touched on, in simple terms, a system or programming language is _Turing complete_ if it can run any program. This capability, however, comes with an very important caveat: some programs take forever to run. An important aspect of this is that we can't tell, just by looking at a program, whether it will take forever or not to execute. We have to actually go through with the execution of the program and wait for it to finish to find out. Of course, if it is going to take forever to execute, we will have to wait forever to find out. This is called "the halting problem" and would be a huge problem for Ethereum if it were not addressed.
 
-Because of the halting problem, the Ethereum world computer is at risk of being asked to execute a program that never stops. This could be by accident or malice. We have discussed that Ethereum acts like a single-threaded machine, without any scheduler, and so if it became stuck in an infinite loop, without gas, this would mean it would become unusable. However, with gas, there is a fall-back: if after a pre-specified maximum amount of computation has been performed, the execution hasn't ended, everything is stopped anyway. This makes the EVM a _quasi_-Turing complete machine: it can run any program you feed into it, but only if it turns out that the program terminates within a particular amount of time. That limit isn't fixed in Ethereum - you can pay to increase it up to a maximum (called the "block gas limit") and everyone can agree to increase that maximum over time. Nevertheless, at any one time, there is a limit in place, and transactions that take too long to execute are abandoned.
+Because of the halting problem, the Ethereum world computer is at risk of being asked to execute a program that never stops. This could be by accident or malice. We have discussed that Ethereum acts like a single-threaded machine, without any scheduler, and so if it became stuck in an infinite loop, this would mean it would become unusable.
 
-As a smart contract developer, you must be very mindful of this. Some programs are simply too complex to have any practical chance of ever being successfully executed. A simple example would be a loop iterating over all the users of a DApp: when the number of users goes over a certain number, the loop will take longer than is allowed to complete, so the iteration will always fail. In such circumstances, "out of gas" protections need to be put in place, such as having a "gas supply check" at end of a potentially unbounded loop.
+However, with gas, there is a solution: if after a pre-specified maximum amount of computation has been performed, the execution hasn't ended, the execution of the program is halted by the EVM. This makes the EVM a _quasi_-Turing complete machine: it can run any program you feed into it, but only if the program terminates within a particular amount of computation. That limit isn't fixed in Ethereum - you can pay to increase it up to a maximum (called the "block gas limit") and everyone can agree to increase that maximum over time. Nevertheless, at any one time, there is a limit in place, and transactions that consume too much gas while executing are halted.
+
+In the following sections, we will look at gas and examine how it works in detail.
+
+[[gas]]
+=== Gas
+
+_Gas_ is Ethereum's unit for measuring the computational and storage resources required to perform actions on the Ethereum blockchain. In contrast to Bitcoin, whose transaction fees only take into account the size of a transaction in kilobytes, Ethereum must account for every computational step performed by transactions and smart contract code execution.
+
+Each operation performed by a transaction or contract costs a fixed amount of gas. Some examples, from the Ethereum yellow paper:
+
+* Adding two numbers costs 3 gas
+* Calculating a Keccak256 hash costs 30 gas + 6 gas for each 256 bits of data being hashed
+* Sending a transaction costs 21,000 gas
+
+Gas is a crucial component of Ethereum, and serves a dual role: as a buffer between the (volatile) price of Ethereum and the reward to miners for the work they do, and as a defense against denial of service attacks. To prevent accidental or malicious infinite loops or other computational wastage in the network, the initiator of each transaction is required to set a limit to the amount of computation they are willing to pay for. The gas system thereby disincentivizes attackers from sending "spam" transactions, as they must pay proportionately for the computational, bandwidth, and storage resources that they consume.
 
 [[gas_accounting_execution]]
-
 ==== Gas Accounting During Execution
+When an EVM is needed to complete a transaction, in the first instance it is given a gas supply equal to the amount specified by the +gas limit+ in the transaction. Every opcode that is executed has a cost in gas, and so the EVM's gas supply is reduced as the EVM steps through the program. Before each operation, the EVM checks that there is enough gas to pay for the operation's execution. If there isn't enough gas, execution is halted and the transaction is reverted. The originator of the transaction still pays for all the gas used at the specified +gas price+, however.
 
-Every transaction has an associated _gas limit_ and _gas price_ which are used to calculate fees for its EVM execution. We discussed this in detail in <<gas>>. These fees are used to compensate for the necessary resources of a transaction, such as computation and memory, to fully resolve the effects of a transaction, including smart contract execution. When an EVM is needed to complete a transaction, in the first instance it is given a gas supply equal to the amount specified by the +gas limit+. Every opcode that is executed has a cost in gas, and so the EVM's gas supply is reduced as the EVM steps through the program. Before each operation, the EVM checks that there is enough gas to pay for the operation's execution. If there isn't, execution is halted and the transaction is abandoned. The originator of the transaction still pays for all the gas used at the specified +gas price+, however. If the EVM gets to the end of execution successfully, without running out of gas, the value in ether of the gas remaining in the gas supply is refunded, based on the +gas price+ of the transaction.
+If the EVM reaches the end of execution successfully, without running out of gas, the  gas cost used is paid to the miner as a transaction fee, converted to ether based on the gas price specified in the transaction:
 
-Again, smart contract developers must be very mindful: if the +gas price+ required to get a transaction confirmed goes up, it could become economically unfeasible to perform some calculations.
+----
+miner fee = gas cost * gas price
+----
 
 
-[[evm_tools_references]]
-=== EVM Tools References
-* https://etherscan.io/opcode-tool[ByteCode To Opcode Disassembler] Useful to check/debug if compilation ran with integrity and for reverse-engineering purposes if the source code wasn't published.
+The gas remaining in the gas supply is refunded to the sender, again converted to ether based on the gas price specified in the transaction:
+
+----
+remaining gas = gas limit - gas cost
+refunded ether = remaining gas * gas price
+----
+
+If the gas used exceeds the specified gas limit at any point, i.e. if the transaction "runs of out gas" during execution, the operation is immediately terminated, raising the exception "Out of Gas". The transaction is reverted and all changes to the state are rolled back.
+
+Although the transaction was unsuccessful, the sender will be charged a transaction fee, as miners have already performed the computational work up to that point, and must be compensated for doing so.
+
+==== Gas accounting considerations
+
+The relative gas costs of the various operations that can be performed by the EVM have been carefully chosen to best protect the Ethereum blockchain from attack. You can see a detailed table of gas costs for different EVM opcodes in <<evm_opcodes_table>>.
+
+More computationally intensive operations cost more gas. For example, executing the +SHA3+ function is ten times more expensive (30 gas) than the +ADD+ operation (3 gas). More importantly, some operations such as +EXP+ require an additional payment based on the size of the operand. There is also a gas cost to using EVM memory and for storing data in a contract's on-chain storage.
+
+The importance of matching gas cost to the real-world cost of resources was demonstrated in 2016 when an attacker found and exploited a mismatch in costs. The attack generated transactions that were very computationally expensive, and made the Ethereum mainnet almost grind to a halt. This mismatch was resolved by a hard fork (codenamed "Tangerine Whistle") that tweaked the relative gas costs.
+
+==== Gas cost vs. gas price
+While the gas _cost_ is a measure of computation and storage used in the EVM, the gas itself also has a _price_ measured in ether. When performing a transaction, the sender specifies the gas price they are willing to pay (in ether) for each unit of gas, allowing the market to decide the relationship between the price of ether and the cost of computing operations (as measured in gas).
+
+----
+transaction fee = total gas used * gas price paid  (in ether)
+----
+
+When constructing a new block, miners on the Ethereum network can choose among pending transactions by selecting those which offer to pay a higher gas price. Offering a higher gas price will therefore incentivize miners to include your transaction and get it confirmed faster.
+
+In practice, the sender of a transaction will set a gas limit that is higher than or equal to the gas expected to be used. If the gas limit is set higher than the amount of gas consumed, the sender will receive a refund of the excess amount, as miners are only compensated for the work they actually perform.
+
+At the end of
+
+It is important to be clear about the distinction between the _gas cost_ and the _gas price_:
+
+*gas cost* - the number of units of gas required to perform a particular operation
+
+*gas price* - the amount of ether you are willing to pay per unit of gas when you send your transaction to the Ethereum network
+
+[TIP]
+====
+While gas has a price, it cannot be "owned" nor "spent". Gas exists only inside the Ethereum Virtual Machine (EVM) as a count of how much computational work is being performed. The sender is charged a transaction fee in ether, which is then converted to gas for EVM accounting and then back to ether as a transaction fee paid to the miners.
+====
+
+
+=== Negative gas cost
+
+Ethereum encourages the deletion of used storage variables and accounts by refunding some of the gas used during contract execution.
+
+There are 2 operations in the EVM with negative gas costs:
+
+1. Deleting a contract (SELFDESTRUCT) is worth a refund of 24,000 gas
+2. Changing a storage address from a non-zero value to zero (SSTORE[x] = 0) is worth a refund of 15,000 gas
+
+To avoid exploitation of the refund mechanism, the maximum refund for a transaction is set to half the total amount of gas used (rounded down).
+
+==== Block gas limit
+
+The block gas limit is the maximum amount of gas that may be consumed by all the transactions in a block, and constrains how many transactions can fit into a block.
+
+For example, let’s say we have 5 transactions whose gas limits have been set to 30,000, 30,000, 40,000, 50,000 and 50,000. If the block gas limit is 180,000, then any four of those transactions can fit in a block, while the fifth will have to wait for a future block. As previously discussed, miners decide which transactions to include in a block. Different miners are likely to select different combinations, mainly because they receive transactions from the network in a different order.
+
+If a miner tries to include a transaction that requires more gas than the current block gas limit, the block will be rejected by the network. Most Ethereum clients will stop you from issuing such a transaction by giving a warning along the lines of “transaction exceeds block gas limit”. The block gas limit on the Ethereum mainnet is 8 million gas at the time of writing according to https://etherscan.io, meaning that around 380 basic transactions (each consuming 21,000 gas) could fit into a block.
+
+==== Who decides what the block gas limit is?
+
+The miners on the network collectively decide the block gas limit. Individuals who want to mine on the Ethereum network use a mining program, such as ethminer, which connects to a Geth or Parity Ethereum client. The Ethereum protocol has a built-in mechanism where miners can vote on the gas limit so capacity can be increased or decreased in subsequent blocks. The miner of a block can vote to adjust the block gas limit by a factor of 1/1024 (0.0976%) in either direction. The result of this is an adjustable block size based on the needs of the network at the time. This mechanism is coupled with a default mining strategy where miners vote on a gas limit which is at least 4.7 million gas, but which targets a value of 150% of the average of recent total gas usage per block (using a 1024-block exponential moving average).
+
+=== Conclusions
+
+In this chapter we have worked with the Ethereum Virtual Machine, tracing the execution of various smart contracts and looking at how the EVM executes bytecode. We also look at gas, the EVM's accounting mechanism and how it solves the halting problem and protects Ethereum from denial of service attacks. Next, in <<consensus>>, we look at the mechanism used by Ethereum to achieve decentralized consensus.
