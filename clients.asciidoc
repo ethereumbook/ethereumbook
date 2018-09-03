@@ -134,11 +134,10 @@ If you want to sync in a reasonable amount of time and store all the development
 
 It’s difficult to predict how fast a blockchain's size will increase and when more disk space will be required, so it’s recommended to check the blockchain's latest size before you start syncing.
 
-////
-
-TODO: If I look at bitinfocharts.com, it currently quotes 667GB for the Ethereum database. Presumably this is unpruned? But there's no "pruned" figure separately listed. (I assume the requirement hasn't gone up from 80GB to 667GB since April!) Hence, it would be good for users to explain how to estimate a pruned figure, and perhaps explain more about the difference here. (Indeed, I find no mention of pruning anywhere else.)
-
-////
+[TIP]
+====
+The disk size requirements above assume you will be running a node with default settings, where the blockchain is "pruned" of old state data. If you instead run a full "archival" node, where all state is kept on disk, it will likely require more than 1TB of disk space.
+====
 
 *Ethereum:* https://bitinfocharts.com/ethereum/
 
@@ -157,20 +156,6 @@ Typically every blockchain will have their own version of Geth, while Parity pro
 =====
 
 Before we get started, you need to check some software is installed. If you've never done any software development on the computer you are currently using, you will probably need to install some basic tools. For the examples that follow, you will need to install +git+, the source-code management system; +golang+, the Go programming language and standard libraries; and Rust, a systems programming language.
-
-////
-
-TODO The level of instructions are a bit all over the place. For example, you explain in very basic terms how to use a terminal, but then you simply give URLs to install Go/Rust/Git from source. Not all the websites pointed to are easy to install from directly. (On the other hand, the instructions for installing the Ethereum clients are beautifully detailed.)
-
-It's admirable that you use Ubuntu as your main example, but I guess a lot more readers of the book will have macOS. Therefore, it would seem reasonable to give more detailed explanations about installation of dependencies on macOS too, using brew, for example. And giving even a hint to Windows users, for example about how to install Ubuntu on Windows, would be a big help too.
-
-Then, you'd only have to give higher-level instructions for two systems: Ubuntu and macOS, and you can give them at the +apt+/+brew install+ level. For Go, golang 1.10 is available in Ubuntu backports for 16.04, and in main for 18.04; that seems recent enough to me (again, I'd specifically point to documentation on how to enable backports for 16.04 users); for Rust, I agree that it's easier to point to the Rust web site, because 1.27 is required for Parity, and the instructions for installation are trivial (though they do assume curl is installed—probably safe?).
-
-In my experience, nothing beats sitting down with a few users who aren't experienced with these tools (I get surprising results even with experienced developers! for example a good friend of mine who uses Ubuntu full-time for Python and Rust development came unstuck trying to execute what I thought were obvious install instructions for a C/autotools-based project of mine) and running over your instructions until a couple of (fresh) volunteers can complete them without a hitch.
-
-You might also give an explicit reference to an online version of the installation instructions, so that, both as the dependencies change, and as you find new problems that some users have, you can improve and update them faster than new editions of the book are issued.
-
-////
 
 Git can be installed by following the instructions here:
 https://git-scm.com/
@@ -197,7 +182,7 @@ Parity also requires some software libraries, such as OpenSSL and libudev. To in
 
 [[install_parity_dependencies]]
 ----
-$ sudo apt-get install openssl libssl-dev libudev-dev
+$ sudo apt-get install openssl libssl-dev libudev-dev cmake
 ----
 
 For other operating systems, use the package manager of your OS or follow the Wiki instructions (https://github.com/paritytech/parity/wiki/Setup) to install the required libraries.
@@ -207,17 +192,11 @@ Now you have +git+, +golang+, +rust+, and necessary libraries installed, let's g
 [[parity]]
 ==== Parity
 
-////
-
-TODO Seems also to need cmake to build
-
-////
-
 Parity is an implementation of a full node Ethereum client and DApp browser. Parity was written from the "ground up" in Rust, a systems programming language, with the aim of building a modular, secure, and scalable Ethereum client. Parity is developed by Parity Tech, a UK company, and is released under the GPLv3 free software license.
 
 [NOTE]
 =====
-Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote much of the Parity client. Parity represents about 28% of the installed Ethereum client base.
+Disclosure: One of the authors of this book, Gavin Wood, is the founder of Parity Tech and wrote much of the Parity client. Parity represents about 25% of the installed Ethereum client base.
 =====
 
 To install Parity, you can use the Rust package manager +cargo+ or download the source code from GitHub. The package manager also downloads the source code, so there's not much difference between the two options. In the next section, we will show you how to download and compile Parity yourself.
@@ -243,14 +222,14 @@ Now, let's change to the +parity+ directory and use +cargo+ to build the executa
 [[parity_build]]
 ----
 $ cd parity
-$ cargo build
+$ cargo install
 ----
 
 If all goes well, you should see something like:
 
 [[parity_build_status]]
 ----
-$ cargo build
+$ cargo install
     Updating git repository `https://github.com/paritytech/js-precompiled.git`
  Downloading log v0.3.7
  Downloading isatty v0.1.1
@@ -268,11 +247,6 @@ $
 
 Let's try and run +parity+ to see if it is installed, by invoking the +--version+ option:
 
-////
-
-TODO This will not work, since parity is not yet installed. Since running `cargo install` seems to recompile everything (at least, it takes ages, even in a built tree, on my machine, and emits lots of "Compiling…" lines), I suggest running `cargo install` above, rather than `cargo build` as a second step. Further, this will probably not happen for all users, but on my system, user-wide autoconf configuration causes the +install+ command, which builds with different flags, to fail if the +build+ command is run first.
-
-////
 
 [[run_parity]]
 ----
@@ -387,26 +361,13 @@ Protocol Versions: [63 62]
 Network Id: 1
 Go Version: go1.8.3
 Operating System: linux
-GOPATH=/usr/local/src/gocode/
-GOROOT=/usr/local/go
+[...]
 
 ----
 
 Your +geth version+ command may show slightly different information, but you should see a version report much like the one above.
 
-Finally, we may want to copy the +geth+ command to our operating system's application directory (or a directory on the command-line execution path). On Linux, we'd use the following command:
-
-////
-
-TODO Wiser to copy to a user directory? Ubuntu's default setup adds +~/bin+ to +PATH+ if it exists. So, you could instead `mkdir -p ~/bin` then `cp ./build/bin/geth ~/bin`. Otherwise, suitable `chmod` and `chown` commands should be added to the following:  `chown root.root /usr/local/bin/geth` and `chmod 755 /usr/local/bin/geth` (the latter is necessary on systems where, like me, users have modified their default umask).
-
-////
-
-[[copy_geth_binary]]
-----
-$ sudo cp ./build/bin/geth /usr/local/bin
-----
-Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way," and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
+Don't start running +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks). <<first_sync>> explains the challenge with the initial synchronization of Ethereum's blockchain.
 
 
 [[first_sync]]
@@ -433,6 +394,14 @@ Parity does fast synchronization by default.
 Geth can only operate fast synchronization when starting with an empty block database. If you have already started syncing without "fast" mode, Geth cannot switch. It is faster to delete the blockchain data directory and start "fast" syncing from the beginning than to continue syncing with full validation. Be careful to not delete any wallets when deleting the blockchain data!
 =====
 
+==== Running geth or parity
+
+Now that you've understood the challenges of the "first sync", we're ready to start an Ethereum client and sync the blockchain. For both geth and parity, you can use the +--help+ option to see all the configuration parameters. Other than using +--fast+ for geth as outlined in <<first_sync>>, the default settings are usually sensible and appropriate for most uses. Choose how to configure any optional parameters to suit your needs, then start geth or parity to sync the chain. Then wait...
+
+[TIP]
+====
+Syncing the Ethereum blockchain will take anywhere from half a day on a very fast system with lots of RAM, to several days on a slower system.
+====
 
 [[json_rpc]]
 ==== JSON-RPC Interface
@@ -440,12 +409,6 @@ Geth can only operate fast synchronization when starting with an empty block dat
 Ethereum clients offer an Application Programming Interface (API) and a set of Remote Procedure Call (RPC) commands, which are encoded as JavaScript Object Notation (JSON). You will see this referred to as the _JSON-RPC API_. Essentially, the JSON-RPC API is an interface that allows us to write programs that use an Ethereum client as a _gateway_ to an Ethereum network and blockchain.
 
 Usually, the RPC interface is offered over as an HTTP service on port +8545+. For security reasons it is restricted, by default, to only accept connections from localhost (the IP address of your own computer which is +127.0.0.1+).
-
-////
-
-TODO the following para says "ensure that you have Geth configured and running", but we've not been told how to do that yet! Searching, I can't find any text that actually explains how to set up a running instance of Geth or Parity.
-
-////
 
 To access the JSON-RPC API, you can use a specialized library, written in the programming language of your choice, which provides "stub" function calls corresponding to each available RPC command. Or, you can manually construct HTTP requests and send/receive JSON encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth configured and running, then switch to a new terminal window (e.g. with `<Ctrl>+<Shift>+N` or `<Ctrl>+<Shift>+T` in an existing terminal window) as shown in <<curl_web3>>:
 
@@ -610,12 +573,3 @@ MyCrypto can be found at https://mycrypto.com
 ==== Mist
 
 Mist was the first Ethereum-enabled browser, built by the Ethereum Foundation. It also contains a browser-based wallet that was the first implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20 was also the main developer of Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-155). Mist runs a full node, and offers a full DApp browser with support for Swarm based storage and ENS addresses. Find it at https://github.com/ethereum/mist
-
-[[Parity]]
-==== Parity
-
-When you are running a Parity full node, it also provides a full wallet and DApp browser interface.
-
-////
-TODO: add Parity information
-////
