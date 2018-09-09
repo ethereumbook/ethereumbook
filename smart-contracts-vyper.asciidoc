@@ -1,5 +1,11 @@
 [[vyper_chap]]
-== Vyper: A contract-oriented programming language
+== Smart contracts and Vyper
+
+Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine (EVM) which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+
+In this chapter we will look at common problems with smart contracts, introduce the Vyper contract programming language and compare it to Solidity, demonstrating the differences.
+
+=== Vulnerabilities and Vyper
 
 https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed nearly one million deployed, Ethereum, smart contracts and found that many of these smart contracts contained serious vulnerabilities. During their analysis, the researchers outlined three basic categories of trace vulnerabilities. The categories include:
 
@@ -9,14 +15,12 @@ Greedy contracts:: Smart contracts which can reach a state in which they cannot 
 
 Prodigal contracts:: Smart contracts which can be made to release Ether to arbitrary addresses
 
-Vulnerabilities are introduced into smart contracts via code. It may be strongly argued that these and other vulnerabilities are not intentionally introduced into smart contracts. Nevertheless, undesirable smart contract code evidently results in the unexpected loss of funds for Ethereum users, and this is not ideal.
-
-Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine (EVM) which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+Vulnerabilities are introduced into smart contracts via code. It may be strongly argued that these and other vulnerabilities are not intentionally introduced into smart contracts. Nevertheless, undesirable smart contract code evidently results in the unexpected loss of funds for Ethereum users, and this is not ideal. Vyper is designed to make it easier to write secure code, or equally to make it more difficult to accidentally write misleading or vulnerable code.
 
 [[comparison_to_solidity_sec]]
 === Comparison to Solidity
 
-One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. In this section we explain what those features are and why they're omitted, for those considering developing smart contracts in Vyper.
+One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. It is important for those considering developing smart contracts, in Vyper, to understand what features Vyper does _not_ have, and why. Therefore, in this next section, we will explore those features and provide justification for why they have been omitted.
 
 ==== Modifiers
 
@@ -32,21 +36,7 @@ function changeOwner(address _newOwner)
 }
 ----
 
-As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. Whilst modifiers are powerful, they can also be misleading: they change the environment of the function they modify, because they wrap the modified function's code, and their effects may not be obvious.
-
-////
-
-TODO: Check the above para. I rewrote the original because a) I couldn't quite understand what it was trying to say, and b) to the extent that I understood it, I didn't agree. Compared to, e.g. Lisp "advice" functions, Solidity modifiers are a) static, and b) explicitly mentioned in the function they modify, so that reasoning is simplified (you can't add a modifier at run-time) and it's obvious that a modifier is used. In this sense, they're no worse than called functions: to understand the behavior of a function, you must study all its callees.
-
-So I tried to work out what is different about modifiers. The only thing I can think of is that, unlike a callee, its effects are pervasive: it can change anything about the environment of the function it modifies.
-
-Forgive me if I've overlooked something!
-
-(FWIW I'd retain modifiers, but restrict them to pure functions ending with an assert or require, remove the magic "_" syntax, and allow them after the "returns" part of the function prototype so they can still be used as post-conditions (in their current position they'd run as pre-conditions). This covers most use cases while making them just as easy to audit as inline code, with the absolute assurance that they can't change the function's execution in any way other than prevent its successful completion. This would prevent modifiers being used to normalise inputs; one might consider allowing assignments just to the arguments to allow that too.
-
-One could also argue that for auditing purposes an IDE could just as easily show a function with all its modifiers "expanded".)
-
-////
+As we can see below, the modifier called `onlyBy` enforces a rule in relation to ownership. As you can see, this particular modifier acts as a mechanism to perform a pre-check on behalf of the `changeOwner` function.
 
 [source,javascript]
 ----
@@ -57,7 +47,45 @@ modifier onlyBy(address _account)
 }
 ----
 
-Modifiers are typically used to perform a single check before a function's execution. Hence, Vyper's recommendation is to do away with modifiers altogether and simply use in-line checks and asserts as part of a function. Doing this improves auditability and readability, as the reader doesn't have to mentally (or manually) "wrap" the modifier code around the function to see what it does.
+Modifiers are not just there to perform checks, as shown above. In fact, as modifiers, they can significantly change a smart contract's environment, in the context of the calling function. Put simply, modifiers are pervasive.
+
+Let's look at another Solidity style example.
+
+[source, javascript]
+----
+enum Stages {
+    SafeStage
+    DangerStage,
+    FinalStage
+}
+
+uint public creationTime = now;
+Stages public stage = Stages.SafeStage;
+
+function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+}
+
+modifier stageTimeConfirmation() {
+    if (stage == Stages.SafeStage &&
+                now >= creationTime + 10 days)
+        nextStage();
+    _;
+}
+
+function a()
+    public
+    stageTimeConfirmation
+    // More code goes here
+{
+}
+----
+
+On one hand, developers should always check any other code, which their own code is calling. However, it is possible that under certain situations (like time constraints or exhaustion, resulting in lack of concentration) a developer may overlook a single line of code. This is especially the case if a developer has to jump around inside a large file whilst mentally keeping track of the function call hierarchy and committing the state of smart contract variables to memory.
+
+Let's look at the above example, in a bit more depth. Imagine that a developer is writing a public function called `a`. The developer is new to this contract and is utilizing a modifier written by someone else. At a glance it appears that the `stageTimeConfirmation` modifier is simply performing some checks in relation to the age of the contract in relation to the calling function. What the developer may _not_ realize is that the modifier is also calling another function; `nextStage`. In this, simplistic demonstration scenario, the overall result of simply calling the public function `a`, results in the smart contract's `stage` variable moving from `SafeStage` to `DangerStage`.
+
+Vyper's has done away with modifiers altogether. The recommendations from Vyper are as follows. If only performing assertions with modifiers, then simply use in-line checks and asserts as part of the function. If modifying smart contract state and so forth, then again, make these changes explicitly part of the function. Doing this improves audit-ability and readability, as the reader doesn't have to mentally (or manually) "wrap" the modifier code around the function to see what it does.
 
 ==== Class inheritance
 
@@ -161,21 +189,6 @@ Vyper handles pre-conditions, post-conditions and state changes explicitly. Whil
 * Effects - What effects will this smart contract code have on the condition of the state variables upon execution i.e. what _will_ be affected, and what _will not_ be affected? Are these effects congruent with the smart contract's intentions?
 * Interaction - Now that the first two steps have been exhaustively dealt with, it is time to run the code. Before deployment, logically step through the code and consider all of the possible permanent outcomes, consequences and scenarios of executing the code, including interactions with other contracts.
 
-[[a_new_programming_paradigm_sec]]
-=== A new programming paradigm
-
-Vyper's creation opens the door to a new programming paradigm. By removing class inheritance, as well as other functionality, it can be said that Vyper is leaning away from the traditional Object Oriented Programming (OOP) paradigm.
-
-Historically, OOP has provided a mechanism for representing real world objects. For example, OOP allows the instantiation of an employee object which can inherit from a person class. However, it is arguably ill-suited to smart contracts, where the most important aspect is value transfer; what one might call "transactional programming". Put simply, transactional computations are worlds apart from real world objects. For example, when was the last time you held a transaction or a forward chaining business rule in your hand?
-
-Vyper is neither an OOP language nor a functional language (the full list of reasons is beyond the scope of this chapter). For this reason, we might boldly suggest, even at this early stage of development, to describe it as a new software development paradigm, one which endeavors to future-proof blockchain executable code. One which prevents the catastrophic loss of funds. Past disasters have created opportunities for further research and development in this space, which could result in a new paradigm for software development.
-
-////
-
-TODO: The original version of the preceding paragraph was trying to make a point about immutability, but it would need more explanation to make; as it is, it was merely confusing, so I've taken it out.
-
-////
-
 [[decorators_sec]]
 === Decorators
 Decorators like `@private` `@public` `@constant` and `@payable` may be used at the start of each function.
@@ -188,7 +201,62 @@ Decorators like `@private` `@public` `@constant` and `@payable` may be used at t
 
 +@payable+ decorator:: Only functions with the `@payable` decorator are allowed to transfer value.
 
-Vyper implements the logic of decorators explicitly. For example, the Vyper compilation process will fail if a function has both a `@payable` decorator and a `@constant` decorator. This makes sense because a function that transfers value has by definition updated the state, so cannot be `@constant`. Each Vyper function must be decorated with either `@public` or `@private` (but not both!).
+Vyper implements https://github.com/ethereum/vyper/blob/master/vyper/signatures/function_signature.py#L93[the logic of decorators] explicitly. For example, the Vyper compilation process will fail if a function has both a `@payable` decorator and a `@constant` decorator. This makes sense because a function that transfers value has by definition updated the state, so cannot be `@constant`. Each Vyper function must be decorated with either `@public` or `@private` (but not both!).
+
+[[order_of_functions_sec]]
+=== Function and variable ordering
+
+Each individual Vyper smart contract consists of a single Vyper file only. In other words, all of a given Vyper smart contract's code, including all functions, variables and so forth exist in one place. Vyper requires that each smart contract's function and variable declarations are physically written in a particular order. Solidity does not have this requirement at all. Let's take a quick look at a Solidity example.
+
+[source,javascript]
+----
+pragma solidity ^0.4.0;
+
+contract ordering {
+
+    function topFunction()
+    external
+    returns (bool) {
+        initiatizedBelowTopFunction = this.lowerFunction();
+        return initiatizedBelowTopFunction;
+    }
+
+    bool initiatizedBelowTopFunction;
+    bool lowerFunctionVar;
+
+    function lowerFunction()
+    external
+    returns (bool) {
+        lowerFunctionVar = true;
+        return lowerFunctionVar;
+    }
+
+}
+----
+
+In the above Solidity example the function called _topFunction_ is calling another function _lowerFunction_. This function called _topFunction_ is also assigning a value to a variable called _initiatizedBelowTopFunction_. As you can see, Solidity does not require these functions and variables to be physically declared before being called upon by the excecuting code. The above is valid Solidity code which will compile succesfully.
+
+Vyper's ordering requirements are not a new thing, in fact these ordering requirements have always been present in Python programming. The ordering, required by Vyper, is straight forward and logical as we will see in this next example.
+
+[source,python]
+----
+# Declare a variable called theBool
+theBool: public(bool)
+
+# Declare a function called topFunction
+@public
+def topFunction() -> bool:
+    # Assign a value to the already declared function called theBool
+    self.theBool = True
+    return self.theBool
+
+# Declare a function called lowerFunction
+@public
+def lowerFunction():
+    # Call the already declared function called topFunction
+    assert self.topFunction()
+----
+The above Vyper syntax example shows the correct ordering of functions and variables in a Vyper smart contract. Note how the variable _theBool_ and the function _topFunction_ are declared before they are assigned a value and called respectively. If _theBool_ was declared below _topFunction_ or if _topFunction_ was declared below _lowerFunction_ this contract would not compile.
 
 [[online_code_editor_and_compiler_sec]]
 === Online code editor and compiler
@@ -236,12 +304,6 @@ Vyper implements ERC20 as a precompiled contract, allowing these smart contracts
 token: address(ERC20)
 ----
 
-[[opcodes_sec]]
-=== Opcodes
-The code for smart contracts is mainly written in high level languages like Solidity or Vyper. The compiler is responsible for compiling high level code to EVM bytecode, which is directly implemented by the EVM. The EVM opcodes are of course defined in the Ethereum Yellow Paper.
+=== Conclusions
 
-////
-
-TODO I removed the pointers to and discussion of the opcode enumerations in the Solidity and Vyper compilers, because I can think of no reason for including them. As the text already (and still) says, the opcodes are defined in the Yellow Paper. There is nothing interesting about their "implementation" in a particular compiler, other of course than that it should be correct!
-
-////
+Vyper is a powerful and interesting new contract-oriented programming languages. Its design is biased towards "correctness", at the expense of some flexibility. This may allow programmers to write better smart contracts and avoid certain pitfalls that cause serious vulnerabilities to arise. Next, we will look at smart contract security in more detail. Some of the nuances of Vyper design may become more apparent once you read about all the possible security problems that can arise in smart contracts.
