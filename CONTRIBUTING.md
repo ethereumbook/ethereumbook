@@ -32,7 +32,7 @@ Before contributing with a Pull Request, please made sure about the current **PR
 If the current **PROJECT STATUS** is **CONTENT FREEZE**, please keep these points in mind;
 
 * Please submit only PRs for errors that a non-domain-expert copy editor might miss. Do not submit PRs for typos, grammar and syntax, as those are part of the copy editors job.
-* Any changes will have to be applied manually (by the Author) after copy edit and before final proof, if the copy editor doesn't catch the same errors.
+* Please don't merge code. Any changes will have to be applied manually (by the Author) after copy edit and before final proof, if the copy editor doesn't catch the same errors.
 
 
 The best way to contribute to this book is by making a pull request:
