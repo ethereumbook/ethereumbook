@@ -22,7 +22,18 @@ Added by: @aantonop
 ////
 ```
 
+## Current Project STATUS
+**CONTENT FREEZE**
+
 ## Contributing with a Pull Request
+
+Before contributing with a Pull Request, please made sure about the current PROJECT STATUS.
+
+If the current **PROJECT STATUS** is **CONTENT FREEZE**, please keep these points in mind;
+
+* Any changes will have to be applied manually (by the Author) after copy edit and before final proof, if the copy editor doesn't catch the same errors.
+* Please submit only PRs for errors that a non-domain-expert copy editor might miss. Do not submit PRs for typos, grammar and syntax, as those are part of the copy editors job.
+
 
 The best way to contribute to this book is by making a pull request:
 
