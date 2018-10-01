@@ -5,31 +5,31 @@
 
 At a high level, a wallet is a software application that serves as the primary user interface to Ethereum. The wallet controls access to a user's money, managing keys and addresses, tracking the balance, and creating and signing transactions. In addition, some Ethereum wallets can also interact with contracts, such as ERC20 tokens.
 
-More narrowly, from a programmer's perspective, the word _wallet_ refers to the system used to store and manage a user's keys. Every wallet has a key management component. For some wallets, that's all there is. Other wallets are part of a much broader category, that of _browsers_, which are interfaces to Ethereum-based decentralized applications, or _DApps_, which we will examine in more detail in <<decentralized_applications_chap>>. There are no clear lines of distinction between the various categories that are conflated under the term wallet.
+More narrowly, from a programmer's perspective, the word _wallet_ refers to the system used to store and manage a user's keys. Every wallet has a key-management component. For some wallets, that's all there is. Other wallets are part of a much broader category, that of _browsers_, which are interfaces to Ethereum-based decentralized applications, or _DApps_, which we will examine in more detail in <<decentralized_applications_chap>>. There are no clear lines of distinction between the various categories that are conflated under the term wallet.
 
-In this section we will look at wallets as containers for private keys, and as systems for managing these keys.
+In this chapter we will look at wallets as containers for private keys, and as systems for managing these keys.
 
 [[wallet_tech_overview]]
 === Wallet Technology Overview
 
 In this section we summarize the various technologies used to construct user-friendly, secure, and flexible Ethereum wallets.
 
-One key consideration in designing wallets is balancing convenience and privacy. The most convenient Ethereum wallet is one with a single private key and address that you re-use for everything. Unfortunately, such a solution is a privacy nightmare, as anyone can easily track and correlate all your transactions. Using a new key for every transaction is best for privacy, but becomes very difficult to manage. The correct balance is difficult to achieve, but that's why good wallet design is paramount.
+One key consideration in designing wallets is balancing convenience and privacy. The most convenient Ethereum wallet is one with a single private key and address that you reuse for everything. Unfortunately, such a solution is a privacy nightmare, as anyone can easily track and correlate all your transactions. Using a new key for every transaction is best for privacy, but becomes very difficult to manage. The correct balance is difficult to achieve, but that's why good wallet design is paramount.
 
 ((("wallets", "contents of")))A common misconception about Ethereum is that Ethereum wallets contain ether or tokens. In fact, very strictly speaking, the wallet holds only keys. The ether or other tokens are recorded on the Ethereum blockchain. Users control the tokens on the network by signing transactions with the keys in their wallets. ((("keychains")))In a sense, an Ethereum wallet is a _keychain_. Having said that, given that the keys held by the wallet are the only things that are needed to transfer ether or tokens to others, in practice this distinction is fairly irrelevant. Where the difference does matter is in changing one's mindset from dealing with the centralized system of conventional banking (where only you, and the bank, can see the money in your account, and you only need convince the bank that you want to move funds to make a transaction) to the decentralized system of blockchain platforms (where everyone can see the ether balance of an account, although they probably don't know the account's owner, and everyone needs to be convinced the owner wants to move funds for a transaction to be enacted). In practice this means that there is an independent way to check an account's balance, without needing its wallet. Moreover, you can move your account handling from your current wallet to a different wallet, if you grow to dislike the wallet app you started out using.
 
-[TIP]
+[NOTE]
 ====
 Ethereum wallets contain keys, not ether or tokens. Wallets are like keychains containing pairs of private and public keys. Users sign transactions with the private keys, thereby proving they own the ether. The ether is stored on the blockchain.
 ====
 
 ((("wallets", "types of", "primary distinctions")))There are two primary types of wallets, distinguished by whether the keys they contain are related to each other or not.
 
-((("JBOK wallets", seealso="wallets")))((("wallets", "types of", "JBOK wallets")))((("nondeterministic wallets", seealso="wallets")))The first type is a _nondeterministic wallet_, where each key is independently generated from a different random number. The keys are not related to each other. This type of wallet is also known as a JBOK wallet from the phrase "Just a Bunch Of Keys".
+((("JBOK wallets", seealso="wallets")))((("wallets", "types of", "JBOK wallets")))((("nondeterministic wallets", seealso="wallets")))The first type is a _nondeterministic wallet_, where each key is independently generated from a different random number. The keys are not related to each other. This type of wallet is also known as a JBOK wallet, from the phrase "Just a Bunch of Keys.&#x201d;
 
-((("deterministic wallets", seealso="wallets")))The second type of wallet is a _deterministic wallet_, where all the keys are derived from a single master key, known as the _seed_. All the keys in this type of wallet are related to each other and can be generated again if one has the original seed. ((("key derivation methods")))There are a number of different _key derivation_ methods used in deterministic wallets. ((("hierarchical deterministic (HD) wallets", seealso="wallets")))The most commonly-used derivation method uses a tree-like structure and is known as a _hierarchical deterministic_ or _HD_ wallet.
+((("deterministic wallets", seealso="wallets")))The second type of wallet is a _deterministic wallet_, where all the keys are derived from a single master key, known as the _seed_. All the keys in this type of wallet are related to each other and can be generated again if one has the original seed. ((("key derivation methods")))There are a number of different _key derivation_ methods used in deterministic wallets. ((("hierarchical deterministic (HD) wallets", seealso="wallets")))The most commonly-used derivation method uses a tree-like structure, as described in <<hd_wallets>>.
 
-((("mnemonic code words")))To make deterministic wallets slightly more secure against data-loss accidents, such as having your phone stolen, or dropping it in the toilet, the seeds are often encoded as a list of words (in English or another language) for you to write down and use in the event of an accident. Such a list is known as the wallet's _mnemonic code words_. Of course, if someone gets hold of your mnemonic code words, then they can also recreate your wallet and thus gain access to your ether and smart contracts. As such, be very, very careful with your recovery word list! Never store it electronically, in a file, on your computer or phone. Write it down on paper and store it in a safe and secure place.
+((("mnemonic code words")))To make deterministic wallets slightly more secure against data-loss accidents, such as having your phone stolen or dropping it in the toilet, the seeds are often encoded as a list of words (in English or another language) for you to write down and use in the event of an accident. These are known as the wallet's _mnemonic code words_. Of course, if someone gets hold of your mnemonic code words, then they can also recreate your wallet and thus gain access to your ether and smart contracts. As such, be very, very careful with your recovery word list! Never store it electronically, in a file, on your computer or phone. Write it down on paper and store it in a safe and secure place.
 
 The next few sections introduce each of these technologies at a high level.
 
@@ -37,9 +37,9 @@ The next few sections introduce each of these technologies at a high level.
 [[random_wallet]]
 ==== Nondeterministic (Random) Wallets
 
-((("wallets", "types of", "nondeterministic (random) wallets")))In the first Ethereum wallet (produced for the Ethereum pre-sale), each wallet file stored a single randomly-generated private key. Such wallets are being replaced with deterministic wallets because these "old style" wallets are in many ways inferior. For example, it is considered good practice to avoid Ethereum address reuse as part of maximizing your privacy while using Ethereum, i.e. to use a new address (which needs a new private key) every time you receive funds. You can go further and use a new address for each transaction, although this can get expensive if you deal a lot with tokens. To follow this practice, a nondeterministic wallet will need to regularly increase its list of keys, which means you will need to make regular backups. If you ever lose your data (disk failure, drink accident, phone stolen) before you've managed to back-up your wallet, you lose access to your funds and smart contracts. The "type 0" nondeterministic wallets are the hardest to deal with, because they create a new wallet file for every new address in a "just in time" manner.
+((("wallets", "types of", "nondeterministic (random) wallets")))In the first Ethereum wallet (produced for the Ethereum pre-sale), each wallet file stored a single randomly generated private key. Such wallets are being replaced with deterministic wallets because these "old-style" wallets are in many ways inferior. For example, it is considered good practice to avoid Ethereum address reuse as part of maximizing your privacy while using Ethereum&#x2014;i.e., to use a new address (which needs a new private key) every time you receive funds. You can go further and use a new address for each transaction, although this can get expensive if you deal a lot with tokens. To follow this practice, a nondeterministic wallet will need to regularly increase its list of keys, which means you will need to make regular backups. If you ever lose your data (disk failure, drink accident, phone stolen) before you've managed to back up your wallet, you will lose access to your funds and smart contracts. The "type 0" nondeterministic wallets are the hardest to deal with, because they create a new wallet file for every new address in a "just in time" manner.
 
-Nevertheless, many Ethereum clients (including +geth+) use a _keystore_ file, which is a JSON-encoded file that contains a single (randomly generated) private key, encrypted by a passphrase for extra security. The JSON file contents look like this:
+Nevertheless, many Ethereum clients (including +geth+) use a _keystore_ file, which is a JSON-encoded file that contains a single (randomly generated) private key, encrypted by a passphrase for extra security. The JSON file's contents look like this:
 
 [[keystore_example]]
 [source,json]
@@ -48,7 +48,8 @@ Nevertheless, many Ethereum clients (including +geth+) use a _keystore_ file, wh
     "address": "001d3f1ef827552ae1114027bd3ecf1f086ba0f9",
     "crypto": {
         "cipher": "aes-128-ctr",
-        "ciphertext": "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
+        "ciphertext":
+            "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
         "cipherparams": {
             "iv": "d10c6ec5bae81b6cb9144de81037fa15"
         },
@@ -58,7 +59,8 @@ Nevertheless, many Ethereum clients (including +geth+) use a _keystore_ file, wh
             "n": 262144,
             "p": 1,
             "r": 8,
-            "salt": "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
+            "salt":
+                "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
         },
         "mac": "594c8df1c8ee0ded8255a50caf07e8c12061fd859f4b7c76ab704b17c957e842"
     },
@@ -67,26 +69,26 @@ Nevertheless, many Ethereum clients (including +geth+) use a _keystore_ file, wh
 }
 ----
 
-The keystore format uses a _Key Derivation Function (KDF)_, also known as a password stretching algorithm, which protects against brute-force, dictionary, and rainbow table attacks. In simple terms, the private key is not encrypted by the passphrase directly. Instead, the passphrase is _stretched_, by repeatedly hashing it. The hashing function is repeated for 262,144 rounds, which can be seen in the keystore JSON as the parameter +crypto.kdfparams.n+. An attacker trying to brute-force the passphrase would have to apply 262,144 rounds of hashing for every attempted passphrase, which slows down the attack sufficiently to make it infeasible for passphrases of sufficient complexity and length.
+The keystore format uses a _key derivation function_ (KDF), also known as a password stretching algorithm, which protects against brute-force, dictionary, and rainbow table attacks. In simple terms, the private key is not encrypted by the passphrase directly. Instead, the passphrase is _stretched_, by repeatedly hashing it. The hashing function is repeated for 262,144 rounds, which can be seen in the keystore JSON as the parameter +crypto.kdfparams.n+. An attacker trying to brute-force the passphrase would have to apply 262,144 rounds of hashing for every attempted passphrase, which slows down the attack sufficiently to make it infeasible for passphrases of sufficient complexity and length.
 
-There are a number of software libraries that can read and write the keystore format, such as the JavaScript library +keythereum+:
-
-https://github.com/ethereumjs/keythereum
+There are a number of software libraries that can read and write the keystore format, such as the JavaScript library https://github.com/ethereumjs/keythereum[+keythereum+].
 
 [TIP]
 ====
-The use of nondeterministic wallets is discouraged for anything other than simple tests. They are too cumbersome to back up and use for anything but the most basic of situations. Instead, use an industry-standard&#x2013;based _HD wallet_ with a _mnemonic_ seed for backup.
+The use of nondeterministic wallets is discouraged for anything other than simple tests. They are too cumbersome to back up and use for anything but the most basic of situations. Instead, use an industry-standard&#x2013;based HD wallet with a mnemonic seed for backup.
 ====
 
 [[deterministic_wallets]]
 ==== Deterministic (Seeded) Wallets
 
-((("wallets", "types of", "deterministic (seeded) wallets")))Deterministic or "seeded" wallets are wallets that contain private keys that are all derived from a single _seed_. The seed is a randomly-generated number that is combined with other data, such as an index number or "chain code" (see <<hd_wallets>>), to derive any number of private keys. In a deterministic wallet, the seed is sufficient to recover all the derived keys, and therefore a single backup, at creation time, is sufficient to secure all the funds and smart contract access of the wallet. The seed is also sufficient for a wallet export or import, allowing for easy migration of all the keys between different wallet implementations. This design also makes the security of the seed of upmost importance, as only the seed is needed to gain access to the entire wallet. On the other hand, being able to focus security efforts on a single piece of data can be seen as an advantage.
+((("wallets", "types of", "deterministic (seeded) wallets")))Deterministic or "seeded" wallets are wallets that contain private keys that are all derived from a single master key, or seed. The seed is a randomly generated number that is combined with other data, such as an index number or "chain code" (see <<extended_keys>>), to derive any number of private keys. In a deterministic wallet, the seed is sufficient to recover all the derived keys, and therefore a single backup, at creation time, is sufficient to secure all the funds and smart contracts in the wallet. The seed is also sufficient for a wallet export or import, allowing for easy migration of all the keys between different wallet implementations.
+
+This design makes the security of the seed of utmost importance, as only the seed is needed to gain access to the entire wallet. On the other hand, being able to focus security efforts on a single piece of data can be seen as an advantage.
 
 [[hd_wallets]]
-==== HD Wallets (BIP-32/BIP-44)
+==== Hierarchical Deterministic Wallets (BIP-32/BIP-44)
 
-((("wallets", "types of", "hierarchical deterministic (HD) wallets")))((("hierarchical deterministic (HD) wallets")))((("Bitcoin improvement proposals", "Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))Deterministic wallets were developed to make it easy to derive many keys from a single seed. Currently, the most advanced form of deterministic wallets is the hierarchical deterministic (HD) wallet defined by Bitcoin's BIP-32 standard. HD wallets contain keys derived in a tree structure, such that a parent key can derive a sequence of child keys, each of which can derive a sequence of grandchild keys, and so on. This tree structure is illustrated in <<hd_wallets_figure>>.
+((("wallets", "types of", "hierarchical deterministic (HD) wallets")))((("hierarchical deterministic (HD) wallets")))((("Bitcoin improvement proposals", "Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))Deterministic wallets were developed to make it easy to derive many keys from a single seed. Currently, the most advanced form of deterministic wallet is the _hierarchical deterministic_ (HD) wallet defined by Bitcoin's https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki[_BIP-32 standard_]. HD wallets contain keys derived in a tree structure, such that a parent key can derive a sequence of child keys, each of which can derive a sequence of grandchild keys, and so on. This tree structure is illustrated in <<hd_wallets_figure>>.
 
 [[hd_wallets_figure]]
 .HD wallet: a tree of keys generated from a single seed
