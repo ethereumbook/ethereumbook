@@ -1,127 +1,133 @@
 [[decentralized_applications_chap]]
 == Decentralized Applications (DApps)
 
-In this chapter we will explore the world of _Decentralized Applications_ or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic and payment functions of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming etc (see <<image_web3_suite>>).
+In this chapter we will explore the world of _decentralized applications_, or _DApps_. From the early days of Ethereum, the founders' vision was much broader than "smart contracts": no less than reinventing the web and creating a new world of DApps, aptly called _web3_. Smart contracts are a way to decentralize the controlling logic and payment functions of applications. Web3 DApps are about decentralizing all other aspects of an application: storage, messaging, naming, etc. (see <<image_web3_suite>>).
 
 [[image_web3_suite]]
-.Web3: A decentralized web using smart contracts and P2P Technologies
+.Web3: A decentralized web using smart contracts and P2P technologies
 image::images/web3suite.png["Web3: A decentralized web using smart contracts and P2P Technologies"]
 
-While "decentralized apps" are an audacious vision of the future, the term "DApp" is often applied to any smart contract with a web front end. Some of these so-called DApps are highly centralized applications (CApps?). Beware of false DApps!
+[WARNING]
+====
+While "decentralized apps" are an audacious vision of the future, the term "DApp" is often applied to any smart contract with a web frontend. Some of these so-called DApps are highly centralized applications (CApps?). Beware of false DApps!
+====
 
-In this section we will develop and deploy a DApp: an auction platform. You can find the source code in the book's repository under +code/auction_dapp+. We will look at each apsect of an auction application and see how we can decentralize the application as much as possible.
+In this chapter we will develop and deploy a sample DApp: an auction platform. You can find the source code in the book's repository under https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp[code/auction_dapp]. We will look at each aspect of an auction application and see how we can decentralize the application as much as possible. First, though, let's take a closer look at the defining characteristics and advantages of DApps.
 
 [[what_is_a_dapp_sec]]
-=== What is a DApp?
+=== What Is a DApp?
 
-A Decentralized Application, or _DApp_, is an application which is mostly or entirely decentralized.
+A DApp is an application that is mostly or entirely decentralized.
 
 Consider all the possible aspects of an application that may be decentralized:
 
-* Front-end software
-* Back-end software (application logic)
+* Backend software (application logic)
+* Frontend software
 * Data storage
-* Name resolution
 * Message communications
+* * Name resolution
 
-Each of these can be somewhat centralized or somewhat decentralized. For example, a front-end can be developed as a web app that runs on a centralized server, or as a mobile app that runs on your device. The back-end and storage can be on private servers and proprietary databases, or a smart contract and P2P storage.
+Each of these can be somewhat centralized or somewhat decentralized. For example, a frontend can be developed as a web app that runs on a centralized server, or as a mobile app that runs on your device. The backend and storage can be on private servers and proprietary databases, or you can use a smart contract and P2P storage.
 
 There are many advantages to creating a DApp that a typical centralized architecture can not provide:
 
-1) Resiliency: by having the business-logic controlled by a smart contract, a DApp back-end will be fully distributed and managed on a blockchain platform. Unlike deploying an application on a centralized server, a DApp will have no downtime and will continue to be available as long as the platform is still operating.
+Resiliency::
+Because the business logic is controlled by a smart contract, a DApp backend will be fully distributed and managed on a blockchain platform. Unlike an application deployed on a centralized server, a DApp will have no downtime and will continue to be available as long as the platform is still operating.
 
-2) Transparency: the on-chain nature of a DApp allows everyone to inspect the code and be more sure about its function. Any interaction with the DApp will be stored forever in the blockchain.
+Transparency::
+The on-chain nature of a DApp allows everyone to inspect the code and be more sure about its function. Any interaction with the DApp will be stored forever in the blockchain.
 
-3) Censorship Resistance: as long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference from any centralized control. No service provider, or even the owner of the smart contract, can alter the code once it is deployed on the network.
+Censorship resistance::
+As long as a user has access to an Ethereum node (running one if necessary), the user will always be able to interact with a DApp without interference from any centralized control. No service provider, or even the owner of the smart contract, can alter the code once it is deployed on the network.
 
-In the Ethereum ecosystem as it stands today, there are very few truly decentralized apps - most still rely on centralized services and servers for some part of their operation. In the future, we expect that it will be possible for every part of any DApp to be operated in a fully decentralized way.
+In the Ethereum ecosystem as it stands today, there are very few truly decentralized apps&#x2014;most still rely on centralized services and servers for some part of their operation. In the future, we expect that it will be possible for every part of any DApp to be operated in a fully decentralized way.
 
 [[blockchain_smart_contracts_sec]]
-==== Smart contracts "back end"
+==== Backend (Smart Contract)
 
-In a DApp, smart contracts are used to store the business logic (program code) and the related state of your application. You can think of a smart contract replacing a server-side (a.k.a. "back-end") component in a regular application. This is an oversimplification, of course. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept as minimal as possible. It is therefore important to identify which aspects of the application need a trusted and decentralized execution platform.
+In a DApp, smart contracts are used to store the business logic (program code) and the related state of your application. You can think of a smart contract replacing a server-side (aka "backend") component in a regular application. This is an oversimplification, of course. One of the main differences is that any computation executed in a smart contract is very expensive and so should be kept as minimal as possible. It is therefore important to identify which aspects of the application need a trusted and decentralized execution platform.
 
-Ethereum smart contracts allow you to build architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go, their complexity restricted only by the block gas limit. After deploying your smart contract, your business logic could well be used by many other developers in the future.
+Ethereum smart contracts allow you to build architectures in which a network of smart contracts call and pass data between each other, reading and writing their own state variables as they go, with their complexity restricted only by the block gas limit. After you deploy your smart contract, your business logic could well be used by many other developers in the future.
 
 One major consideration of smart contract architecture design is the inability to change the code of a smart contract once it is deployed. It can be deleted if it is programmed with an accessible +SELFDESTRUCT+ opcode, but other than complete removal, the code cannot be changed in any way.
 
-The second major consideration of smart contract architecture design is DApp size; a really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off-chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g. from a centralized server) means your users will have to trust these external resources.
+The second major consideration of smart contract architecture design is DApp size. A really large monolithic smart contract may cost a lot of gas to deploy and use. Therefore, some applications may choose to have off-chain computation and an external data source. Keep in mind, however, that having the core business logic of the DApp be dependent on external data (e.g., from a centralized server) means your users will have to trust these external resources.
 
 [[front_end_web_ui_cec]]
-==== Front end (Web User Interface)
+==== Frontend (Web User Interface)
 
-Unlike the business logic of the DApp, which requires a developer to understand the EVM and new languages such as Solidity, the client side interface of a DApp can use standard web technologies (HTML, CSS, JavaScript, etc). This allows a traditional web developer to use familiar tools, libraries and frameworks. Interactions with Ethereum, such as signing messages, sending transactions and key management are often conducted through the web browser, via an extension such as MetaMask.
+Unlike the business logic of the DApp, which requires a developer to understand the EVM and new languages such as Solidity, the client-side interface of a DApp can use standard web technologies (HTML, CSS, JavaScript, etc.). This allows a traditional web developer to use familiar tools, libraries, and frameworks. Interactions with Ethereum, such as signing messages, sending transactions, and managing keys, are often conducted through the web browser, via an extension such as MetaMask (see <<intro_chapter>>).
 
-Although it is possible to create a mobile DApp as well, currently there are few resources to help create mobile DApp front-ends, mainly due to the lack of mobile clients that can serve as a light client with key management functionality.
+Although it is possible to create a mobile DApp as well, currently there are few resources to help create mobile DApp front-ends, mainly due to the lack of mobile clients that can serve as a light client with key-management functionality.
 
-The front-end is usually linked to Ethereum via the +web3.js+ JavaScript library, which is bundled with the front-end resources and served to a browser by a web server.
+The front-end is usually linked to Ethereum via the _web3.js_ JavaScript library, which is bundled with the front-end resources and served to a browser by a web server.
 
 [[data_storage_sec]]
-==== Data storage
+==== Data Storage
 
-Due to high gas costs and the currently low block gas limit, smart contracts are not suited to store or process large amounts of data. Hence, most DApps will utilize off-chain data storage services, meaning they store the bulky data off the Ethereum chain, on a data storage platform. That data storage platform can be centralized, for example a typical cloud database. Or, the data can be decentralized, stored on a P2P platform such as the _Interplanetary File System (IPFS)_, or Ethereum's own _Swarm_ platform.
+Due to high gas costs and the currently low block gas limit, smart contracts are not well suited to storing or processing large amounts of data. Hence, most DApps utilize off-chain data storage services, meaning they store the bulky data off the Ethereum chain, on a data storage platform. That data storage platform can be centralized (for example, a typical cloud database), or the data can be decentralized, stored on a P2P platform such as the IPFS, or Ethereum's own Swarm platform.
 
-Decentralized P2P storage is ideal for storing and distributing large static assets such as images, videos, and the resources of the application's front-end web interface (HTML, CSS, JavaScript, etc).
+Decentralized P2P storage is ideal for storing and distributing large static assets such as images, videos, and the resources of the application's front-end web interface (HTML, CSS, JavaScript, etc.). We'll look at a few of the options next.
 
 [[ipfs_sec]]
-===== Inter-Planetary File System (IPFS)
+===== IPFS
 
-The _Inter-Planetary File System (IPFS)_ is a decentralized content-addressable storage system that distributes stored objects among peers in a P2P network. "Content Addressable" means that each piece of content (file) is hashed and the hash is used to identify that file. You can then retrieve any file from any IPFS node, by requesting it by its hash.
+The _Inter-Planetary File System_ (IPFS) is a decentralized content-addressable storage system that distributes stored objects among peers in a P2P network. "Content addressable" means that each piece of content (file) is hashed and the hash is used to identify that file. You can then retrieve any file from any IPFS node by requesting it by its hash.
 
 IPFS aims to replace HTTP as the protocol of choice for delivery of web applications. Instead of storing a web application on a single server, the files are stored on IPFS and can be retrieved from any IPFS node.
 
-More information about IPFS can be found at https://ipfs.io
+More information about IPFS can be found at https://ipfs.io[].
 
 
 [[swarm_sec]]
 ===== Swarm
 
-Swarm is another content-addressable P2P storage system, similar to IPFS. Swarm is built by the Ethereum Foundation, as part of the Go-Ethereum suite of tools. Like IPFS, Swarm allows you to store files that get disseminated and replicated by Swarm nodes. You can access any Swarm file by referring to it by a hash. Swarm allows you to access a web site from a decentralized P2P system, instead of a central web server.
+Swarm is another content-addressable P2P storage system, similar to IPFS. Swarm was created by the Ethereum Foundation, as part of the Go-Ethereum suite of tools. Like IPFS, it allows you to store files that get disseminated and replicated by Swarm nodes. You can access any Swarm file by referring to it by a hash. Swarm allows you to access a website from a decentralized P2P system, instead of a central web server.
 
 The home page for Swarm is itself stored on Swarm and accessible on your Swarm node or a gateway:
-https://swarm-gateways.net/bzz:/theswarm.eth/
+https://swarm-gateways.net/bzz:/theswarm.eth/[].
 
 
 [[interdapp_coammunications_protocol_sec]]
-==== Decentralized message communications protocols
+==== Decentralized Message Communications Protocols
 
-Another major component of any application is inter-process communication. That means being able to exchange messages between applications, between different instances of the application, or between users of the application. Traditionally, this is achieved by reliance on a centralized server.
+Another major component of any application is inter-process communication. That means being able to exchange messages between applications, between different instances of the application, or between users of the application. Traditionally, this is achieved by reliance on a centralized server. However, there are a variety of decentralized alternatives to server-based protocols, offering messaging over a P2P network. The most notable P2P messaging protocol for DApps is https://github.com/ethereum/wiki/wiki/Whisper[_Whisper_], which is part of the Ethereum Foundation's Go-Ethereum suite of tools.
 
-There are a variety of decentralized alternatives to a server-based protocols, offering messaging over a P2P network. The most notable P2P messaging protocol for DApps is _Whisper_, which is part of the Ethereum Foundation's Go-Ethereum suite of tools. More information about Whisper can be found here:
-https://github.com/ethereum/wiki/wiki/Whisper
+The final aspect of an application that can be decentralized is name resolution. We'll take a close look at Ethereum's name service later in this chapter; now, though, let's dig into an example.
 
 [[auction_dapp_intro]]
-=== A basic DApp example: Auction DApp
+=== A Basic DApp example: Auction DApp
 
 In this section we will start building an example DApp, to explore the various decentralization tools. Our DApp will implement a decentralized auction.
 
-The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During the auction, users can join a chat room, created specifically for each auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
+The Auction DApp allows a user to register a "deed" token, which represents some unique asset, such as a house, a car, a trademark, etc. Once a token has been registered, the ownership of the token is transferred to the Auction DApp, allowing it to be listed for sale. The Auction DApp lists each of the registered tokens, allowing other users to place bids. During each auction, users can join a chat room created specifically for that auction. Once an auction is finalized, the deed token ownership is transferred to the winner of the auction.
 
-The overall auction process can be seen in <<auction_dapp_overview>>:
+The overall auction process can be seen in <<auction_dapp_overview>>.
+
 [[auction_dapp_overview]]
 .Auction DApp: A simple example auction DApp
 image::code/auction_dapp/auction_diagram.png["Auction DApp: A simple example auction DApp"]
 
 The main components of our Auction DApp are:
 
-* A smart contract implementing ERC721 non-fungible "deed" tokens (+DeedRepository+).
-* A smart contract implementing an Auction (+AuctionRepository+) to sell the deeds.
-* A web front-end using the Vue/Vuetify JavaScript framework.
-* The +web3.js+ library to connect to Ethereum chains (via MetaMask or other clients).
-* A Swarm client, to store resources such as images.
-* A Whisper client, to create per-auction chat rooms for all participants.
+* A smart contract implementing ERC721 non-fungible "deed" tokens (pass:[<code><span class="keep-together">DeedRepository</span></code>])
+* A smart contract implementing an auction (+AuctionRepository+) to sell the deeds
+* A web front-end using the Vue/Vuetify JavaScript framework
+* The _web3.js_ library to connect to Ethereum chains (via MetaMask or other clients)
+* A Swarm client, to store resources such as images
+* A Whisper client, to create per-auction chat rooms for all participants
 
-You can find the source code for the auction DApp in the book's repository:
-https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp
+You can find the source code for the auction DApp https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp[in the book's repository].
 
-==== Auction DApp: Back-end smart Contracts
 
-Our Auction DApp example is supported by two smart contracts that we need to deploy on an Ethereum blockchain in order to support the application: +AuctionRepository+ and +DeedRepository+.
+==== Auction DApp: Backend Smart Contracts
 
-Let's start by looking at +DeedRepository+, shown in <<deed_repository_code>>. This contract is an ERC-721 compatible "non-fungible token" (See <<erc721>>).
+Our Auction DApp example is supported by two smart contracts that we need to deploy on an Ethereum blockchain in order to support the application: pass:[<code><span class="keep-together">AuctionRepository</span></code>] and +DeedRepository+.
+
+Let's start by looking at +DeedRepository+, shown in <<deed_repository_code>>. This contract is an ERC721-compatible non-fungible token (see <<erc721>>).
 
 [[deed_repository_code]]
-.DeedRepository.sol : An ERC721 deed token for use in an auction
+.DeedRepository.sol: An ERC721 deed token for use in an auction
 ====
 [source,solidity]
 ----
@@ -131,14 +137,10 @@ include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
 
 As you can see, the +DeedRepository+ contract is a straightforward implementation of an ERC721-compatible token.
 
-Our Auction DApp uses the +DeedRepository+ contract to issue and track tokens for each auction. The auction itself is orchestrated by the +AuctionRepository+ contract, which can be found here:
-
-https://github.com/ethereumbook/ethereumbook/tree/develop/code/auction_dapp/backend/contracts/AuctionRepository.sol
-
-The +AuctionRepository+ contract is too long to include here in full, but <<auction_repository_code>> is the main definition of the contract and data structures:
+Our Auction DApp uses the +DeedRepository+ contract to issue and track tokens for each auction. The auction itself is orchestrated by the +AuctionRepository+ contract. This contract is too long to include here in full, but <<auction_repository_code>> shows the main definition of the contract and data structures. The entire contract is available in the book's https://bit.ly/2IaOo9i[GitHub repository].
 
 [[auction_repository_code]]
-.AuctionRepository.sol : The main Auction DApp smart contract
+.AuctionRepository.sol: The main Auction DApp smart contract
 ====
 [source,solidity]
 ----
@@ -176,6 +178,7 @@ contract AuctionRepository {
 
 The +AuctionRepository+ contract manages all auctions with the following functions:
 
+[source,solidity]
 ----
 getCount()
 getBidsCount(uint _auctionId)
@@ -190,32 +193,32 @@ finalizeAuction(uint _auctionId)
 bidOnAuction(uint _auctionId)
 ----
 
-We can deploy these contracts to the Ethereum blockchain of our choice (e.g. Ropsten), using truffle in the book's repository:
+You can deploy these contracts to the Ethereum blockchain of your choice (e.g., Ropsten) using +truffle+ in the book's repository:
 
-----
-cd code/auction_dapp/backend
-truffle init
-truffle compile
-truffle migrate --network ropsten
-----
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/backend</strong>
+$ <strong>truffle init</strong>
+$ <strong>truffle compile</strong>
+$ <strong>truffle migrate --network ropsten</strong>
+</pre>
+++++
 
 ===== DApp governance
 
-If you read through the two smart contracts of the Auction DApp you will notice something important:
+If you read through the two smart contracts of the Auction DApp you will notice something important: there is no special account or role that has special privileges over the DApp. Each auction has an owner with some special capabilities, but the Auction DApp itself has no privileged user.
 
-There is no special account or role that has special privileges over the DApp. Each auction has an owner with some special capabilities, but the Auction DApp itself has no privileged user.
+This is a deliberate choice to decentralize the governance of the DApp and relinquish any control once it has been deployed. Some DApps, by comparison, have one or more privileged accounts with special capabilities, such as the ability to terminate the DApp contract, to override or change its configuration, or to "veto" certain operations. Usually, these governance functions are introduced in the DApp in order to avoid unknown problems that might arise due to a bug.
 
-This is a deliberate choice to decentralize the governance of the DApp and relinquish any control once it has been deployed. Some DApps, by comparison, have one or more privileged accounts, with special capabilities, such as the ability to terminate the DApp contract, to override or change its configuration, or to "veto" certain operations. Usually, these governance functions are introduced in the DApp in order to avoid unknown problems that might arise due to a bug.
+The issue of governance is a particularly difficult one to solve, as it represents a double-edged sword. On the one side, privileged accounts are dangerous; if compromised, they can subvert the security of the DApp. On the other side, without any privileged account, there are no recovery options if a bug is found. We have seen both of these risks manifest in Ethereum DApps. In the case of The DAO (<<real_world_example_the_dao>> and <<ethereum_fork_history>>), there were some privileged accounts called the "curators," but they were very limited in their capabilities. Those accounts were not able to override the DAO attacker's withdrawal of the funds. In a more recent case, the decentralized exchange Bancor experienced a massive theft because a privileged management account was compromised. Turns out, Bancor was not as decentralized as initially assumed.
 
-The issue of governance is a particularly difficult one to solve. It represents a double-edged sword: On one side, privileged accounts are dangerous - if compromised they can subvert the security of the DApp. On the other side, without any privileged account, there are no recovery options if a bug is found. We have seen both of these risks manifest in Ethereum DApps. In the case of The DAO, there were some privileged accounts called the "curators", but they were very limited in their capabilities. Those accounts were not able to override the DAO attacker's withdrawal of the funds. In a more recent case, the decentralized exchange Bancor experienced a massive theft because a privileged management account was compromised. Turns out, Bancor was not as decentralized as initially assumed.
+When building a DApp, you have to decide if you want to make the smart contracts truly independent, launching them and then having no control, or create privileged accounts and run the risk of those being compromised. Either choice carries risk, but in the long run, true DApps cannot have specialized access for privileged accounts&#x2014;that's not decentralized.
 
-When building a DApp, you have to decide if you want to make the smart contracts truly independent, launching them and then having no control, or creating privileged accounts and running the risk of those being compromised. Either choice carries risk, but in the long run, true DApps cannot have specialized access for privileged accounts - that's not decentralized.
+==== Auction DApp: Frontend User Interface
 
-==== Auction DApp: Front-end user interface
+Once the Auction DApp's contracts are deployed, you can interact with them using your favorite JavaScript console and _web3.js_, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify JavaScript framework from Google.
 
-Once the Auction DApp contracts are deployed, you can interact with them using your favorite JavaScript console and +web3.js+, or another web3 library. However, most users will need an easy-to-use interface. Our Auction DApp user interface is built using the Vue2/Vuetify JavaScript framework from Google.
-
-You can find the user interface code in the +code/auction_dapp/frontend+ folder in the book's repository. The directory has the following structure and contents:
+You can find the user interface code in the _code/auction_dapp/frontend_ folder in https://github.com/ethereumbook/ethereumbook[the book's repository]. The directory has the following structure and contents:
 
 ----
 frontend/
@@ -254,74 +257,70 @@ frontend/
 |       `-- index.js
 ----
 
-Once you have deployed the contracts, edit the front-end configuration in +frontend/src/config.js+ and enter the address of the +DeedRepository+ and +AuctionRepository+ contracts, as deployed. The front-end application also needs access to an Ethereum node offering a +JSON-RPC+ and +websockets+ interface. Once you've configured the front-end, launch it with a web server on your local machine:
+Once you have deployed the contracts, edit the front-end configuration in _frontend/src/config.js_ and enter the addresses of the +DeedRepository+ and +AuctionRepository+ contracts, as deployed. The front-end application also needs access to an Ethereum node offering a JSON-RPC and WebSockets interface. Once you've configured the front-end, launch it with a web server on your local machine:
 
 ----
 npm install
 npm run dev
 ----
 
-The Auction DApp front-end will launch and will be accessible via any web browser at:
+The Auction DApp front-end will launch and will be accessible via any web browser at http://localhost:8080.
 
-http://localhost:8080
-
-If all goes well, you should see <<auction_dapp_screen>> which illustrates the Auction DApp running in your web browser:
+If all goes well you should see the screen shown in <<auction_dapp_screen>>, which illustrates the Auction DApp running in a web browser.
 
 [[auction_dapp_screen]]
-.Auction DApp User interface
+.Auction DApp user interface
 image::images/auction_dapp_home_screen.png["Auction DApp User interface"]
 
 === Further Decentralizing the Auction DApp
 
 Our DApp is already quite decentralized, but we can improve things.
 
-The AuctionRepository contract operates independently of any oversight, open to anyone. Once deployed it cannot be stopped, nor can any auction be censored. Each auction has a separate chat room that allows anyone to communicate about the auction without censorship or identification. The various auction assets, such as the description and associated image, are stored on Swarm, making them hard to censor or block.
+The +AuctionRepository+ contract operates independently of any oversight, open to anyone. Once deployed it cannot be stopped, nor can any auction be controlled. Each auction has a separate chat room that allows anyone to communicate about the auction without censorship or identification. The various auction assets, such as the description and associated image, are stored on Swarm, making them hard to censor or block.
 
 Anyone can interact with the DApp by constructing transactions manually or by running the Vue frontend on their local machine. The DApp code itself is open source and developed collaboratively on a public repository.
 
-But we can do more to make this DApp decentralized and resilient:
+There are two things we can do to make this DApp decentralized and resilient:
 
-* Store all the application code on Swarm or IPFS
-* Access the DApp by reference to a name, using the Ethereum Name Service
+* Store all the application code on Swarm or IPFS.
+* Access the DApp by reference to a name, using the Ethereum Name Service.
 
-In the next sections we will further decentralize the Auction DApp.
+We'll explore the first option in the next section, and we'll dig into the second in <<ethereum_naming_system_ens>>.
 
 === Storing the Auction DApp on Swarm
 
-We introduced Swarm in <<swarm_sec>>, earlier in this chapter. Our Auction DApp already uses Swarm to store the icon image for each auction. This is a much more efficient solution than attempting to store data on Ethereum, which is expensive. It is also a lot more resilient than if these images were stored on a centralized service like a web server or file server.
+We introduced Swarm in <<swarm_sec>>, earlier in this chapter. Our Auction DApp already uses Swarm to store the icon image for each auction. This is a much more efficient solution than attempting to store data on Ethereum, which is expensive. It is also a lot more resilient than if these images were stored in a centralized service like a web server or file server.
 
 But we can take things one step further. We can store the entire front-end of the DApp itself in Swarm and run it from a Swarm node directly, instead of running a web server.
 
 ==== Preparing Swarm
 
-To get started, we need to install Swarm and initialize our Swarm node. Swarm is part of the Ethereum Foundation's Go-Ethereum suite of tools. Refer to the instructions for installing go-ethereum in <<go_ethereum_geth>>, or to install a Swarm binary release, follow these instructions:
-
-https://swarm-guide.readthedocs.io/en/latest/installation.html
+To get started, you need to install Swarm and initialize your Swarm node. Swarm is part of the Ethereum Foundation's Go-Ethereum suite of tools. Refer to the instructions for installing Go-Ethereum in <<go_ethereum_geth>>, or to install a Swarm binary release, follow the instructions in the https://swarm-guide.readthedocs.io/en/latest/installation.html[Swarm documentation].
 
 Once you have installed Swarm, you can check that it is working correctly by running it with the +version+ command:
 
-----
-$ swarm version
+++++
+<pre data-type="programlisting">
+$ <strong>swarm version</strong>
 Version: 0.3
 Git Commit: 37685930d953bcbe023f9bc65b135a8d8b8f1488
 Go Version: go1.10.1
 OS: linux
-----
+</pre>
+++++
 
-To start running Swarm, you must tell it how to connect to an instance of Geth, to access the JSON-RPC API. Get it started by following the instructions here:
+To start running Swarm, you must tell it how to connect to an instance of Geth, to access the JSON-RPC API. Get it started by following the instructions in the https://swarm-guide.readthedocs.io/en/latest/gettingstarted.html[Getting Started guide].
 
-https://swarm-guide.readthedocs.io/en/latest/gettingstarted.html
-
-When you start swarm, you should see something like this:
+When you start Swarm, you should see something like this:
 
 ----
 Maximum peer count                       ETH=25 LES=0 total=25
-Starting peer-to-peer node               instance=swarm/v0.3.1-225171a4/linux-amd64/go1.10
+Starting peer-to-peer node               instance=swarm/v0.3.1-225171a4/linux...
 connecting to ENS API                    url=http://127.0.0.1:8545
 swarm[5955]: [189B blob data]
 Starting P2P networking
 UDP listener up                          self=enode://f50c8e19ff841bcd5ce7d2d...
-Updated bzz local addr                   oaddr=9c40be8b83e648d50f40ad3d35f... uaddr=e
+Updated bzz local addr                   oaddr=9c40be8b83e648d50f40ad3... uaddr=e
 Starting Swarm service
 9c40be8b hive starting
 detected an existing store. trying to load peers
@@ -334,59 +333,60 @@ RLPx listener up                         self=enode://f50c8e19ff841bcd5ce7d2d...
 ----
 
 You can confirm that your Swarm node is running correctly by connecting to the local Swarm gateway web interface:
-http://localhost:8500
+http://localhost:8500.
 
-You should see a <<image_swarm_gateway>> and be able to query any Swarm hash or ENS name:
+You should see a screen like the one in <<image_swarm_gateway>> and be able to query any Swarm hash or ENS name.
 
 [[image_swarm_gateway]]
 .Swarm gateway on localhost
 image::images/swarm-gateway.png["Swarm gateway on localhost"]
 
-==== Uploading files to Swarm
+==== Uploading Files to Swarm
 
 Once you have your local Swarm node and gateway running, you can upload to Swarm and the files will be accessible on any Swarm node, simply by reference to the file hash.
 
-Let's test this by uploading a file!
+Let's test this by uploading a file:
 
-----
-$ swarm up code/auction_dapp/README.md
+++++
+<pre data-type="programlisting">
+$ <strong>swarm up code/auction_dapp/README.md</strong>
 ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c
-----
+</pre>
+++++
 
-Swarm has uploaded the +README.md+ file, and returned a hash. We can now use this hash to access the +README.md+ from any Swarm node. For example, we could use the public Swarm gateway:
+Swarm has uploaded the _README.md_ file and returned a hash that you can use to access the file from any Swarm node. For example, you could use the https://bit.ly/2znWUP9[public Swarm gateway].
 
-https://swarm-gateways.net/bzz:/ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c/
-
-While uploading one file is relatively straightforward, it is a bit more complex to upload an entire DApp front-end. That's because the various DApp resources (HTML, CSS, JavaScript, libraries etc.) have embedded references to each other. Normally, a web server translates URLs to local files and serves the correct resources. We can achieve the same for Swarm by packaging our DApp.
+While uploading one file is relatively straightforward, it is a bit more complex to upload an entire DApp front-end. That's because the various DApp resources (HTML, CSS, JavaScript, libraries, etc.) have embedded references to each other. Normally, a web server translates URLs to local files and serves the correct resources. We can achieve the same for Swarm by packaging our DApp.
 
 In the Auction DApp, there's a script for packaging all the resources:
 
-----
-$ cd code/auction_dapp/frontend
-$ npm run build
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/frontend</strong>
+$ <strong>npm run build</strong>
 
-> frontend@1.0.0 build /home/aantonop/Dev/ethereumbook/code/auction_dapp/frontend
-> node build/build.js
+> <strong>frontend@1.0.0 build /home/aantonop/Dev/ethereumbook/code/auction_dapp/frontend</strong>
+> <strong>node build/build.js</strong>
 
 Hash: 9ee134d8db3c44dd574d
 Version: webpack 3.10.0
 Time: 25665ms
-Asset     Size  Chunks                    Chunk Names
-static/js/vendor.77913f316aaf102cec11.js  1.25 MB       0 [emitted]  [big]  vendor
-static/js/app.5396ead17892922422d4.js   502 kB       1  [emitted]  [big]  app
-static/js/manifest.87447dd4f5e60a5f9652.js  1.54 kB       2  [emitted]         manifest
-static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css  1.13 kB       1  [emitted]         app
-static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map  2.54 kB          [emitted]
-static/js/vendor.77913f316aaf102cec11.js.map  4.74 MB       0  [emitted]         vendor
-static/js/app.5396ead17892922422d4.js.map   893 kB       1  [emitted]         app
-static/js/manifest.87447dd4f5e60a5f9652.js.map  7.86 kB       2  [emitted]         manifest
-index.html  1.15 kB          [emitted]
+Asset     Size
+static/js/vendor.77913f316aaf102cec11.js  1.25 MB
+static/js/app.5396ead17892922422d4.js   502 kB
+static/js/manifest.87447dd4f5e60a5f9652.js  1.54 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css  1.13 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map  2.54 kB
+static/js/vendor.77913f316aaf102cec11.js.map  4.74 MB
+static/js/app.5396ead17892922422d4.js.map   893 kB
+static/js/manifest.87447dd4f5e60a5f9652.js.map  7.86 kB
+index.html  1.15 kB
 
 Build complete.
+</pre>
+++++
 
-----
-
-The result of this command will be a new directory +code/auction_dapp/frontend/dist+ that contains the entire Auction DApp frontend, packed together:
+The result of this command will be a new directory, _code/auction_dapp/frontend/dist_, that contains the entire Auction DApp frontend, packed together:
 
 ----
 dist/
@@ -405,73 +405,79 @@ dist/
 
 ----
 
-Now we can upload the entire DApp to Swarm, by using the +up+ command and the +recursive+ option. We will also tell Swarm that +index.html+ is the +defaultpath+ for loading this DApp:
+Now you can upload the entire DApp to Swarm, by using the +up+ command and the +--recursive+ option. Here, we also tell Swarm that +index.html+ is the +defaultpath+ for loading this DApp:
 
-----
-swarm --bzzapi http://localhost:8500 --recursive --defaultpath dist/index.html up dist/
+++++
+<pre data-type="programlisting">
+$ <strong>swarm --bzzapi http://localhost:8500 --recursive \
+  --defaultpath dist/index.html up dist/</strong>
 
 ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
-----
+</pre>
+++++
 
 Now, our entire Auction DApp is hosted on Swarm and accessible by the Swarm URL:
 
-bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+++++
+<ul class="simplelist">
+<li>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</li>
+</ul>
+++++
 
-We've made some progress in decentralizing our DApp, but we've made it harder to use. A URL like that is much harder to use than a web server with a nice name like +auction_dapp.com+. Are we forced to sacrifice usability in order to gain decentralization? Not necessarily. In the next section we will examine the _Ethereum Naming System (ENS)_, which allows us to use easy-to-read names but still preserves the decentralized nature of our application.
+We've made some progress in decentralizing our DApp, but we've made it harder to use. A URL like that is much less user-friendly than a nice name like __auction_dapp.com__. Are we forced to sacrifice usability in order to gain decentralization? Not necessarily. In the next section we will examine Ethereum's name service, which allows us to use easy-to-read names but still preserves the decentralized nature of our application.
 
-=== Ethereum Naming System (ENS)
+[[ethereum_naming_system_ens]]
+=== The Ethereum Name Service (ENS)
 
 You can design the best smart contract in the world, but if you don't provide a good interface for users, they won't be able to access it.
 
-On the traditional internet, the Domain Name system (DNS), allows us to use human-readable names in the browser, while resolving those names to IP addresses or other identifiers behind the scenes. On the Ethereum blockchain, the _Ethereum Naming System (ENS)_ solves the same problem, but in a decentralized manner.
+On the traditional internet, the Domain Name System (DNS) allows us to use human-readable names in the browser while resolving those names to IP addresses or other identifiers behind the scenes. On the Ethereum blockchain, the _Ethereum Naming System_ (ENS) solves the same problem, but in a decentralized manner.
 
 For example, the Ethereum Foundation donation address is +0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359+; in a wallet that supports ENS, it's simply +ethereum.eth+.
 
-ENS is more than a smart contract. ENS is a fundamental DApp itself, offering a decentralized name service. Furthermore, ENS is supported by a number of DApps for registration, management, and auctions of registered names. ENS demonstrates how DApps can work together: A DApp built to serve other DApps, supported by an ecosystem of DApps, embedded in other DApps, etc.
+ENS is more than a smart contract; it's a fundamental DApp itself, offering a decentralized name service. Furthermore, ENS is supported by a number of DApps for registration, management, and auctions of registered names. ENS demonstrates how DApps can work together: it's DApp built to serve other DApps, supported by an ecosystem of DApps, embedded in other DApps, and so on.
 
-In this section we will look at how ENS works, how we can set up our own name and link it to a wallet or Ethereum address, how we can embed ENS in another DApp and how we can use ENS to name our DApp resources to make them easier to use.
+In this section we will look at how ENS works. We'll demonstrate how you can set up your own name and link it to a wallet or Ethereum address, how you can embed ENS in another DApp, and how you can use ENS to name your DApp resources to make them easier to use.
 
-==== History of Ethereum name services
+==== History of Ethereum Name Services
 
-Name registration was the first non-currency application of blockchains, pioneered by Namecoin. The Ethereum whitepaper gave a two-line Namecoin-like registration system as one of its example applications.
+Name registration was the first non-currency application of blockchains, pioneered by Namecoin. The Ethereum https://github.com/ethereum/wiki/wiki/White-Paper[White Paper] gave a two-line Namecoin-like registration system as one of its example applications.
 
-Early releases of Geth and the C++ Ethereum client had a built-in +namereg+ contract (_not used any more_), and many proposals and ERCs for name services were made, but it was only when Nick Johnson started working for Ethereum Foundation in 2016 and took the project under his wing that serious work on a registrar started.
+Early releases of Geth and the C++ Ethereum client had a built-in +namereg+ contract (not used any more), and many proposals and ERCs for name services were made, but it was only when Nick Johnson started working for the Ethereum Foundation in 2016 and took the project under his wing that serious work on a registrar started.
 
-ENS was launched on Star Wars day, May 4, 2017 (after a failed attempt to launch it on Pi Day, March 15).
+ENS was launched on Star Wars Day, May 4, 2017 (after a failed attempt to launch it on Pi Day, March 15).
 
-==== The ENS specification
+==== The ENS Specification
 
-ENS is specified mainly in three Ethereum Improvement Proposals (EIPs), namely ERC137, which specifies the basic functions of ENS, ERC162, which describes the auction system for the +.eth+ root, and ERC181, which specifies reverse registration of addresses.
+ENS is specified mainly in three Ethereum Improvement Proposals: EIP-137, which specifies the basic functions of ENS; EIP-162, which describes the auction system for the +.eth+ root; and EIP-181, which specifies reverse registration of addresses.
 
 ENS follows a "sandwich" design philosophy: a very simple layer on the bottom, followed by layers of more complex but replaceable code, with a very simple top layer that keeps all the funds in separate accounts.
 
-==== Bottom layer: Name Owners and resolvers
+==== Bottom Layer: Name Owners and Resolvers
 
 The ENS operates on "nodes" instead of human-readable names: a human-readable name is converted to a node using the "Namehash" algorithm.
 
-The base layer of the ENS is a cleverly simple contract (less than 50 lines of code) defined by ERC137 that allows only nodes' owners to set information about their names and to create subnodes (the ENS equivalent of DNS subdomains).
+The base layer of ENS is a cleverly simple contract (less than 50 lines of code) defined by ERC137 that allows only nodes' owners to set information about their names and to create subnodes (the ENS equivalent of DNS subdomains).
 
 The only functions on the base layer are those that enable a node owner to set information about their own node (specifically the resolver, time to live or transferring the ownership) and to create owners of new subnodes.
 
-===== Namehash algorithm
+===== The Namehash algorithm
 
 Namehash is a recursive algorithm that can convert any name into a hash that identifies the name.
 
-"Recursive" means that we solve the problem by solving a sub-problem that is a smaller problem of the same type, and then use the solution to the sub-problem to solve the original problem.
+"Recursive" means that we solve the problem by solving a subproblem that is a smaller problem of the same type, and then use the solution to the subproblem to solve the original problem.
 
-Namehash recursively hashes components of the name, producing a unique, fixed-length string for any valid input domain, or "node".
+Namehash recursively hashes components of the name, producing a unique, fixed-length string (or &#x201c;node&#x201d;) for any valid input domain. For example, the Namehash node of +subdomain.example.eth+ is `keccak(('example.eth' node) + keccak('subdomain'))`. The sub-roblem we must solve is to compute the node for +example.eth+, which is `keccak(('.eth' node) + keccak('example'))`.  To begin, we must compute the node for +eth+, which is `keccak((<root node>) + keccak('eth'))`.
 
-For example, the Namehash node of +subdomain.example.eth+ is: `keccak(('example.eth' node) + keccak('subdomain'))`. The sub-problem we must solve is to compute the node for +example.eth+, which is: `keccak(('.eth' node) + keccak('example'))`.  In turn, we must compute the node for +eth+, which is: `keccak((Root Node) + keccak('eth'))`.
+The root node is what we call the "base case" of our recursion, and we obviously can't define it recursively, or the algorithm will never terminate! The root node is defined as `0x0000000000000000000000000000000000000000000000000000000000000000` (32 zero bytes).
 
-The root node is what we call the "base case" of our recursion, and we obviously can't define it recursively, or the algorithm will never terminate! The root node is defined as: `0x0000000000000000000000000000000000000000000000000000000000000000` (32 zero bytes).
-
-Putting this all together, the node of +subdomain.example.eth+ is therefore: `keccak(keccak(keccak(0x0…0 + keccak('eth')) + keccak('example')) + keccak('subdomain'))`
+Putting this all together, the node of +subdomain.example.eth+ is therefore pass:[<code><span class="keep-together">keccak</span>(keccak(keccak(0x0...0 + keccak('eth')) + keccak('example')) + keccak('subdomain'))</code>].
 
 Generalizing, we can define the Namehash function as follows (the base case for the root node, or empty name, followed by the recursive step):
 
 ....
 namehash([]) = 0x0000000000000000000000000000000000000000000000000000000000000000
-namehash([label, …]) = keccak256(namehash(…) + keccak256(label))
+namehash([label, ...]) = keccak256(namehash(...) + keccak256(label))
 ....
 
 In Python this becomes:
@@ -494,10 +500,10 @@ namehash('mastering-ethereum.eth')
 ⇒ sha3(sha3(('\0' * 32) + sha3('eth')) + sha3('mastering-ethereum'))
 ....
 
-Of course, subdomains can themselves have subdomains: after +subdomain.example.eth+ there could be a +sub.subdomain.example.eth+, then a +sub.sub.subdomain.example.eth+ and so on. To avoid expensive recomputation, since Namehash depends only on the name itself, the node for a given name can be precomputed and inserted into a contract, removing the need for string manipulation, and permitting immediate lookup of ENS records regardless of the number of components in the raw name.
+Of course, subdomains can themselves have subdomains: there could be a +sub.subdomain.example.eth+ after +subdomain.example.eth+, then a +sub.sub.subdomain.example.eth+, and so on. To avoid expensive recomputation, since Namehash depends only on the name itself, the node for a given name can be precomputed and inserted into a contract, removing the need for string manipulation and permitting immediate lookup of ENS records regardless of the number of components in the raw name.
 
 ===== How to choose a valid name
-Names consist of a series of dot-separated labels. Although upper and lower case letters are allowed, all labels should follow a UTS46 normalization process that case-folds labels before hashing them, so names with different case but identical spelling will end up with the same Namehash.
+Names consist of a series of dot-separated labels. Although upper- and lowercase letters are allowed, all labels should follow a UTS &#x23;46 normalization process that case-folds labels before hashing them, so names with different case but identical spelling will end up with the same Namehash.
 
 You could use labels and domains of any length, but for the sake of compatibility with legacy DNS, the following rules are recommended:
 
@@ -507,71 +513,74 @@ You could use labels and domains of any length, but for the sake of compatibilit
 
 ===== Root node ownership
 
-One of the results of this hierarchical system is that it relies on the owners of the root node, who are able to create top level domains.
+One of the results of this hierarchical system is that it relies on the owners of the root node, who are able to create top-level domains (TLDs).
 
-While the eventual goal is to adopt a decentralized decision-making process for new top level domains, right now the root node is controlled by a 4 out of 7 multisig, held by people in different countries (built as a reflection of the seven keyholders of the DNS system).
+While the eventual goal is to adopt a decentralized decision-making process for new TLDs, at the time of writing the root node is controlled by a 4-of-7 multisig, held by people in different countries (built as a reflection of the 7 keyholders of the DNS system).
 As a result, a majority of at least 4 of the 7 keyholders is required to effect any change.
 
 Currently the purpose and goal of these keyholders is to work in consensus with the community to:
 
-* Migrate and upgrade the temporary ownership of the +.eth+ TLD (Top Level Domain) to a more permanent contract once the system is evaluated.
+* Migrate and upgrade the temporary ownership of the +.eth+ TLD to a more permanent contract once the system is evaluated.
 * Allow adding new TLDs, if the community agrees they are needed.
-* Migrate the ownership of the root multisig to a more decentralized contract, when such a system is agreed upon, tested and implemented.
-* Serve as a last resort way to deal with any bugs or vulnerabilities in the top-level registries.
+* Migrate the ownership of the root multisig to a more decentralized contract, when such a system is agreed upon, tested, and implemented.
+* Serve as a last-resort way to deal with any bugs or vulnerabilities in the top-level registries.
 
 ===== Resolvers
 
-The basic ENS contract can't add metadata to names; that is the job of "resolver contracts". These are user-created contracts that can answer questions about the name, such as "What's the Swarm address associated with this app?", "What is the Ethereum address that receives payments in ether and tokens?", or "What's the hash of the app?" (to verify its integrity).
+The basic ENS contract can't add metadata to names; that is the job of so-called "resolver contracts." These are user-created contracts that can answer questions about the name, such as what Swarm address is associated with the app, what address receives payments to the app (in ether or tokens), or what the hash of the app is (to verify its integrity).
 
-==== Middle layer: the ".eth" nodes
+==== Middle Layer: The .eth Nodes
 
-At the moment, the only top level domain that is uniquely registrable in a smart contract is +.eth+.
+At the time of writing, the only top-level domain that is uniquely registrable in a smart contract is +.eth+.
 
-There's work on enabling traditional DNS domain owners to claim ENS ownership.
-While in theory this could work for +.com+ the only domain that this has been implemented for so far is [+.xyz+, and only on Ropsten testnet](https://medium.com/the-ethereum-name-service/how-to-claim-your-dns-domain-on-ens-e600ef2d92ca).
+[NOTE]
+====
+There's work underway on enabling traditional DNS domain owners to claim ENS ownership.
+While in theory this could work for +.com+, the only domain that this has been implemented for so far is https://medium.com/the-ethereum-name-service/how-to-claim-your-dns-domain-on-ens-e600ef2d92ca[+.xyz+, and only on the Ropsten testnet].
+====
 
-+.eth+ domains are distributed via an auction system. There is no reserved list or priority, and the only way to acquire a name is to use the system. The auction system is a complex piece of code (over 500 lines); most of the early development efforts (and bugs!) in ENS were in this part of the system, but it's also replaceable and upgradeable (without risk to the funds—more on that later).
++.eth+ domains are distributed via an auction system. There is no reserved list or priority, and the only way to acquire a name is to use the system. The auction system is a complex piece of code (over 500 lines); most of the early development efforts (and bugs!) in ENS were in this part of the system. However, it's also replaceable and upgradeable, without risk to the funds—more on that later.
 
 [[vickrey_auction]]
-===== Vickrey Auctions
+===== Vickrey auctions
 
-Names are distributed via a modified Vickrey Auction. In a traditional Vickrey auction, every bidder submits a sealed bid, and all of them are revealed simultaneously, at which point the highest bidder wins the auction, but only pays the second-highest bid. Therefore bidders are incentivized not to bid less than the true value of the name to them, since bidding their true value increases the chance they will win but does not affect the price they will eventually pay.
+Names are distributed via a modified Vickrey auction. In a traditional Vickrey auction, every bidder submits a sealed bid, and all of them are revealed simultaneously, at which point the highest bidder wins the auction but only pays the second-highest bid. Therefore bidders are incentivized not to bid less than the true value of the name to them, since bidding their true value increases the chance they will win but does not affect the price they will eventually pay.
 
 On a blockchain, some changes are required:
 
-* To ensure bidders don't submit bids they have no intention of paying, they must lock up a value equal or higher than their bid beforehand, to guarantee the bid is valid.
+* To ensure bidders don't submit bids they have no intention of paying, they must lock up a value equal to or higher than their bid beforehand, to guarantee the bid is valid.
 * Because you can't hide secrets on a blockchain, bidders must execute at least two transactions (a commit–reveal process), in order to hide the original value and name they bid on.
 * Since you can't reveal all bids simultaneously in a decentralized system, bidders must reveal their own bids themselves; if they don't, they forfeit their locked-up funds. Without this forfeit, one could make many bids and choose to reveal only one or two, turning a sealed-bid auction into a traditional increasing price auction.
 
 Therefore, the auction is a four-step process:
 
 1. Start the auction. This is required to broadcast the intent to register a name.
-This creates all auction deadlines. The names are hashed, so that only those who have the name in their dictionary will know which auction was opened. This allows some privacy, useful if you are creating a new project and don't want to share details about it.
+This creates all auction deadlines. The names are hashed, so that only those who have the name in their dictionary will know which auction was opened. This allows some privacy, which is useful if you are creating a new project and don't want to share details about it.
 You can open multiple dummy auctions at the same time, so if someone is following you they cannot simply bid on all auctions you open.
 
-1. Make a sealed bid: you must do this before the bidding deadline, by tying a given amount of ether to the hash of a secret message (containing, among others, the hash of the name, the actual amount of the bid, and a salt).
+1. Make a sealed bid. You must do this before the bidding deadline, by tying a given amount of ether to the hash of a secret message (containing, among other things, the hash of the name, the actual amount of the bid, and a salt).
 You can lock up more ether than you are actually bidding in order to mask your true valuation.
 
-1. Reveal the bid: during the reveal period, you must make a transaction that reveals the bid, which will then calculate the highest bid, the second higher bid and send ether back to unsuccessful bidders.
-Every time the bid is revealed the current winner is recalculated, therefore the last one to be set before the revealing deadline expires becomes the overall winner.
+1. Reveal the bid. During the reveal period, you must make a transaction that reveals the bid, which will then calculate the highest bid and the second-highest bid and send ether back to unsuccessful bidders.
+Every time the bid is revealed the current winner is recalculated; therefore, the last one to be set before the revealing deadline expires becomes the overall winner.
 
-1. Clean up after: if you are the winner, you can finalize the auction in order to get back the difference between your bid and the second highest.
+1. Clean up after. If you are the winner, you can finalize the auction in order to get back the difference between your bid and the second-highest bid.
 If you forgot to reveal you can make a late reveal and recover a little of your bid.
 
-===== Top layer of the ENS: the Deeds
+==== Top Layer: The Deeds
 
-The top layer of the ENS is yet another super-simple contract with a single purpose: to hold the funds.
+The top layer of ENS is yet another super-simple contract with a single purpose: to hold the funds.
 
 When you win a name, the funds are not actually sent anywhere, but are just locked up for the period you want to hold the name (at least a year).
-This works like a guaranteed buy-back: if the owner does not want the name any more they can sell it back to the system and recover their ether (so the cost of holding the name is the opportunity cost of doing something with a return greater than zero).
+This works like a guaranteed buyback: if the owner does not want the name any more they can sell it back to the system and recover their ether (so the cost of holding the name is the opportunity cost of doing something with a return greater than zero).
 
-Of course, having a single contract hold millions of dollars in ether has proven to be very risky, so instead ENS creates a Deed Contract for each new name.
-The Deed Contract is very simple (about 50 lines of code) and it only allows the funds to be transferred back to a single account (the deed owner) and to be called by a single entity (the registrar contract).
+Of course, having a single contract hold millions of dollars in ether has proven to be very risky, so instead ENS creates a deed contract for each new name.
+The deed contract is very simple (about 50 lines of code), and it only allows the funds to be transferred back to a single account (the deed owner) and to be called by a single entity (the registrar contract).
 This approach drastically reduces the attack surface where bugs can put the funds at risk.
 
-==== Registering a name
+==== Registering a Name
 
-Registering a name in ENS is a four-step process, as we saw in  <<vickrey_auction>>. First we place a bid for any available name, then we reveal our bid after 48 hours to secure the name. <<ens_registration_timeline>> is a diagram showing the timeline of registration:
+Registering a name in ENS is a four-step process, as we saw in  <<vickrey_auction>>. First we place a bid for any available name, then we reveal our bid after 48 hours to secure the name. <<ens_registration_timeline>> is a diagram showing the timeline of registration.
 
 [[ens_registration_timeline]]
 .ENS timeline for registration
@@ -579,69 +588,70 @@ image::images/ens-flow.png[]
 
 Let's register our first name!
 
-We will use one of several available user-friendly interfaces to search for available names, place a bid on the name +ethereumbook.eth+, reveal the bid and secure the name.
+We will use one of several available user-friendly interfaces to search for available names, place a bid on the name +ethereumbook.eth+, reveal the bid, and secure the name.
 
-There are a number of web-based interfaces to ENS that allow us to interact with the ENS DApp. For this example, we will use the +mycrypto.com+ interface, in conjunction with MetaMask as our wallet.
+There are a number of web-based interfaces to ENS that allow us to interact with the ENS DApp. For this example, we will use the https://mycrypto.com/[MyCrypto] interface, in conjunction with MetaMask as our wallet.
 
 
 
-First, we need to make sure the name we want is available. While writing this book, we really wanted to register the name +mastering.eth+, but alas, <<ens-name-search>> revealed it was already taken! Because ENS registrations only last one year, it might become possible to secure that name in the future. In the mean time, let's search for +ethereumbook.eth+:
+First, we need to make sure the name we want is available. While writing this book, we really wanted to register the name +mastering.eth+, but alas, <<ens-name-search>> revealed it was already taken! Because ENS registrations only last one year, it might become possible to secure that name in the future. In the meantime, let's search for +ethereumbook.eth+ (<<ens-name-search>>).
 
 [[ens-name-search]]
 .Searching for ENS names on MyCrypto.com
 image::images/ens-checkname.png["Searching for ENS names on MyCrypto.com"]
 
-Great! The name is available. In order to register it, we need to move forward with <<ens-auction>>. Let's unlock MetaMask and start an auction for +ethereumbook.eth+:
+Great! The name is available. In order to register it, we need to move forward with <<ens-auction>>. Let's unlock MetaMask and start an auction for +ethereumbook.eth+.
 
 
 [[ens-auction]]
 .Starting an auction for an ENS name
 image::images/ens-auction.png["Starting an auction for an ENS name"]
 
-[WARNING]
-====
-As mentioned in <<vickrey_auction>>, you must reveal your bid within 48hrs after the auction is complete, or you *lose the funds in your bid*. Did we forget to do this and lose 0.1 ETH ourselves? You bet we did. Put a reminder on your calendar.
-====
 
-Let's make our bid. In order to do that we need to follow the steps in <<ens-bid>>:
+Let's make our bid. In order to do that we need to follow the steps in <<ens-bid>>.
 
 
 [[ens-bid]]
 .Placing a bid for an ENS name
 image::images/ens-bid.png["Placing a bid for an ENS name"]
 
-Take a screenshot, save your secret phrase (as a backup for your bid), and *add a reminder in your calendar for the reveal date and time*, so you don't forget and lose your funds.
+[WARNING]
+====
+As mentioned in <<vickrey_auction>>, you must reveal your bid within 48 hours after the auction is complete, or you _lose the funds in your bid_. Did we forget to do this and lose 0.01 ETH ourselves? You bet we did.
 
-When you're ready, select the big green submit button in the <<ens-metamask-bid>>:
+Take a screenshot, save your secret phrase (as a backup for your bid), and add a reminder in your calendar for the reveal date and time, so you don't forget and lose your funds.
+====
+
+Finally, we confirm the transaction by clicking the big green submit button shown in <<ens-metamask-bid>>.
 
 [[ens-metamask-bid]]
 .MetaMask transaction containing your bid
 image::images/ens-metamask-bid.png["MetaMask transaction containing your bid"]
 
-If all goes well, return and reveal the bid in 48 hours and the name is now registered to your Ethereum address.
+If all goes well, after submitting a transaction in this way you can return and reveal the bid in 48 hours, and the name you requested will be registered to your Ethereum address.
 
-==== Managing your ENS name
+==== Managing Your ENS Name
 
-Now that we have registered an ENS name, we can manage it using another user-friendly interface, by visiting:
-https://manager.ens.domains/
+Once you have registered an ENS name, you can manage it using another user-friendly interface: https://manager.ens.domains/[ENS Manager].
 
-Once there, enter the name you want to manage in the search box. You need to have your Ethereum wallet  (e.g. MetaMask) unlocked, so that the ENS manager DApp can manage the name on your behalf using the <<ens-manager>>:
+
+Once there, enter the name you want to manage in the search box (see <<ens-manager>>). You need to have your Ethereum wallet  (e.g., MetaMask) unlocked, so that the ENS Manager DApp can manage the name on your behalf.
 
 [[ens-manager]]
 .The ENS Manager web interface
 image::images/ens-manager.png["The ENS Manager web interface"]
 
-From this interface, we can create subdomains, set a resolver contracts (more on that later) and connect each name to the appropriate resource, such as the Swarm address of a DApp front-end.
+From this interface, we can create subdomains, set a resolver contract (more on that later), and connect each name to the appropriate resource, such as the Swarm address of a DApp front-end.
 
 ===== Creating an ENS subdomain
 
-First, let's create a subdomain for our example Auction DApp, (see <<ens-manager-add-subdomain>>). We will name the subdomain +auction+, so the fully qualified name will be +auction.ethereumbook.eth+:
+First, let's create a subdomain for our example Auction DApp (see <<ens-manager-add-subdomain>>). We will name the subdomain +auction+, so the fully qualified name will be +auction.ethereumbook.eth+.:
 
 [[ens-manager-add-subdomain]]
 .Adding the subdomain auction.ethereumbook.eth
 image::images/ens_manager_add_subdomain.png["Adding the subdomain auction.ethereumbook.eth"]
 
-Once you create the subdomain, you enter +auction.ethereumbook.eth+ in the search box and now you can manage the subdomain, just as we managed the domain +ethereumbook.eth+ previously.
+Once we've created the subdomain, we can enter +auction.ethereumbook.eth+ in the search box and manage it, just as we managed the domain +ethereumbook.eth+ previously.
 
 ==== ENS Resolvers
 
@@ -652,52 +662,59 @@ If the record exists, the registry returns the address of its resolver.
 
 2. The resolver is called, using the method appropriate to the resource being requested. The resolver returns the desired result.
 
-This two-step process has several benefits. By separating the functionality of resolvers from the naming system itself, we have a lot more flexibility. The owners of names can use custom resolvers to resolve any type or resource, extending the functionality of ENS. For example, if in the future you wanted to link a geolocation resource (longitude/lattitude) to an ENS name, you could create a new resolver that answers a +geolocation+ query. Who knows what applications might be useful in the future? With custom resolvers, the only limitation is your imagination.
+This two-step process has several benefits. Separating the functionality of resolvers from the naming system itself gives us a lot more flexibility. The owners of names can use custom resolvers to resolve any type or resource, extending the functionality of ENS. For example, if in the future you wanted to link a geolocation resource (longitude/lattitude) to an ENS name, you could create a new resolver that answers a pass:[<span class="keep-together"><code>geolocation</code></span>] query. Who knows what applications might be useful in the future? With custom resolvers, the only limitation is your imagination.
 
-For convenience, there is a default public resolver that can resolve a variety of resources including:
+For convenience, there is a default public resolver that can resolve a variety of resources, including the address (for wallets or contracts) and content (a Swarm hash for DApps or contract source code).
 
-* Address (for wallets or contracts)
-* Content (a Swarm hash for DApps or contract source code)
-
-Since we want to link our Auction DApp to a Swarm hash, we can use the public resolver, which supports +content+ resolution, and don't need to code or deploy a custom resolver. See <<ens-manager-set-default-resolver>>.
-
-Let's set our auction.ethereumbook.eth name to use the public resolver:
+Since we want to link our Auction DApp to a Swarm hash, we can use the public resolver, which supports content resolution, as shown in <<ens-manager-set-default-resolver>>; we don't need to code or deploy a custom resolver.
 
 [[ens-manager-set-default-resolver]]
-.Set the default public resolver for auction.ethereumbook.eth
+.Setting the default public resolver for auction.ethereumbook.eth
 image::images/ens-manager-set-default-resolver.png["Set the default public resolver for auction.ethereumbook.eth"]
 
-==== Resolving a name to a Swarm hash (content)
+==== Resolving a Name to a Swarm Hash (Content)
 
-Once the resolver for +auction.ethereumbook.eth+ is set to be the public resolver, we can set it to return the Swarm hash as the content of our name, see <<ens-set-content>>:
+Once the resolver for +auction.ethereumbook.eth+ is set to be the public resolver, we can set it to return the Swarm hash as the content of our name (see <<ens-set-content>>).
 
 [[ens-set-content]]
-.Set the 'content' return for auction.ethereumbook.eth
+.Setting the 'content' to return for auction.ethereumbook.eth
 image::images/ens-manager-set-content.png["Set the 'content' return for auction.ethereumbook.eth"]
 
-Wait a short time for your transaction to be confirmed and you should be able to resolve the name correctly. Before setting a name, our Auction DApp could be found on a Swarm gateway by it's hash:
+After waiting a short time for our transaction to be confirmed and you should be able to resolve the name correctly. Before setting a name, our Auction DApp could be found on a Swarm gateway by its hash:
 
-https://swarm-gateways.net/bzz:ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+++++
+<ul class="simplelist">
+<li>https://swarm-gateways.net/bzz:ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</li>
+</ul>
+++++
 
 or by searching in a DApp browser or Swarm gateway for the Swarm URL:
 
-bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+++++
+<ul class="simplelist">
+<li>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</li>
+</ul>
+++++
 
 Now that we have attached it to a name, it is much easier:
 
-http://swarm-gateways.net/bzz:/auction.ethereumbook.eth/
+++++
+<ul class="simplelist">
+<li>http://swarm-gateways.net/bzz:/auction.ethereumbook.eth/</li>
+</ul>
+++++
 
-or, by search for "auction.ethereumbook.eth" in any ENS compatible wallet or DApp browser (e.g. Mist).
+We can also find it by searching for "auction.ethereumbook.eth" in any ENS-compatible wallet or DApp browser (e.g., Mist).
 
 === From App to DApp
 
-Over the past several sections, we have gradually built a Decentralized Application. We started with a pair of smart contracts to run an auction for ERC721 deeds. These contracts were designed to have no governing or privileged accounts, so that their operation is truly decentralized. We  added a front-end, implemented in JavaScript, that offers a convenient and user friendly interface to our DApp. We added a decentralized storage system with Swarm, to store application resources such as images. We added a decentralized communication system using Whisper, to deliver a chat room function for each auction, without any central servers.
+Over the past several sections, we have gradually built a decentralized application. We started with a pair of smart contracts to run an auction for ERC721 deeds. These contracts were designed to have no governing or privileged accounts, so that their operation is truly decentralized. We  added a front-end, implemented in JavaScript, that offers a convenient and user-friendly interface to our DApp. The auction DApp uses the decentralized storage system Swarm to store application resources such as images. The DApp also uses the decentralized communications protocol Whisper to offer an encrypted chat room for each auction, without any central servers.
 
-Next, we uploaded the entire front-end to Swarm, so that our DApp doesn't rely on any web servers to serve the files. Finally, we use allocated a name for our DApp using ENS, connecting it to the Swarm hash of the front-end, so that users can access it with a simple and easy-to-remember human-readable name.
+We uploaded the entire front-end to Swarm, so that our DApp doesn't rely on any web servers to serve the files. Finally, we allocated a name for our DApp using ENS, connecting it to the Swarm hash of the front-end, so that users can access it with a simple and easy-to-remember human-readable name.
 
-With each of these steps, we increased the decentralization of our application. The final result is a DApp the has no central point of authority, no central point of failure and expresses the "web3" vision.
+With each of these steps, we increased the decentralization of our application. The final result is a DApp the has no central point of authority, no central point of failure, and expresses the "web3" vision.
 
-Here's the final <<auction_dapp_final_architecture>>:
+<<auction_dapp_final_architecture>> shows the complete architecture of the Auction DApp.
 
 [[auction_dapp_final_architecture]]
 .Auction DApp architecture
@@ -705,4 +722,4 @@ image::images/auction_dapp_final_architecture.png["Auction DApp architecture"]
 
 === Conclusions
 
-Decentralized applications are the culmination of the Ethereum vision, as expressed by the founders from the very earliest designs. While a lot of applications call themselves "DApps" today, most are not fully decentralized. However, it is already possible to construct applications that are almost completely decentralized. Over time, as the technology matures further, more and more of our applications can be decentralized, resulting in a more resilient, censorship resistant and free web.
+Decentralized applications are the culmination of the Ethereum vision, as expressed by the founders from the very earliest designs. While a lot of applications call themselves "DApps" today, most are not fully decentralized. However, it is already possible to construct applications that are almost completely decentralized. Over time, as the technology matures further, more and more of our applications can be decentralized, resulting in a more resilient, censorship-resistant, and free web.
