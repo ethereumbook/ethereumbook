@@ -888,13 +888,16 @@ The ERC721 contract interface specification is:
 ----
 interface ERC721 /* is ERC165 */ {
     event Transfer(address indexed _from, address indexed _to, uint256 _deedId);
-    event Approval(address indexed _owner, address indexed _approved, uint256 _deedId);
-    event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+    event Approval(address indexed _owner, address indexed _approved,
+                   uint256 _deedId);
+    event ApprovalForAll(address indexed _owner, address indexed _operator,
+                         bool _approved);
 
     function balanceOf(address _owner) external view returns (uint256 _balance);
     function ownerOf(uint256 _deedId) external view returns (address _owner);
     function transfer(address _to, uint256 _deedId) external payable;
-    function transferFrom(address _from, address _to, uint256 _deedId) external payable;
+    function transferFrom(address _from, address _to, uint256 _deedId)
+        external payable;
     function approve(address _approved, uint256 _deedId) external payable;
     function setApprovalForAll(address _operateor, boolean _approved) payable;
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
@@ -925,47 +928,48 @@ interface ERC721Enumerable /* is ERC721 */ {
     function deedByIndex(uint256 _index) external view returns (uint256 _deedId);
     function countOfOwners() external view returns (uint256 _count);
     function ownerByIndex(uint256 _index) external view returns (address _owner);
-    function deedOfOwnerByIndex(address _owner, uint256 _index) external view returns (uint256 _deedId);
+    function deedOfOwnerByIndex(address _owner, uint256 _index) external view
+        returns (uint256 _deedId);
 }
 ----
 
 [[token_std_review]]
-=== Token standards
+=== Using Token Standards
 
-In this section, we've reviewed several proposed standards and a couple of widely-deployed standards for token contracts. What exactly do these standards do? Should you use these standards? How should you use them? Should you add functionality beyond these standards? Which standards should you use? We will examine all those questions next.
+In the previous section we reviewed several proposed standards and a couple of widely deployed standards for token contracts. What exactly do these standards do? Should you use these standards? How should you use them? Should you add functionality beyond these standards? Which standards should you use? We will examine some of those questions next.
 
 [[token_std_purpose]]
-==== What are token standards? What is their purpose?
+==== What Are Token Standards? What Is their purpose?
 
-Token standards are a _minimum_ specification for an implementation. What that means is that in order to be compliant with, say ERC20, you need to at minimum implement the functions and behavior specified by ERC20. You are also free to _add_ to the functionality by implementing functions that are not part of the standard.
+Token standards are the _minimum_ specifications for an implementation. What that means is that in order to be compliant with, say, ERC20, you need to at minimum implement the functions and behavior specified by the ERC20 standard. You are also free to _add_ to the functionality by implementing functions that are not part of the standard.
 
-The primary purpose of these standards is to encourage _interoperability_ between contracts. Thus, all wallets, exchanges, user interfaces and other infrastructure components can _interface_ in a predictable manner with any contract that follows the specification. In other words, if you deploy a contract that follows the ERC20 standard, all existing wallet users can seamlessly start trading your token without any wallet upgrade or effort on your part.
+The primary purpose of these standards is to encourage _interoperability_ between contracts. Thus, all wallets, exchanges, user interfaces, and other infrastructure components can _interface_ in a predictable manner with any contract that follows the specification. In other words, if you deploy a contract that follows the ERC20 standard, all existing wallet users can seamlessly start trading your token without any wallet upgrade or effort on your part.
 
-The standards are meant to be _descriptive_, rather than _prescriptive_. How you choose to implement those functions is up to you - the internal function of the contract is not relevant to the standard. They have some functional requirements, which govern the behavior under specific circumstances, but they do not prescribe an implementation. An example of this is the behavior of a transfer function if the value is set to zero.
+The standards are meant to be _descriptive_, rather than _prescriptive_. How you choose to implement those functions is up to you&#x2014;the internal functioning of the contract is not relevant to the standard. They have some functional requirements, which govern the behavior under specific circumstances, but they do not prescribe an implementation. An example of this is the behavior of a Transfer function if the value is set to zero.
 
 [[should_use_std]]
-==== Should you use these standards?
+==== Should You Use These Standards?
 
 Given all these standards, each developer faces a dilemma: use the existing standards or innovate beyond the restrictions they impose?
 
-This dilemma is not easy to resolve. Standards necessarily restrict your ability to innovate, by creating a narrow "rut" that you have to follow. On the other hand, the basic standards have emerged from the experience with hundreds of applications and often fit well with the vast majority of use cases.
+This dilemma is not easy to resolve. Standards necessarily restrict your ability to innovate, by creating a narrow "rut" that you have to follow. On the other hand, the basic standards have emerged from experience with hundreds of applications and often fit well with the vast majority of use cases.
 
-As part of this consideration is an even bigger issue: the value of interoperability and broad adoption. If you choose to use an existing standard, you gain the value of all the systems designed to work with that standard. If you choose to depart from the standard, you have to consider the cost of building all of the support infrastructure on your own, or persuading others to support your implementation as a new standard. The tendency to forge your own path and ignore existing standards is known as "Not Invented Here" and is antithetical to open source culture. On the other hand, progress and innovation depends on departing from tradition sometimes. It's a tricky choice, so consider it carefully!
+As part of this consideration is an even bigger issue: the value of interoperability and broad adoption. If you choose to use an existing standard, you gain the value of all the systems designed to work with that standard. If you choose to depart from the standard, you have to consider the cost of building all of the support infrastructure on your own, or persuading others to support your implementation as a new standard. The tendency to forge your own path and ignore existing standards is known as "Not Invented Here" syndrome and is antithetical to open source culture. On the other hand, progress and innovation depend on departing from tradition sometimes. It's a tricky choice, so consider it carefully!
 
 [NOTE]
 ====
-*Not invented here* is a stance adopted by social, corporate, or institutional cultures that avoid using or buying already existing products, research, standards, or knowledge because of their external origins and costs, such as royalties. See https://en.wikipedia.org/wiki/Not_invented_here.
+Per Wikipedia, https://en.wikipedia.org/wiki/Not_invented_here[&#x201c;Not Invented Here&#x201d;] is a stance adopted by social, corporate, or institutional cultures that avoid using or buying already existing products, research, standards, or knowledge because of their external origins and costs, such as royalties.
 ====
 
 
 [[security_maturity]]
-=== Security by maturity
+==== Security by Maturity
 
 Beyond the choice of standard, there is the parallel choice of _implementation_. When you decide to use a standard such as ERC20, you have to then decide how to implement a compatible design. There are a number of existing "reference" implementations that are widely used in the Ethereum ecosystem, or you could write your own from scratch. Again, this choice represents a dilemma that can have serious security implications.
 
-Existing implementations are "battle tested". While it is impossible to prove that they are secure, many of them underpin millions of dollars of tokens. They have been attacked, repeatedly and vigorously. So far, no significant vulnerabilities have been discovered. Writing your own is not easy - there are many subtle ways that a contract can be compromised. It is much safer to use a well-tested widely-used implementation. In our examples above, we used the OpenZeppelin implementation of the ERC20 standard, as this implementation is security-focused from the ground up.
+Existing implementations are &#x201c;battle-tested.&#x201d; While it is impossible to prove that they are secure, many of them underpin millions of dollars' worth of tokens. They have been attacked, repeatedly and vigorously. So far, no significant vulnerabilities have been discovered. Writing your own is not easy&#x2014;there are many subtle ways that a contract can be compromised. It is much safer to use a well-tested, widely used implementation. In our examples, we used the OpenZeppelin implementation of the ERC20 standard, as this implementation is security-focused from the ground up.
 
-If you use an existing implementation you can also extend it. Again, be careful with this impulse. Complexity is the enemy of security. Every single line of code you add expands the _attack surface_ of your contract and could represent a vulnerability lying in wait. You may not notice a problem until you put a lot of value on top of the contract and someone breaks it.
+If you use an existing implementation you can also extend it. Again, however, be careful with this impulse. Complexity is the enemy of security. Every single line of code you add expands the _attack surface_ of your contract and could represent a vulnerability lying in wait. You may not notice a problem until you put a lot of value on top of the contract and someone breaks it.
 
 [TIP]
 ====
@@ -974,21 +978,21 @@ Standards and implementation choices are important parts of overall secure smart
 
 
 [[extend_token_interface]]
-=== Extensions to token interface standards
+=== Extensions to Token Interface Standards
 
-The token standards discussed in this section start with a very minimal interface, with limited functionality. Many projects have created extended implementations to support features that they need for their application. Some of these include:
+The token standards discussed in this chapter provide a very minimal interface, with limited functionality. Many projects have created extended implementations to support features that they need for their applications. Some of these features include:
 
-Owner Control:: Specific addresses, or sets of addresses (i.e. multi-sig) are given special capabilities, such as blacklisting, whitelisting, minting, recovery, etc.
+Owner control:: The ability to give specific addresses, or sets of addresses (i.e., multisignature schemes), special capabilities, such as blacklisting, whitelisting, minting, recovery, etc.
 
-Burning:: A token burn is when tokens are deliberately destroyed by transfer to an unspendable address or by erasing a balance and reducing the supply.
+Burning:: The ability to deliberately destroy (&#x201c;burn&#x201d;) tokens by transferring them to an unspendable address or by erasing a balance and reducing the supply.
 
-Minting:: The ability to add to the total supply of tokens, at a predictable rate, or by "fiat" of the creator of the token.
+Minting:: The ability to add to the total supply of tokens, at a predictable rate or by "fiat" of the creator of the token.
 
 Crowdfunding:: The ability to offer tokens for sale, for example through an auction, market sale, reverse auction, etc.
 
-Caps:: Pre-defined and immutable limits on the total supply, the opposite of the "minting" feature.
+Caps:: The ability to set predefined and immutable limits on the total supply (the opposite of the "minting" feature).
 
-Recovery "Back Doors":: Functions to recover funds, reverse transfers, or dismantle the token that can be activated by a designated address or sets of addresses.
+Recovery backdoors:: Functions to recover funds, reverse transfers, or dismantle the token that can be activated by a designated address or set of addresses.
 
 Whitelisting:: The ability to restrict actions (such as token transfers) to specific addresses. Most commonly used to offer tokens to "accredited investors" after vetting by the rules of different jurisdictions. There is usually a mechanism for updating the whitelist.
 
@@ -1001,8 +1005,12 @@ As previously discussed, the decision to extend a token standard with additional
 [[tokens_ico]]
 === Tokens and ICOs
 
-Tokens have been an explosive development in the Ethereum ecosystem. It is likely that they will be a very important, foundational component of all smart contract platforms like Ethereum.
+Tokens have been an explosive development in the Ethereum ecosystem. It is likely that they will become a very important component of all smart contract platforms like Ethereum.
 
-Nevertheless, the importance and future impact of these standards should not be confused with an endorsement of current token offerings. As in any early stage technology, the first wave of products and companies will almost all fail, and some will fail spectacularly. Many of the tokens on offer in Ethereum today are barely-disguised scams, pyramid schemes and money grabs.
+Nevertheless, the importance and future impact of these standards should not be confused with an endorsement of current token offerings. As in any early-stage technology, the first wave of products and companies will almost all fail, and some will fail spectacularly. Many of the tokens on offer in Ethereum today are barely disguised scams, pyramid schemes and money grabs.
 
-The trick is to separate the long-term vision and impact of this technology, which is likely to be huge, from the short term bubble of token ICOs, which is rife with fraud. Token standards and the platform will survive the current token mania, and then they will likely change the world.
+The trick is to separate the long-term vision and impact of this technology, which is likely to be huge, from the short-term bubble of token ICOs, which are rife with fraud. Token standards and the platform will survive the current token mania, and then they will likely change the world.
+
+=== Conclusions
+
+Tokens are a very powerful concept in Ethereum and can form the basis of many important decentralized applications. In this chapter we looked at the different types of tokens and token standards, and you built your first token and related application. We will revisit tokens again in <<dapps>>, where you will use a non-fungible token as the basis for an auction DApp.
