@@ -29,18 +29,18 @@ Importantly, contracts _only run if they are called by a transaction_. All smart
 
 Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
 
-As mentioned above, it is important to remember that a contract’s code cannot be changed. However a contract can be “deleted”, removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). That operation costs “negative gas”, a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract can not be deleted.
+As mentioned above, it is important to remember that a contract’s code cannot be changed. However a contract can be “deleted”, removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). That operation costs “negative gas”, a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract cannot be deleted.
 
 [[high_level_languages]]
 === Introduction to Ethereum high-level languages
 
-The EVM is an virtual machine that runs a special form of _machine code_ called _EVM bytecode_, just like your computer's CPU, which runs machine code such as x86_64. We will examine the operation and language of the EVM in much more detail in <<evm_chapter>>. In this section we will look at how smart contracts are written to run on the EVM.
+The EVM is an virtual machine that runs a special form of code called _EVM bytecode_, analagous to your computer's CPU, which runs machine code such as x86_64. We will examine the operation and language of the EVM in much more detail in <<evm_chapter>>. In this section we will look at how smart contracts are written to run on the EVM.
 
 While it is possible to program smart contracts directly in bytecode, EVM bytecode is rather unwieldy and very difficult for programmers to read and understand. Instead, most Ethereum developers use a high-level language to write programs, and a compiler to convert them into bytecode.
 
 While any high-level language could be adapted to write smart contracts, adapting an arbitrary language to be compilable to EVM bytecode is quite a cumbersome exercise and would in general lead to some amount of confusion. Smart contracts operate in a highly constrained and minimalistic execution environment (the EVM). In addition, a special set of EVM-specific system variables and functions need to be available. As such, it is easier to build a smart contract language from scratch than it is to make a general-purpose language suitable for writing smart contracts. As a result, a number of special-purpose languages have emerged for programming smart contracts. Ethereum has several such languages, together with the compilers needed to produce EVM-executable bytecode.
 
-In general, programming languages can be classified into two broad programming paradigms: declarative and imperative, also known as “functional” and “procedural”, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are “hybrid”, meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables”_.
+In general, programming languages can be classified into two broad programming paradigms: declarative and imperative, whose main sub-paradigms are “functional” and “procedural”, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are “hybrid,” meaning that they encourage declarative programming, but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no variables._
 
 While imperative programming is more commonly used by programmers, it can be very difficult to write programs that execute _exactly as expected_. The ability of any part of the program to change the state of any other makes it difficult to reason about a program’s execution and introduces many opportunities for bugs. Declarative programming by comparison makes it easier to understand how a program will behave: since it has no side effects, any part of a program can be understood in isolation.
 
@@ -81,7 +81,7 @@ The +0.5+ major version release of Solidity is anticipated imminently.
 
 As we saw in <<intro_chapter>>, your Solidity programs can contain a +pragma+ directive that specifies the minimum and maximum version of Solidity that it is compatible with, and can be used to compile your contract.
 
-Since Solidity is rapidly evolving it is best to always use the latest release.
+Since Solidity is rapidly evolving, it is often better to use the latest release.
 
 ==== Download and Install
 
@@ -375,7 +375,7 @@ As you can see in our +Faucet+ example, we have one payable function (the fallba
 
 ==== Contract constructor and selfdestruct
 
-There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional, as you'll notice our +Faucet+ example has no constructor function.
+There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional; as you'll notice our +Faucet+ example has no constructor function.
 
 Constructors can be specified in two ways. Up to and including Solidity v0.4.21, the constructor is a function whose name matches the name of the contract, as you'll see in the example <<old_constructor_style>>:
 
@@ -605,7 +605,7 @@ Events are especially useful for light clients and DApp services, which can "wat
 
 Event objects take arguments that are serialized and recorded in the transaction logs, in the blockchain. You can supply the keyword +indexed+ before an argument, to make the value part of an indexed table (hash table) that can be searched or filtered by an application.
 
-We have not added any events in our +Faucet+ example, so far, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+ respectively. First, we define the events in the +Faucet+ contract:
+We have not added any events in our +Faucet+ example, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+ respectively. First, we define the events in the +Faucet+ contract:
 
 ----
 contract Faucet is mortal {
@@ -768,7 +768,7 @@ Note that, while you are the owner of the Token contract, the Token contract its
 
 ===== Addressing an existing instance
 
-Another way we can call a contract is to cast the address of an existing instance of the contract. With this method, we apply a known interface to an existing instance. It is therefore critically important that we know, for sure, that the instance we are addressing is in fact of the type we assume. Let's look at an example:
+Another way we can call a contract is to cast the address of an existing instance of the contract. With this method, we apply a known interface to an existing instance. It is therefore critically important that we know for sure that the instance we are addressing is in fact of the type we assume. Let's look at an example:
 
 ----
 import "Faucet.sol";
@@ -788,7 +788,7 @@ Here, we take an address provided as an argument to the constructor, +_f+, and w
 
 ===== Raw call, delegatecall
 
-Solidity offers some even more "low-level" functions for calling other contracts. These correspond directly to EVM opcodes of the same name and allow us to construct a contract-to-contract call manually. As such, they represent the most flexible _and_ the most dangerous mechanisms for calling other contracts.
+Solidity offers some even lower-level functions for calling other contracts. These correspond directly to EVM opcodes of the same name and allow us to construct a contract-to-contract call manually. As such, they represent the most flexible _and_ the most dangerous mechanisms for calling other contracts.
 
 Here's the same example, using a +call+ method:
 
