@@ -185,15 +185,15 @@ module.exports = {
 };
 ----
 
-This configuration is a good starting point. It sets up one default Ethereum network (named +localnode+), which assumes you are running an Ethereum client (such as parity), either as a full node, or as a light client. This configuration will instruct truffle to communicate with the local node over RPC, on port 8545. Truffle will use whatever Ethereum network the local node is connected to, such as the Ethereum main network, or a test network like Ropsten. The local node will also be providing the wallet functionality.
+This configuration is a good starting point. It sets up one default Ethereum network (named +localnode+), which assumes we are running an Ethereum client such as Parity, either as a full node or as a light client. This configuration will instruct +truffle+ to communicate with the local node over RPC, on port 8545. +truffle+ will use whatever Ethereum network the local node is connected to, such as the Ethereum main network, or a test network like Ropsten. The local node will also be providing the wallet functionality.
 
-In following sections, we will configure additional networks for truffle to use, such as the +ganache+ local test blockchain, and Infura, a hosted network provider. As we add more networks, the configuration file will get more complex, but it will also give us more options for our testing and development workflow.
+In following sections, we will configure additional networks for +truffle+ to use, such as the +ganache+ local test blockchain and Infura, a hosted network provider. As we add more networks, the configuration file will get more complex, but it will also give us more options for our testing and development workflow.
 
 ===== Using truffle to deploy a contract
 
-We now have a basic working directory for our +Faucet+ project, and we have truffle and its dependencies configured. Contracts go in the +contracts+ subdirectory of our project. The directory already contains a "helper" contract, +Migrations.sol+, which manages contract upgrades for us. We'll examine the use of +Migrations.sol+ in a later section.
+We now have a basic working directory for our _Faucet_ project, and we have +truffle+ and its dependencies configured. Contracts go in the _contracts_ subdirectory of our project. The directory already contains a "helper" contract, _Migrations.sol_, which manages contract upgrades for us. We'll examine the use of _Migrations.sol_ in the next section.
 
-Let's copy the +Faucet.sol+ contract (from <<solidity_faucet_example>>) into the +contracts+ subdirectory, so that the project directory looks like this:
+Let's copy the _Faucet.sol_ contract (from <<solidity_faucet_example>>) into the _contracts_ subdirectory, so that the project directory looks like this:
 
 ----
 Faucet
@@ -203,58 +203,64 @@ Faucet
 ...
 ----
 
-We can now ask truffle to compile the contract for us:
+We can now ask +truffle+ to compile the contract for us:
 
-----
-$ truffle compile
+++++
+<pre data-type="programlisting">
+$ <strong>truffle compile</strong>
 Compiling ./contracts/Faucet.sol...
 Compiling ./contracts/Migrations.sol...
 Writing artifacts to ./build/contracts
-----
+</pre>
+++++
 
-===== Truffle migrations - understanding deployment scripts
+[[truffle_migrations_understanding_deployment_scripts]]
+===== Truffle migrations&#x2014;understanding deployment scripts
 
-Truffle offers a deployment system called a _migration_. If you have worked in other frameworks, you may have seen something similar: Ruby on Rails, Python Django and many other languages and frameworks have a +migrate+ command.
+Truffle offers a deployment system called a _migration_. If you have worked in other frameworks, you may have seen something similar: Ruby on Rails, Python Django, and many other languages and frameworks have a +migrate+ command.
 
-In all those frameworks, the purpose of a migration is to handle changes in the data schema between different versions of the software. The purpose of migrations in Ethereum is slightly different. Because Ethereum contracts are immutable and cost gas to deploy, truffle offers a migration mechanism to keep track of which contracts (and which versions) have already been deployed. In a complex project with dozens of contracts and complex dependencies, you would not want to have to pay to redeploy contracts that haven't changed. You would also not want to manually track which versions of which contracts have been deployed already. The truffle migration mechanism does all that by deploying the smart contract +Migrations.sol+, which then keeps track of all other contract deployments.
+In all those frameworks, the purpose of a migration is to handle changes in the data schema between different versions of the software. The purpose of migrations in Ethereum is slightly different. Because Ethereum contracts are immutable and cost gas to deploy, Truffle offers a migration mechanism to keep track of which contracts (and which versions) have already been deployed. In a complex project with dozens of contracts and complex dependencies, you would not want to have to pay to redeploy contracts that haven't changed. You would also not want to manually track which versions of which contracts have been deployed already. The Truffle migration mechanism does all that by deploying the smart contract _Migrations.sol_, which then keeps track of all other contract deployments.
 
-We have only one contract, +Faucet.sol+, which means that the migration system is overkill, to say the least. Unfortunately, we have to use it. But, by learning how to use it for one contract, we can start practicing some good habits for our development workflow. The effort will pay off as things get more complicated.
+We have only one contract, _Faucet.sol_, which means that the migration system is overkill, to say the least. Unfortunately, we have to use it. But, by learning how to use it for one contract, we can start practicing some good habits for our development workflow. The effort will pay off as things get more complicated.
 
-Truffle's +migrations+ directory is where the migration scripts are found. Right now, there's only one script +1_initial_migration.js+, which deploys the +Migrations.sol+ contract itself:
+Truffle's _migrations_ directory is where the migration scripts are found. Right now there's only one script, __1_initial_migration.js__, which deploys the _Migrations.sol_ contract itself:
 
-[[1_initial_migration]]
+
 [source,javascript,linenums]
 ----
 include::code/truffle/Faucet/migrations/1_initial_migration.js[]
 ----
 
-We need a second migration script, to deploy +Faucet.sol+. Let's call it +2_deploy_contracts.js+. It is very simple, just like +1_initial_migration.js+, with only a few small changes. In fact, you can copy the contents of +1_initial_migration.js+ and simply replace all instances of +Migrations+ with +Faucet+:
+We need a second migration script, to deploy _Faucet.sol_. Let's call it __2_deploy_contracts.js__. It is very simple, just like __1_initial_migration.js__, with only a few small changes. In fact, you can copy the contents of __1_initial_migration.j__ and simply replace all instances of +Migrations+ with +Faucet+:
 
 [source,javascript,linenums]
 ----
 include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
 ----
 
-The script initializes a variable +Faucet+, identifying the +Faucet.sol+ Solidity source code as the artifact that defines +Faucet+. Then, it calls the deploy function to deploy this contract.
+The script initializes a variable +Faucet+, identifying the _Faucet.sol_ Solidity source code as the artifact that defines +Faucet+. Then it calls the deploy function to +deploy+ this contract.
 
-We're all set. Let's use +truffle migrate+ to deploy the contract. We have to specify on which network to deploy the contract, using the +--network+ argument. We only have one network specified in the configuration file, which we named +localnode+. Make sure your local Ethereum client is running and then type:
+We're all set. Let's use +truffle migrate+ to deploy it on. We have to specify which network to deploy the contract, using the +--network+ argument. We only have one network specified in the configuration file, which we named +localnode+. Make sure your local Ethereum client is running and then type:
 
-----
-Faucet $ truffle migrate --network localnode
-----
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle migrate --network localnode</strong>
+</pre>
+++++
 
-Because we are using a local node to connect to the Ethereum network and manage our wallet, we have to authorize the transaction that truffle creates. I'm running +parity+ connected to the Ropsten test blockchain, so during the truffle migration I will see a pop-up on parity's web console:
+Because we are using a local node to connect to the Ethereum network and manage our wallet, we have to authorize the transaction that +truffle+ creates. We're running +parity+ connected to the Ropsten test blockchain, so during the migration we'll see a pop-up like the one in <<parity_deployment_confirmation>> on Parity's web console.
 
 [[parity_deployment_confirmation]]
 .Parity asking for confirmation to deploy Faucet
 image::images/parity_deployment_confirmation.png["Parity asking for confirmation to deploy Faucet"]
 
-You will see four transactions, total. One to deploy +Migrations+, one to update the deployments counter to +1+, one to deploy +Faucet+ and one to update the deployments counter to +2+.
+There are four transactions in total: one to deploy +Migrations+, one to update the deployments counter to +1+, one to deploy +Faucet+, and one to update the deployments counter to +2+.
 
-Truffle will show the migrations completing, show each of the transactions and show the contract addresses:
+Truffle will show the migrations completing, show each of the transactions, and show the contract addresses:
 
-----
-$ truffle migrate --network localnode
+++++
+<pre data-type="programlisting">
+$ <strong>truffle migrate --network localnode</strong>
 Using network 'localnode'.
 
 Running migration: 1_initial_migration.js
@@ -271,190 +277,234 @@ Running migration: 2_deploy_contracts.js
 Saving successful migration to network...
   ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
 Saving artifacts...
-----
+</pre>
+++++
 
-===== Using the truffle console
+===== Using the Truffle console
 
-Truffle offers a JavaScript console that we can use to interact with the Ethereum network (via the local node), interact with deployed contracts, and interact with the wallet provider. In our current configuration (+localnode+), the node and wallet provider is our local parity client.
+Truffle offers a JavaScript console that we can use to interact with the Ethereum network (via the local node), interact with deployed contracts, and interact with the wallet provider. In our current configuration (+localnode+), the node and wallet provider is our local Parity client.
 
-Let's start the truffle console and try some commands:
+Let's start the Truffle console and try some commands:
 
-----
-$ truffle console --network localnode
+++++
+<pre data-type="programlisting">
+$ <strong>truffle console --network localnode</strong>
 truffle(localnode)>
-----
+</pre>
+++++
 
-Truffle presents a prompt, showing the selected network configuration (+localnode+). It's important to remember and be aware of which network we are using. You wouldn't want to accidentally deploy a test contract or make a transaction on the Ethereum main network. That could be an expensive mistake!
+Truffle presents a prompt, showing the selected network configuration (+localnode+).
 
-The truffle console offers an auto-complete function that makes it easy for us to explore the environment. If we press +Tab+ after a partially-completed command, truffle will complete the command for us. Pressing +Tab+ twice will show all possible completions if more than one command matches our input. In fact, if we press +Tab+ twice on an empty prompt, truffle lists all commands:
+[TIP]
+====
+It's important to remember and be aware of which network you are using. You wouldn't want to accidentally deploy a test contract or make a transaction on the Ethereum main network. That could be an expensive mistake!
+====
 
-----
+The Truffle console offers an autocomplete function that makes it easy for us to explore the environment. If we press Tab after a partially completed command, Truffle will complete the command for us. Pressing Tab twice will show all possible completions if more than one command matches our input. In fact, if we press Tab twice on an empty prompt, Truffle lists all the available commands:
+
+++++
+<pre data-type="programlisting" class="codewrap">
 truffle(localnode)>
 Array Boolean Date Error EvalError Function Infinity JSON Math NaN Number Object RangeError ReferenceError RegExp String SyntaxError TypeError URIError decodeURI decodeURIComponent encodeURI encodeURIComponent eval isFinite isNaN parseFloat parseInt undefined
 
 ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Intl Map Migrations Promise Proxy Reflect Set StateManager Symbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ assert async_hooks buffer child_process clearImmediate clearInterval clearTimeout cluster console crypto dgram dns domain escape events fs global http http2 https module net os path perf_hooks process punycode querystring readline repl require root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
 
 __defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
-----
+</pre>
+++++
 
-The vast majority of the wallet and node related functions are provided by the +web3+ object, which is an instance of the web3.js library. The +web3+ object abstracts the RPC interface to our parity node. You will also notice two objects with familiar names: +Migrations+ and +Faucet+. Those represent the contracts we just deployed. We will use the truffle console to interact with a contract. First, let's check our wallet via the +web3+ object:
+The vast majority of the wallet- and node-related functions are provided by the +web3+ object, which is an instance of the web3.js library. The +web3+ object abstracts the RPC interface to our Parity node. You will also notice two objects with familiar names: +Migrations+ and +Faucet+. Those represent the contracts we just deployed. We will use the Truffle console to interact with a contract. First, let's check our wallet via the +web3+ object:
 
-----
-truffle(localnode)> web3.eth.accounts
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.accounts</strong>
 [ '0x9e713963a92c02317a681b9bb3065a8249de124f',
   '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
-----
+</pre>
+++++
 
-Our parity client has two wallets, with some test ether on Ropsten. The +web3.eth.accounts+ attribute contains a list of all the accounts. We can check the balance of the first account, using the +getBalance+ function:
+Our Parity client has two wallets, with some test ether on Ropsten. The +web3.eth.accounts+ attribute contains a list of all the accounts. We can check the balance of the first account using the +getBalance+ function:
 
-----
-truffle(localnode)> web3.eth.getBalance(web3.eth.accounts[0]).toNumber()
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(web3.eth.accounts[0]).toNumber()</strong>
 191198572800000000
-truffle(localnode)>
-----
+truffle(localnode)&gt;
+</pre>
+++++
 
-The web3.js is a large JavaScript library that offers a comprehensive interface to the Ethereum system, via a provider such as a local client. We will examine web3.js in more detail in <<web3js_tutorial>>. Now let's try to interact with our contracts:
+web3.js is a large JavaScript library that offers a comprehensive interface to the Ethereum system, via a provider such as a local client. We will examine web3.js in more detail in <<web3js_tutorial>>. Now let's try to interact with our contracts:
 
-----
-truffle(localnode)> Faucet.address
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.address</strong>
 '0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
-truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
 0
-truffle(localnode)>
-----
+truffle(localnode)&gt;
+</pre>
+++++
 
-Next, we'll use +sendTransaction+ to send some test ether to fund the +Faucet+. Note the use of +web3.toWei+ to convert ether units for us. Typing eighteen zeros without making a mistake is both difficult and dangerous, so it's always better to use a unit converter for values. Here's how we send the transaction:
+Next, we'll use +sendTransaction+ to send some test ether to fund the +Faucet+ contract. Note the use of +web3.toWei+ to convert ether units for us. Typing 18 zeros without making a mistake is both difficult and dangerous, so it's always better to use a unit converter for values. Here's how we send the transaction:
 
-----
-truffle(localnode)> web3.eth.sendTransaction({from:web3.eth.accounts[0], to:Faucet.address, value:web3.toWei(0.5, 'ether')});
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
+                    to:Faucet.address, value:web3.toWei(0.5, 'ether')});</strong>
 '0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
-----
+</pre>
+++++
 
-Switch to the web console on +parity+, where you will see a pop-up asking you to confirm this transaction. Wait a minute and once the transaction is mined, you will be able to see the balance of our +Faucet+ contract:
+If we switch to the Parity web interface, we'll see a pop-up asking us to confirm this transaction. Once the transaction is mined, we'll be able to see the balance of our +Faucet+ contract:
 
-----
-truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
 500000000000000000
-----
+</pre>
+++++
 
-Let's call the +withdraw+ function now, to withdraw some test ether from the Faucet:
+Let's call the +withdraw+ function now, to withdraw some test ether from the contract:
 
-----
-truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.toWei(0.1, 'ether'))}).then(console.log)
-----
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                       {instance.withdraw(web3.toWei(0.1,
+                       'ether'))}).then(console.log)</strong>
+</pre>
+++++
 
-Again, you will need to approve the transaction in the parity web console. The balance of the +Faucet+ has decreased, and our test wallet has received +0.1+ ether:
+Again, we'll need to approve the transaction in the Parity web interface. If we check again we'll see that the balance of the +Faucet+ contract has decreased, and our test wallet has received 0.1 ether:
 
-----
-truffle(localnode)> web3.eth.getBalance(Faucet.address).toNumber()
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
 400000000000000000
-----
-
-
-----
-truffle(localnode)> Faucet.deployed().then(instance => {instance.withdraw(web3.toWei(1, 'ether'))})
-----
-
-----
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                    {instance.withdraw(web3.toWei(1, 'ether'))})</strong>
 StatusError: Transaction: 0xe147ae9e3610334ada8d863c9028c12bd0501be2d0cfd05865c18612b92d3f9c exited with an error (status 0).
-----
+</pre>
+++++
 
 ==== Embark
 
-Embark is a framework built to allow developers to easily develop and deploy Decentralized Applications.
-Embark integrates with Ethereum, IPFS, whisper and Swarm to offer the following features:
+GitHub: https://github.com/embark-framework/embark/[]
+
+Documentation: https://embark.status.im/docs/[]
+
++npm+ package repository: https://www.npmjs.com/package/embark[]
+
+Embark is a framework built to allow developers to easily develop and deploy decentralized applications.
+Embark integrates with Ethereum, IPFS, Whisper, and Swarm to offer the following features:
+
 * Automatically deploy contracts and make them available in JS code.
 * Watch for changes and update contracts to redeploy if needed.
-* Manage and interact with different chains (e.g testnet, local, mainnet).
+* Manage and interact with different chains (e.g., testnet, local, mainnet).
 * Manage complex systems of interdependent contracts.
-* Store and Retrieve data, including uploading and retrieving files hosted in IPFS.
+* Store and retrieve data, including uploading and retrieving files hosted in IPFS.
 * Ease the process of deploying the full application to IPFS or Swarm.
 * Send and receive messages through Whisper.
 
-Github: https://github.com/embark-framework/embark/ +
-Documentation: https://embark.status.im/docs/ +
-+npm+ package repository: https://www.npmjs.com/package/embark
+You can install it with +npm+:
 
-----
-$ npm -g install embark
-----
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install embark</strong>
+</pre>
+++++
+
 
 ==== OpenZeppelin
 
+GitHub: https://github.com/OpenZeppelin/openzeppelin-solidity[]
+
+Website: https://openzeppelin.org/[]
+
+Documentation: https://openzeppelin.org/api/docs/open-zeppelin.html[]
+
 https://openzeppelin.org/[OpenZeppelin] is an open framework of reusable and secure smart contracts in the Solidity language.
 
-It is community-driven, led by the https://zeppelin.solutions/[Zeppelin] team, with over a hundred external contributors. The main focus of the framework is security, achieved by applying industry-standard contract security patterns and best practices, taking advantage of all the experience the Zeppelin devs have gained from https://blog.zeppelin.solutions/tagged/security[auditing] a huge number of contracts, and through constant testing and auditing from the community that uses the framework as a base for their real-world applications.
+It is community-driven, led by the https://zeppelin.solutions/[Zeppelin] team, with over a hundred external contributors. The main focus of the framework is security, achieved by applying industry-standard contract security patterns and best practices, drawing on all the experience the Zeppelin devs have gained from https://blog.zeppelin.solutions/tagged/security[auditing] a huge number of contracts, and through constant testing and auditing from the community that uses the framework as a base for their real-world applications.
 
-The OpenZeppelin framework is the most widely used solution for Ethereum smart contracts. The framework currently has an ample library of contracts including implementations of `ERC20` and `ERC721` tokens, many flavors of crowdsale models, and simple behaviors commonly found in contracts such as `Ownable`, `Pausable` or `LimitBalance`. The contracts in this repository in some cases function as _de facto_ standard implementations.
+The OpenZeppelin framework is the most widely used solution for Ethereum smart contracts. The framework currently has an ample library of contracts including implementations of ERC20 and ERC721 tokens, many flavors of crowdsale models, and simple behaviors commonly found in contracts such as `Ownable`, `Pausable`, or `LimitBalance`. The contracts in this repository in some cases function as _de facto_ standard implementations.
 
-The framework is licensed under an MIT license, and all the contracts have been designed with a modular approach to guarantee ease of reuse and extension. These are clean and basic building blocks, ready to be used on your next Ethereum project. Let's set up the framework and build a simple crowdsale using the OpenZeppelin contracts, to demonstrate how easy it is to use. This example also stresses the importance of reusing secure components instead of writing them by yourself.
+The framework is licensed under an MIT license, and all the contracts have been designed with a modular approach to guarantee ease of reuse and extension. These are clean and basic building blocks, ready to be used in your next Ethereum project. Let's set up the framework and build a simple crowdsale using the OpenZeppelin contracts, to demonstrate how easy it is to use. This example also stresses the importance of reusing secure components instead of writing them by yourself.
 
-First, we will need to install the +openzeppelin-solidity+ library into our workspace. The latest release as of the time of this writing is `v1.9.0`, so we will use that one.
+First, we will need to install the +openzeppelin-solidity+ library into our workspace. The latest release as of the time of this writing is v1.9.0, so we will use that one:
 
-----
-mkdir sample-crowdsale
-cd sample-crowdsale
-npm install openzeppelin-solidity@1.9.0
-mkdir contracts
-----
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir sample-crowdsale</strong>
+$ <strong>cd sample-crowdsale</strong>
+$ <strong>npm install openzeppelin-solidity@1.9.0</strong>
+$ <strong>mkdir contracts</strong>
+</pre>
+++++
 
-At the time of writing, OpenZeppelin includes multiple basic token contracts that follow the ERC20, ERC721 and ERC827 standards, with different characteristics for emission, limits, vesting, lifecycle, etc.
+At the time of writing, OpenZeppelin includes multiple basic token contracts that follow the ERC20, ERC721, and ERC827 standards, with different characteristics for emission, limits, vesting, life cycle, etc.
 
-Let's make an ERC20 token that's mintable, meaning that the initial supply starts at 0 and new tokens can be created by the token owner (in our case, the crowdsale contract) and sold to buyers. In order to do this, create a `contracts/SampleToken.sol` file with the following contents:
+Let's make an ERC20 token that's mintable, meaning that the initial supply starts at 0 and new tokens can be created by the token owner (in our case, the crowdsale contract) and sold to buyers. In order to do this, we'll create a _contracts/SampleToken.sol_ file with the following contents:
 
+[source,solidity]
 ----
 include::code/OpenZeppelin/contracts/SampleToken.sol[]
 ----
 
-OpenZeppelin already provides a MintableToken contract that we can use as a base for our token, so we only define the details that are specific to our case. Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[RefundableCrowdsale] contract. Maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[IncreasingPriceCrowdsale] contract just for that. Or maybe end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[CappedCrowdsale]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[TimedCrowdsale] contract, or a whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[WhitelistedCrowdsale] contract.
+OpenZeppelin already provides a +MintableToken+ contract that we can use as a base for our token, so we only define the details that are specific to our case. Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[+RefundableCrowdsale+] contract. Or maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is an https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[+IncreasingPriceCrowdsale+] contract just for that. You can also end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[+CappedCrowdsale+]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[+TimedCrowdsale+] contract, or a create whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[+WhitelistedCrowdsale+] contract.
 
-As we said before, the OpenZeppelin contracts are basic building blocks. These crowdsale contracts have been designed to be combined; just read the source code of the base https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/Crowdsale.sol[Crowdsale] contract for directions on how to extend it. For the crowdsale of our token, we need to mint tokens when ether is received by the crowdsale contract, so let's use https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/emission/MintedCrowdsale.sol[MintedCrowdsale] as a base. And to make it more interesting, let's make it also a https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol[PostDeliveryCrowdsale] so the tokens can only be withdrawn after the crowdsale ends. Write the following into `contracts/SampleCrowdsale.sol`:
+As we said before, the OpenZeppelin contracts are basic building blocks. These crowdsale contracts have been designed to be combined; just read the source code of the base https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/Crowdsale.sol[+Crowdsale+] contract for directions on how to extend it. For the crowdsale of our token, we need to mint tokens when ether is received by the crowdsale contract, so let's use https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/emission/MintedCrowdsale.sol[+MintedCrowdsale+] as a base. And to make it more interesting, let's also make it a https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol[PostDeliveryCrowdsale] so the tokens can only be withdrawn after the crowdsale ends. To do this, we'll write the following into _contracts/SampleCrowdsale.sol_:
 
+[source,solidity]
 ----
 include::code/OpenZeppelin/contracts/SampleCrowdsale.sol[]
 ----
 
-Again, we barely had to write any code, just reuse the battle-tested code that the OpenZeppelin community made available. However, it is important to note that this case is different than that of our `SampleToken` contract. If you go to the https://github.com/OpenZeppelin/openzeppelin-solidity/tree/v1.9.0/test/crowdsale[Crowdsale automated tests] you will see that they are tested in isolation. When you integrate different units of code into a bigger component, it's not enough to test all the units separately, because the interactions between them might cause behaviors that you didn't expect. In particular, you will see that here we introduced multiple inheritance, which can surprise the developer if they don't understand the details of Solidity. Our `SampleCrowdsale` is simple, and it will work just as we expect because the framework was designed to make cases like these straightforward; but do not relax your vigilance because of the simplicity that this framework introduces. Every time you integrate parts of the OpenZeppelin framework to build a more complex solution, you must fully test every aspect of your solution to ensure that all the interactions of the units work as you intend.
+Again, we barely had to write any code; we just reused the battle-tested code that the OpenZeppelin community made available. However, it is important to note that this case is different than that of our `SampleToken` contract. If you go to the https://github.com/OpenZeppelin/openzeppelin-solidity/tree/v1.9.0/test/crowdsale[Crowdsale automated tests] you will see that they are tested in isolation. When you integrate different units of code into a bigger component, it's not enough to test all the units separately, because the interactions between them might cause behaviors that you didn't expect. In particular, you will see that here we introduced multiple inheritance, which can surprise the developer if they don't understand the details of Solidity. Our pass:[<span class="keep-together"><code>SampleCrowdsale</code></span>] contract is simple, and it will work just as we expect because the framework was designed to make cases like these straightforward; but do not relax your vigilance because of the simplicity that this framework introduces. Every time you integrate parts of the OpenZeppelin framework to build a more complex solution, you must fully test every aspect of your solution to ensure that all the interactions of the units work as you intend.
 
-Finally, when we are happy with our solution and have tested it thoroughly, we need to deploy it. OpenZeppelin integrates well with Truffle, so we can just write a migrations file as explained in the Truffle section above. Write the following in +migrations/2_deploy_contracts.js+:
+Finally, when we are happy with our solution and have tested it thoroughly, we need to deploy it. OpenZeppelin integrates well with Truffle, so we can just write a migrations file like the following (migrations/2_deploy_contracts.js), as explained in <<truffle_migrations_understanding_deployment_scripts>>:
 
 ----
 include::code/OpenZeppelin/migrations/2_deploy_contracts.js[]
 ----
 
+[NOTE]
+====
 This was just a quick overview of a few of the contracts that are part of the OpenZeppelin framework. You are welcome to join the OpenZeppelin development community to learn and contribute.
+====
 
-Github: https://github.com/OpenZeppelin/openzeppelin-solidity
+==== ZeppelinOS
 
-Website: https://openzeppelin.org/
+GitHhub: https://github.com/zeppelinos[]
 
-Documentation: https://openzeppelin.org/api/docs/open-zeppelin.html
+Website: https://zeppelinos.org[]
 
-==== zeppelin_os
-https://github.com/zeppelinos[zeppelin_os] is an open source, distributed platform of tools and services on top of the EVM
-to develop and manage smart contract applications securely.
+Blog: https://blog.zeppelinos.org[]
 
-Unlike OpenZeppelin's code, which needs to be re-deployed with each application every time, zeppelin_os's code lives on-chain. Applications that need a given functionality, say, an ERC20 token, not only do not have to re-design and re-audit its implementation (something that OpenZeppelin solved) but do not even need to deploy it. With zeppelin_os, an application interacts with the token's on-chain implementation directly, in much the same way as a desktop application interacts with the components of its underlying OS.
+https://github.com/zeppelinos[ZeppelinOS] is &#x201c;an open source, distributed platform of tools and services on top of the EVM
+to develop and manage smart contract applications securely.&#x201d;
 
-At the core of zeppelin_os sits a very clever contract known as a "proxy". A proxy is a contract that is capable of wrapping any other contract, exposing its interface without having to manually implement setters and getters for it, and can upgrade it without losing state. In Solidity terms, it can be seen as a normal contract whose business logic is contained within a library, which can be swapped for a new library at any time without losing its state. The way in which the proxy links to its implementation is completely automated and encapsulated for the developer. Practically any contract can be made upgradeable with little to no change in its code. More about zeppelin_os's proxy mechanism can be found in zeppelin_os's blog: https://blog.zeppelinos.org/[upgradeability-using-unstructured-storage], and an example of how to use it can be found here: https://github.com/zeppelinos/zos-lib/tree/master/examples/single.
+Unlike OpenZeppelin's code, which needs to be redeployed with each application every time it's used, ZeppelinOS's code lives on-chain. Applications that need a given functionality&#x2014;say, an ERC20 token&#x2014;not only do not have to redesign and reaudit its implementation (something that OpenZeppelin solved) but do not even need to deploy it. With ZeppelinOS, an application interacts with the token's on-chain implementation directly, in much the same way as a desktop application interacts with the components of its underlying OS.
 
-Developing applications using zeppelin_os is similar to developing JavaScript applications using NPM. An AppManager handles an application package for each version of the application. A package is simply a directory of contracts, each of which can have one or more upgradeable proxies. The AppManager not only provides proxies for application-specific contracts, but also does so for zeppelin_os implementations, in the form of a standard library. To see a full example of this, please visit: https://github.com/zeppelinos/zos-lib/tree/master/[examples/complex].
+At the core of ZeppelinOS sits a very clever contract known as a _proxy_. A proxy is a contract that is capable of wrapping any other contract, exposing its interface without having to manually implement setters and getters for it, and can upgrade it without losing state. In Solidity terms, it can be seen as a normal contract whose business logic is contained within a library, which can be swapped for a new library at any time without losing its state. The way in which the proxy links to its implementation is completely automated and encapsulated for the developer. Practically any contract can be made upgradeable with little to no change in its code. More about ZeppelinOS's proxy mechanism can be found in the  https://blog.zeppelinos.org/upgradeability-using-unstructured-storage[blog], and an example of how to use it can be found https://github.com/zeppelinos/zos-lib/tree/master/examples/single[on GitHub].
 
-Although currently in development, zeppelin_os aims to provide a wide set of additional features, such as developer tools, a scheduler that automates background operations within contracts, development bounties, a marketplace that facilitates communication and exchange of value between applications, and much more. All of this is described in zeppelin_os's https://zeppelinos.org/zeppelin_os_[whitepaper].pdf.
+Developing applications using ZeppelinOS is similar to developing JavaScript applications using +npm+. An +AppManager+ handles an application package for each version of the application. A package is simply a directory of contracts, each of which can have one or more upgradeable proxies. The +AppManager+ not only provides proxies for application-specific contracts, but also does so for ZeppelinOS implementations, in the form of a standard library. To see a full example of this, please visit: https://github.com/zeppelinos/zos/tree/master/examples/lib-complex[examples/complex].
 
-Github: https://github.com/zeppelinos
-Website: https://zeppelinos.org
-Blog: https://blog.zeppelinos.org
+Although currently in development, ZeppelinOS aims to provide a wide set of additional features, such as developer tools, a scheduler that automates background operations within contracts, development bounties, a marketplace that facilitates communication and exchange of value between applications, and much more. All of this is described in ZeppelinOS's https://zeppelinos.org/zeppelin_os_whitepaper.pdf[whitepaper].
+
+
+
 
 === Utilities
 
 ==== EthereumJS helpeth: A command line utility
 
-helpeth is a command line tool for key and transaction manipulation that makes a developer's job a lot easier.
+GitHub: https://github.com/ethereumjs/helpeth[]
 
-It is part of the EthereumJS collection of JavaScript based libraries and tools.
++helpeth+ is a command-line tool for key and transaction manipulation that makes a developer's job a lot easier.
 
-https://github.com/ethereumjs/helpeth
+It is part of the EthereumJS collection of JavaScript-based libraries and tools.
+
+
 
 ----
 Usage: helpeth [command]
@@ -488,137 +538,128 @@ Options:
 
 ==== dapp.tools
 
-Dapp.Tools is a comprehensive suite of blockchain-oriented developer tools created in the spirit of the Unix philosophy.
+Website: https://dapp.tools/[].
 
-The documentation and installation instructions are found at https://dapp.tools/
+dapp.tools is a comprehensive suite of blockchain-oriented developer tools created in the spirit of the Unix philosophy. The tools included are:
 
 
-===== Dapp
-Dapp is all you need to start developing for Ethereum. It creates new DApps, runs Solidity unit tests, debugs, deploys, launches testnets, and more.
+Dapp::
+Dapp is the basic user-facing tool, for creating new DApps, running Solidity unit tests, debugging and deploying contracts, launching testnets, and more.
 
-===== Seth
-Seth is a handy tool for slicing and dicing transactions, querying the blockchain, converting between data formats, performing remote calls, and other everyday tasks.
+Seth::
+Seth is used for composing transactions, querying the blockchain, converting between data formats, performing remote calls, and similar everyday tasks.
 
-===== Hevm
+Hevm::
 Hevm is a Haskell EVM implementation with a nimble terminal-based Solidity debugger. It’s used to test and debug DApps.
 
-===== Evmdis
-Evmdis is an EVM disassembler. It performs static analysis on the bytecode to provide a higher level of abstraction for the bytecode than raw EVM operations.
+evmdis::
+evmdis is an EVM disassembler; it performs static analysis on the bytecode to provide a higher level of abstraction than raw EVM operations.
 
-Features include:
 
-* Separates bytecode into basic blocks.
-* Jump target analysis, assigning labels to jump targets and replacing addresses with label names.
-* Composes individual operations into compound expressions where possible.
-* Provides insight into the state of the stack at the start of each block.
+==== SputnikVM
 
-Github: https://github.com/arachnid/evmdis
-
-===== SputnikVM
-
-SputnikVM is a standalone pluggable virtual machine for different Ethereum-based blockchains. It's written in Rust, can be used as a binary, cargo crate, shared library, or integrated through FFI, Protobuf and JSON interface. It has a separate binary sputnikvm-dev intended for testing purposes, which emulates most of the JSON RPC API and block mining.
-
-Github: https://github.com/etcdevteam/sputnikvm
+https://github.com/etcdevteam/sputnikvm[SputnikVM] is a standalone pluggable virtual machine for different Ethereum-based blockchains. It's written in Rust and can be used as a binary, cargo crate, or shared library, or integrated through FFI, Protobuf, and JSON interfaces. It has a separate binary, +sputnikvm-dev+, intended for testing purposes, which emulates most of the JSON-RPC API and block mining.
 
 === Libraries
 
 ==== web3.js
 
-web3.js is the Ethereum-compatible JS API for communicating with clients via JSON RPC, developed by the Ethereum Foundation.
+web3.js is the Ethereum-compatible JavaScript API for communicating with clients via JSON-RPC, developed by the Ethereum Foundation.
 
-Github: https://github.com/ethereum/web3.js
+GitHub: https://github.com/ethereum/web3.js[]
 
-+npm+ package repository: https://www.npmjs.com/package/web3
++npm+ package repository: https://www.npmjs.com/package/web3[]
 
-Documentation link for web3.js API 0.2x.x; https://github.com/ethereum/wiki/wiki/JavaScript-API
+Documentation for web3.js API 0.2x.x: https://github.com/ethereum/wiki/wiki/JavaScript-API[]
 
-Documentation link for web3.js API 1.0.0-beta.xx; https://web3js.readthedocs.io/en/1.0/web3.html
+Documentation for web3.js API 1.0.0-beta.xx: https://web3js.readthedocs.io/en/1.0/web3.html[]
 
 ==== web3.py
 
 web3.py is a Python library for interacting with the Ethereum blockchain, maintained by the Ethereum Foundation.
 
-Github: https://github.com/ethereum/web3.py
+GitHub: https://github.com/ethereum/web3.py[]
 
-PyPi: https://pypi.python.org/pypi/web3/4.0.0b9
+PyPi: https://pypi.python.org/pypi/web3/4.0.0b9[]
 
-Documentation: https://web3py.readthedocs.io/
+Documentation: https://web3py.readthedocs.io/[]
 
 ==== EthereumJS
 
-A collection of libraries and utilities for Ethereum.
+EthereumJS is collection of libraries and utilities for Ethereum.
 
-Github: https://github.com/ethereumjs
+GitHub: https://github.com/ethereumjs[]
 
-Website: https://ethereumjs.github.io/
+Website: https://ethereumjs.github.io/[]
 
 ==== web3j
 
-web3j is the Java and Android library for integrating with Ethereum clients and working with smart contracts.
+web3j is a Java and Android library for integrating with Ethereum clients and working with smart contracts.
 
-Github: https://github.com/web3j/web3j
+GitHub: https://github.com/web3j/web3j[]
 
-Website: https://web3j.io
+Website: https://web3j.io[]
 
-Documentation: https://docs.web3j.io
+Documentation: https://docs.web3j.io[]
 
-==== Etherjar
+==== EtherJar
 
-Etherjar is another Java library for integrating with Ethereum and working with smart contracts. It's designed for server side projects based on Java 8+, provides low-level access and a high-level wrapper around RPC, Ethereum data structures and Smart Contract access.
+EtherJar is another Java library for integrating with Ethereum and working with smart contracts. It's designed for server side projects based on Java 8+ and provides low-level access and a high-level wrapper around RPC, Ethereum data structures, and smart contract access.
 
-Github: https://github.com/infinitape/etherjar
+GitHub: https://github.com/infinitape/etherjar[]
 
 ==== Nethereum
 
 Nethereum is the .Net integration library for Ethereum.
 
-Github: https://github.com/Nethereum/Nethereum
+GitHub: https://github.com/Nethereum/Nethereum[]
 
-Website: http://nethereum.com/
+Website: http://nethereum.com/[]
 
-Documentation: https://nethereum.readthedocs.io/en/latest/
+Documentation: https://nethereum.readthedocs.io/en/latest/[]
 
 ==== ethers.js
 
-The ethers.js library is a compact, complete, full-featured, extensively tested MIT-licensed Ethereum library, which has received a DevEx grant from the Ethereum Foundation towards its extension and maintenance.
+The ethers.js library is a compact, complete, full-featured, extensively tested MIT-licensed Ethereum library, which has received a DevEx grant from the Ethereum Foundation toward its extension and maintenance.
 
-GitHub link: https://github.com/ethers-io/ethers.js
+GitHub link: https://github.com/ethers-io/ethers.js[]
 
-Documentation: https://docs.ethers.io
+Documentation: https://docs.ethers.io[]
 
 
 ==== Emerald Platform
 
-Emerald Platform provides libraries and UI components to build DApps on top of Ethereum. Emerald JS and Emerald JS UI provides set of modules and React components to build JavaScript applications and websites; Emerald SVG Icons is a set of blockchain related icons. In addition to JavaScript libraries it has a Rust library to operate private keys and transaction signatures. All Emerald libraries and components are licensed under the Apache License, version 2.0.
+Emerald Platform provides libraries and UI components to build DApps on top of Ethereum. Emerald JS and Emerald JS UI provide sets of modules and React components to build JavaScript applications and websites; Emerald SVG Icons is a set of blockchain-related icons. In addition to JavaScript libraries Emerald has a Rust library to operate private keys and transaction signatures. All Emerald libraries and components are licensed under the Apache License, version 2.0.
 
-Github: https://github.com/etcdevteam/emerald-platform
+GitHub: https://github.com/etcdevteam/emerald-platform[]
 
-Documentation: https://docs.etcdevteam.com
+Documentation: https://docs.etcdevteam.com[]
 
 [[testing_frameworks]]
-=== Testing smart contracts
+=== Testing Smart Contracts
 
-There are several commonly-used test frameworks for smart contract development, summarized in <<testing_frameworks_table>>, below.
+There are several commonly used test frameworks for smart contract development, summarized in <<testing_frameworks_table>>:
 
 [[testing_frameworks_table]]
-.Smart Contract Test Frameworks
+[options="header"]
+.Smart contract test frameworks summary
 |=======
-|Framework | Test Language(s)    | Testing Framework | Chain Emulator       | Website
-|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | truffleframework.com
-|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | embark.readthedocs.io
-|DApp      | Solidity            | ds-test (custom)  | Ethrun (Parity)      | dapp.readthedocs.io
-|Populus   | Python              | Pytes             | Python chain emulator| populus.readthedocs.io
+|Framework | Test language(s)    | Testing framework | Chain emulator       | Website
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.readthedocs.io[]
+|DApp      | Solidity            | ds-test (custom)  | Ethrun (Parity)      | https://dapp.tools/dapp/[]
+|Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
 |=======
 
 
-Truffle Test:: Part of the Truffle framework, Truffle allows for unit tests to be written in JavaScript (Mocha based) or Solidity. These tests are run against Ganache.
+Truffle:: Truffle allows for unit tests to be written in JavaScript (Mocha-based) or Solidity. These tests are run against Ganache.
 
-Embark Framework Testing:: Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark Framework automatically deploys smart contracts, and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts only when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like +assert.equal()+. The command +embark test+ will run any test files under directory +test+.
+Embark:: Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark framework automatically deploys smart contracts, and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts only when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like +assert.equal+. The command +embark test+ will run any test files under the directory _test_.
 
-DApp:: DApp uses native Solidity code (a library called ds-test) and a Parity-built Rust library called Ethrun to execute Ethereum bytecode and then assert correctness. The ds-test library provides assertion functions for validating correctness and events for logging data in the console.
-
-Assertions functions include:
-
+Dapp:: Dapp uses native Solidity code (a library called +ds-test+) and a Parity-built Rust library called +ethrun+ to execute Ethereum bytecode and then assert correctness. The +ds-test+ library provides assertion functions for validating correctness and events for logging data in the console.
++
+The assertion functions include:
++
 ----
 assert(bool condition)
 assertEq(address a, address b)
@@ -628,9 +669,9 @@ assertEq(uint a, uint b)
 assertEq0(bytes a, bytes b)
 expectEventsExact(address target)
 ----
-
-Logging commands will log information to the console, making them useful for debugging:
-
++
+The logging commands will log information to the console, making them useful for debugging:
++
 ----
 logs(bytes)
 log_bytes32(bytes32)
@@ -642,60 +683,77 @@ log_named_decimal_int(bytes32 key, int val, uint decimals)
 log_named_decimal_uint(bytes32 key, uint val, uint decimals)
 ----
 
-Populus:: Populus uses Python and its own chain emulator to run contracts written in Solidity. Unit tests are written in Python with the +pytest+ library. Populus supports writing contracts specifically for testing. These contract filenames should match the glob pattern +Test*.sol+ and be located anywhere under the project tests directory +tests+.
+Populus:: Populus uses Python and its own chain emulator to run contracts written in Solidity. Unit tests are written in Python with the +pytest+ library. Populus supports writing contracts specifically for testing. These contract filenames should match the glob pattern _Test*.sol_ and be located anywhere under the project tests directory, _tests_.
 
 
 [[on_blockchain_testing_sec]]
 ==== On-Blockchain Testing
 
-Although most testing shouldn't occur on deployed contracts, a contract's behavior can be checked via Ethereum clients.  The following commands can be used to assess a smart contract's state. These commands should be typed at the '+geth+' terminal, although any web3 console will also support these commands.
+Although most testing shouldn't occur on deployed contracts, a contract's behavior can be checked via Ethereum clients.  The following commands can be used to assess a smart contract's state. These commands should be typed at the +geth+ terminal, although any web3 console will also support them.
 
-....
-eth.getTransactionReceipt(txhash);
-....
-Gets the address of a contract at `+txhash+`.
-....
-eth.getCode(contractaddress)
-....
-Gets the code of a contract deployed at `+contractaddress+`. This can be used to verify proper deployment.
-....
-eth.getPastLogs(options)
-....
-Gets the full logs of the contract located at the address specified in +options+. This is helpful for viewing the history of a contract's calls.
-....
-eth.getStorageAt(address, position)
-....
-Gets the storage located at +address+ with an offset of +position+.
+To get the address of a contract at __++txhash++__, use:
+
+++++
+<pre data-type="programlisting">
+eth.getTransactionReceipt(<em>txhash</em>);
+</pre>
+++++
+
+
+This command gets the code of a contract deployed at __++contractaddress++__; this can be used to verify proper deployment:
+
+++++
+<pre data-type="programlisting">
+eth.getCode(<em>contractaddress</em>)
+</pre>
+++++
+
+This gets the full logs of the contract located at the address specified in __++options++__, which is helpful for viewing the history of a contract's calls:
+
+++++
+<pre data-type="programlisting">
+eth.getPastLogs(<em>options</em>)
+</pre>
+++++
+
+Finally, this command gets the storage located at __++address++__ with an offset of __++position++__:
+
+++++
+<pre data-type="programlisting">
+eth.getStorageAt(<em>address</em>, <em>position</em>)
+</pre>
+++++
 
 [[ganache]]
-==== Ganache: A local test blockchain
+==== Ganache: A Local Test Blockchain
 
-Ganache is a local test blockchain that you can use to deploy contracts, develop your applications, and run tests. It is available as a desktop application (with a graphical user interface) for Windows, Mac, and Linux. It is also available as a command-line utility called +ganache-cli+. For more details and installation instructions for the Ganache desktop application, see:
+Ganache is a local test blockchain that you can use to deploy contracts, develop your applications, and run tests. It is available as a desktop application (with a graphical user interface) for Windows, macOS, and Linux. It is also available as a command-line utility called +ganache-cli+. For more details and installation instructions for the Ganache desktop application, see https://truffleframework.com/ganache[].
 
-https://truffleframework.com/ganache
-
-The +ganache-cli+ code can be found here:
-
-https://github.com/trufflesuite/ganache-cli/
+The +ganache-cli+ code can be found at https://github.com/trufflesuite/ganache-cli/[].
 
 To install the command line +ganache-cli+, use +npm+:
 
-----
-$ npm install -g ganache-cli
-----
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g ganache-cli</strong>
+</pre>
+++++
 
-We can use ganache-cli to start a local blockchain for testing.
+You can use +ganache-cli+ to start a local blockchain for testing as follows:
 
-----
-$ ganache-cli \
+++++
+<pre data-type="programlisting">
+$ <strong>ganache-cli \
   --networkId=3 \
   --port="8545" \
   --verbose \
   --gasLimit=8000000 \
-  --gasPrice=4000000000;
-----
+  --gasPrice=4000000000;</strong>
+</pre>
+++++
 
+A few notes on this command line:
 
-* [ ] Check the `--networkId` and `--port` flag values match your configuration in truffle.js
-* [ ] Check the `--gasLimit` flag value matches the latest mainnet Gas Limit (i.e. 8000000 gas) shown at https://ethstats.net to avoid encountering `out of gas` exceptions unnecessarily. Note that a `--gasPrice` of 4000000000 represents a Gas Price of 4 gwei.
-* [ ] Optionally enter a `--mnemonic` flag value to restore a previous HD wallet and associated addresses
+* [ ] Check the `--networkId` and `--port` flag values match your configuration in _truffle.js_.
+* [ ] Check the `--gasLimit` flag value matches the latest mainnet gas limit (e.g., 8,000,000 gas) shown at https://ethstats.net to avoid encountering &#x201c;out of gas&#x201d; exceptions unnecessarily. Note that a `--gasPrice` of +4000000000+ represents a gas price of 4 gwei.
+* [ ] You can optionally enter a `--mnemonic` flag value to restore a previous HD wallet and associated addresses.
