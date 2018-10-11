@@ -26,7 +26,7 @@ console.log('Tx Hash: 0x' + txHash.toString('hex'))
 
 // Sign transaction
 const privKey = Buffer.from(
-	'91c8360c4cb4b5fac45513a7213f31d4e4a7bfcb4630e9fbf074f42a203ac0b9', 'hex');
+    '91c8360c4cb4b5fac45513a7213f31d4e4a7bfcb4630e9fbf074f42a203ac0b9', 'hex');
 tx.sign(privKey);
 
 serializedTx = tx.serialize();
