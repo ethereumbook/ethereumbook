@@ -9,6 +9,10 @@ Mastering Ethereum is a book for developers, offering a guide to the operation a
 
 This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
 
+## PDF Version
+
+There is no PDF version available. While it is possible to produce one, and you may do so for personal use, please **DO NOT** publish a PDF. The publishers and the authors provide a very generous open license that allows anyone to read this book for free on GitHub. It is not convenient to read that way, but it is free. Convenience, in the form of a nicely packaged PDF, ebook or printed book, is what the publishers charge money for and what pays for the publishers and authors work. Just like buying bottled water instead of drinking from the tap, buying a printed copy, PDF or ebook pays for the packaging. If you publish a PDF copy, you are violating the license, as a PDF is a derivative form and the -ND part of the license means "no derivatives". Doing so makes publishers less likely to publish with open licenses.
+
 ## Content
 
 The current status of the book is **IN PRODUCTION**. No further changes will be accepted into the first edition. The final draft of this book has been delivered to the publisher for final copy edit and production work. It is scheduled for publication and first print by December 2018.
