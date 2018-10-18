@@ -120,6 +120,7 @@ contract Attack {
       etherStore.withdrawFunds(1 ether);
   }
 
+  // get stolen funds out of Attack contract
   function collectEther() public {
       msg.sender.transfer(this.balance);
   }
@@ -183,7 +184,9 @@ still have `balances[0x0..123] = 1 ether`. This is also the case for the
 `lastWithdrawTime` mappings will be set and the execution will end.
 
 The final result is that the attacker has withdrawn all but 1 ether
-from the `EtherStore` contract in a single transaction.
+from the `EtherStore` contract in a single transaction into his own
+malicious contract. The attacker could then use  `collectEther` function
+to withdraw stolen funds out of `Attack` contract.
 
 [role="notoc"]
 ==== Preventative Techniques
@@ -1940,7 +1943,7 @@ contract DistributeTokens {
     function distribute() public {
         require(msg.sender == owner); // only owner
         for(uint i = 0; i < investors.length; i++) {
-            // here transferToken(to,amount) transfers "amount" of 
+            // here transferToken(to,amount) transfers "amount" of
             // tokens to the address "to"
             transferToken(investors[i],investorTokens[i]);
         }
