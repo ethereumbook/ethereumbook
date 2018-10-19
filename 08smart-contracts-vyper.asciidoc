@@ -1,13 +1,13 @@
 [[vyper_chap]]
 == Smart Contracts and Vyper
 
-Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
 
 In this chapter we will look at common problems with smart contracts, introduce the Vyper contract programming language, and compare it to Solidity, demonstrating the differences.
 
 === Vulnerabilities and Vyper
 
-https://arxiv.org/pdf/1802.06038.pdf[A recent study] analyzed nearly one million deployed Ethereum smart contracts and found that many of these contracts contained serious vulnerabilities. During their analysis, the researchers outlined three basic categories of trace vulnerabilities:
+https://arxiv.org/pdf/1802.06038.pdf[A recent study] ((("vulnerabilities", seealso="security; specific attacks/vulnerabilities")))((("Vyper","contract vulnerabilities and")))analyzed nearly one million deployed Ethereum smart contracts and found that many of these contracts contained serious vulnerabilities. During their analysis, the researchers outlined three basic categories of trace vulnerabilities:
 
 Suicidal contracts:: Smart contracts that can be killed by arbitrary addresses
 
@@ -20,11 +20,11 @@ Vulnerabilities are introduced into smart contracts via code. It may be strongly
 [[comparison_to_solidity_sec]]
 === Comparison to Solidity
 
-One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. It is important for those considering developing smart contracts in Vyper to understand what features Vyper does _not_ have, and why. Therefore, in this section, we will explore those features and provide justification for why they have been omitted.
+((("Solidity","Vyper compared to", id="ix_08smart-contracts-vyper-asciidoc1", range="startofrange")))((("Vyper","Solidity compared to", id="ix_08smart-contracts-vyper-asciidoc2", range="startofrange")))One of the ways in which Vyper tries to make unsafe code harder to write is by deliberately _omitting_ some of Solidity's features. It is important for those considering developing smart contracts in Vyper to understand what features Vyper does _not_ have, and why. Therefore, in this section, we will explore those features and provide justification for why they have been omitted.
 
 ==== Modifiers
 
-As we saw in the previous chapter, in Solidity you can write a function using modifiers. For example, the following function, `changeOwner`, will run the code in a modifier called `onlyBy` as part of its execution:
+((("modifiers")))((("Solidity","modifiers")))((("Vyper","modifiers")))As we saw in the previous chapter, in Solidity you can write a function using modifiers. For example, the following function, `changeOwner`, will run the code in a modifier called `onlyBy` as part of its execution:
 
 [source,javascript]
 ----
@@ -89,11 +89,11 @@ Vyper has done away with modifiers altogether. The recommendations from Vyper ar
 
 ==== Class Inheritance
 
-Inheritance allows programmers to harness the power of prewritten code by acquiring preexisting functionality, properties, and behaviors from existing software libraries. Inheritance is powerful and promotes the reuse of code. Solidity supports multiple inheritance as well as polymorphism, but while these are key features of object-oriented programming, Vyper does not support them. Vyper maintains that the implementation of inheritance requires coders and auditors to jump between multiple files in order to understand what the program is doing. Vyper also takes the view that multiple inheritance can make code too complicated to understand&#x2014;a view tacitly admitted by the Solidity https://github.com/ethereum/solidity/blob/release/docs/contracts.rst#inheritance[documentation], which gives an example of how multiple inheritance can be problematic.
+((("class inheritance")))((("inheritance")))((("Solidity","class inheritance")))((("Vyper","class inheritance")))Inheritance allows programmers to harness the power of prewritten code by acquiring preexisting functionality, properties, and behaviors from existing software libraries. Inheritance is powerful and promotes the reuse of code. Solidity supports multiple inheritance as well as polymorphism, but while these are key features of object-oriented programming, Vyper does not support them. Vyper maintains that the implementation of inheritance requires coders and auditors to jump between multiple files in order to understand what the program is doing. Vyper also takes the view that multiple inheritance can make code too complicated to understand&#x2014;a view tacitly admitted by the Solidity https://github.com/ethereum/solidity/blob/release/docs/contracts.rst#inheritance[documentation], which gives an example of how multiple inheritance can be problematic.
 
 ==== Inline Assembly
 
-Inline assembly gives developers low-level access to the Ethereum Virtual Machine, allowing Solidity programs to perform operations by directly accessing EVM instructions. For example, the following inline assembly code adds 3 to memory location +0x80+:
+((("inline assembly")))((("inline assembly","Solidity compared to Vyper")))((("Solidity inline assembly")))Inline assembly gives developers low-level access to the Ethereum Virtual Machine, allowing Solidity programs to perform operations by directly accessing EVM instructions. For example, the following inline assembly code adds 3 to memory location +0x80+:
 
 [source,assembly]
 ----
@@ -104,7 +104,7 @@ Vyper considers the loss of readability to be too high a price to pay for the ex
 
 ==== Function Overloading
 
-Function overloading allows developers to write multiple functions of the same name. Which function is used on a given occasion depends on the types of the arguments supplied. Take the following two functions, for example:
+((("function overloading")))((("Solidity","function overloading")))((("Vyper","function overloading")))Function overloading allows developers to write multiple functions of the same name. Which function is used on a given occasion depends on the types of the arguments supplied. Take the following two functions, for example:
 
 [source,javascript]
 ----
@@ -121,11 +121,11 @@ The first function (named +f+) accepts an input argument of type +uint+; the sec
 
 ==== Variable Typecasting
 
-There are two sorts of typecasting: _implicit_ and _explicit_
+((("Solidity","variable typecasting")))((("typecasting")))((("Vyper","variable typecasting")))There are two sorts of typecasting: _implicit_ and _explicit_
 
-Implicit typecasting is often performed at compile time. For example, if a type conversion is semantically sound and no information is likely to be lost, the compiler can perform an implicit conversion, such as converting a variable of type +uint8+ to +uint16+. The earliest versions of Vyper allowed implicit typecasting of variables, but recent versions do not.
+((("implicit typecasting")))Implicit typecasting is often performed at compile time. For example, if a type conversion is semantically sound and no information is likely to be lost, the compiler can perform an implicit conversion, such as converting a variable of type +uint8+ to +uint16+. The earliest versions of Vyper allowed implicit typecasting of variables, but recent versions do not.
 
-Explicit typecasts can be inserted in Solidity. Unfortunately, they can lead to unexpected behavior. For example, casting a +uint32+ to the smaller type +uint16+ simply removes the higher-order bits, as demonstrated here:
+((("explicit typecasting")))Explicit typecasts can be inserted in Solidity. Unfortunately, they can lead to unexpected behavior. For example, casting a +uint32+ to the smaller type +uint16+ simply removes the higher-order bits, as demonstrated here:
 
 [source,javascript]
 ----
@@ -134,7 +134,7 @@ uint16 b = uint16(a);
 // Variable b is 0x5678 now
 ----
 
-Vyper instead has a +convert+ function to perform explicit casts. The convert function (found on line 82 of https://github.com/ethereum/vyper/blob/master/vyper/types/convert.py[_convert.py_]):
+((("convert function (Vyper)")))Vyper instead has a +convert+ function to perform explicit casts. The convert function (found on line 82 of https://github.com/ethereum/vyper/blob/master/vyper/types/convert.py[_convert.py_]):
 
 [source,python]
 ----
@@ -183,7 +183,7 @@ Choosing explicit over implicit typecasting means that the developer is responsi
 
 ==== Preconditions and Postconditions
 
-Vyper handles preconditions, postconditions, and state changes explicitly. Whilst this produces redundant code, it also allows for maximal readability and safety. When writing a smart contract in Vyper, a developer should observe the following three points
+((("Vyper","preconditions/postconditions")))Vyper handles preconditions, postconditions, and state changes explicitly. Whilst this produces redundant code, it also allows for maximal readability and safety. When writing a smart contract in Vyper, a developer should observe the following three points
 
 Condition::
 What is the current state/condition of the Ethereum state variables?
@@ -192,11 +192,11 @@ What effects will this smart contract code have on the condition of the state va
 Interaction::
 After the first two considerations have been exhaustively dealt with, it is time to run the code. Before deployment, logically step through the code and consider all of the possible permanent outcomes, consequences, and scenarios of executing the code, including interactions with other contracts.
 
-Ideally, each of these points: should be carefully considered and then thoroughly documented in the code. Doing so will improve the design of the code, ultimately making it more readable and auditable.
+Ideally, each of these points: should be carefully considered and then thoroughly documented in the code. Doing so will improve the design of the code, ultimately making it more readable and auditable.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
 
 [[decorators_sec]]
 === Decorators
-The following decorators may be used at the start of each function:
+((("decorators, Vyper")))((("Vyper","decorators")))The following decorators may be used at the start of each function:
 
 +@private+:: The `@private` decorator makes the function inaccessible from outside the contract.
 
@@ -211,7 +211,7 @@ Vyper implements https://github.com/ethereum/vyper/blob/master/vyper/signatures/
 [[order_of_functions_sec]]
 === Function and Variable Ordering
 
-Each individual Vyper smart contract consists of a single Vyper file only. In other words, all of a given Vyper smart contract's code, including all functions, variables, and so forth, exists in one place. Vyper requires that each smart contract's function and variable declarations are physically written in a particular order. Solidity does not have this requirement at all. Let's take a quick look at a Solidity example:
+((("function declarations, ordering of")))((("Solidity","function ordering")))((("Solidity","variable ordering")))((("variable declarations, ordering of")))((("Vyper","function ordering")))((("Vyper","variable ordering")))Each individual Vyper smart contract consists of a single Vyper file only. In other words, all of a given Vyper smart contract's code, including all functions, variables, and so forth, exists in one place. Vyper requires that each smart contract's function and variable declarations are physically written in a particular order. Solidity does not have this requirement at all. Let's take a quick look at a Solidity example:
 
 [source,javascript]
 ----
@@ -266,11 +266,11 @@ This shows the correct ordering of functions and variables in a Vyper smart cont
 
 [[online_code_editor_and_compiler_sec]]
 === Compilation
-Vyper has its own https://vyper.online[online code editor and compiler], which allows you to write and then compile your smart contracts into bytecode, ABI, and LLL using only your web browser. The Vyper online compiler has a variety of prewritten smart contracts for your convenience, including contracts for a simple open auction, safe remote purchases, ERC20 tokens, and more.
+((("compiling","Vyper")))((("Vyper","compilation")))Vyper has its own https://vyper.online[online code editor and compiler], which allows you to write and then compile your smart contracts into bytecode, ABI, and LLL using only your web browser. The Vyper online compiler has a variety of prewritten smart contracts for your convenience, including contracts for a simple open auction, safe remote purchases, ERC20 tokens, and more.
 
 [NOTE]
 ====
-Vyper implements ERC20 as a precompiled contract, allowing these smart contracts to be easily used out of the box. Contracts in Vyper must be declared as global variables. An example for declaring the ERC20 variable is as follows:
+((("ERC20 token standard","Vyper implementation of")))Vyper implements ERC20 as a precompiled contract, allowing these smart contracts to be easily used out of the box. Contracts in Vyper must be declared as global variables. An example for declaring the ERC20 variable is as follows:
 
 [source,javascript]
 ----
@@ -294,22 +294,22 @@ vyper -f json ~/hello_world.v.py
 [[protecting_against_overflows_sec]]
 === Protecting Against Overflow Errors at the Compiler Level
 
-Overflow errors in software can be catastrophic when dealing with real value. For example, one https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction from mid-April 2018] shows the malicious transfer of over pass:[57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,<span class="keep-together">000 BEC</span>] tokens. The transaction, which occured in mid-April of 2018, was the result of an integer overflow issue in BeautyChain's ERC20 token contract (_BecToken.sol_). Solidity developers do have access to libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.12.0/contracts/math/SafeMath.sol[+SafeMath+] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril OSS]. However developers are not forced to use the safety tools. Put simply, if safety is not enforced by the language, developers can write unsafe code that will successfully compile and later on "successfully" execute.
+((("compiling","protecting against overflow errors at the compiler level")))((("overflow","protecting against")))((("Vyper","overflow protection")))Overflow errors in software can be catastrophic when dealing with real value. For example, one https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction from mid-April 2018] shows the malicious transfer of over pass:[57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,<span class="keep-together">000 BEC</span>] tokens. The transaction, which occured in mid-April of 2018, was the result of an integer overflow issue in BeautyChain's ERC20 token contract (_BecToken.sol_). Solidity developers do have access to libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.12.0/contracts/math/SafeMath.sol[+SafeMath+] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril OSS]. However developers are not forced to use the safety tools. Put simply, if safety is not enforced by the language, developers can write unsafe code that will successfully compile and later on "successfully" execute.
 
 Vyper has built-in overflow protection, implemented in a two-pronged approach. Firstly, Vyper provides https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275[a +SafeMath+ equivalent] which includes the necessary exception cases for integer arithmetic. Secondly, Vyper uses clamps whenever a literal constant is loaded, a value is passed to a function, or a variable is assigned. Clamps are implemented via custom functions in the Low-level Lisp-like Language (LLL) compiler, and cannot be disabled. (The Vyper compiler outputs LLL rather than EVM bytecode; this simplifies the development of Vyper itself.)
 
 
 [[reading_and_writing_data_sec]]
 === Reading and Writing Data
-While it is costly to store, read, and modify data, these storage operations are a necessary component of most smart contracts. Smart contracts can write data to two places:
+((("Vyper","reading/writing data")))While it is costly to store, read, and modify data, these storage operations are a necessary component of most smart contracts. Smart contracts can write data to two places:
 
-Global state:: The state variables in a given smart contract are stored in Ethereum's global state trie; a smart contract can only store, read, and modify data in relation to that particular contract's address (i.e., smart contracts cannot read or write to other smart contracts).
+Global state:: ((("global state trie")))The state variables in a given smart contract are stored in Ethereum's global state trie; a smart contract can only store, read, and modify data in relation to that particular contract's address (i.e., smart contracts cannot read or write to other smart contracts).
 
-Logs:: A smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[<code>__log__</code>] syntax for declaring these events, an update has been made that brings its event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called `MyLog` was originally `MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes[3])})`. The syntax has now become `MyLog: event({arg1: indexed(bytes[3])})`. It is important to note that the execution of the log event in Vyper was, and still is, as follows: `log.MyLog("123")`.
+Logs:: ((("logs, Vyper")))A smart contract can also write to Ethereum's chain data through log events. While Vyper initially employed the pass:[<code>__log__</code>] syntax for declaring these events, an update has been made that brings its event declaration more in line with Solidity's original syntax. For example, Vyper's declaration of an event called `MyLog` was originally `MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes[3])})`. The syntax has now become `MyLog: event({arg1: indexed(bytes[3])})`. It is important to note that the execution of the log event in Vyper was, and still is, as follows: `log.MyLog("123")`.
 
 While smart contracts can write to Ethereum's chain data (through log events), they are unable to read the on-chain log events they've created. Notwithstanding, one of the advantages of writing to Ethereum's chain data via log events is that logs can be discovered and read, on the public chain, by light clients. For example, the +logsBloom+ value in a mined block can indicate whether or not a log event is present. Once the existence of log events has been established, the log data can be obtained from a given transaction receipt.
 
 
 === Conclusions
 
-Vyper is a powerful and interesting new contract-oriented programming language. Its design is biased toward "correctness," at the expense of some flexibility. This may allow programmers to write better smart contracts and avoid certain pitfalls that cause serious vulnerabilities to arise. Next, we will look at smart contract security in more detail. Some of the nuances of Vyper design may become more apparent once you read about all the possible security problems that can arise in smart contracts.
+Vyper is a powerful and interesting new contract-oriented programming language. Its design is biased toward "correctness," at the expense of some flexibility. This may allow programmers to write better smart contracts and avoid certain pitfalls that cause serious vulnerabilities to arise. Next, we will look at smart contract security in more detail. Some of the nuances of Vyper design may become more apparent once you read about all the possible security problems that can arise in smart contracts.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc0")))
