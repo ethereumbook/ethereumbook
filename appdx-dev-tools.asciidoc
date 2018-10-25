@@ -238,7 +238,7 @@ We need a second migration script, to deploy _Faucet.sol_. Let's call it __2_dep
 include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
 ----
 
-The script initializes a variable +Faucet+, identifying the _Faucet.sol_ Solidity source code as the artifact that defines +Faucet+. Then it calls the deploy function to +deploy+ this contract.
+The script initializes a variable +Faucet+, identifying the _Faucet.sol_ Solidity source code as the artifact that defines +Faucet+. Then it calls the `deploy` function to deploy this contract.
 
 We're all set. Let's use +truffle migrate+ to deploy it on. We have to specify which network to deploy the contract, using the +--network+ argument. We only have one network specified in the configuration file, which we named +localnode+. Make sure your local Ethereum client is running and then type:
 
@@ -382,7 +382,7 @@ truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</s
 400000000000000000
 truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
                     {instance.withdraw(web3.toWei(1, 'ether'))})</strong>
-StatusError: Transaction: 0xe147ae9e3610334ada8d863c9028c12bd0501be2d0cfd05865c18612b92d3f9c exited with an error (status 0).
+StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c exited with an error (status 0).
 </pre>
 ++++
 
@@ -450,7 +450,7 @@ Let's make an ERC20 token that's mintable, meaning that the initial supply start
 include::code/OpenZeppelin/contracts/SampleToken.sol[]
 ----
 
-OpenZeppelin already provides a +MintableToken+ contract that we can use as a base for our token, so we only define the details that are specific to our case. Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[+RefundableCrowdsale+] contract. Or maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is an https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[+IncreasingPriceCrowdsale+] contract just for that. You can also end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[+CappedCrowdsale+]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[+TimedCrowdsale+] contract, or a create whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[+WhitelistedCrowdsale+] contract.
+OpenZeppelin already provides a +MintableToken+ contract that we can use as a base for our token, so we only define the details that are specific to our case. Next, let's make the crowdsale contract. Just like with tokens, OpenZeppelin already provides a wide variety of crowdsale flavors. Currently, you will find contracts for various scenarios involving distribution, emission, price, and validation. So, let’s say that you want to set a goal for your crowdsale and if it’s not met by the time the sale finishes, you want to refund all your investors. For that, you can use the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/RefundableCrowdsale.sol[+RefundableCrowdsale+] contract. Or maybe you want to define a crowdsale with an increasing price to incentivize early buyers; there is an https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/price/IncreasingPriceCrowdsale.sol[+IncreasingPriceCrowdsale+] contract just for that. You can also end the crowdsale when a specified amount of ether has been received by the contract (https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/CappedCrowdsale.sol[+CappedCrowdsale+]), or set a finishing time with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/TimedCrowdsale.sol[+TimedCrowdsale+] contract, or create a whitelist of buyers with the https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/validation/WhitelistedCrowdsale.sol[+WhitelistedCrowdsale+] contract.
 
 As we said before, the OpenZeppelin contracts are basic building blocks. These crowdsale contracts have been designed to be combined; just read the source code of the base https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/Crowdsale.sol[+Crowdsale+] contract for directions on how to extend it. For the crowdsale of our token, we need to mint tokens when ether is received by the crowdsale contract, so let's use https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/emission/MintedCrowdsale.sol[+MintedCrowdsale+] as a base. And to make it more interesting, let's also make it a https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.9.0/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol[+PostDeliveryCrowdsale+] so the tokens can only be withdrawn after the crowdsale ends. To do this, we'll write the following into _contracts/SampleCrowdsale.sol_:
 
@@ -488,7 +488,7 @@ Unlike OpenZeppelin's code, which needs to be redeployed with each application e
 
 ((("proxy")))At the core of ZeppelinOS sits a very clever contract known as a _proxy_. A proxy is a contract that is capable of wrapping any other contract, exposing its interface without having to manually implement setters and getters for it, and can upgrade it without losing state. In Solidity terms, it can be seen as a normal contract whose business logic is contained within a library, which can be swapped for a new library at any time without losing its state. The way in which the proxy links to its implementation is completely automated and encapsulated for the developer. Practically any contract can be made upgradeable with little to no change in its code. More about ZeppelinOS's proxy mechanism can be found in the  https://blog.zeppelinos.org/upgradeability-using-unstructured-storage[blog], and an example of how to use it can be found https://github.com/zeppelinos/zos-lib/tree/master/examples/single[on GitHub].
 
-Developing applications using ZeppelinOS is similar to developing JavaScript applications using +npm+. An +AppManager+ handles an application package for each version of the application. A package is simply a directory of contracts, each of which can have one or more upgradeable proxies. The +AppManager+ not only provides proxies for application-specific contracts, but also does so for ZeppelinOS implementations, in the form of a standard library. To see a full example of this, please visit: https://github.com/zeppelinos/zos/tree/master/examples/lib-complex[examples/complex].
+Developing applications using ZeppelinOS is similar to developing JavaScript applications using +npm+. An +AppManager+ handles an application package for each version of the application. A package is simply a directory of contracts, each of which can have one or more upgradeable proxies. The +AppManager+ not only provides proxies for application-specific contracts, but also does so for ZeppelinOS implementations, in the form of a standard library. To see a full example of this, please visit https://github.com/zeppelinos/zos/tree/master/examples/lib-complex[examples/complex].
 
 Although currently in development, ZeppelinOS aims to provide a wide set of additional features, such as developer tools, a scheduler that automates background operations within contracts, development bounties, a marketplace that facilitates communication and exchange of value between applications, and much more. All of this is described in ZeppelinOS's https://zeppelinos.org/zeppelin_os_whitepaper.pdf[whitepaper].(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc0")))
 
@@ -503,7 +503,7 @@ Although currently in development, ZeppelinOS aims to provide a wide set of addi
 
 +helpeth+ is a command-line tool for key and transaction manipulation that makes a developer's job a lot easier.
 
-It is part of the EthereumJS collection of JavaScript-based libraries and tools.
+It is part of the EthereumJS collection of JavaScript-based libraries and tools:
 
 
 
@@ -647,7 +647,7 @@ Documentation: https://docs.etcdevteam.com[]
 |=======
 |Framework | Test language(s)    | Testing framework | Chain emulator       | Website
 |Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
-|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.readthedocs.io[]
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.status.im/docs/[]
 |Dapp      | Solidity            | +ds-test+ (custom)  | +ethrun+ (Parity)      | https://dapp.tools/dapp/[]
 |Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
 |=======
