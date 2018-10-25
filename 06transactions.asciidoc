@@ -1,7 +1,7 @@
 [[tx_chapter]]
 == Transactions
 
-((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions what make that state machine "tick", changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are what make that state machine "tick," changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
 
 In this chapter, we will dissect transactions, show how they work, and examine the details. Note that much of this chapter is addressed to those who are interested in managing their own transactions at a low level, perhaps because they are writing a wallet app; you don't have to worry about this if you are happy using existing wallet applications, although you may find the details interesting!
 
@@ -28,7 +28,7 @@ v,r,s:: The three components of an ECDSA digital signature of the originating EO
 
 ((("Recursive Length Prefix (RLP)")))((("RLP (Recursive Length Prefix)")))The transaction message's structure is serialized using the Recursive Length Prefix (RLP) encoding scheme, which was created specifically for simple, byte-perfect data serialization in Ethereum. All numbers in Ethereum are encoded as big-endian integers, of lengths that are multiples of 8 bits.
 
-Note that the field labels (+to+, +gas limit+, etc.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length, belongs to the next field in the structure.
+Note that the field labels (+to+, +gas limit+, etc.) are shown here for clarity, but are not part of the transaction serialized data, which contains the field values RLP-encoded. In general, RLP does not contain any field delimiters or labels. RLP's length prefix is used to identify the length of each field. Anything beyond the defined length belongs to the next field in the structure.
 
 While this is the actual transaction structure transmitted, most internal representations and user interface visualizations embellish this with additional information, derived from the transaction or from the blockchain.
 
@@ -106,7 +106,7 @@ Let's look at an example:
 </pre>
 ++++
 
-As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there are more than one transaction pending, it might not help us.
+As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
 
 When you build an application that constructs transactions, it cannot rely on pass:[<span class="keep-together"><code>getTransactionCount</code></span>] for pending transactions. Only when the pending and confirmed counts are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
 
@@ -140,7 +140,7 @@ If you then transmit a transaction with the missing nonce 1, both transactions (
 
 What this means is that if you create several transactions in sequence and one of them does not get officially included in any blocks, all the subsequent transactions will be "stuck," waiting for the missing nonce. A transaction can create an inadvertent "gap" in the nonce sequence because it is invalid or has insufficient gas. To get things moving again, you have to transmit a valid transaction with the missing nonce. You should be equally mindful that once a transaction with the "missing" nonce is validated by the network, all the broadcast transactions with subsequent nonces will incrementally become valid; it is not possible to "recall" a transaction!
 
-((("nonces","confirmation")))((("nonces","duplicated")))If on the other hand you accidentally duplicate a nonce, for example by transmitting two transactions with the same nonce but different recipients or values, then one of them will be confirmed and one will be rejected. Which one is confirmed will be determined by the sequence in which they arrive at the first validating node that receives them&#x2014;i.e., it will be fairly random.
+((("nonces","confirmation")))((("nonces","duplicated")))If, on the other hand, you accidentally duplicate a nonce, for example by transmitting two transactions with the same nonce but different recipients or values, then one of them will be confirmed and one will be rejected. Which one is confirmed will be determined by the sequence in which they arrive at the first validating node that receives them&#x2014;i.e., it will be fairly random.
 
 As you can see, keeping track of nonces is necessary, and if your application doesn't manage that process correctly you will run into problems. Unfortunately, things get even more difficult if you are trying to do this concurrently, as we will see in the next section.
 
@@ -153,7 +153,7 @@ In simple terms, concurrency is when you have simultaneous computation by multip
 
 Now, imagine that you have multiple independent wallet applications that are generating transactions from the same address or addresses. One example of such a situation would be an exchange processing withdrawals from the exchange's hot wallet (a wallet whose keys are stored online, in contrast to a cold wallet where the keys are never online). Ideally, you'd want to have more than one computer processing withdrawals, so that it doesn't become a bottleneck or single point of failure. However, this quickly becomes problematic, as having more than one computer producing withdrawals will result in some thorny concurrency problems, not least of which is the selection of nonces. How do multiple computers generating, signing, and broadcasting transactions from the same hot wallet account coordinate?
 
-You could use a single computer to assign nonces, on a first-come first-served basis to computers signing transactions. However, this computer is now a single point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all subsequent transactions get stuck.
+You could use a single computer to assign nonces, on a first-come first-served basis, to computers signing transactions. However, this computer is now a single point of failure. Worse, if several nonces are assigned and one of them never gets used (because of a failure in the computer processing the transaction with that nonce), all subsequent transactions get stuck.
 
 Another approach would be to generate the transactions, but not assign a nonce to them (and therefore leave them unsigned&#x2014;remember that the nonce is an integral part of the transaction data and therefore needs to be included in the digital signature that authenticates the transaction). You could then queue them to a single node that signs them and also keeps track of nonces. Again, though, this would be a choke point in the process: the signing and tracking of nonces is the part of your operation that is likely to become congested under load, whereas the generation of the unsigned transaction is the part you don't really need to parallelize. You would have some concurrency, but it would be lacking in a critical part of the process.
 
@@ -403,7 +403,7 @@ Now we can create the transaction:
 <pre data-type="programlisting">
 > <strong>src = web3.eth.accounts[0];</strong>
 > <strong>faucet_code = \
-  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff1680632e1a7d4d146041575b005b3415604b57600080fd5b605f60048080359060200190919050506061565b005b67016345785d8a00008111151515607757600080fd5b3373ffffffffffffffffffffffffffffffffffffffff166108fc829081150290604051600060405180830381858888f19350505050151560b657600080fd5b505600a165627a7a72305820d276ddd56041f7dc2d2eab69f01dd0a0146446562e25236cf4ba5095d2ee802f0029";</strong>
+  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f3006060604052600...f0029";</strong>
 > <strong>web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, \
   gas: 113558, gasPrice: 200000000000});</strong>
 
@@ -435,7 +435,7 @@ We can look at the receipt of the transaction to get information about the contr
   gasUsed: 113558,
   logs: [],
   logsBloom: \
-    "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "0x00000000000000000000000000000000000000000000000000...00000",
   status: "0x1",
   to: null,
   transactionHash: \
@@ -445,7 +445,7 @@ We can look at the receipt of the transaction to get information about the contr
 </pre>
 ++++
 
-This include the address of the contract, which we can use to send funds to and receive funds from the contract as shown in the previous section:
+This includes the address of the contract, which we can use to send funds to and receive funds from the contract as shown in the previous section:
 
 ++++
 <pre data-type="programlisting">
@@ -455,8 +455,8 @@ This include the address of the contract, which we can use to send funds to and 
 
 "0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
 
-> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, \
-  data: "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: \
+  "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
 
 "0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
 </pre>
@@ -571,11 +571,11 @@ Verification is the inverse of the signature generation function, using the _r_ 
 
 where:
 
-* _r_ and _s_ are the signature values
-* _K_ is the signer's (EOA owner's) public key
-* _m_ is the transaction data that was signed
-* _G_ is the elliptic curve generator point
-* _p_ is the prime order of the elliptic curve
+* _r_ and _s_ are the signature values.
+* _K_ is the signer's (EOA owner's) public key.
+* _m_ is the transaction data that was signed.
+* _G_ is the elliptic curve generator point.
+* _p_ is the prime order of the elliptic curve.
 
 If the _x_ coordinate of the calculated point _Q_ is equal to _r_, then the verifier can conclude that the signature is valid.
 
@@ -712,8 +712,8 @@ Why would you want to separate the signing and transmission of transactions? The
 <<offline_signing>> shows the process:
 
 1. Create an unsigned transaction on the online computer where the current state of the account, notably the current nonce and funds available, can be retrieved.
-2. Transfer the unsigned transaction to an "air-gapped" offline device for transaction signing, e.g. via a QR code or USB flash drive.
-3. Transmit the signed transaction (back) to an online device for broadcast on the Ethereum blockchain, e.g. via QR code or USB flash drive.
+2. Transfer the unsigned transaction to an "air-gapped" offline device for transaction signing, e.g., via a QR code or USB flash drive.
+3. Transmit the signed transaction (back) to an online device for broadcast on the Ethereum blockchain, e.g., via QR code or USB flash drive.
 
 [[offline_signing]]
 .Offline signing of Ethereum transactions
