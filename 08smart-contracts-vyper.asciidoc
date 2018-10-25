@@ -1,7 +1,7 @@
 [[vyper_chap]]
 == Smart Contracts and Vyper
 
-((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine which strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
+((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper is an experimental, contract-oriented programming language for the Ethereum Virtual Machine that strives to provide superior auditability, by making it easier for developers to produce intelligible code. In fact, one of the principles of Vyper is to make it virtually impossible for developers to write misleading code.
 
 In this chapter we will look at common problems with smart contracts, introduce the Vyper contract programming language, and compare it to Solidity, demonstrating the differences.
 
@@ -81,7 +81,7 @@ function a()
 }
 ----
 
-On the one hand, developers should always check any other code that their own code is calling. However, it is possible that in certain situations (like when time constraints or exhaustion result in lack of concentration) a developer may overlook a single line of code. This is even more likely if the developer has to jump around inside a large file whilst mentally keeping track of the function call hierarchy and committing the state of smart contract variables to memory.
+On the one hand, developers should always check any other code that their own code is calling. However, it is possible that in certain situations (like when time constraints or exhaustion result in lack of concentration) a developer may overlook a single line of code. This is even more likely if the developer has to jump around inside a large file while mentally keeping track of the function call hierarchy and committing the state of smart contract variables to memory.
 
 Let's look at the preceding example in a bit more depth. Imagine that a developer is writing a public function called `a`. The developer is new to this contract and is utilizing a modifier written by someone else. At a glance, it appears that the `stageTimeConfirmation` modifier is simply performing some checks regarding the age of the contract in relation to the calling function. What the developer may _not_ realize is that the modifier is also calling another function, `nextStage`. In this simplistic demonstration scenario, simply calling the public function `a` results in the smart contract's `stage` variable moving from `SafeStage` to `DangerStage`.
 
@@ -167,10 +167,15 @@ def to_int128(expr, args, kwargs, context):
     in_node = args[0]
     typ, len = get_type(in_node)
     if typ in ('int128', 'uint256', 'bytes32'):
-        if in_node.typ.is_literal and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
-            raise InvalidLiteralException("Number out of range: {}".format(in_node.value), expr)
+        if in_node.typ.is_literal 
+            and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+            raise InvalidLiteralException(
+                "Number out of range: {}".format(in_node.value), expr
+            )
         return LLLnode.from_list(
-            ['clamp', ['mload', MemoryPositions.MINNUM], in_node, ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'), pos=getpos(expr)
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node,
+            ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'), pos=getpos(expr)
+        )
         )
     else:
         return byte_array_to_num(in_node, expr, 'int128')
@@ -183,7 +188,7 @@ Choosing explicit over implicit typecasting means that the developer is responsi
 
 ==== Preconditions and Postconditions
 
-((("Vyper","preconditions/postconditions")))Vyper handles preconditions, postconditions, and state changes explicitly. Whilst this produces redundant code, it also allows for maximal readability and safety. When writing a smart contract in Vyper, a developer should observe the following three points
+((("Vyper","preconditions/postconditions")))Vyper handles preconditions, postconditions, and state changes explicitly. While this produces redundant code, it also allows for maximal readability and safety. When writing a smart contract in Vyper, a developer should observe the following three points:
 
 Condition::
 What is the current state/condition of the Ethereum state variables?
@@ -192,7 +197,7 @@ What effects will this smart contract code have on the condition of the state va
 Interaction::
 After the first two considerations have been exhaustively dealt with, it is time to run the code. Before deployment, logically step through the code and consider all of the possible permanent outcomes, consequences, and scenarios of executing the code, including interactions with other contracts.
 
-Ideally, each of these points: should be carefully considered and then thoroughly documented in the code. Doing so will improve the design of the code, ultimately making it more readable and auditable.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
+Ideally, each of these points should be carefully considered and then thoroughly documented in the code. Doing so will improve the design of the code, ultimately making it more readable and auditable.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
 
 [[decorators_sec]]
 === Decorators
@@ -239,7 +244,7 @@ contract ordering {
 }
 ----
 
-In this example, the function called +topFunction+ is calling another function, +lowerFunction+. +topFunction+ is also assigning a value to a variable called +initiatizedBelowTopFunction+. As you can see, Solidity does not require these functions and variables to be physically declared before being called upon by the excecuting code. This is valid Solidity code which will compile succesfully.
+In this example, the function called +topFunction+ is calling another function, +lowerFunction+. +topFunction+ is also assigning a value to a variable called +initiatizedBelowTopFunction+. As you can see, Solidity does not require these functions and variables to be physically declared before being called upon by the excecuting code. This is valid Solidity code that will compile successfully.
 
 Vyper's ordering requirements are not a new thing; in fact, these ordering requirements have always been present in Python programming. The ordering required by Vyper is straightforward and logical, as illustrated in this next example:
 
@@ -294,9 +299,9 @@ vyper -f json ~/hello_world.v.py
 [[protecting_against_overflows_sec]]
 === Protecting Against Overflow Errors at the Compiler Level
 
-((("compiling","protecting against overflow errors at the compiler level")))((("overflow","protecting against")))((("Vyper","overflow protection")))Overflow errors in software can be catastrophic when dealing with real value. For example, one https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction from mid-April 2018] shows the malicious transfer of over pass:[57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,<span class="keep-together">000 BEC</span>] tokens. The transaction, which occured in mid-April of 2018, was the result of an integer overflow issue in BeautyChain's ERC20 token contract (_BecToken.sol_). Solidity developers do have access to libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.12.0/contracts/math/SafeMath.sol[+SafeMath+] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril OSS]. However developers are not forced to use the safety tools. Put simply, if safety is not enforced by the language, developers can write unsafe code that will successfully compile and later on "successfully" execute.
+((("compiling","protecting against overflow errors at the compiler level")))((("overflow","protecting against")))((("Vyper","overflow protection")))Overflow errors in software can be catastrophic when dealing with real value. For example, one https://etherscan.io/tx/0xad89ff16fd1ebe3a0a7cf4ed282302c06626c1af33221ebe0d3a470aba4a660f[transaction from mid-April 2018] shows the malicious transfer of over pass:[<span class="keep-together">57,896,044,618,658,100,000,000,000,000,000,000,000,000,000,000,000,000,000,000</span> BEC] tokens. This transaction was the result of an integer overflow issue in BeautyChain's ERC20 token contract (_BecToken.sol_). Solidity developers do have access to libraries like https://github.com/OpenZeppelin/openzeppelin-solidity/blob/v1.12.0/contracts/math/SafeMath.sol[+SafeMath+] as well as Ethereum smart contract security analysis tools like https://github.com/ConsenSys/mythril[Mythril OSS]. However, developers are not forced to use the safety tools. Put simply, if safety is not enforced by the language, developers can write unsafe code that will successfully compile and later on "successfully" execute.
 
-Vyper has built-in overflow protection, implemented in a two-pronged approach. Firstly, Vyper provides https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275[a +SafeMath+ equivalent] which includes the necessary exception cases for integer arithmetic. Secondly, Vyper uses clamps whenever a literal constant is loaded, a value is passed to a function, or a variable is assigned. Clamps are implemented via custom functions in the Low-level Lisp-like Language (LLL) compiler, and cannot be disabled. (The Vyper compiler outputs LLL rather than EVM bytecode; this simplifies the development of Vyper itself.)
+Vyper has built-in overflow protection, implemented in a two-pronged approach. Firstly, Vyper provides https://github.com/ethereum/vyper/blob/master/vyper/parser/expr.py#L275[a +SafeMath+ equivalent] that includes the necessary exception cases for integer arithmetic. Secondly, Vyper uses clamps whenever a literal constant is loaded, a value is passed to a function, or a variable is assigned. Clamps are implemented via custom functions in the Low-level Lisp-like Language (LLL) compiler, and cannot be disabled. (The Vyper compiler outputs LLL rather than EVM bytecode; this simplifies the development of Vyper itself.)
 
 
 [[reading_and_writing_data_sec]]
