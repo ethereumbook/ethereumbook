@@ -1,4 +1,7 @@
 // Our first contract is a faucet!
+
+pragma solidity ^0.4.19;
+
 contract Faucet {
 
     // Give out ether to anyone who asks
