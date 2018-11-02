@@ -9,6 +9,7 @@ import "./ERC721/ERC721Token.sol";
  */
 contract DeedRepository is ERC721Token {
 
+
     /**
     * @dev Created a DeedRepository with a name and symbol
     * @param _name string represents the name of the repository

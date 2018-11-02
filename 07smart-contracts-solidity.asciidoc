@@ -1,12 +1,12 @@
 [[smart_contracts_chapter]]
 == Smart Contracts and Solidity
 
-As we discussed in <<intro_chapter>>, there are two different types of account in Ethereum: externally owned accounts (EOAs) and contract accounts. EOAs are controlled by users, often via software such as a wallet application that is external to the Ethereum platform. In contrast, contract accounts are controlled by program code (also commonly referred to as &#x201c;smart contracts&#x201d;) that is executed by the Ethereum Virtual Machine. In short, EOAs are simple accounts without any associated code or data storage, whereas contract accounts have both associated code and data storage. EOAs are controlled by transactions created and cryptographically signed with a private key in the "real world" external to and independent of the protocol, whereas contract accounts do not have private keys and so "control themselves" in the predetermined way prescribed by their smart contract code. Both types of accounts are identified by an Ethereum address. In this chapter, we will discuss contract accounts and the program code that controls them.
+((("smart contracts", id="ix_07smart-contracts-solidity-asciidoc0", range="startofrange")))As we discussed in <<intro_chapter>>, there are two different types of accounts in Ethereum: ((("EOA (Externally Owned Account)","contract accounts compared to")))externally owned accounts (EOAs) and contract accounts. EOAs are controlled by users, often via software such as a wallet application that is external to the Ethereum platform. ((("contract accounts","EOAs compared to")))((("smart contracts","EOAs compared to")))In contrast, contract accounts are controlled by program code (also commonly referred to as &#x201c;smart contracts&#x201d;) that is executed by the Ethereum Virtual Machine. In short, EOAs are simple accounts without any associated code or data storage, whereas contract accounts have both associated code and data storage. EOAs are controlled by transactions created and cryptographically signed with a private key in the "real world" external to and independent of the protocol, whereas contract accounts do not have private keys and so "control themselves" in the predetermined way prescribed by their smart contract code. Both types of accounts are identified by an Ethereum address. In this chapter, we will discuss contract accounts and the program code that controls them.
 
 [[smart_contracts_definition]]
 === What Is a Smart Contract?
 
-The term _smart contract_ has been used over the years to describe a wide variety of different things. In the 1990s, cryptographer Nick Szabo coined the term and defined it as “a set of promises, specified in digital form, including protocols within which the parties perform on the other promises.” Since then, the concept of smart contracts has evolved, especially after the introduction of decentralized blockchain platforms with the invention of Bitcoin in 2009. In the context of Ethereum, the term is actually a bit of a misnomer, given that Ethereum smart contracts are neither smart nor legal contracts, but the term has stuck. In this book, we use the term “smart contracts” to refer to immutable computer programs that run deterministically in the context of an Ethereum Virtual Machine as part of the Ethereum network protocol&#x2014;i.e., on the decentralized Ethereum world computer.
+((("smart contracts","defined")))The term _smart contract_ has been used over the years to describe a wide variety of different things. ((("contract creation transaction")))((("Szabo, Nick")))In the 1990s, cryptographer Nick Szabo coined the term and defined it as “a set of promises, specified in digital form, including protocols within which the parties perform on the other promises.” Since then, the concept of smart contracts has evolved, especially after the introduction of decentralized blockchain platforms with the invention of Bitcoin in 2009. In the context of Ethereum, the term is actually a bit of a misnomer, given that Ethereum smart contracts are neither smart nor legal contracts, but the term has stuck. In this book, we use the term “smart contracts” to refer to immutable computer programs that run deterministically in the context of an Ethereum Virtual Machine as part of the Ethereum network protocol&#x2014;i.e., on the decentralized Ethereum world computer.
 
 Let’s unpack that definition:
 
@@ -28,24 +28,24 @@ The EVM runs as a local instance on every Ethereum node, but because all instanc
 [[smart_contract_lifecycle]]
 === Life Cycle of a Smart Contract
 
-Smart contracts are typically written in a high-level language, such as Solidity. But in order to run, they must be compiled to the low-level bytecode that runs in the EVM. Once compiled, they are deployed on the Ethereum platform using a special _contract creation_ transaction, which is identified as such by being sent to the special contract creation address, namely +0x0+ (see <<contract_reg>>). Each contract is identified by an Ethereum address, which is derived from the contract creation transaction as a function of the originating account and nonce. The Ethereum address of a contract can be used in a transaction as the recipient, sending funds to the contract or calling one of the contract’s functions. Note that, unlike with EOAs, there are no keys associated with an account created for a new smart contract. As the contract creator, you don't get any special privileges at the protocol level (although you can explicitly code them into the smart contract). You certainly don't receive the private key for the contract account, which in fact does not exist&#x2014;we can say that smart contract accounts own themselves.
+((("smart contracts","life cycle of")))Smart contracts are typically written in a high-level language, such as Solidity. But in order to run, they must be compiled to the low-level bytecode that runs in the EVM. Once compiled, they are deployed on the Ethereum platform using a special _contract creation_ transaction, which is identified as such by being sent to the special contract creation address, namely +0x0+ (see <<contract_reg>>). Each contract is identified by an Ethereum address, which is derived from the contract creation transaction as a function of the originating account and nonce. The Ethereum address of a contract can be used in a transaction as the recipient, sending funds to the contract or calling one of the contract’s functions. Note that, unlike with EOAs, there are no keys associated with an account created for a new smart contract. As the contract creator, you don't get any special privileges at the protocol level (although you can explicitly code them into the smart contract). You certainly don't receive the private key for the contract account, which in fact does not exist&#x2014;we can say that smart contract accounts own themselves.
 
-Importantly, contracts _only run if they are called by a transaction_. All smart contracts in Ethereum are executed, ultimately, because of a transaction initiated from an EOA. A contract can call another contract that can call another contract, and so on, but the first contract in such a chain of execution will always have been called by a transaction from an EOA. Contracts never run “on their own” or “in the background.” Contracts effectively lie dormant until a transaction triggers execution, either directly or indirectly as part of a chain of contract calls. It is also worth noting that smart contracts are not executed "in parallel" in any sense&#x2014;the Ethereum world computer can be considered to be a single-threaded machine.
+((("transactions","smart contracts and")))Importantly, contracts _only run if they are called by a transaction_. All smart contracts in Ethereum are executed, ultimately, because of a transaction initiated from an EOA. A contract can call another contract that can call another contract, and so on, but the first contract in such a chain of execution will always have been called by a transaction from an EOA. Contracts never run “on their own” or “in the background.” Contracts effectively lie dormant until a transaction triggers execution, either directly or indirectly as part of a chain of contract calls. It is also worth noting that smart contracts are not executed "in parallel" in any sense&#x2014;the Ethereum world computer can be considered to be a single-threaded machine.
 
-Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
+((("transactions","as atomic")))Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
 
-As mentioned previously, it is important to remember that a contract’s code cannot be changed. However, a contract can be “deleted,” removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). That operation costs “negative gas,” a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract cannot be deleted.
+((("smart contracts","deleting")))As mentioned previously, it is important to remember that a contract’s code cannot be changed. However, a contract can be “deleted,” removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. ((("SELFDESTRUCT opcode")))To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). ((("negative gas")))That operation costs “negative gas,” a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract cannot be deleted.
 
 [[high_level_languages]]
 === Introduction to Ethereum High-Level Languages
 
-The EVM is a virtual machine that runs a special form of code called _EVM bytecode_, analagous to your computer's CPU, which runs machine code such as x86_64. We will examine the operation and language of the EVM in much more detail in <<evm_chapter>>. In this section we will look at how smart contracts are written to run on the EVM.
+((("EVM (Ethereum Virtual Machine)","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc1", range="startofrange")))((("smart contracts","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc2", range="startofrange")))The EVM is a virtual machine that runs a ((("EVM bytecode")))special form of code called _EVM bytecode_, analogous to your computer's CPU, which runs machine code such as x86_64. We will examine the operation and language of the EVM in much more detail in <<evm_chapter>>. In this section we will look at how smart contracts are written to run on the EVM.
 
 While it is possible to program smart contracts directly in bytecode, EVM bytecode is rather unwieldy and very difficult for programmers to read and understand. Instead, most Ethereum developers use a high-level language to write programs, and a compiler to convert them into bytecode.
 
 While any high-level language could be adapted to write smart contracts, adapting an arbitrary language to be compilable to EVM bytecode is quite a cumbersome exercise and would in general lead to some amount of confusion. Smart contracts operate in a highly constrained and minimalistic execution environment (the EVM). In addition, a special set of EVM-specific system variables and functions needs to be available. As such, it is easier to build a smart contract language from scratch than it is to make a general-purpose language suitable for writing smart contracts. As a result, a number of special-purpose languages have emerged for programming smart contracts. Ethereum has several such languages, together with the compilers needed to produce EVM-executable bytecode.
 
-In general, programming languages can be classified into two broad programming paradigms: _declarative_ and _imperative_, also known as _functional_ and _procedural_, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are “hybrid,” meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables.”_
+((("declarative programming")))In general, programming languages can be classified into two broad programming paradigms: _declarative_ and _imperative_, also known as _functional_ and _procedural_, respectively. In declarative programming, we write functions that express the _logic_ of a program, but not its _flow_. ((("side effects")))Declarative programming is used to create programs where there are no _side effects_, meaning that there are no changes to state outside of a function. Declarative programming languages include Haskell and SQL. ((("hybrid programming languages")))((("imperative programming")))Imperative programming, by contrast, is where a programmer writes a set of procedures that combine the logic and flow of a program. Imperative programming languages include C++ and Java. Some languages are “hybrid,” meaning that they encourage declarative programming but can also be used to express an imperative programming paradigm. Such hybrids include Lisp, JavaScript, and Python. In general, any imperative language can be used to write in a declarative paradigm, but it often results in inelegant code. By comparison, pure declarative languages cannot be used to write in an imperative paradigm. In purely declarative languages, _there are no “variables.”_
 
 While imperative programming is more commonly used by programmers, it can be very difficult to write programs that execute _exactly as expected_. The ability of any part of the program to change the state of any other makes it difficult to reason about a program’s execution and introduces many opportunities for bugs. Declarative programming, by comparison, makes it easier to understand how a program will behave: since it has no side effects, any part of a program can be understood in isolation.
 
@@ -53,22 +53,22 @@ In smart contracts, bugs literally cost money. As a result, it is critically imp
 
 Currently supported high-level programming languages for smart contracts include (ordered by approximate age):
 
-LLL:: A functional (declarative) programming language, with Lisp-like syntax. It was the first high-level language for Ethereum smart contracts but is rarely used today.
+LLL:: ((("LLL")))A functional (declarative) programming language, with Lisp-like syntax. It was the first high-level language for Ethereum smart contracts but is rarely used today.
 
-Serpent:: A procedural (imperative) programming language with a syntax similar to Python. Can also be used to write functional (declarative) code, though it is not entirely free of side effects.
+Serpent:: ((("Serpent")))A procedural (imperative) programming language with a syntax similar to Python. Can also be used to write functional (declarative) code, though it is not entirely free of side effects.
 
-Solidity:: A procedural (imperative) programming language with a syntax similar to JavaScript, pass:[C++], or Java. The most popular and frequently used language for Ethereum smart contracts.
+Solidity:: ((("Solidity")))A procedural (imperative) programming language with a syntax similar to JavaScript, pass:[C++], or Java. The most popular and frequently used language for Ethereum smart contracts.
 
-Vyper:: A more recently developed language, similar to Serpent and again with Python-like syntax. Intended to get closer to a pure-functional Python-like language than Serpent, but not to replace Serpent.
+Vyper:: ((("Vyper")))A more recently developed language, similar to Serpent and again with Python-like syntax. Intended to get closer to a pure-functional Python-like language than Serpent, but not to replace Serpent.
 
-Bamboo:: A newly developed language, influenced by Erlang, with explicit state transitions and without iterative flows (loops). Intended to reduce side effects and increase auditability. Very new and yet to be widely adopted.
+Bamboo:: ((("Bamboo")))A newly developed language, influenced by Erlang, with explicit state transitions and without iterative flows (loops). Intended to reduce side effects and increase auditability. Very new and yet to be widely adopted.
 
-As you can see, there are many languages to choose from. However, of all of these Solidity is by far the most popular, to the point of being the _de facto_ high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages to gain an understanding of their different philosophies.
+As you can see, there are many languages to choose from. However, of all of these Solidity is by far the most popular, to the point of being the _de facto_ high-level language of Ethereum and even other EVM-like blockchains. We will spend most of our time using Solidity, but will also explore some of the examples in other high-level languages to gain an understanding of their different philosophies.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc2")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc1")))
 
 [[building_a_smart_contract_sec]]
 === Building a Smart Contract with Solidity
 
-Solidity was created by Gavin Wood (coauthor of this book) as a language explicitly for writing smart contracts with features to directly support execution in the decentralized environment of the Ethereum world computer. The resulting attributes are quite general, and so it has ended up being used for coding smart contracts on several other blockchain platforms. It was developed by Christian Reitiwessner and then also by Alex Beregszaszi, Liana Husikyan, Yoichi Hirai, and several former Ethereum core contributors. Solidity is now developed and maintained as an independent project https://github.com/ethereum/solidity[on GitHub].
+((("smart contracts","building with Solidity", id="ix_07smart-contracts-solidity-asciidoc3", range="startofrange")))((("Solidity","building a smart contract with", id="ix_07smart-contracts-solidity-asciidoc4", range="startofrange")))Solidity ((("smart contracts","Solidity and", id="ix_07smart-contracts-solidity-asciidoc5", range="startofrange")))((("Solidity","smart contracts and", id="ix_07smart-contracts-solidity-asciidoc6", range="startofrange")))was created by ((("Wood, Gavin","and Solidity")))Gavin Wood (coauthor of this book) as a language explicitly for writing smart contracts with features to directly support execution in the decentralized environment of the Ethereum world computer. The resulting attributes are quite general, and so it has ended up being used for coding smart contracts on several other blockchain platforms. It was developed by Christian Reitiwessner and then also by Alex Beregszaszi, Liana Husikyan, Yoichi Hirai, and several former Ethereum core contributors. Solidity is now developed and maintained as an independent project https://github.com/ethereum/solidity[on GitHub].
 
 The main "product" of the Solidity project is the Solidity compiler, +solc+, which converts programs written in the Solidity language to EVM bytecode. The project also manages the important application binary interface (ABI) standard for Ethereum smart contracts, which we will explore in detail in this chapter. Each version of the Solidity compiler corresponds to and compiles a specific version of the Solidity language.
 
@@ -76,7 +76,7 @@ To get started, we will download a binary executable of the Solidity compiler. T
 
 ==== Selecting a Version of Solidity
 
-Solidity follows a versioning model called https://semver.org/[_semantic versioning_], which specifies version numbers structured as three numbers separated by dots: __++MAJOR.MINOR.PATCH++__. The "major" number is incremented for major and _backward-incompatible_ changes, the "minor" number is incremented as backward-compatible features are added in between major releases, and the "patch" number is incremented for backward-compatible bug fixes.
+((("semantic versioning")))((("Solidity","selecting version of")))Solidity follows a versioning model called https://semver.org/[_semantic versioning_], which specifies version numbers structured as three numbers separated by dots: __++MAJOR.MINOR.PATCH++__. The "major" number is incremented for major and _backward-incompatible_ changes, the "minor" number is incremented as backward-compatible features are added in between major releases, and the "patch" number is incremented for backward-compatible bug fixes.
 
 At the time of writing, Solidity is at version 0.4.24.  The rules for major version 0, which is for initial development of a project, are different: anything may change at any time. In practice, Solidity treats the "minor" number as if it were the major version and the "patch" number as if it were the minor version. Therefore, in 0.4.24, 4 is considered to be the major version and 24 the minor version.
 
@@ -84,11 +84,11 @@ The 0.5 major version release of Solidity is anticipated imminently.
 
 As you saw in <<intro_chapter>>, your Solidity programs can contain a pragma directive that specifies the minimum and maximum versions of Solidity that it is compatible with, and can be used to compile your contract.
 
-Since Solidity is rapidly evolving, it is often better to the latest release.
+Since Solidity is rapidly evolving, it is often better to install the latest release.
 
 ==== Download and Install
 
-There are a number of methods you can use to download and install Solidity, either as a binary release or by compiling from source code. You can find detailed instructions in https://solidity.readthedocs.io/en/latest/installing-solidity.html[the Solidity documentation].
+((("Solidity","downloading/installing")))There are a number of methods you can use to download and install Solidity, either as a binary release or by compiling from source code. You can find detailed instructions in http://bit.ly/2RrZmup[the Solidity documentation].
 
 Here's how to install the latest binary release of Solidity on an Ubuntu/Debian operating system, using the +apt+ package manager:
 
@@ -116,7 +116,7 @@ There are a number of other ways to install Solidity, depending on your operatin
 
 ==== Development Environment
 
-To develop in Solidity, you can use any text editor and +solc+ on the command line. However, you might find that some text editors designed for development, such as Emacs, Vim, and Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
+((("Solidity","development environment")))To develop in Solidity, you can use any text editor and +solc+ on the command line. However, you might find that some text editors designed for development, such as Emacs, Vim, and Atom, offer additional features such as syntax highlighting and macros that make Solidity development easier.
 
 There are also web-based development environments, such as https://remix.ethereum.org/[Remix IDE] and https://ethfiddle.com/[EthFiddle].
 
@@ -124,7 +124,7 @@ Use the tools that make you productive. In the end, Solidity programs are just p
 
 ==== Writing a Simple Solidity Program
 
-In <<intro_chapter>>, we wrote our first Solidity program.  When we first built the +Faucet+ contract, we used the Remix IDE to compile and deploy the contract. In this section, we will revisit, improve, and embellish +Faucet+.
+((("Solidity","writing a simple program in")))In <<intro_chapter>>, we wrote our first Solidity program.  When we first built the +Faucet+ contract, we used the Remix IDE to compile and deploy the contract. In this section, we will revisit, improve, and embellish +Faucet+.
 
 Our first attempt looked like <<original_sol_faucet>>.
 
@@ -139,7 +139,7 @@ include::code/Solidity/Faucet.sol[]
 
 ==== Compiling with the Solidity Compiler (solc)
 
-Now, we will use the Solidity compiler on the command line to compile our contract directly. The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument.
+((("Faucet.sol contract (test example)","compiling")))((("solc (Solidity compiler)")))((("Solidity compiler (solc)")))Now, we will use the Solidity compiler on the command line to compile our contract directly. The Solidity compiler +solc+ offers a variety of options, which you can see by passing the +--help+ argument.
 
 We use the +--bin+ and +--optimize+ arguments of +solc+ to produce an optimized binary of our example contract:
 
@@ -159,12 +159,12 @@ Binary:
 ++++
 
 
-The result that +solc+ produces is a hex-serialized binary that can be submitted to the Ethereum blockchain.
+The result that +solc+ produces is a hex-serialized binary that can be submitted to the Ethereum blockchain.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc6")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc5")))
 
 [[eth_contract_abi_sec]]
 === The Ethereum Contract ABI
 
-In computer software, an _application binary interface_ is an interface between two program modules; often, between the operating system and user programs. An ABI defines how data structures and functions are accessed in _machine code_; this is not to be confused with an API, which defines this access in high-level, often human-readable formats as _source code_. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
+((("ABI (application binary interface)", id="ix_07smart-contracts-solidity-asciidoc7", range="startofrange")))((("application binary interface (ABI)", id="ix_07smart-contracts-solidity-asciidoc8", range="startofrange")))((("smart contracts","ABI", id="ix_07smart-contracts-solidity-asciidoc9", range="startofrange")))In computer software, an _application binary interface_ is an interface between two program modules; often, between the operating system and user programs. An ABI defines how data structures and functions are accessed in _machine code_; this is not to be confused with an API, which defines this access in high-level, often human-readable formats as _source code_. The ABI is thus the primary way of encoding and decoding data into and out of machine code.
 
 In Ethereum, the ABI is used to encode contract calls for the EVM and to read data out of transactions. The purpose of an ABI is to define the functions in the contract that can be invoked and describe how each function will accept arguments and return its result.
 
@@ -191,9 +191,9 @@ All that is needed for an application to interact with a contract is an ABI and 
 [[solidity_pragma]]
 ==== Selecting a Solidity Compiler and Language Version
 
-As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.4.19 and we tried to compile it with 0.4.18?
+((("Solidity","selecting compiler and language version")))As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.4.19 and we tried to compile it with 0.4.18?
 
-To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
+((("compiler directive")))((("version pragma")))To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
 
 [[compiler_version]]
 ----
@@ -213,16 +213,16 @@ include::code/Solidity/Faucet2.sol[]
 ----
 ====
 
-Adding a version pragma is a best practice, as it avoids problems with mismatched compiler and language versions. We will explore other best practices and continue to improve the +Faucet+ contract throughout this chapter.
+Adding a version pragma is a best practice, as it avoids problems with mismatched compiler and language versions. We will explore other best practices and continue to improve the +Faucet+ contract throughout this chapter.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc9")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc8")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc7")))
 
 === Programming with Solidity
 
-In this section, we will look at some of the capabilities of the Solidity language. As we mentioned in <<intro_chapter>>, our first contract example was very simple and also flawed in various ways. We'll gradually improve it here, while exploring how to use Solidity. This won't be a comprehensive Solidity tutorial, however, as Solidity is quite complex and rapidly evolving. We'll cover the basics and give you enough of a foundation to be able to explore the rest on your own. The documentation for Solidity can be found
+((("Solidity","programming with", id="ix_07smart-contracts-solidity-asciidoc10", range="startofrange")))In this section, we will look at some of the capabilities of the Solidity language. As we mentioned in <<intro_chapter>>, our first contract example was very simple and also flawed in various ways. We'll gradually improve it here, while exploring how to use Solidity. This won't be a comprehensive Solidity tutorial, however, as Solidity is quite complex and rapidly evolving. We'll cover the basics and give you enough of a foundation to be able to explore the rest on your own. The documentation for Solidity can be found
 https://solidity.readthedocs.io/en/latest/[on the project website].
 
 ==== Data Types
 
-First, let's look at some of the basic data types offered in Solidity:
+((("Solidity","data types", id="ix_07smart-contracts-solidity-asciidoc11", range="startofrange")))First, let's look at some of the basic data types offered in Solidity:
 
 Boolean (+bool+):: Boolean value, +true+ or +false+, with logical operators +!+ (not), +&&+ (and), +||+ (or), +==+ (equal), and +!=+ (not equal).
 
@@ -230,7 +230,7 @@ Integer (+int+, +uint+):: Signed (+int+) and unsigned (+uint+) integers, declare
 
 Fixed point (+fixed+, +ufixed+):: Fixed-point numbers, declared with pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] where __++M++__ is the size in bits (increments of 8 up to 256) and __++N++__ is the number of decimals after the point (up to 18); e.g., +ufixed32x2+.
 
-Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account).
+Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account). 
 
 Byte array (fixed):: Fixed-size arrays of bytes, declared with +bytes1+ up to +bytes32+.
 
@@ -258,7 +258,7 @@ Let's use one of the unit multipliers to improve the readability of our example 
 require(withdraw_amount <= 100000000000000000);
 ----
 
-That's not very easy to read. We can improve our code by using the unit multiplier +ether+, to express the value in ether instead of wei:
+That's not very easy to read. We can improve our code by using the unit multiplier +ether+, to express the value in ether instead of wei:(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc11")))
 
 ----
 require(withdraw_amount <= 0.1 ether);
@@ -266,11 +266,11 @@ require(withdraw_amount <= 0.1 ether);
 
 ==== Predefined Global Variables and Functions
 
-When a contract is executed in the EVM, it has access to a small set of global objects. These include the +block+, +msg+, and +tx+ objects. In addition, Solidity exposes a number of EVM opcodes as predefined functions. In this section we will examine the variables and functions you can access from within a smart contract in Solidity.
+((("Solidity","predefined global variables/functions", id="ix_07smart-contracts-solidity-asciidoc12", range="startofrange")))When a contract is executed in the EVM, it has access to a small set of global objects. These include the +block+, +msg+, and +tx+ objects. In addition, Solidity exposes a number of EVM opcodes as predefined functions. In this section we will examine the variables and functions you can access from within a smart contract in Solidity.
 
 ===== Transaction/message call context
 
-The +msg+ object is the transaction call (EOA originated) or message call (contract originated) that launched this contract execution. It contains a number of useful attributes:
+((("message call")))((("msg object")))((("transaction call")))The +msg+ object is the transaction call (EOA originated) or message call (contract originated) that launched this contract execution. It contains a number of useful attributes:
 
 +msg.sender+:: We've already used this one. It represents the address that initiated this contract call, not necessarily the originating EOA that sent the transaction. If our contract was called directly by an EOA transaction, then this is the address that signed the transaction, but otherwise it will be a contract address.
 
@@ -289,7 +289,7 @@ Whenever a contract calls another contract, the values of all the attributes of 
 
 ===== Transaction context
 
-The +tx+ object provides a means of accessing transaction-related information:
+((("tx object")))The +tx+ object provides a means of accessing transaction-related information:
 
 ++tx.gasprice++:: The gas price in the calling transaction.
 
@@ -297,7 +297,7 @@ The +tx+ object provides a means of accessing transaction-related information:
 
 ===== Block context
 
-The +block+ object contains information about the current block:
+((("block object")))The +block+ object contains information about the current block:
 
 ++block.blockhash(__blockNumber__)++:: The block hash of the specified block number, up to 256 blocks in the past. Deprecated and replaced with the +blockhash+ function in Solidity v0.4.22.
 
@@ -314,7 +314,7 @@ The +block+ object contains information about the current block:
 [[solidity_address_object]]
 ===== address object
 
-Any address, either passed as an input or cast from a contract object, has a number of attributes and methods:
+((("address object")))Any address, either passed as an input or cast from a contract object, has a number of attributes and methods:
 
 +address.balance+:: The balance of the address, in wei. For example, the current contract balance is +address(this).balance+.
 
@@ -340,24 +340,24 @@ Other functions worth noting are:
 
 ++selfdestrunct(__recipient_address__)++:: Deletes the current contract, sending any remaining ether in the account to the recipient address.
 
-+this+:: The address of the currently executing contract account.
++this+:: The address of the currently executing contract account.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc12")))
 
 ==== Contract Definition
 
-Solidity's principal data type is +contract+; our +Faucet+ example simply defines a pass:[<span class="keep-together"><code>contract</code></span>] object. Similar to any object in an object-oriented language, the contract is a container that includes data and methods.
+((("contract data type")))((("contract definition, Solidity")))((("Solidity","contract definition")))Solidity's principal data type is +contract+; our +Faucet+ example simply defines a pass:[<span class="keep-together"><code>contract</code></span>] object. Similar to any object in an object-oriented language, the contract is a container that includes data and methods.
 
 Solidity offers two other object types that are similar to a contract:
 
-+interface+:: An interface definition is structured exactly like a contract, except none of the functions are defined, they are only declared. This type of declaration is often called a _stub_; it tells you the functions' arguments and return types without any implementation. An interface specifies the "shape" of a contract; when inherited, each of the functions declared by the interface must be defined by the child.
++interface+:: ((("interface object type")))((("stub")))An interface definition is structured exactly like a contract, except none of the functions are defined, they are only declared. This type of declaration is often called a _stub_; it tells you the functions' arguments and return types without any implementation. An interface specifies the "shape" of a contract; when inherited, each of the functions declared by the interface must be defined by the child.
 
-+library+:: A library contract is one that is meant to be deployed only once and used by other contracts, using the +delegatecall+ method (see <<solidity_address_object>>).
++library+:: ((("library contract")))A library contract is one that is meant to be deployed only once and used by other contracts, using the +delegatecall+ method (see <<solidity_address_object>>).
 
 [[solidity_functions]]
 ==== Functions
 
-Within a contract, we define functions that can be called by an EOA transaction or another contract. In our +Faucet+ example, we have two functions: +withdraw+ and the (unnamed) _fallback_ function.
+((("Solidity","functions", id="ix_07smart-contracts-solidity-asciidoc13", range="startofrange")))Within a contract, we define functions that can be called by an EOA transaction or another contract. In our +Faucet+ example, we have two functions: +withdraw+ and the (unnamed) _fallback_ function.
 
-The syntax we use to declare a function in Solidity is as follows:
+((("Solidity","function syntax")))The syntax we use to declare a function in Solidity is as follows:
 
 ++++
 <pre data-type="programlisting">
@@ -369,35 +369,35 @@ function FunctionName([<em>parameters</em>]) {public|private|internal|external}
 
 Let's look at each of these components:
 
-++FunctionName++:: The name of the function, which is used to call the function in a transaction (from an EOA), from another contract, or even from within the same contract. One function in each contract may be defined without a name, in which case it is the _fallback_ function, which is called when no other function is named. The fallback function cannot have any arguments or return anything.
+++FunctionName++:: The name of the function, which is used to call the function in a transaction (from an EOA), from another contract, or even from within the same contract. ((("fallback function")))One function in each contract may be defined without a name, in which case it is the _fallback_ function, which is called when no other function is named. The fallback function cannot have any arguments or return anything.
 
 __++parameters++__:: Following the name, we specify the arguments that must be passed to the function, with their names and types. In our +Faucet+ example we defined +uint withdraw_amount+ as the only argument to the pass:[<code><span class="keep-together">withdraw</span></code>] function.
 
 The next set of keywords (+public+, +private+, +internal+, +external+) specify the function's _visibility_:
 
-+public+:: Public is the default; such functions can be called by other contracts or EOA transactions, or from within the contract. In our +Faucet+ example, both functions are defined as public.
++public+:: ((("public function")))Public is the default; such functions can be called by other contracts or EOA transactions, or from within the contract. In our +Faucet+ example, both functions are defined as public.
 
-+external+:: External functions are like public functions, except they cannot be called from within the contract unless explicitly prefixed with the keyword +this+.
++external+:: ((("external function")))External functions are like public functions, except they cannot be called from within the contract unless explicitly prefixed with the keyword +this+.
 
-+internal+:: Internal functions are only accessible from within the contract&#x2014;they cannot be called by another contract or EOA transaction. They can be called by derived contracts (those that inherit this one).
++internal+:: ((("internal function")))Internal functions are only accessible from within the contract&#x2014;they cannot be called by another contract or EOA transaction. They can be called by derived contracts (those that inherit this one).
 
-+private+:: Private functions are like internal functions but cannot be called by derived contracts.
++private+:: ((("private function")))Private functions are like internal functions but cannot be called by derived contracts.
 
 Keep in mind that the terms _internal_ and _private_ are somewhat misleading. Any function or data inside a contract is always _visible_ on the public blockchain, meaning that anyone can see the code or data. The keywords described here only affect how and when a function can be _called_.
 
 The second set of keywords (+pure+, +constant+, +view+, +payable+) affect the behavior of the function:
 
-+constant+ or +view+:: A function marked as a _view_ promises not to modify any state. The term _constant_ is an alias for view that will be deprecated in a future release. At this time, the compiler does not enforce the +view+ modifier, only producing a warning, but this is expected to become an enforced keyword in v0.5 of Solidity.
++constant+ or +view+:: ((("view (function keyword)")))A function marked as a _view_ promises not to modify any state. ((("constant (function keyword)")))The term _constant_ is an alias for view that will be deprecated in a future release. At this time, the compiler does not enforce the +view+ modifier, only producing a warning, but this is expected to become an enforced keyword in v0.5 of Solidity.
 
-+pure+:: A pure function is one that neither reads nor writes any variables in storage. It can only operate on arguments and return data, without reference to any stored data. Pure functions are intended to encourage declarative-style programming without side effects or state.
++pure+:: ((("pure function")))A pure function is one that neither reads nor writes any variables in storage. It can only operate on arguments and return data, without reference to any stored data. Pure functions are intended to encourage declarative-style programming without side effects or state.
 
-+payable+:: A payable function is one that can accept incoming payments. Functions not declared as +payable+ will reject incoming payments. There are two exceptions, due to design decisions in the EVM: coinbase payments and +SELFDESTRUCT+ inheritance will be paid even if the fallback function is not declared as +payable+, but this makes sense because code execution is not part of those payments anyway.
++payable+:: ((("payable function")))A payable function is one that can accept incoming payments. Functions not declared as +payable+ will reject incoming payments. There are two exceptions, due to design decisions in the EVM: coinbase payments and +SELFDESTRUCT+ inheritance will be paid even if the fallback function is not declared as +payable+, but this makes sense because code execution is not part of those payments anyway.
 
-As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.
+As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc13")))
 
 ==== Contract Constructor and selfdestruct
 
-There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional; you'll notice our +Faucet+ example doesn't have one.
+((("constructor function")))((("smart contracts","constructor function")))((("Solidity","contract constructor function")))There is a special function that is only used once. When a contract is created, it also runs the _constructor function_ if one exists, to initialize the state of the contract. The constructor is run in the same transaction as the contract creation. The constructor function is optional; you'll notice our +Faucet+ example doesn't have one.
 
 Constructors can be specified in two ways. Up to and including in Solidity v0.4.21, the constructor is a function whose name matches the name of the contract, as you can see here:
 
@@ -427,7 +427,7 @@ contract MEContract {
 
 To summarize, a contract's life cycle starts with a creation transaction from an EOA or contract account. If there is a constructor, it is executed as part of contract creation, to initialize the state of the contract as it is being created, and is then discarded.
 
-The other end of the contract's life cycle is _contract destruction_. Contracts are destroyed by a special EVM opcode called +SELFDESTRUCT+. It used to be called pass:[<span class="keep-together"><code>SUICIDE</code></span>], but that name was deprecated due to the negative associations of the word. In Solidity, this opcode is exposed as a high-level built-in function called +selfdestruct+, which takes one argument: the address to receive any ether balance remaining in the contract account. It looks like this:
+((("contract destruction")))((("selfdestruct function")))((("Solidity","contract destruction")))((("Solidity","selfdestruct function")))The other end of the contract's life cycle is _contract destruction_. ((("SELFDESTRUCT opcode")))Contracts are destroyed by a special EVM opcode called +SELFDESTRUCT+. It used to be called pass:[<span class="keep-together"><code>SUICIDE</code></span>], but that name was deprecated due to the negative associations of the word. In Solidity, this opcode is exposed as a high-level built-in function called +selfdestruct+, which takes one argument: the address to receive any ether balance remaining in the contract account. It looks like this:
 
 [source,solidity]
 ----
@@ -438,7 +438,7 @@ Note that you must explicitly add this command to your contract if you want it t
 
 ==== Adding a Constructor and selfdestruct to Our Faucet Example
 
-The +Faucet+ example contract we introduced in <<intro_chapter>> does not have any constructor or +selfdestruct+ functions. It is an eternal contract that cannot be deleted. Let's change that, by adding a constructor and +selfdestruct+ function. We probably want +selfdestruct+ to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable called +owner+. Our constructor sets the +owner+ variable, and the +selfdestruct+ function will first check that the owner called it directly.
+((("constructor function","adding to faucet example")))((("Faucet.sol contract (test example)","adding constructor and selfdestruct to")))((("selfdestruct function")))((("Solidity","adding constructor/selfdestruct to faucet example")))The +Faucet+ example contract we introduced in <<intro_chapter>> does not have any constructor or +selfdestruct+ functions. It is an eternal contract that cannot be deleted. Let's change that, by adding a constructor and +selfdestruct+ function. We probably want +selfdestruct+ to be callable _only_ by the EOA that originally created the contract. By convention, this is usually stored in an address variable called +owner+. Our constructor sets the +owner+ variable, and the +selfdestruct+ function will first check that the owner called it directly.
 
 First, our constructor:
 
@@ -479,7 +479,7 @@ If anyone calls this +destroy+ function from an address other than +owner+, it w
 
 ==== Function Modifiers
 
-Solidity offers a special type of function called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifier are most often used to create conditions that apply to many functions within a contract. We have an access control statement already, in our +destroy+ function. Let's create a function modifier that expresses that condition:
+((("function modifiers")))((("Solidity","function modifiers")))Solidity offers a special type of function called a _function modifier_. You apply modifiers to functions by adding the modifier name in the function declaration. Modifiers are most often used to create conditions that apply to many functions within a contract. We have an access control statement already, in our +destroy+ function. Let's create a function modifier that expresses that condition:
 
 [source,solidity]
 ----
@@ -513,7 +513,7 @@ Inside a modifier, you can access all the values (variables and arguments) visib
 
 ==== Contract Inheritance
 
-Solidity's +contract+ object supports _inheritance_, which is a mechanism for extending a base contract with additional functionality. To use inheritance, specify a parent contract with the keyword +is+:
+((("contract object", id="ix_07smart-contracts-solidity-asciidoc14", range="startofrange")))((("inheritance", id="ix_07smart-contracts-solidity-asciidoc15", range="startofrange")))((("smart contracts","inheritance", id="ix_07smart-contracts-solidity-asciidoc16", range="startofrange")))((("Solidity","contract inheritance", id="ix_07smart-contracts-solidity-asciidoc17", range="startofrange")))Solidity's +contract+ object supports _inheritance_, which is a mechanism for extending a base contract with additional functionality. To use inheritance, specify a parent contract with the keyword +is+:
 
 [source,solidity]
 ----
@@ -586,15 +586,15 @@ contract Faucet is mortal {
 }
 ----
 
-By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.
+By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
 
 ==== Error Handling (assert, require, revert)
 
-A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+ (now deprecated).
+((("error handling, Solidity")))((("Solidity","error handling")))A contract call can terminate and return an error. Error handling in Solidity is handled by four functions: +assert+, +require+, +revert+, and +throw+ (now deprecated).
 
 When a contract terminates with an error, all the state changes (changes to variables, balances, etc.) are reverted, all the way up the chain of contract calls if more than one contract was called. This ensures that transactions are _atomic_, meaning they either complete successfully or have no effect on state and are reverted entirely.
 
-The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those conditions.
+((("assert function","Solidity and")))((("require function")))The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those conditions.
 
 We've used +require+ in our function modifier +onlyOwner+, to test that the message sender is the owner of the contract:
 
@@ -612,7 +612,7 @@ As of Solidity v0.4.22, +require+ can also include a helpful text message that c
 require(msg.sender == owner, "Only the contract owner can call this function");
 ----
 
-The +revert+ and +throw+ functions halt the execution of the contract and revert any state changes. The +throw+ function is obsolete and will be removed in future versions of Solidity; you should use +revert+ instead. The +revert+ function can also take an error message as the only argument, which is recorded in the transaction log.
+((("revert function")))((("throw function")))The +revert+ and +throw+ functions halt the execution of the contract and revert any state changes. The +throw+ function is obsolete and will be removed in future versions of Solidity; you should use +revert+ instead. The +revert+ function can also take an error message as the only argument, which is recorded in the transaction log.
 
 Certain conditions in a contract will generate errors regardless of whether we explicitly check for them. For example, in our +Faucet+ contract, we don't check whether there is enough ether to satisfy a withdrawal request. That's because the +transfer+ function will fail with an error and revert the transaction if there is insufficient balance to make the transfer:
 
@@ -635,13 +635,13 @@ Additional error-checking code like this will increase gas consumption slightly,
 [[solidity_events]]
 ==== Events
 
-When a transaction completes (successfully or not), it produces a _transaction receipt_, as we will see in <<evm_chapter>>. The transaction receipt contains _log_ entries that provide information about the actions that occurred during the execution of the transaction. _Events_ are the Solidity high-level objects that are used to construct these logs.
+((("events","Solidity", id="ix_07smart-contracts-solidity-asciidoc18", range="startofrange")))((("Solidity","event objects", id="ix_07smart-contracts-solidity-asciidoc19", range="startofrange")))When ((("transaction receipt")))a transaction completes (successfully or not), it produces a _transaction receipt_, as we will see in <<evm_chapter>>. The transaction receipt contains _log_ entries that provide information about the actions that occurred during the execution of the transaction. _Events_ are the Solidity high-level objects that are used to construct these logs.
 
 Events are especially useful for light clients and DApp services, which can "watch" for specific events and report them to the user interface, or make a change in the state of the application to reflect an event in an underlying contract.
 
 Event objects take arguments that are serialized and recorded in the transaction logs, in the blockchain. You can supply the keyword +indexed+ before an argument, to make the value part of an indexed table (hash table) that can be searched or filtered by an application.
 
-We have not added any events in our +Faucet+ example so far, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+, respectively. First, we define the events in the +Faucet+ contract:
+((("Faucet.sol contract (test example)","adding events to", id="ix_07smart-contracts-solidity-asciidoc20", range="startofrange")))We have not added any events in our +Faucet+ example so far, so let's do that. We will add two events, one to log any withdrawals and one to log any deposits. We will call these events +Withdrawal+ and +Deposit+, respectively. First, we define the events in the +Faucet+ contract:
 
 [source,solidity]
 ----
@@ -684,9 +684,9 @@ include::code/Solidity/Faucet8.sol[]
 
 ===== Catching events
 
-OK, so we've set up our contract to emit events. How do we see the results of a transaction and "catch" the events? The web3.js library provides a data structure that contains a transaction's logs. Within those we can see the events generated by the transaction.
+((("events","catching")))((("Faucet.sol contract (test example)","catching events")))OK, so we've set up our contract to emit events. How do we see the results of a transaction and "catch" the events? The web3.js library provides a data structure that contains a transaction's logs. Within those we can see the events generated by the transaction.
 
-Let's use +truffle+ to run a test transaction on the revised +Faucet+ contract. Follow the instructions in <<truffle>> to set up a project directory and compile the pass:[<span class="keep-together"><code>Faucet</code></span>] code. The source code can be found in https://github.com/ethereumbook/ethereumbook[the book's GitHub repository] under _code/truffle/FaucetEvents_.
+((("Truffle","running test transaction with")))Let's use +truffle+ to run a test transaction on the revised +Faucet+ contract. Follow the instructions in <<truffle>> to set up a project directory and compile the pass:[<span class="keep-together"><code>Faucet</code></span>] code. The source code can be found in https://github.com/ethereumbook/ethereumbook[the book's GitHub repository] under _code/truffle/FaucetEvents_.
 
 ++++
 <pre data-type="programlisting">
@@ -738,16 +738,17 @@ Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
 
 To get these events, we looked at the +logs+ array returned as a result (+res+) of the transactions. The first log entry (+logs[0]+) contains an event name in +logs[0].event+ and the event arguments in +logs[0].args+. By showing these on the console, we can see the emitted event name and the event arguments.
 
-Events are a very useful mechanism, not only for intra-contract communication, but also for debugging during development.
+Events are a very useful mechanism, not only for intra-contract communication, but also for debugging during development(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc20"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc19")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc18")))
 
 ==== Calling Other Contracts (send, call, callcode, delegatecall)
 
-Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method. In short, the risks arise from the fact that you may not know much about a contract you are calling into or that is calling into your contract. When writing smart contracts, you must keep in mind that while you may mostly expect to be dealing with EOAs, there is nothing to stop arbitrarily complex and perhaps malign contracts from calling into and being called by your code.
+((("smart contracts","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc21", range="startofrange")))((("Solidity","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc22", range="startofrange")))Calling other contracts from within your contract is a very useful but potentially dangerous operation. We'll examine the various ways you can achieve this and evaluate the risks of each method. In short, the risks arise from the fact that you may not know much about a contract you are calling into or that is calling into your contract. When writing smart contracts, you must keep in mind that while you may mostly expect to be dealing with EOAs, there is nothing to stop arbitrarily complex and perhaps malign contracts from calling into and being called by your code.
 
 ===== Creating a new instance
 
-The safest way to call another contract is if you create that other contract yourself. That way, you are certain of its interfaces and behavior. To do this, you can simply instantiate it, using the keyword +new+, as in other object-oriented languages. In Solidity, the keyword +new+ will create the contract on the blockchain and return an object that you can use to reference it. Let's say you want to create and call a +Faucet+ contract from within another contract called +Token+:
+((("smart contracts","creating new instance")))The safest way to call another contract is if you create that other contract yourself. That way, you are certain of its interfaces and behavior. To do this, you can simply instantiate it, using the keyword +new+, as in other object-oriented languages. In Solidity, the keyword +new+ will create the contract on the blockchain and return an object that you can use to reference it. Let's say you want to create and call a +Faucet+ contract from within another contract called +Token+:
 
+[role="pagebreak-before"]
 [source,solidity]
 ----
 contract Token is mortal {
@@ -812,7 +813,7 @@ Note that while you are the owner of the +Token+ contract, the +Token+ contract 
 
 ===== Addressing an existing instance
 
-Another way you can call a contract is by casting the address of an existing instance of the contract. With this method, you apply a known interface to an existing instance. It is therefore critically important that you know, for sure, that the instance you are addressing is in fact of the type you assume. Let's look at an example:
+((("smart contracts","addressing an existing instance")))Another way you can call a contract is by casting the address of an existing instance of the contract. With this method, you apply a known interface to an existing instance. It is therefore critically important that you know, for sure, that the instance you are addressing is in fact of the type you assume. Let's look at an example:
 
 [source,solidity]
 ----
@@ -835,7 +836,7 @@ Here, we take an address provided as an argument to the constructor, +_f+, and w
 
 Solidity offers some even more "low-level" functions for calling other contracts. These correspond directly to EVM opcodes of the same name and allow us to construct a contract-to-contract call manually. As such, they represent the most flexible _and_ the most dangerous mechanisms for calling other contracts.
 
-Here's the same example, using a +call+ method:
+((("smart contracts","call method", id="ix_07smart-contracts-solidity-asciidoc23", range="startofrange")))Here's the same example, using a +call+ method:
 
 [source,solidity]
 ----
@@ -846,7 +847,7 @@ contract Token is mortal {
 }
 ----
 
-As you can see, this type of +call+ is a _blind_ call into a function, very much like constructing a raw transaction, only from within a contract's context. It can expose your contract to a number of security risks, most importantly _reentrancy_, which we will discuss in more detail in <<reentrancy_security>>. The +call+ function will return +false+ if there is a problem, so you can evaluate the return value for error handling:
+((("blind calls")))As you can see, this type of +call+ is a _blind_ call into a function, very much like constructing a raw transaction, only from within a contract's context. ((("reentrancy attacks","blind calls and")))It can expose your contract to a number of security risks, most importantly _reentrancy_, which we will discuss in more detail in <<reentrancy_security>>. The +call+ function will return +false+ if there is a problem, so you can evaluate the return value for error handling:
 
 [source,solidity]
 ----
@@ -859,7 +860,7 @@ contract Token is mortal {
 }
 ----
 
-Another variant of +call+ is +delegatecall+, which replaced the more dangerous +callcode+. The pass:[<code><span class="keep-together">callcode</span></code>] method will be deprecated soon, so it should not be used.
+((("delegatecall method")))((("smart contracts","delegatecall method")))Another variant of +call+ is +delegatecall+, which replaced the more dangerous +callcode+. The pass:[<code><span class="keep-together">callcode</span></code>] method will be deprecated soon, so it should not be used.
 
 As mentioned in <<solidity_address_object>>, a +delegatecall+ is different from a +call+ in that the +msg+ context does not change. For example, whereas a +call+ changes the value of +msg.sender+ to be the calling contract, a +delegatecall+ keeps the same +msg.sender+ as in the calling contract. Essentially, +delegatecall+ runs the code of another contract inside the context of the execution of the current contract. It is most often used to invoke code from a library. It also allows you to draw on the pattern of using library functions stored elsewhere, but have that code work with the storage data of your contract.
 
@@ -899,7 +900,7 @@ truffle(develop)> <strong>calledLibrary.address</strong>
 truffle(develop)> <strong>caller.deployed().then( i => { callerDeployed = i })</strong>
 
 truffle(develop)> <strong>callerDeployed.make_calls(calledContract.address).then(res => \
-                  { res.logs.forEach( log => { console.log(log.args) })})</strong>strong>
+                  { res.logs.forEach( log => { console.log(log.args) })})</strong>
 { sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
   origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
   from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
@@ -949,12 +950,12 @@ from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
 
 This time, the +msg.sender+ is not the address of +caller+. Instead, it is the address of our account, and is the same as the transaction origin. That's because when you call a library, the call is always +delegatecall+ and runs within the context of the caller. So, when the +calledLibrary+ code was running, it inherited the execution context of +caller+, as if its code was running inside +caller+. The variable +this+ (shown as +from+ in the event emitted) is the address of +caller+, even though it is accessed from within pass:[<span class="keep-together"><code>calledLibrary</code></span>].
 
-The next two calls, using the low-level +call+ and +delegatecall+, verify our expectations, emitting events that mirror what we just saw.
+The next two calls, using the low-level +call+ and +delegatecall+, verify our expectations, emitting events that mirror what we just(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc23"))) saw(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc22")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc21"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc10")))
 
 [[gas_sec]]
 === Gas Considerations
 
-Gas, described in more in detail in <<gas>>, is an incredibly important consideration in smart contract programming. Gas is a resource constraining the maximum amount of computation that Ethereum will allow a transaction to consume. If the gas limit is exceeded during computation, the following series of events occurs:
+((("gas","conserving", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("smart contracts","gas considerations", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","gas considerations", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))Gas, described in more in detail in <<gas>>, is an incredibly important consideration in smart contract programming. Gas is a resource constraining the maximum amount of computation that Ethereum will allow a transaction to consume. If the gas limit is exceeded during computation, the following series of events occurs:
 
 * An "out of gas" exception is thrown.
 * The state of the contract prior to execution is restored (reverted).
@@ -964,15 +965,15 @@ Because gas is paid by the user who initiates the transaction, users are discour
 
 ==== Avoid Dynamically Sized Arrays
 
-Any loop through a dynamically sized array where a function performs operations on each element or searches for a particular element introduces the risk of using too much gas. Indeed, the contract may run out of gas before finding the desired result, or before acting on every element, thus wasting time and ether without giving any result at all.
+((("dynamically sized arrays")))((("gas","dynamically sized arrays and")))Any loop through a dynamically sized array where a function performs operations on each element or searches for a particular element introduces the risk of using too much gas. Indeed, the contract may run out of gas before finding the desired result, or before acting on every element, thus wasting time and ether without giving any result at all.
 
 ==== Avoid Calls to Other Contracts
 
-Calling other contracts, especially when the gas cost of their functions is not known, introduces the risk of running out of gas. Avoid using libraries that are not well tested and broadly used. The less scrutiny a library has received from other programmers, the greater the risk of using it.
+((("gas","avoiding calls to other contracts")))Calling other contracts, especially when the gas cost of their functions is not known, introduces the risk of running out of gas. Avoid using libraries that are not well tested and broadly used. The less scrutiny a library has received from other programmers, the greater the risk of using it.
 
 ==== Estimating Gas Cost
 
-If you need to estimate the gas necessary to execute a certain method of a contract considering its arguments, you could use the following procedure:
+((("gas","estimating cost of", id="ix_07smart-contracts-solidity-asciidoc27", range="startofrange")))If you need to estimate the gas necessary to execute a certain method of a contract considering its arguments, you could use the following procedure:
 
 [source, javascript]
 var contract = web3.eth.contract(abi).at(address);
@@ -990,7 +991,7 @@ And from there you can estimate the gas cost:
 [source, javascript]
 var gasCostInEther = web3.fromWei((gasEstimate * gasPrice), 'ether');
 
-Let's apply our gas estimation functions to estimating the gas cost of our +Faucet+ example, using the code https://github.com/ethereumbook/ethereumbook/tree/develop/code/truffle/FaucetEvents[from the book's repository].
+Let's apply our gas estimation functions to estimating the gas cost of our +Faucet+ example, using the code http://bit.ly/2zf0SIO[from the book's repository].
 
 Start Truffle in development mode and execute the JavaScript file in <<estimateGas_function>>, _gas_estimates.js_.
 
@@ -1020,12 +1021,13 @@ FaucetContract.web3.eth.getGasPrice(function(error, result) {
         console.log("gas estimation = " + gas + " units");
         console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
         console.log("gas cost estimation = " +
-                    FaucetContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+                FaucetContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
     });
 });
 ----
 ====
 
+[role="pagebreak-after"]
 Here's how that looks in the Truffle development console:
 
 ++++
@@ -1042,8 +1044,8 @@ gas cost estimation = 0.00062794 ether
 </pre>
 ++++
 
-It is recommended that you evaluate the gas cost of functions as part of your development workflow, to avoid any surprises when deploying contracts to the mainnet.
+It is recommended that you evaluate the gas cost of functions as part of your development workflow, to avoid any surprises when deploying contracts to the mainnet(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc27"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc26")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc25")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc24")))
 
 === Conclusions
 
-In this chapter we started working with smart contracts in detail and epxlored the Solidity contract programming language. We took a simple example contract, _Faucet.sol_, and gradually improved it and made it more complex, using it to explore various aspects of the Solidity language. In <<vyper_chap>> we will work with Vyper, another contract-oriented programming language. We will compare Vyper to Solidity, showing some of the differences in the design of these two languages and deepening our understanding of smart contract programming.
+In this chapter we started working with smart contracts in detail and explored the Solidity contract programming language.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc4")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc3"))) We took a simple example contract, _Faucet.sol_, and gradually improved it and made it more complex, using it to explore various aspects of the Solidity language. In <<vyper_chap>> we will work with Vyper, another contract-oriented programming language. We will compare Vyper to Solidity, showing some of the differences in the design of these two languages and deepening our understanding of smart contract programming.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc0")))
