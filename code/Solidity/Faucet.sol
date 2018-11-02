@@ -1,3 +1,4 @@
+pragma solidity ^0.4.19;
 // Our first contract is a faucet!
 contract Faucet {
 
