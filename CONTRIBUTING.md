@@ -4,6 +4,19 @@
 
 This book is developed collaboratively and openly, here on GitHub. We accept comments, contributions and corrections from all.
 
+## Current Project STATUS
+**CONTENT FREEZE - FIRST EDITION IN PRODUCTION**
+
+## Contributing with a Pull Request
+
+Before contributing with a Pull Request, please read the current **PROJECT STATUS**.
+
+If the current **PROJECT STATUS** is **CONTENT FREEZE**, please keep these points in mind;
+
+* Please submit only PRs for errors that a non-domain-expert copy editor might miss. Do not submit PRs for typos, grammar and syntax, as those are part of the copy editors job.
+* Please don't merge code. Any changes will have to be applied manually (by the Author) after copy edit and before final proof, if the copy editor doesn't catch the same errors.
+
+
 ## Chat with the authors
 
 You can chat with the authors and editors on [Gitter chat](https://gitter.im/ethereumbook/Lobby).
@@ -21,19 +34,6 @@ License: CC0
 Added by: @aantonop
 ////
 ```
-
-## Current Project STATUS
-**CONTENT FREEZE**
-
-## Contributing with a Pull Request
-
-Before contributing with a Pull Request, please made sure about the current **PROJECT STATUS**.
-
-If the current **PROJECT STATUS** is **CONTENT FREEZE**, please keep these points in mind;
-
-* Please submit only PRs for errors that a non-domain-expert copy editor might miss. Do not submit PRs for typos, grammar and syntax, as those are part of the copy editors job.
-* Please don't merge code. Any changes will have to be applied manually (by the Author) after copy edit and before final proof, if the copy editor doesn't catch the same errors.
-
 
 The best way to contribute to this book is by making a pull request:
 
