@@ -170,7 +170,7 @@ In Ethereum, the ABI is used to encode contract calls for the EVM and to read da
 
 A contract's ABI is specified as a JSON array of function descriptions (see <<solidity_functions>>) and events (see <<solidity_events>>). A function description is a JSON object with fields `type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. An event description object has fields `type`, `name`, `inputs`, and `anonymous`.
 
-We use the +solc+ command-line Solidity compiler to produce the ABI for our _Faucet.sol_ example contract:
+We use the +solc+ command-line Solidity compiler to produce the ABI for our pass:[<span class="keep-together"><em>Faucet.sol</em></span>] example contract:
 
 ++++
 <pre data-type="programlisting">
@@ -202,7 +202,7 @@ pragma solidity ^0.4.19;
 
 The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of 0.4.19. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above 0.4.19; e.g., 0.4.20, but not 0.5.0 (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
 
-Let’s add a pragma directive to our +Faucet+ contract. We will name the new file _Faucet2.sol_, to keep track of our changes as we proceed through these examples starting in <<add_pragma_to_faucet>>.
+Let’s add a pragma directive to our +Faucet+ contract. We will name the new file pass:[<span class="keep-together"><em>Faucet2.sol</em></span>], to keep track of our changes as we proceed through these examples starting in <<add_pragma_to_faucet>>.
 
 [[add_pragma_to_faucet]]
 .Faucet2.sol: Adding the version pragma to Faucet
@@ -284,7 +284,7 @@ require(withdraw_amount <= 0.1 ether);
 
 [NOTE]
 ====
-Whenever a contract calls another contract, the values of all the attributes of +msg+ change to reflect the new caller's information. The only exception to this is the +delegatecall+ function, which runs the code of another contract/library within the original +msg+ context.
+Whenever a contract calls another contract, the values of all the attributes of +msg+ change to reflect the new caller's information. The only exception to this is the +delegatecall+ function, which runs the code of another contract/library within the original +msg+ pass:[<span class="keep-together">context</span>].
 ====
 
 ===== Transaction context
@@ -391,7 +391,7 @@ The second set of keywords (+pure+, +constant+, +view+, +payable+) affect the be
 
 +pure+:: ((("pure function")))A pure function is one that neither reads nor writes any variables in storage. It can only operate on arguments and return data, without reference to any stored data. Pure functions are intended to encourage declarative-style programming without side effects or state.
 
-+payable+:: ((("payable function")))A payable function is one that can accept incoming payments. Functions not declared as +payable+ will reject incoming payments. There are two exceptions, due to design decisions in the EVM: coinbase payments and +SELFDESTRUCT+ inheritance will be paid even if the fallback function is not declared as +payable+, but this makes sense because code execution is not part of those payments anyway.
++payable+:: ((("payable function")))A payable function is one that can accept incoming payments. Functions not declared as +payable+ will reject incoming payments. There are two exceptions, due to design decisions in the EVM: coinbase payments and +SELFDESTRUCT+ inheritance will be paid even if the fallback function is not declared as +payable+, but this makes sense because code execution is not part of those payments pass:[<span class="keep-together">anyway</span>].
 
 As you can see in our +Faucet+ example, we have one payable function (the fallback function), which is the only function that can receive incoming payments.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc13")))
 
@@ -594,7 +594,7 @@ By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract no
 
 When a contract terminates with an error, all the state changes (changes to variables, balances, etc.) are reverted, all the way up the chain of contract calls if more than one contract was called. This ensures that transactions are _atomic_, meaning they either complete successfully or have no effect on state and are reverted entirely.
 
-((("assert function","Solidity and")))((("require function")))The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those conditions.
+((("assert function","Solidity and")))((("require function")))The +assert+ and +require+ functions operate in the same way, evaluating a condition and stopping execution with an error if the condition is false. By convention, +assert+ is used when the outcome is expected to be true, meaning that we use +assert+ to test internal conditions. By comparison, +require+ is used when testing inputs (such as function arguments or transaction fields), setting our expectations for those pass:[<span class="keep-together">conditions</span>].
 
 We've used +require+ in our function modifier +onlyOwner+, to test that the message sender is the owner of the contract:
 
@@ -977,7 +977,8 @@ Because gas is paid by the user who initiates the transaction, users are discour
 
 [source, javascript]
 var contract = web3.eth.contract(abi).at(address);
-var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2, {from: account});
+var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2,
+    {from: account});
 
 +gasEstimate+ will tell you the number of gas units needed for its execution. It is an estimate because of the Turing completeness of the EVM&#x2014;it is relatively trivial to create a function that will take vastly different amounts of gas to execute different calls. Even production code can change execution paths in subtle ways, resulting in hugely different gas costs from one call to the next. However, most functions are sensible and +estimateGas+ will give a good estimate most of the time.
 
