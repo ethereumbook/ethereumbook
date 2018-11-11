@@ -1,16 +1,13 @@
-pragma solidity ^0.4.21;
+pragma solidity ^0.4.24;
 
-import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
+import 'openzeppelin-solidity/contracts/token/ERC20/ERC20.sol';
+import 'openzeppelin-solidity/contracts/token/ERC20/ERC20Detailed.sol';
 
-contract METoken is StandardToken {
-    string public constant name = 'Mastering Ethereum Token';
-    string public constant symbol = 'MET';
-    uint8 public constant decimals = 2;
-    uint constant _initial_supply = 2100000000;
+contract METoken is ERC20, ERC20Detailed {
+    uint256 public constant INITIAL_SUPPLY = 2100000000;
 
-    function METoken() public {
-        totalSupply_ = _initial_supply;
-        balances[msg.sender] = _initial_supply;
-        emit Transfer(address(0), msg.sender, _initial_supply);
+    constructor() public ERC20Detailed("Mastering Ethereum Token", "MET", 2) {
+        _mint(msg.sender, INITIAL_SUPPLY);
+        emit Transfer(address(0), msg.sender, INITIAL_SUPPLY);
     }
 }
