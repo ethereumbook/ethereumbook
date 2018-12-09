@@ -7,7 +7,9 @@
 
 Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
 
-This repository contains the draft of the book, currently in progress, scheduled for publication in Q4'2018 by O'Reilly Media. The publication date has been delayed, unfortunately, due to some personal issues. Expect to see content developed and pushed here in Q1 and Q2 2018.
+## Reading this book
+
+To read this book, open [book.asciidoc](https://github.com/ethereumbook/ethereumbook/tree/develop/book.asciidoc) and click on each chapter.
 
 ## PDF Version
 
