@@ -15,27 +15,15 @@ There is no PDF version available. While it is possible to produce one, and you 
 
 ## Content
 
-The current status of the book is **IN PRODUCTION**. No further changes will be accepted into the first edition. The final draft of this book has been delivered to the publisher for final copy edit and production work. It is scheduled for publication and first print by December 2018.
+The content status is "COMPLETE". The first edition of this book was published on December 1st, 2018. That edition is available in print and ebook format at many popular bookstores. It is tagged ["first_edition_first_print"](https://github.com/ethereumbook/ethereumbook/tree/first_edition_first_print) in the develop branch of this repository.
 
-Once production is completed, the repository will be tagged as "edition1_print1" and development will continue for errata, bug fixes and preparation for the second edition, which goes into production in late 2019 or early 2020.
-
-## Contributing, reviewing and commenting
-
-This book is developed collaboratively and openly, here on GitHub. We accept comments, contributions and corrections from all.
-
-You can chat with the authors and editors on [Gitter chat](https://gitter.im/ethereumbook/Lobby).
-
-To contribute, see the detailed [Contributing Guide](./CONTRIBUTING.md).
-
-If you're new to new GitHub, you can watch the following video tutorial by Andreas M. Antonopoulos:
-
-[![Ethereum Book Pull Request Tutorial](https://img.youtube.com/vi/IBYHohWm_5w/0.jpg)](https://www.youtube.com/watch?v=IBYHohWm_5w)
+At this time, **only bug fix requests are accepted**. If you find a bug, start an issue or better yet, fix the problem with a pull request. We will start work on the second edition in late 2019.
 
 ## Source and license
 
-The book's source code, found in this repository, is kept synchronized with the print and ebook editions.
+The [first edition](https://github.com/ethereumbook/ethereumbook/tree/first_edition_first_print) of this book, as printed and sold by O'Reilly Media, is available in this repository.
 
-The [develop branch](https://github.com/ethereumbook/ethereumbook/tree/develop), containing the most recent changes you see here is the in-progress drafting of Mastering Ethereum.
+Mastering Ethereum is released under the Creative Commons CC-BY-NC-ND license, which allows sharing the source code for personal use only. You may read this book for free. You may not create derivatives (such as PDF copies), or distribute the book commercially. The full terms of the license can be found here:
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
