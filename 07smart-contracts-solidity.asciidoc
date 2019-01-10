@@ -230,7 +230,7 @@ Integer (+int+, +uint+):: Signed (+int+) and unsigned (+uint+) integers, declare
 
 Fixed point (+fixed+, +ufixed+):: Fixed-point numbers, declared with pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] where __++M++__ is the size in bits (increments of 8 up to 256) and __++N++__ is the number of decimals after the point (up to 18); e.g., +ufixed32x2+.
 
-Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account). 
+Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account).
 
 Byte array (fixed):: Fixed-size arrays of bytes, declared with +bytes1+ up to +bytes32+.
 
@@ -404,9 +404,9 @@ Constructors can be specified in two ways. Up to and including in Solidity v0.4.
 [source,solidity]
 ----
 contract MEContract {
-	function MEContract() {
-		// This is the constructor
-	}
+    function MEContract() {
+        // This is the constructor
+    }
 }
 ----
 
@@ -419,9 +419,9 @@ To address the potential problems with constructor functions being based on havi
 ----
 pragma ^0.4.22
 contract MEContract {
-	constructor () {
-		// This is the constructor
-	}
+    constructor () {
+        // This is the constructor
+    }
 }
 ----
 
@@ -450,14 +450,15 @@ pragma solidity ^0.4.22;
 // Our first contract is a faucet!
 contract Faucet {
 
-	address owner;
+    address owner;
 
-	// Initialize Faucet contract: set owner
-	constructor() {
-		owner = msg.sender;
-	}
+    // Initialize Faucet contract: set owner
+    constructor() {
+        owner = msg.sender;
+    }
 
-[...]
+    [...]
+}
 ----
 
 We've changed the pragma directive to specify v0.4.22 as the minimum version for this example, as we are using the new +constructor+ keyword introduced in v0.4.22 of Solidity. Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
@@ -470,8 +471,8 @@ Now we can add a function to destroy the contract. We need to make sure that onl
 ----
 // Contract destructor
 function destroy() public {
-	require(msg.sender == owner);
-	selfdestruct(owner);
+    require(msg.sender == owner);
+    selfdestruct(owner);
 }
 ----
 
@@ -518,7 +519,7 @@ Inside a modifier, you can access all the values (variables and arguments) visib
 [source,solidity]
 ----
 contract Child is Parent {
-  ...
+    ...
 }
 ----
 
@@ -527,7 +528,7 @@ With this construct, the +Child+ contract inherits all the methods, functionalit
 [source,solidity]
 ----
 contract Child is Parent1, Parent2 {
-  ...
+    ...
 }
 ----
 
@@ -540,18 +541,18 @@ We start by defining a base contract +owned+, which has an +owner+ variable, set
 [source,solidity]
 ----
 contract owned {
-	address owner;
+    address owner;
 
-	// Contract constructor: set owner
-	constructor() {
-		owner = msg.sender;
-	}
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
 
-	// Access control modifier
-	modifier onlyOwner {
-	    require(msg.sender == owner);
-	    _;
-	}
+    // Access control modifier
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
 }
 ----
 
@@ -560,10 +561,10 @@ Next, we define a base contract +mortal+, which inherits +owned+:
 [source,solidity]
 ----
 contract mortal is owned {
-	// Contract destructor
-	function destroy() public onlyOwner {
-		selfdestruct(owner);
-	}
+    // Contract destructor
+    function destroy() public onlyOwner {
+        selfdestruct(owner);
+    }
 }
 ----
 
@@ -625,8 +626,7 @@ However, it might be better to check explicitly and provide a clear error messag
 
 [source,solidity]
 ----
-require(this.balance >= withdraw_amount,
-	"Insufficient balance in faucet for withdrawal request");
+require(this.balance >= withdraw_amount, "Insufficient balance in faucet for withdrawal request");
 msg.sender.transfer(withdraw_amount);
 ----
 
@@ -646,10 +646,10 @@ Event objects take arguments that are serialized and recorded in the transaction
 [source,solidity]
 ----
 contract Faucet is mortal {
-	event Withdrawal(address indexed to, uint amount);
-	event Deposit(address indexed from, uint amount);
+    event Withdrawal(address indexed to, uint amount);
+    event Deposit(address indexed from, uint amount);
 
-	[...]
+    [...]
 }
 ----
 
@@ -752,11 +752,11 @@ Events are a very useful mechanism, not only for intra-contract communication, b
 [source,solidity]
 ----
 contract Token is mortal {
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -767,11 +767,11 @@ This mechanism for contract construction ensures that you know the exact type of
 import "Faucet.sol";
 
 contract Token is mortal {
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -782,11 +782,11 @@ You can optionally specify the +value+ of ether transfer on creation, and pass a
 import "Faucet.sol";
 
 contract Token is mortal {
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 }
 ----
 
@@ -797,15 +797,15 @@ You can also then call the +Faucet+ functions. In this example, we call the +des
 import "Faucet.sol";
 
 contract Token is mortal {
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 
-	function destroy() ownerOnly {
-		_faucet.destroy();
-	}
+    function destroy() ownerOnly {
+        _faucet.destroy();
+    }
 }
 ----
 
@@ -821,12 +821,12 @@ import "Faucet.sol";
 
 contract Token is mortal {
 
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor(address _f) {
-		_faucet = Faucet(_f);
-		_faucet.withdraw(0.1 ether)
-	}
+    constructor(address _f) {
+        _faucet = Faucet(_f);
+        _faucet.withdraw(0.1 ether);
+    }
 }
 ----
 
@@ -841,9 +841,9 @@ Solidity offers some even more "low-level" functions for calling other contracts
 [source,solidity]
 ----
 contract Token is mortal {
-	constructor(address _faucet) {
-		_faucet.call("withdraw", 0.1 ether);
-	}
+    constructor(address _faucet) {
+        _faucet.call("withdraw", 0.1 ether);
+    }
 }
 ----
 
@@ -852,11 +852,11 @@ contract Token is mortal {
 [source,solidity]
 ----
 contract Token is mortal {
-	constructor(address _faucet) {
-		if !(_faucet.call("withdraw", 0.1 ether)) {
-			revert("Withdrawal from faucet failed");
-		}
-	}
+    constructor(address _faucet) {
+        if !(_faucet.call("withdraw", 0.1 ether)) {
+            revert("Withdrawal from faucet failed");
+        }
+    }
 }
 ----
 
@@ -1011,9 +1011,9 @@ FaucetContract.web3.eth.getGasPrice(function(error, result) {
     // Get the contract instance
     FaucetContract.deployed().then(function(FaucetContractInstance) {
 
-		// Use the keyword 'estimateGas' after the function name to get the gas
-		// estimation for this particular function (aprove)
-		FaucetContractInstance.send(web3.toWei(1, "ether"));
+        // Use the keyword 'estimateGas' after the function name to get the gas
+        // estimation for this particular function (aprove)
+        FaucetContractInstance.send(web3.toWei(1, "ether"));
         return FaucetContractInstance.withdraw.estimateGas(web3.toWei(0.1, "ether"));
 
     }).then(function(result) {
