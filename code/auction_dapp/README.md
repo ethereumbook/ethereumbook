@@ -47,7 +47,7 @@ The Auction house needs to verify that a NFT is owned by the auction creator, th
 
 #### 3. Create Auction for NFT
 
-Creating the auction is a simple process of entering auction details such as name, strarting price, expirty date etc. The important part is to have the reference between the deed and the auction.
+Creating the auction is a simple process of entering auction details such as name, starting price, expiry date etc. The important part is to have the reference between the deed and the auction.
 
 #### 4. Bid on Auction
 
