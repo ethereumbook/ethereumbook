@@ -60,7 +60,7 @@ Anyone can bid on an auction except the owner of the auction. Biding means that 
 
 If an auction is canceled, the Auction Repository MUST return the ownership of the asset/token/deed back to the auction creator and refund bidders if any.
 
-#### 5. Bidder Win Auction
+#### 6. Bidder Win Auction
 
-If there is an auction winner, the asset/token/deed is transfered to the bidder and the bid amount is sent to the auction creator.
+If there is an auction winner, the asset/token/deed is transferred to the bidder and the bid amount is sent to the auction creator.
 
