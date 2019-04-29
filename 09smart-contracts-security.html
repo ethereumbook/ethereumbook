@@ -1,0 +1,3346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.8">
+<title>Smart Contract Security</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
+/* Uncomment @import statement below to use as custom stylesheet */
+/*@import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700";*/
+article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section,summary{display:block}
+audio,canvas,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+script{display:none!important}
+html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}
+a{background:transparent}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+abbr[title]{border-bottom:1px dotted}
+b,strong{font-weight:bold}
+dfn{font-style:italic}
+hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type="button"],input[type="reset"],input[type="submit"]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type="checkbox"],input[type="radio"]{box-sizing:border-box;padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,*::before,*::after{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;font-weight:400;font-style:normal;line-height:1;position:relative;cursor:auto;tab-size:4;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0;direction:ltr}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:none}
+p{font-family:inherit;font-weight:400;font-size:1em;line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em;height:0}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{font-size:1em;line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0;font-size:1em}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+abbr,acronym{text-transform:uppercase;font-size:90%;color:rgba(0,0,0,.8);border-bottom:1px dotted #ddd;cursor:help}
+abbr{text-transform:none}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote cite{display:block;font-size:.9375em;color:rgba(0,0,0,.6)}
+blockquote cite::before{content:"\2014 \0020"}
+blockquote cite a,blockquote cite a:visited{color:rgba(0,0,0,.6)}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:solid 1px #dedede}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt,table tr:nth-of-type(even){background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{display:table-cell;line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+*:not(pre)>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background-color:#f7f7f8;-webkit-border-radius:4px;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed;word-wrap:break-word}
+*:not(pre)>code.nobreak{word-wrap:normal}
+*:not(pre)>code.nowrap{white-space:nowrap}
+pre,pre>code{line-height:1.45;color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;text-rendering:optimizeSpeed}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background-color:#f7f7f7;border:1px solid #ccc;-webkit-border-radius:3px;border-radius:3px;-webkit-box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em white inset;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em #fff inset;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin-left:auto;margin-right:auto;margin-top:0;margin-bottom:0;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:-ms-flexbox;display:-webkit-flex;display:flex;-ms-flex-flow:row wrap;-webkit-flex-flow:row wrap;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background-color:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border-style:solid;border-width:1px;border-color:#e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;-webkit-border-radius:4px;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:100%;background-color:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:rgba(255,255,255,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class="paragraph"]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+table.tableblock #preamble>.sectionbody>[class="paragraph"]:first-of-type p{font-size:inherit}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6)}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border-style:solid;border-width:1px;border-color:#e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;-webkit-border-radius:4px;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border-style:solid;border-width:1px;border-color:#e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;-webkit-border-radius:4px;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock pre:not(.highlight),.listingblock pre[class="highlight"],.listingblock pre[class^="highlight "],.listingblock pre.CodeRay,.listingblock pre.prettyprint{background:#f7f7f8}
+.sidebarblock .literalblock pre,.sidebarblock .listingblock pre:not(.highlight),.sidebarblock .listingblock pre[class="highlight"],.sidebarblock .listingblock pre[class^="highlight "],.sidebarblock .listingblock pre.CodeRay,.sidebarblock .listingblock pre.prettyprint{background:#f2f1f1}
+.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{-webkit-border-radius:4px;border-radius:4px;word-wrap:break-word;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{font-size:1em}}
+.literalblock pre.nowrap,.literalblock pre.nowrap pre,.listingblock pre.nowrap,.listingblock pre.nowrap pre{white-space:pre;word-wrap:normal}
+.literalblock.output pre{color:#f7f7f8;background-color:rgba(0,0,0,.9)}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;-webkit-border-radius:4px;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:#999}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:#999}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+table.pyhltable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.pyhltable td{vertical-align:top;padding-top:0;padding-bottom:0;line-height:1.45}
+table.pyhltable td.code{padding-left:.75em;padding-right:0}
+pre.pygments .lineno,table.pyhltable td:not(.code){color:#999;padding-left:0;padding-right:.5em;border-right:1px solid #dddddf}
+pre.pygments .lineno{display:inline-block;margin-right:.25em}
+table.pyhltable .linenodiv{background:none!important;padding-right:0!important}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin:0 0 1.25em;padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;text-align:left;margin-right:0}
+table.tableblock{max-width:100%;border-collapse:separate}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>thead>tr>.tableblock,table.grid-all>tbody>tr>.tableblock{border-width:0 1px 1px 0}
+table.grid-all>tfoot>tr>.tableblock{border-width:1px 1px 0 0}
+table.grid-cols>*>tr>.tableblock{border-width:0 1px 0 0}
+table.grid-rows>thead>tr>.tableblock,table.grid-rows>tbody>tr>.tableblock{border-width:0 0 1px}
+table.grid-rows>tfoot>tr>.tableblock{border-width:1px 0 0}
+table.grid-all>*>tr>.tableblock:last-child,table.grid-cols>*>tr>.tableblock:last-child{border-right-width:0}
+table.grid-all>tbody>tr:last-child>.tableblock,table.grid-all>thead:last-child>tr>.tableblock,table.grid-rows>tbody>tr:last-child>.tableblock,table.grid-rows>thead:last-child>tr>.tableblock{border-bottom-width:0}
+table.frame-all{border-width:1px}
+table.frame-sides{border-width:0 1px}
+table.frame-topbot,table.frame-ends{border-width:1px 0}
+table.stripes-all tr,table.stripes-odd tr:nth-of-type(odd){background:#f8f8f7}
+table.stripes-none tr,table.stripes-odd tr:nth-of-type(even){background:none}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{display:table-cell;line-height:1.6;background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+td>div.verse{white-space:pre}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+ul.checklist{margin-left:.625em}
+ul.checklist li>p:first-child>.fa-square-o:first-child,ul.checklist li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist li>p:first-child>input[type="checkbox"]:first-child{margin-right:.25em}
+ul.inline{display:-ms-flexbox;display:-webkit-box;display:flex;-ms-flex-flow:row wrap;-webkit-flex-flow:row wrap;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:solid 4px #fff;-webkit-box-shadow:0 0 0 1px #ddd;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background-color:#00fafa}
+.black{color:#000}
+.black-background{background-color:#000}
+.blue{color:#0000bf}
+.blue-background{background-color:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background-color:#fa00fa}
+.gray{color:#606060}
+.gray-background{background-color:#7d7d7d}
+.green{color:#006000}
+.green-background{background-color:#007d00}
+.lime{color:#00bf00}
+.lime-background{background-color:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background-color:#7d0000}
+.navy{color:#000060}
+.navy-background{background-color:#00007d}
+.olive{color:#606000}
+.olive-background{background-color:#7d7d00}
+.purple{color:#600060}
+.purple-background{background-color:#7d007d}
+.red{color:#bf0000}
+.red-background{background-color:#fa0000}
+.silver{color:#909090}
+.silver-background{background-color:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background-color:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background-color:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background-color:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background-color:rgba(0,0,0,.8);-webkit-border-radius:100px;border-radius:100px;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background-color:#fffef7;border-color:#e0e0dc;-webkit-box-shadow:0 1px 4px #e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{-webkit-box-shadow:none!important;box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media print,amzn-kf8{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="smart_contract_security">Smart Contract Security</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Security is one of the most important considerations when writing smart contracts. In the field of smart contract programming, mistakes are costly and easily exploited. In this chapter we will look at security best practices and design patterns, as well as "security antipatterns," which are practices and patterns that can introduce vulnerabilities in our smart contracts.</p>
+</div>
+<div class="paragraph">
+<p>As with other programs, a smart contract will execute exactly what is written, which is not always what the programmer intended. Furthermore, all smart contracts are public, and any user can interact with them simply by creating a transaction. Any vulnerability can be exploited, and losses are almost always impossible to recover. It is therefore critical to follow best practices and use well-tested design patterns.</p>
+</div>
+<div class="sect2">
+<h3 id="_security_best_practices">Security Best Practices</h3>
+<div class="paragraph">
+<p><em>Defensive programming</em> is a style of programming that is particularly well suited to smart contracts. It emphasizes the following, all of which are best practices:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Minimalism/simplicity</dt>
+<dd>
+<p>Complexity is the enemy of security. The simpler the code, and the less it does, the lower the chances are of a bug or unforeseen effect occurring. When first engaging in smart contract programming, developers are often tempted to try to write a lot of code. Instead, you should look through your smart contract code and try to find ways to do less, with fewer lines of code, less complexity, and fewer "features." If someone tells you that their project has produced "thousands of lines of code" for their smart contracts, you should question the security of that project. Simpler is more secure.</p>
+</dd>
+<dt class="hdlist1">Code reuse</dt>
+<dd>
+<p>Try not to reinvent the wheel. If a library or contract already exists that does most of what you need, reuse it. Within your own code, follow the DRY principle: Don&#8217;t Repeat Yourself. If you see any snippet of code repeated more than once, ask yourself whether it could be written as a function or library and reused. Code that has been extensively used and tested is likely more secure than any new code you write. Beware of &#x201c;Not Invented Here&#x201d; syndrome, where you are tempted to "improve" a feature or component by building it from scratch. The security risk is often greater than the improvement value.</p>
+</dd>
+<dt class="hdlist1">Code quality</dt>
+<dd>
+<p>Smart contract code is unforgiving. Every bug can lead to monetary loss. You should not treat smart contract programming the same way as general-purpose programming. Writing DApps in Solidity is not like creating a web widget in JavaScript. Rather, you should apply rigorous engineering and software development methodologies, as you would in aerospace engineering or any similarly unforgiving discipline. Once you "launch" your code, there&#8217;s little you can do to fix any problems.</p>
+</dd>
+<dt class="hdlist1">Readability/auditability</dt>
+<dd>
+<p>Your code should be clear and easy to comprehend. The easier it is to read, the easier it is to audit. Smart contracts are public, as everyone can read the bytecode and anyone can reverse-engineer it. Therefore, it is beneficial to develop your work in public, using collaborative and open source methodologies, to draw upon the collective wisdom of the developer community and benefit from the highest common denominator of open source development. You should write code that is well documented and easy to read, following the style and naming conventions that are part of the Ethereum community.</p>
+</dd>
+<dt class="hdlist1">Test coverage</dt>
+<dd>
+<p>Test everything that you can. Smart contracts run in a public execution environment, where anyone can execute them with whatever input they want. You should never assume that input, such as function arguments, is well formed, properly bounded, or has a benign purpose. Test all arguments to make sure they are within expected ranges and properly formatted before allowing execution of your code to continue.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_security_risks_and_antipatterns">Security Risks and Antipatterns</h3>
+<div class="paragraph">
+<p>As a smart contract programmer, you should be familiar with the most common security risks, so as to be able to detect and avoid the programming patterns that leave your contracts exposed to these risks. In the next several sections we will look at different security risks, examples of how vulnerabilities can arise, and countermeasures or preventative solutions that can be used to address them.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="reentrancy_security">Reentrancy</h3>
+<div class="paragraph">
+<p>One of the features of Ethereum smart contracts is their ability to call
+and utilize code from other external contracts. Contracts also typically
+handle ether, and as such often send ether to various external user
+addresses. These operations require the contracts to submit external calls. These
+external calls can be hijacked by attackers, who can force the
+contracts to execute further code (through a fallback function),
+including calls back into themselves. Attacks of this kind were used in the
+infamous <a href="http://bit.ly/2DamSZT">DAO hack</a>.</p>
+</div>
+<div class="paragraph">
+<p>For further reading on reentrancy attacks, see Gus Guimareas&#8217;s <a href="http://bit.ly/2zaqSEY">blog post</a> on the subject and the <a href="http://bit.ly/2ERDMxV">Ethereum Smart Contract Best Practices</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability">The Vulnerability</h4>
+<div class="paragraph">
+<p>This type of attack can occur when a contract sends ether to an unknown address.
+An attacker can carefully construct a contract at an external address
+that contains malicious code in the fallback function. Thus, when a contract sends ether to this address, it will
+invoke the malicious code. Typically the malicious code executes a
+function on the vulnerable contract, performing operations not expected
+by the developer. The term "reentrancy" comes from the fact that the
+external malicious contract calls a function on the vulnerable
+contract and the path of code execution &#x201c;<em>reenters</em>&#x201d; it.</p>
+</div>
+<div class="paragraph">
+<p>To clarify this, consider the simple vulnerable contract in <a href="#etherstore_vulnerable">EtherStore.sol</a>, which acts as
+an Ethereum vault that allows depositors to withdraw only 1 ether per
+week.</p>
+</div>
+<div id="etherstore_vulnerable" class="exampleblock">
+<div class="title">Example 1. EtherStore.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract EtherStore {
+
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address =&gt; uint256) public lastWithdrawTime;
+    mapping(address =&gt; uint256) public balances;
+
+    function depositFunds() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(balances[msg.sender] &gt;= _weiToWithdraw);
+        // limit the withdrawal
+        require(_weiToWithdraw &lt;= withdrawalLimit);
+        // limit the time allowed to withdraw
+        require(now &gt;= lastWithdrawTime[msg.sender] + 1 weeks);
+        require(msg.sender.call.value(_weiToWithdraw)());
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+    }
+ }</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract has two public functions, <code>depositFunds</code> and
+<code>withdrawFunds</code>. The <code>depositFunds</code> function simply increments the
+sender&#8217;s balance. The <code>withdrawFunds</code> function allows the sender to
+specify the amount of wei to withdraw. This function is intended to succeed
+only if the requested amount to withdraw is less than 1 ether and a withdrawal
+has not occurred in the last week.</p>
+</div>
+<div class="paragraph">
+<p>The vulnerability is in line 17, where the contract sends the user their
+requested amount of ether. Consider an attacker who has created the contract in <a href="#etherstore_attack">Attack.sol</a>.</p>
+</div>
+<div id="etherstore_attack" class="exampleblock">
+<div class="title">Example 2. Attack.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">import "EtherStore.sol";
+
+contract Attack {
+  EtherStore public etherStore;
+
+  // intialize the etherStore variable with the contract address
+  constructor(address _etherStoreAddress) {
+      etherStore = EtherStore(_etherStoreAddress);
+  }
+
+  function attackEtherStore() public payable {
+      // attack to the nearest ether
+      require(msg.value &gt;= 1 ether);
+      // send eth to the depositFunds() function
+      etherStore.depositFunds.value(1 ether)();
+      // start the magic
+      etherStore.withdrawFunds(1 ether);
+  }
+
+  function collectEther() public {
+      msg.sender.transfer(this.balance);
+  }
+
+  // fallback function - where the magic happens
+  function () payable {
+      if (etherStore.balance &gt; 1 ether) {
+          etherStore.withdrawFunds(1 ether);
+      }
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>How might the exploit occur? First, the attacker would create the malicious contract (let’s say at the
+address <code>0x0&#8230;&#8203;123</code>) with the <code>EtherStore</code>’s contract address as the sole
+constructor parameter. This would initialize and point the public
+variable <code>etherStore</code> to the contract to be attacked.</p>
+</div>
+<div class="paragraph">
+<p>The attacker would then call the <code>attackEtherStore</code> function, with some
+amount of ether greater than or equal to 1&#x2014;let&#8217;s assume <code>1 ether</code> for
+the time being. In this example, we will also assume a number of other users have
+deposited ether into this contract, such that its current balance is
+<code>10 ether</code>. The following will then occur:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><em>Attack.sol</em>, line 15: The <code>depositFunds</code> function of the <code>EtherStore</code>
+contract will be called with a <code>msg.value</code> of <code>1 ether</code> (and a lot of gas). The
+sender (<code>msg.sender</code>) will be the malicious contract (<code>0x0&#8230;&#8203;123</code>). Thus,
+       <code>balances[0x0..123] = 1 ether</code>.</p>
+</li>
+<li>
+<p><em>Attack.sol</em>, line 17: The malicious contract will then call the
+<code>withdrawFunds</code> function of the <code>EtherStore</code> contract with a parameter of <code>1
+ether</code>. This will pass all the requirements (lines 12–16 of the
+    <code>EtherStore</code> contract) as no previous withdrawals have been made.</p>
+</li>
+<li>
+<p><em>EtherStore.sol</em>, line 17: The contract will send <code>1 ether</code> back to
+the malicious <span class="keep-together">contract</span>.</p>
+</li>
+<li>
+<p><em>Attack.sol</em>, line 25: The payment to the malicious contract will
+then execute the fallback function.</p>
+</li>
+<li>
+<p><em>Attack.sol</em>, line 26: The total balance of the EtherStore contract was
+<code>10 ether</code> and is now <code>9 ether</code>, so this if statement passes.</p>
+</li>
+<li>
+<p><em>Attack.sol</em>, line 27: The fallback function calls the <code>EtherStore</code>
+<code>withdrawFunds</code> function again and '<em>reenters</em>' the <code>EtherStore</code>
+contract.</p>
+</li>
+<li>
+<p><em>EtherStore.sol</em>, line 11: In this second call to <code>withdrawFunds</code>, the
+attacking contract&#8217;s balance is still <code>1 ether</code> as line 18 has not yet been executed. Thus, we
+still have <code>balances[0x0..123] = 1 ether</code>. This is also the case for the
+<code>lastWithdrawTime</code> variable. Again, we pass all the requirements.</p>
+</li>
+<li>
+<p><em>EtherStore.sol</em>, line 17: The attacking contract withdraws another <code>1 ether</code>.</p>
+</li>
+<li>
+<p>Steps 4&#x2013;8 repeat until it is no longer the case that <code>EtherStore.balance &gt; 1</code>, as dictated by line 26 in <em>Attack.sol</em>.</p>
+</li>
+<li>
+<p><em>Attack.sol</em>, line 26: Once there is 1 (or less) ether left in the <code>EtherStore</code> contract, this <code>if</code> statement will fail. This will then allow lines 18 and 19 of the <code>EtherStore</code> contract to be executed (for each call to the <code>withdrawFunds</code> function).</p>
+</li>
+<li>
+<p><em>EtherStore.sol</em>, lines 18 and 19: The <code>balances</code> and
+<code>lastWithdrawTime</code> mappings will be set and the execution will end.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The final result is that the attacker has withdrawn all but 1 ether
+from the <code>EtherStore</code> contract in a single transaction.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques">Preventative Techniques</h4>
+<div class="paragraph">
+<p>There are a number of common techniques that help avoid potential
+reentrancy vulnerabilities in smart contracts. The first is to (whenever possible) use the built-in
+<a href="http://bit.ly/2Ogvnng">transfer</a>
+function when sending ether to external contracts. The transfer function
+only sends 2300 gas with the external call, which is not enough for the destination
+address/contract to call another contract (i.e., reenter the sending
+contract).</p>
+</div>
+<div class="paragraph">
+<p>The second technique is to ensure that all logic that changes state
+variables happens before ether is sent out of the contract (or any
+external call). In the <code>EtherStore</code> example, lines 18 and 19 of
+<em>EtherStore.sol</em> should be put before line 17. It is good practice for any code that performs external calls to unknown addresses to be the
+last operation in a localized function or piece of code execution. This
+is known as the
+<a href="http://bit.ly/2EVo70v">checks-effects-interactions
+pattern</a>.</p>
+</div>
+<div class="paragraph">
+<p>A third technique is to introduce a mutex&#x2014;that is, to add a state
+variable that locks the contract during code execution, preventing
+reentrant calls.</p>
+</div>
+<div class="paragraph">
+<p>Applying all of these techniques (using all three is unnecessary, but we do it
+for demonstrative purposes) to <em>EtherStore.sol</em>, gives the
+reentrancy-free contract:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract EtherStore {
+
+    // initialize the mutex
+    bool reEntrancyMutex = false;
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address =&gt; uint256) public lastWithdrawTime;
+    mapping(address =&gt; uint256) public balances;
+
+    function depositFunds() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(!reEntrancyMutex);
+        require(balances[msg.sender] &gt;= _weiToWithdraw);
+        // limit the withdrawal
+        require(_weiToWithdraw &lt;= withdrawalLimit);
+        // limit the time allowed to withdraw
+        require(now &gt;= lastWithdrawTime[msg.sender] + 1 weeks);
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+        // set the reEntrancy mutex before the external call
+        reEntrancyMutex = true;
+        msg.sender.transfer(_weiToWithdraw);
+        // release the mutex after the external call
+        reEntrancyMutex = false;
+    }
+ }</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="real_world_example_the_dao">Real-World Example: The DAO</h4>
+<div class="paragraph">
+<p>The DAO (Decentralized Autonomous Organization) attack was one of the major hacks that
+occurred in the early development of Ethereum. At the time, the contract
+held over $150 million. Reentrancy played a major role in the
+attack, which ultimately led to the hard fork that created Ethereum
+Classic (ETC). For a good analysis of the DAO exploit, see
+<a href="http://bit.ly/2EQaLCI" class="bare">http://bit.ly/2EQaLCI</a>. More information on Ethereum&#8217;s fork history, the DAO hack timeline, and the birth of ETC in a hard fork can be found in <a href="#ethereum_standards">[ethereum_standards]</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_arithmetic_overunderflows">Arithmetic Over/Underflows</h3>
+<div class="paragraph">
+<p>The Ethereum Virtual Machine specifies fixed-size data types for
+integers. This means that an integer variable can represent only a certain range
+of numbers. A <code>uint8</code>, for example, can only store
+numbers in the range [0,255]. Trying to store <code>256</code> into a <code>uint8</code> will
+result in <code>0</code>. If care is not taken, variables in Solidity can be
+exploited if user input is unchecked and calculations are performed
+that result in numbers that lie outside the range of the data type that
+stores them.</p>
+</div>
+<div class="paragraph">
+<p>For further reading on arithmetic over/underflows, see <a href="https://bit.ly/2nNLuOr">&#x201c;How to Secure Your Smart Contracts&#x201d;</a>,
+<a href="https://bit.ly/2MOfBPv">Ethereum Smart Contract Best Practices</a>, and
+<a href="https://bit.ly/2xvbx1M">&#x201c;Ethereum, Solidity and integer overflows: programming blockchains like 1970&#x201d;</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_2">The Vulnerability</h4>
+<div class="paragraph">
+<p>An over/underflow occurs when an operation is performed that requires a
+fixed-size variable to store a number (or piece of data) that is outside
+the range of the variable’s data type.</p>
+</div>
+<div class="paragraph">
+<p>For example, subtracting <code>1</code> from a <code>uint8</code> (unsigned integer of 8 bits; i.e., nonnegative) variable whose value is <code>0</code> will result
+in the number <code>255</code>. This is an <em>underflow</em>. We have assigned a number
+below the range of the <code>uint8</code>, so the result <em>wraps around</em> and gives the
+largest number a <code>uint8</code> can store. Similarly, adding <code>2^8=256</code> to a
+<code>uint8</code> will leave the variable unchanged, as we have wrapped around the
+entire length of the <code>uint</code>. Two simple analogies of this behavior are
+odometers in cars, which measure distance traveled (they reset to 000000, after
+the largest number, i.e., 999999, is surpassed) and periodic mathematical functions
+(adding 2π to the argument of sin leaves the value unchanged).</p>
+</div>
+<div class="paragraph">
+<p>Adding numbers larger than the data type’s range is called an <em>overflow</em>. For
+clarity, adding <code>257</code> to a <code>uint8</code> that currently has a value of <code>0</code> will result
+in the number <code>1</code>.  It is sometimes instructive to think of fixed-size variables
+as being cyclic, where we start again from zero if we add numbers above the
+largest possible stored number, and start counting down from the largest number if we subtract from zero. In the case of signed <code>int</code> types, which <em>can</em> represent negative numbers, we start again once we reach the largest negative value; for example, if we try to subtract <code>1</code> from a <code>uint8</code> whose value is <code>-128</code>, we will get <code>127</code>.</p>
+</div>
+<div class="paragraph">
+<p>These kinds of numerical gotchas allow attackers to misuse code and create
+unexpected logic flows. For example, consider the TimeLock contract in
+<a href="#timelock_sol_security">TimeLock.sol</a>.</p>
+</div>
+<div id="timelock_sol_security" class="exampleblock">
+<div class="title">Example 3. TimeLock.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract TimeLock {
+
+    mapping(address =&gt; uint) public balances;
+    mapping(address =&gt; uint) public lockTime;
+
+    function deposit() public payable {
+        balances[msg.sender] += msg.value;
+        lockTime[msg.sender] = now + 1 weeks;
+    }
+
+    function increaseLockTime(uint _secondsToIncrease) public {
+        lockTime[msg.sender] += _secondsToIncrease;
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] &gt; 0);
+        require(now &gt; lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract is designed to act like a time vault: users can
+deposit ether into the contract and it will be locked there for at least
+a week. The user may extend the wait time to longer than 1 week if they choose,
+but once deposited, the user can be sure their ether is locked in safely
+for at least a week&#x2014;or so this contract intends.</p>
+</div>
+<div class="paragraph">
+<p>In the event that a user is forced to hand over their private key, a contract such as
+this might be handy to ensure their ether is unobtainable for a short period of time. But if
+a user had locked in <code>100 ether</code> in this contract and handed their keys over to
+an attacker, the attacker could use an overflow to receive the ether, regardless
+of the <code>lockTime</code>.</p>
+</div>
+<div class="paragraph">
+<p>The attacker could determine the current <code>lockTime</code> for the address they
+now hold the key for (it&#8217;s a public variable). Let’s call this
+<code>userLockTime</code>. They could then call the <code>increaseLockTime</code> function and
+pass as an argument the number <code>2^256 - userLockTime</code>. This number would
+be added to the current <code>userLockTime</code> and cause an overflow, resetting
+<code>lockTime[msg.sender]</code> to <code>0</code>. The attacker could then simply call the
+<code>withdraw</code> function to obtain their reward.</p>
+</div>
+<div class="paragraph">
+<p>Let’s look at another example (<a href="#underflow_vulnerability_example_from_ethernaut_challenge">Underflow vulnerability example from Ethernaut challenge</a>), this one from the <a href="https://github.com/OpenZeppelin/ethernaut">Ethernaut challenges</a>.</p>
+</div>
+<div class="paragraph">
+<p><strong>SPOILER ALERT:</strong> <em>If you have not yet done the Ethernaut challenges, this
+gives a solution to one of the levels</em>.</p>
+</div>
+<div id="underflow_vulnerability_example_from_ethernaut_challenge" class="exampleblock">
+<div class="title">Example 4. Underflow vulnerability example from Ethernaut challenge</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">pragma solidity ^0.4.18;
+
+contract Token {
+
+  mapping(address =&gt; uint) balances;
+  uint public totalSupply;
+
+  function Token(uint _initialSupply) {
+    balances[msg.sender] = totalSupply = _initialSupply;
+  }
+
+  function transfer(address _to, uint _value) public returns (bool) {
+    require(balances[msg.sender] - _value &gt;= 0);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+  }
+
+  function balanceOf(address _owner) public constant returns (uint balance) {
+    return balances[_owner];
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This is a simple token contract that employs a <code>transfer</code> function,
+allowing participants to move their tokens around. Can you see the error
+in this contract?</p>
+</div>
+<div class="paragraph">
+<p>The flaw comes in the <code>transfer</code> function. The require statement on
+line 13 can be bypassed using an underflow. Consider a user with a zero
+balance. They could call the <code>transfer</code> function with any nonzero
+<code>_value</code> and pass the require statement on line 13. This is because
+<code>balances[msg.sender]</code> is 0 (and a <code>uint256</code>), so subtracting any
+positive amount (excluding <code>2^256</code>) will result in a positive number, as described previously. This is also true for line 14,
+where the balance will be credited with a positive number. Thus, in this
+example, an attacker can achieve free tokens due to an underflow vulnerability.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_2">Preventative Techniques</h4>
+<div class="paragraph">
+<p>The current conventional technique to guard against under/overflow
+vulnerabilities is to use or build mathematical libraries that replace
+the standard math operators addition, subtraction, and multiplication
+(division is excluded as it does not cause over/underflows and the EVM
+reverts on division by 0).</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/OpenZeppelin/openzeppelin-solidity">OpenZeppelin</a> has
+done a great job of building and auditing secure libraries for the Ethereum community. In particular, its <a href="http://bit.ly/2ABhb4l">SafeMath library</a> can be used to avoid under/overflow vulnerabilities.</p>
+</div>
+<div class="paragraph">
+<p>To demonstrate how these libraries are used in Solidity, let&#8217;s correct the <code>TimeLock</code> contract using the <code>SafeMath</code> library. The overflow-free version of the contract is:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">library SafeMath {
+
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b &gt; 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // This holds in all cases
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b &lt;= a);
+    return a - b;
+  }
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c &gt;= a);
+    return c;
+  }
+}
+
+contract TimeLock {
+    using SafeMath for uint; // use the library for uint type
+    mapping(address =&gt; uint256) public balances;
+    mapping(address =&gt; uint256) public lockTime;
+
+    function deposit() public payable {
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        lockTime[msg.sender] = now.add(1 weeks);
+    }
+
+    function increaseLockTime(uint256 _secondsToIncrease) public {
+        lockTime[msg.sender] = lockTime[msg.sender].add(_secondsToIncrease);
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] &gt; 0);
+        require(now &gt; lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that all standard math operations have been replaced by those
+defined in the <code>SafeMath</code> library. The <code>TimeLock</code> contract no longer
+performs any operation that is capable of under/overflow.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_examples_powhc_and_batch_transfer_overflow_cve_201810299">Real-World Examples: PoWHC and Batch Transfer Overflow (CVE-2018–10299)</h4>
+<div class="paragraph">
+<p>Proof of Weak Hands Coin (PoWHC), originally devised as a joke of sorts, was a
+Ponzi scheme written by an internet collective. Unfortunately it seems that the author(s) of the contract
+had not seen over/underflows before, and consequently 866 ether were
+liberated from its contract. Eric Banisadr gives a good overview of how the underflow occurred
+(which is not too dissimilar to the Ethernaut challenge described earlier) in his <a href="https://bit.ly/2wrxIFJ">blog post</a> on the event.</p>
+</div>
+<div class="paragraph">
+<p><a href="http://bit.ly/2CUf7WG">Another example</a> comes from the implementation of a <code>batchTransfer()</code> function into a group of ERC20 token contracts. The implementation contained an overflow vulnerability; you can read about the details in <a href="https://bit.ly/2HDlIs8">PeckShield&#8217;s account</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_unexpected_ether">Unexpected Ether</h3>
+<div class="paragraph">
+<p>Typically, when ether is sent to a contract it must execute either the
+fallback function or another function defined in the contract. There
+are two exceptions to this, where ether can exist in a contract without
+having executed any code. Contracts that rely on code execution for
+all ether sent to them can be vulnerable to attacks where
+ether is forcibly sent.</p>
+</div>
+<div class="paragraph">
+<p>For further reading on this, see <a href="https://bit.ly/2MR8Gp0">&#x201c;How to Secure Your Smart Contracts&#x201d;</a> and <a href="http://bit.ly/2RjXmUWl">&#x201c;Solidity Security Patterns - Forcing Ether to a Contract&#x201d;</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_3">The Vulnerability</h4>
+<div class="paragraph">
+<p>A common defensive programming technique that is useful in enforcing
+correct state transitions or validating operations is
+<em>invariant checking</em>. This technique involves defining a set of
+invariants (metrics or parameters that should not change) and checking
+that they remain unchanged after a single (or many) operation(s).
+This is typically good design, provided the invariants being checked are
+in fact invariants. One example of an invariant is the <code>totalSupply</code> of
+a fixed-issuance
+<a href="http://bit.ly/2CUf7WG">ERC20 token</a>. As no function should modify this invariant, one could add a
+check to the <code>transfer</code> function that ensures the <code>totalSupply</code>
+remains unmodified, to guarantee the function is working as expected.</p>
+</div>
+<div class="paragraph">
+<p>In particular, there is one apparent invariant that it may be tempting to use
+but that can in fact be manipulated by external users (regardless of the rules put
+in place in the smart contract). This is the current ether stored in the
+contract. Often when developers first learn Solidity they have the
+misconception that a contract can only accept or obtain ether via payable
+functions. This misconception can lead to contracts that have false assumptions
+about the ether balance within them, which can lead to a range of
+vulnerabilities. The smoking gun for this vulnerability is the (incorrect) use
+of <code>this.balance</code>.</p>
+</div>
+<div class="paragraph">
+<p>There are two ways in which ether can (forcibly) be sent to a contract
+without using a payable function or executing any code on the
+contract:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Self-destruct/suicide</dt>
+<dd>
+<p>Any contract is able to implement the
+<a href="http://bit.ly/2RovrDf"><code>selfdestruct</code>
+function</a>, which removes all bytecode from the contract address and sends
+all ether stored there to the parameter-specified address. If this
+specified address is also a contract, no functions (including the
+fallback) get called. Therefore, the <code>selfdestruct</code> function can be
+used to forcibly send ether to any contract regardless of any code that
+may exist in the contract, even contracts with no
+payable functions. This means any attacker can create a contract with a
+<code>selfdestruct</code> function, send ether to it, call <code>selfdestruct(target)</code>
+and force ether to be sent to a <code>target</code> contract. Martin Swende has an
+excellent <a href="http://bit.ly/2OfLukM">blog post</a> describing some quirks of the self-destruct opcode (Quirk #2) along with
+an account of how client nodes were checking incorrect invariants,
+which could have led to a rather catastrophic crash of the Ethereum network.</p>
+</dd>
+<dt class="hdlist1">Pre-sent ether</dt>
+<dd>
+<p>Another way to get ether into a contract is to preload the contract address
+with ether. Contract addresses are deterministic&#x2014;in fact, the address is
+calculated from the Keccak-256 (commonly synonymous with SHA-3) hash of the
+address creating the contract and the transaction nonce that creates the
+contract. Specifically, it is of the form <code>address = sha3(rlp.encode([account_address,transaction_nonce]))</code>
+(see Adrian Manning&#8217;s discussion of <a href="http://bit.ly/2EPj5Tq">&#x201c;Keyless Ether&#x201d;</a> for some fun use cases of this). This
+means anyone can calculate what a contract&#8217;s address will be before it is
+created and send ether to that address. When the contract is
+created it will have a nonzero ether balance.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Let’s explore some pitfalls that can arise given this knowledge. Consider the overly simple contract in <a href="#etherGame_security">EtherGame.sol</a>.</p>
+</div>
+<div id="etherGame_security" class="exampleblock">
+<div class="title">Example 5. EtherGame.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+
+    mapping(address =&gt; uint) redeemableEther;
+    // Users pay 0.5 ether. At specific milestones, credit their accounts.
+    function play() public payable {
+        require(msg.value == 0.5 ether); // each play is 0.5 ether
+        uint currentBalance = this.balance + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance &lt;= finalMileStone);
+        // if at a milestone, credit the player's account
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        return;
+    }
+
+    function claimReward() public {
+        // ensure the game is complete
+        require(this.balance == finalMileStone);
+        // ensure there is a reward to give
+        require(redeemableEther[msg.sender] &gt; 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract represents a simple game (which would naturally involve
+race conditions) where players send 0.5 ether to the contract in the hopes of being the player that reaches one of
+three milestones first. Milestones are denominated in ether. The first
+to reach the milestone may claim a portion of the ether when the game
+has ended. The game ends when the final milestone (10 ether) is
+reached; users can then claim their rewards.</p>
+</div>
+<div class="paragraph">
+<p>The issues with the <code>EtherGame</code> contract come from the poor use of
+<code>this.balance</code> in both lines 14 (and by association 16) and 32. A
+mischievous attacker could forcibly send a small amount of ether&#x2014;say, 0.1 ether&#x2014;via the <code>selfdestruct</code> function (discussed earlier) to
+prevent any future players from reaching a milestone. <code>this.balance</code> will never be a multiple of 0.5 ether thanks to this 0.1 ether
+contribution, because all legitimate players can only send 0.5-ether increments. This prevents all the if conditions on lines 18, 21,
+and 24 from being true.</p>
+</div>
+<div class="paragraph">
+<p>Even worse, a vengeful attacker who missed a milestone could forcibly
+send 10 ether (or an equivalent amount of ether that pushes the
+contract’s balance above the <code>finalMileStone</code>), which would lock all
+rewards in the contract forever. This is because the <code>claimReward</code>
+function will always revert, due to the require on line 32 (i.e., because
+<code>this.balance</code> is greater than <code>finalMileStone</code>).</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_3">Preventative Techniques</h4>
+<div class="paragraph">
+<p>This sort of vulnerability typically arises from the misuse of <code>this.balance</code>.
+Contract logic, when possible, should avoid being dependent on exact
+values of the balance of the contract, because it can be artificially
+manipulated. If applying logic based on <code>this.balance</code>, you have to
+cope with unexpected balances.</p>
+</div>
+<div class="paragraph">
+<p>If exact values of deposited ether are required, a self-defined variable
+should be used that is incremented in payable functions, to safely
+track the deposited ether. This variable will not be influenced by the
+forced ether sent via a <code>selfdestruct</code> call.</p>
+</div>
+<div class="paragraph">
+<p>With this in mind, a corrected version of the <code>EtherGame</code> contract could
+look like:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+    uint public depositedWei;
+
+    mapping (address =&gt; uint) redeemableEther;
+
+    function play() public payable {
+        require(msg.value == 0.5 ether);
+        uint currentBalance = depositedWei + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance &lt;= finalMileStone);
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        depositedWei += msg.value;
+        return;
+    }
+
+    function claimReward() public {
+        // ensure the game is complete
+        require(depositedWei == finalMileStone);
+        // ensure there is a reward to give
+        require(redeemableEther[msg.sender] &gt; 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, we have created a new variable, <code>depositedEther</code>, which keeps
+track of the known ether deposited, and it is this variable that we
+use for our tests. Note that we no longer have any
+reference to <code>this.balance</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_further_examples">Further Examples</h4>
+<div class="paragraph">
+<p>A few examples of exploitable contracts were given in the
+<a href="https://github.com/Arachnid/uscc/tree/master/submissions-2017/">Underhanded
+Solidity Coding Contest</a>, which also provides extended examples of a number of the
+pitfalls raised in this section.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_delegatecall">DELEGATECALL</h3>
+<div class="paragraph">
+<p>The <code>CALL</code> and <code>DELEGATECALL</code> opcodes are useful in allowing Ethereum
+developers to modularize their code. Standard external message calls to
+contracts are handled by the <code>CALL</code> opcode, whereby code is run in the
+context of the external contract/function. The <code>DELEGATECALL</code> opcode is
+almost identical, except that the code executed at the targeted address is
+run in the context of the calling contract, and <code>msg.sender</code> and <code>msg.value</code> remain unchanged. This
+feature enables the implementation of <em>libraries</em>, allowing developers to
+deploy reusable code once and call it from future contracts.</p>
+</div>
+<div class="paragraph">
+<p>Although the differences between these two opcodes are simple and
+intuitive, the use of <code>DELEGATECALL</code> can lead to unexpected code
+execution.</p>
+</div>
+<div class="paragraph">
+<p>For further reading, see Loi.Luu&#8217;s
+<a href="http://bit.ly/2AAElb8">Ethereum
+Stack Exchange question on this topic</a> and the
+<a href="http://bit.ly/2Oi7UlH">Solidity docs</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_4">The Vulnerability</h4>
+<div class="paragraph">
+<p>As a result of the context-preserving nature of <code>DELEGATECALL</code>, building
+vulnerability-free custom libraries is not as easy as one might think.
+The code in libraries themselves can be secure and vulnerability-free;
+however, when run in the context of another application new
+vulnerabilities can arise. Let’s see a fairly complex example of this,
+using Fibonacci numbers.</p>
+</div>
+<div class="paragraph">
+<p>Consider the library in <a href="#fibonacci_security">FibonacciLib.sol</a>, which can generate the Fibonacci sequence
+and sequences of similar form. (Note: this code was
+modified from <a href="https://bit.ly/2MReuii" class="bare">https://bit.ly/2MReuii</a>.)</p>
+</div>
+<div id="fibonacci_security" class="exampleblock">
+<div class="title">Example 6. FibonacciLib.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">// library contract - calculates Fibonacci-like numbers
+contract FibonacciLib {
+    // initializing the standard Fibonacci sequence
+    uint public start;
+    uint public calculatedFibNumber;
+
+    // modify the zeroth number in the sequence
+    function setStart(uint _start) public {
+        start = _start;
+    }
+
+    function setFibonacci(uint n) public {
+        calculatedFibNumber = fibonacci(n);
+    }
+
+    function fibonacci(uint n) internal returns (uint) {
+        if (n == 0) return start;
+        else if (n == 1) return start + 1;
+        else return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This library provides a function that can generate the <em>n</em>-th Fibonacci
+number in the sequence. It allows users to change the starting number of the
+sequence (<code>start</code>) and calculate the <em>n</em>-th Fibonacci-like numbers in this new
+sequence.</p>
+</div>
+<div class="paragraph">
+<p>Let us now consider a contract that utilizes this library, shown in <a href="#fib_balance_security">FibonacciBalance.sol</a>.</p>
+</div>
+<div id="fib_balance_security" class="exampleblock">
+<div class="title">Example 7. FibonacciBalance.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract FibonacciBalance {
+
+    address public fibonacciLibrary;
+    // the current Fibonacci number to withdraw
+    uint public calculatedFibNumber;
+    // the starting Fibonacci sequence number
+    uint public start = 3;
+    uint public withdrawalCounter;
+    // the Fibonancci function selector
+    bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
+
+    // constructor - loads the contract with ether
+    constructor(address _fibonacciLibrary) public payable {
+        fibonacciLibrary = _fibonacciLibrary;
+    }
+
+    function withdraw() {
+        withdrawalCounter += 1;
+        // calculate the Fibonacci number for the current withdrawal user-
+        // this sets calculatedFibNumber
+        require(fibonacciLibrary.delegatecall(fibSig, withdrawalCounter));
+        msg.sender.transfer(calculatedFibNumber * 1 ether);
+    }
+
+    // allow users to call Fibonacci library functions
+    function() public {
+        require(fibonacciLibrary.delegatecall(msg.data));
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract allows a participant to withdraw ether from the contract,
+with the amount of ether being equal to the Fibonacci number
+corresponding to the participant&#8217;s withdrawal order; i.e., the first
+participant gets 1 ether, the second also gets 1, the third gets 2, the
+fourth gets 3, the fifth 5, and so on (until the balance of the contract
+is less than the Fibonacci number being withdrawn).</p>
+</div>
+<div class="paragraph">
+<p>There are a number of elements in this contract that may require some
+explanation. Firstly, there is an interesting-looking variable,
+<code>fibSig</code>. This holds the first 4 bytes of the Keccak-256 (SHA-3) hash of the
+string <code>'setFibonacci(uint256)'</code>. This is known as the
+<a href="http://bit.ly/2RmueMP">function
+selector</a> and is put into <code>calldata</code> to specify which function of a
+smart contract will be called. It is used in the <code>delegatecall</code> function
+on line 21 to specify that we wish to run the <code>fibonacci(uint256)</code>
+function. The second argument in <code>delegatecall</code> is the parameter we are
+passing to the function. Secondly, we assume that the address for the
+<code>FibonacciLib</code> library is correctly referenced in the constructor
+(<a href="#external_contract_referencing">External Contract Referencing</a> discusses some
+potential vulnerabilities relating to this kind of contract reference
+initialization).</p>
+</div>
+<div class="paragraph">
+<p>Can you spot any errors in this contract? If one were to deploy this contract,
+fill it with ether, and call <code>withdraw</code>, it would likely revert.</p>
+</div>
+<div class="paragraph">
+<p>You may have noticed that the state variable <code>start</code> is used in both the
+library and the main calling contract. In the library contract, <code>start</code>
+is used to specify the beginning of the Fibonacci sequence and is set to
+<code>0</code>, whereas it is set to <code>3</code> in the calling contract. You
+may also have noticed that the fallback function in the
+<code>FibonacciBalance</code> contract allows all calls to be passed to the library
+contract, which allows for the <code>setStart</code> function of the library
+contract to be called. Recalling that we preserve the state of the
+contract, it may seem that this function would allow you to change the
+state of the <code>start</code> variable in the local <code>FibonnacciBalance</code> contract.
+If so, this would allow one to withdraw more ether, as the resulting
+<code>calculatedFibNumber</code> is dependent on the <code>start</code> variable (as seen in
+the library contract). In actual fact, the <code>setStart</code> function does
+not (and cannot) modify the <code>start</code> variable in the <code>FibonacciBalance</code>
+contract. The underlying vulnerability in this contract is significantly
+worse than just modifying the <code>start</code> variable.</p>
+</div>
+<div class="paragraph">
+<p>Before discussing the actual issue, let&#8217;s take a quick detour to
+understand how state variables actually get
+stored in contracts. State or storage variables (variables that
+persist over individual transactions) are placed into <em>slots</em>
+sequentially as they are introduced in the contract. (There are some complexities here; consult the <a href="http://bit.ly/2JslDWf">Solidity docs</a> for a more thorough understanding.)</p>
+</div>
+<div class="paragraph">
+<p>As an example, let’s look at the library contract. It has two state
+variables, <code>start</code> and <code>calculatedFibNumber</code>. The first variable,
+<code>start</code>, is stored in the contract’s storage at <code>slot[0]</code>
+(i.e., the first slot). The second variable, <code>calculatedFibNumber</code>, is
+placed in the next available storage slot, <code>slot[1]</code>. The
+function <code>setStart</code> takes an input and sets <code>start</code> to whatever
+the input was. This function therefore sets <code>slot[0]</code> to whatever
+input we provide in the <code>setStart</code> function. Similarly, the
+<code>setFibonacci</code> function sets <code>calculatedFibNumber</code> to the result of
+<code>fibonacci(n)</code>. Again, this is simply setting storage <code>slot[1]</code> to the
+value of <code>fibonacci(n)</code>.</p>
+</div>
+<div class="paragraph">
+<p>Now let&#8217;s look at the <code>FibonacciBalance</code> contract. Storage <code>slot[0]</code> now
+corresponds to the <code>fibonacciLibrary</code> address, and <code>slot[1]</code> corresponds to
+<code>calculatedFibNumber</code>. It is in this incorrect mapping that the vulnerability occurs.
+<code>delegatecall</code> <em>preserves contract context</em>. This means that code that
+is executed via <code>delegatecall</code> will act on the state (i.e., storage) of
+the calling contract.</p>
+</div>
+<div class="paragraph">
+<p>Now notice that in <code>withdraw</code> on line 21 we execute
+<code>fibonacciLibrary.delegatecall(fibSig,withdrawalCounter)</code>. This calls
+the <code>setFibonacci</code> function, which, as we discussed, modifies storage
+<code>slot[1]</code>, which in our current context is <code>calculatedFibNumber</code>. This
+is as expected (i.e., after execution, <code>calculatedFibNumber</code> is
+modified). However, recall that the <code>start</code> variable in the
+<code>FibonacciLib</code> contract is located in storage <code>slot[0]</code>, which is the
+<code>fibonacciLibrary</code> address in the current contract. This means that the
+function <code>fibonacci</code> will give an unexpected result. This is because
+it references <code>start</code> (<code>slot[0]</code>), which in the current calling context
+is the <code>fibonacciLibrary</code> address (which will often be quite large, when
+interpreted as a <code>uint</code>). Thus it is likely that the <code>withdraw</code>
+function will revert, as it will not contain <code>uint(fibonacciLibrary)</code>
+amount of ether, which is what <code>calculatedFibNumber</code> will return.</p>
+</div>
+<div class="paragraph">
+<p>Even worse, the <code>FibonacciBalance</code> contract allows users to call all of
+the <code>fibonacciLibrary</code> functions via the fallback function at line 26.
+As we discussed earlier, this includes the <code>setStart</code> function. We
+discussed that this function allows anyone to modify or set storage
+<code>slot[0]</code>. In this case, storage <code>slot[0]</code> is the <code>fibonacciLibrary</code>
+address. Therefore, an attacker could create a malicious contract, convert the address to a <code>uint</code> (this can be
+done in Python easily using <code>int('&lt;address&gt;',16)</code>), and then call
+<code>setStart(&lt;attack_contract_address_as_uint&gt;)</code>. This will change
+<code>fibonacciLibrary</code> to the address of the attack contract. Then, whenever
+a user calls <code>withdraw</code> or the fallback function, the malicious
+contract will run (which can steal the entire balance of the contract)
+because we’ve modified the actual address for <code>fibonacciLibrary</code>. An
+example of such an attack contract would be:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Attack {
+    uint storageSlot0; // corresponds to fibonacciLibrary
+    uint storageSlot1; // corresponds to calculatedFibNumber
+
+    // fallback - this will run if a specified function is not found
+    function() public {
+        storageSlot1 = 0; // we set calculatedFibNumber to 0, so if withdraw
+        // is called we don't send out any ether
+        &lt;attacker_address&gt;.transfer(this.balance); // we take all the ether
+    }
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that this attack contract modifies the <code>calculatedFibNumber</code> by
+changing storage <code>slot[1]</code>. In principle, an attacker could modify any
+other storage slots they choose, to perform all kinds of attacks on this
+contract. We encourage you to put these contracts into <a href="https://remix.ethereum.org">Remix</a> and experiment with different attack contracts and state changes through these <code>delegatecall</code> functions.</p>
+</div>
+<div class="paragraph">
+<p>It is also important to notice that when we say that <code>delegatecall</code> is
+state-preserving, we are not talking about the variable names of the
+contract, but rather the actual storage slots to which those names point. As
+you can see from this example, a simple mistake can lead to an attacker
+hijacking the entire contract and its ether.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_4">Preventative Techniques</h4>
+<div class="paragraph">
+<p>Solidity provides the <code>library</code> keyword for implementing library
+contracts (see the <a href="http://bit.ly/2zjD8TI">docs</a> for further details). This ensures the library contract is
+stateless and non-self-destructable. Forcing libraries to be stateless
+mitigates the complexities of storage context demonstrated in this
+section. Stateless libraries also prevent attacks wherein attackers
+modify the state of the library directly in order to affect the
+contracts that depend on the library’s code. As a general rule of thumb,
+when using <code>DELEGATECALL</code> pay careful attention to the possible calling
+context of both the library contract and the calling contract, and
+whenever possible build stateless <span class="keep-together">libraries</span>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="multisig_secondhack">Real-World Example: Parity Multisig Wallet (Second Hack)</h4>
+<div class="paragraph">
+<p>The Second Parity Multisig Wallet hack is an example of how well-written library code can be exploited if run outside its intended
+context. There are a number of good explanations of this hack, such as
+<a href="http://bit.ly/2Dg7GtW">&#x201c;Parity Multisig Hacked. Again&#x201d;</a> and <a href="http://bit.ly/2Of06B9">&#x201c;An In-Depth Look at the Parity Multisig Bug&#x201d;</a>.</p>
+</div>
+<div class="paragraph">
+<p>To add to these references, let’s explore the contracts that were
+exploited. The library and wallet contracts can be found <a href="http://bit.ly/2OgnXQC">on GitHub</a>.</p>
+</div>
+<div class="paragraph">
+<p>The library contract is as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // throw unless the contract is not yet initialized.
+  modifier only_uninitialized { if (m_numOwners &gt; 0) throw; _; }
+
+  // constructor - just pass on the owner array to multiowned and
+  // the limit to daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit)
+      only_uninitialized {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+
+  // kills the contract sending everything to `_to`.
+  function kill(address _to) onlymanyowners(sha3(msg.data)) external {
+    suicide(_to);
+  }
+
+  ...
+
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And here&#8217;s the wallet contract:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Wallet is WalletEvents {
+
+  ...
+
+  // METHODS
+
+  // gets called when no other function matches
+  function() payable {
+    // just being sent some cash?
+    if (msg.value &gt; 0)
+      Deposit(msg.sender, msg.value);
+    else if (msg.data.length &gt; 0)
+      _walletLibrary.delegatecall(msg.data);
+  }
+
+  ...
+
+  // FIELDS
+  address constant _walletLibrary =
+    0xcafecafecafecafecafecafecafecafecafecafe;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that the <code>Wallet</code> contract essentially passes all calls to the
+<code>WalletLibrary</code> contract via a delegate call. The constant
+<code>_walletLibrary</code> address in this code snippet acts as a placeholder for
+the actually deployed <code>WalletLibrary</code> contract (which was at
+<code>0x863DF6BFa4469f3ead0bE8f9F2AAE51c91A907b4</code>).</p>
+</div>
+<div class="paragraph">
+<p>The intended operation of these contracts was to have a simple low-cost
+deployable <code>Wallet</code> contract whose codebase and main functionality were
+in the <code>WalletLibrary</code> contract. Unfortunately, the <code>WalletLibrary</code>
+contract is itself a contract and maintains its own state. Can you see
+why this might be an issue?</p>
+</div>
+<div class="paragraph">
+<p>It is possible to send calls to the <code><span class="keep-together">WalletLibrary</span></code> contract itself.
+Specifically, the <code><span class="keep-together">WalletLibrary</span></code> contract could be initialized and
+become owned. In fact, a user did this, calling the <code>initWallet</code> function on the
+<code>WalletLibrary</code> contract and becoming an owner of the library contract. The
+same user subsequently called the <code>kill</code> function. Because the user
+was an owner of the library contract, the modifier passed and the
+library contract self-destructed. As all <code>Wallet</code> contracts in existence refer
+to this library contract and contain no method to change this reference,
+all of their functionality, including the ability to withdraw ether, was
+lost along with the <code>WalletLibrary</code> contract. As a result, all ether
+in all Parity multisig wallets of this type instantly became lost or
+permanently unrecoverable.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_default_visibilities">Default Visibilities</h3>
+<div class="paragraph">
+<p>Functions in Solidity have visibility specifiers that dictate how
+they can be called. The visibility determines whether a
+function can be called externally by users, by other derived contracts,
+only internally, or only externally. There are four visibility
+specifiers, which are described in detail in the <a href="http://bit.ly/2ABiv7j">Solidity docs</a>. Functions default to <code>public</code>, allowing users to call them
+externally. We shall now see how incorrect use of visibility specifiers can lead to some devastating vulnerabilities in smart contracts.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_5">The Vulnerability</h4>
+<div class="paragraph">
+<p>The default visibility for functions is <code>public</code>, so functions
+that do not specify their visibility will be callable by external users.
+The issue arises when developers mistakenly omit visibility specifiers
+on functions that should be private (or only callable within the
+contract itself).</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s quickly explore a trivial example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract HashForEther {
+
+    function withdrawWinnings() {
+        // Winner if the last 8 hex characters of the address are 0
+        require(uint32(msg.sender) == 0);
+        _sendWinnings();
+     }
+
+     function _sendWinnings() {
+         msg.sender.transfer(this.balance);
+     }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This simple contract is designed to act as an address-guessing bounty
+game. To win the balance of the contract, a user must generate an
+Ethereum address whose last 8 hex characters are 0. Once achieved, they
+can call the <code>withdrawWinnings</code> function to obtain their bounty.</p>
+</div>
+<div class="paragraph">
+<p>Unfortunately, the visibility of the functions has not been specified.
+In particular, the <code>_sendWinnings</code> function is <code>public</code> (the default), and thus any
+address can call this function to steal the bounty.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_5">Preventative Techniques</h4>
+<div class="paragraph">
+<p>It is good practice to always specify the visibility of all functions in
+a contract, even if they are intentionally <code>public</code>. Recent versions of
+solc show a warning for functions that
+have no explicit visibility set, to encourage this practice.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_parity_multisig_wallet_first_hack">Real-World Example: Parity Multisig Wallet (First Hack)</h4>
+<div class="paragraph">
+<p>In the first Parity multisig hack, about $31M worth of Ether was stolen,
+mostly from three wallets. A good recap of exactly how this was done
+is given by <a href="https://bit.ly/2vHiuJQ">Haseeb Qureshi</a>.</p>
+</div>
+<div class="paragraph">
+<p>Essentially, the multisig wallet
+is constructed from a base <code>Wallet</code> contract, which calls a library
+contract containing the core functionality (as described in
+<a href="#multisig_secondhack">Real-World Example: Parity Multisig Wallet (Second Hack)</a>).
+The library contract contains the code to initialize the wallet, as can
+be seen from the following snippet:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // METHODS
+
+  ...
+
+  // constructor is given number of sigs required to do protected
+  // "onlymanyowners" transactionsas well as the selection of addresses
+  // capable of confirming them
+  function initMultiowned(address[] _owners, uint _required) {
+    m_numOwners = _owners.length + 1;
+    m_owners[1] = uint(msg.sender);
+    m_ownerIndex[uint(msg.sender)] = 1;
+    for (uint i = 0; i &lt; _owners.length; ++i)
+    {
+      m_owners[2 + i] = uint(_owners[i]);
+      m_ownerIndex[uint(_owners[i])] = 2 + i;
+    }
+    m_required = _required;
+  }
+
+  ...
+
+  // constructor - just pass on the owner array to multiowned and
+  // the limit to daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit) {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that neither of the functions specifies their
+visibility, so both default to <code>public</code>. The <code>initWallet</code>
+function is called in the wallet&#8217;s constructor, and sets the owners for
+the multisig wallet as can be seen in the <code>initMultiowned</code> function.
+Because these functions were accidentally left <code>public</code>, an attacker was
+able to call these functions on deployed contracts, resetting the
+ownership to the attacker&#8217;s address. Being the owner, the attacker then
+drained the wallets of all their ether.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="entropyillusion_security">Entropy Illusion</h3>
+<div class="paragraph">
+<p>All transactions on the Ethereum blockchain are deterministic state
+transition operations. This means that every transaction modifies the
+global state of the Ethereum ecosystem in a calculable
+way, with no uncertainty. This has the fundamental implication that
+there is no source of entropy or randomness in Ethereum.
+Achieving decentralized entropy
+(randomness) is a well-known problem for which many solutions have been proposed, including <a href="https://github.com/randao/randao">RANDAO</a>, or using a chain of hashes, as
+described by Vitalik Buterin in the blog post
+<a href="https://vitalik.ca/files/randomness.html">&#x201c;Validator Ordering and Randomness in PoS&#x201d;</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_6">The Vulnerability</h4>
+<div class="paragraph">
+<p>Some of the first contracts built on the Ethereum platform were based
+around gambling. Fundamentally, gambling requires uncertainty (something
+to bet on), which makes building a gambling system on the blockchain (a
+deterministic system) rather difficult. It is clear that the uncertainty
+must come from a source external to the blockchain. This is possible for
+bets between players (see for example the <a href="http://bit.ly/2CUh2KS">commit&#x2013;reveal technique</a>); however, it is significantly more difficult if you want to
+implement a contract to act as &#x201c;the house&#x201d; (like in blackjack or
+roulette). A common pitfall is to use future block variables&#x2014;that is,
+variables containing information about the transaction block whose values are not yet known, such as
+hashes, timestamps, block numbers, or gas limits. The issue with these are
+that they are controlled by the miner who mines the block, and as such
+are not truly random. Consider, for example, a roulette smart contract
+with logic that returns a black number if the next block hash ends in an
+even number. A miner (or miner pool) could bet $1M on black. If they
+solve the next block and find the hash ends in an odd number, they could
+happily not publish their block and mine another, until they find a
+solution with the block hash being an even number (assuming the block
+reward and fees are less than $1M). Using past or present variables can
+be even more devastating, as Martin Swende demonstrates in his excellent <a href="http://martin.swende.se/blog/Breaking_the_house.html">blog post</a>.
+Furthermore, using solely block variables means that the pseudorandom
+number will be the same for all transactions in a block, so an attacker
+can multiply their wins by doing many transactions within a block
+(should there be a maximum bet).</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_6">Preventative Techniques</h4>
+<div class="paragraph">
+<p>The source of entropy (randomness) must be external to the blockchain.
+This can be done among peers with systems such as
+<a href="http://bit.ly/2CUh2KS">commit–reveal</a>,
+or via changing the trust model to a group of participants (as in
+<a href="https://github.com/randao/randao">RandDAO</a>). This can also be done via a
+centralized entity that acts as a randomness oracle. Block variables
+(in general, there are some exceptions) should not be used to source
+entropy, as they can be manipulated by miners.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_prng_contracts">Real-World Example: PRNG Contracts</h4>
+<div class="paragraph">
+<p>In February 2018 Arseny Reutov
+<a href="http://bit.ly/2Q589lx">blogged</a> about his analysis of 3,649 live smart contracts that were using some
+sort of pseudorandom number generator (PRNG); he found 43 contracts
+that could be exploited.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="external_contract_referencing">External Contract Referencing</h3>
+<div class="paragraph">
+<p>One of the benefits of the Ethereum &#x201c;world computer&#x201d; is the ability to
+reuse code and interact with contracts already deployed on the network.
+As a result, a large number of contracts reference external contracts,
+usually via external message calls.
+These external message calls can mask malicious actors'
+intentions in some nonobvious ways, which we&#8217;ll now examine.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_7">The Vulnerability</h4>
+<div class="paragraph">
+<p>In Solidity, any address can be cast to a contract, regardless of whether
+the code at the address represents the contract type being cast. This
+can cause problems, especially when the author of the contract is trying
+to hide malicious code. Let&#8217;s illustrate this with an example.</p>
+</div>
+<div class="paragraph">
+<p>Consider a piece of code like <a href="#rot13_security">Rot13Encryption.sol</a>, which rudimentarily implements the
+<a href="https://en.wikipedia.org/wiki/ROT13">ROT13 cipher</a>.</p>
+</div>
+<div id="rot13_security" class="exampleblock">
+<div class="title">Example 8. Rot13Encryption.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">// encryption contract
+contract Rot13Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-encrypt a string
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i &lt; length; i++) {
+            byte char = bytes(text)[i];
+            // inline assembly to modify the string
+            assembly {
+                // get the first byte
+                char := byte(0,char)
+                // if the character is in [n,z], i.e. wrapping
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // subtract from the ASCII number 'a',
+                // the difference between character &lt;char&gt; and 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                if iszero(eq(char, 0x20)) // ignore spaces
+                // add 13 to char
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-decrypt a string
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i &lt; length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This code simply takes a string (letters a&#x2013;z, without validation) and
+<em>encrypts</em> it by shifting each character 13 places to the right (wrapping
+around <code>z</code>); i.e., <code>a</code> shifts to <code>n</code> and <code>x</code> shifts to <code>k</code>. The assembly
+in the preceding contract does not need to be understood to appreciate the issue
+being discussed, so readers unfamiliar with assembly can safely ignore it.</p>
+</div>
+<div class="paragraph">
+<p>Now consider the following contract, which uses this code for its encryption:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">import "Rot13Encryption.sol";
+
+// encrypt your top-secret info
+contract EncryptionContract {
+    // library for encryption
+    Rot13Encryption encryptionLibrary;
+
+    // constructor - initialize the library
+    constructor(Rot13Encryption _encryptionLibrary) {
+        encryptionLibrary = _encryptionLibrary;
+    }
+
+    function encryptPrivateData(string privateInfo) {
+        // potentially do some operations here
+        encryptionLibrary.rot13Encrypt(privateInfo);
+     }
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The issue with this contract is that the <code>encryptionLibrary</code> address is
+not public or constant. Thus, the deployer of the contract could give an address in the constructor that points to this contract:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">// encryption contract
+contract Rot26Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-encrypt a string
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i &lt; length; i++) {
+            byte char = bytes(text)[i];
+            // inline assembly to modify the string
+            assembly {
+                // get the first byte
+                char := byte(0,char)
+                // if the character is in [n,z], i.e. wrapping
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // subtract from the ASCII number 'a',
+                // the difference between character &lt;char&gt; and 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                // ignore spaces
+                if iszero(eq(char, 0x20))
+                // add 26 to char!
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-decrypt a string
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i &lt; length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract implements the ROT26 cipher, which shifts each character by 26 places
+(i.e., does nothing). Again, there is no need to understand the assembly in this
+contract. More simply, the attacker could have linked the following
+contract to the same effect:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Print{
+    event Print(string text);
+
+    function rot13Encrypt(string text) public {
+        emit Print(text);
+    }
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the address of either of these contracts were given in the
+constructor, the <code>encryptPrivateData</code> function would simply produce an
+event that prints the unencrypted private data.</p>
+</div>
+<div class="paragraph">
+<p>Although in this
+example a library-like contract was set in the constructor, it is often
+the case that a privileged user (such as an owner) can change library
+contract addresses. If a linked contract doesn’t contain the function
+being called, the fallback function will execute. For example, with the
+line <code>encryptionLibrary.rot13&#x200b;Encrypt()</code>, if the contract specified by
+<code>encryptionLibrary</code> was:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity"> contract Blank {
+     event Print(string text);
+     function () {
+         emit Print("Here");
+         // put malicious code here and it will run
+     }
+ }</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>then an event with the text <code>Here</code> would be emitted. Thus, if users can
+alter contract libraries, they can in principle get other users to unknowingly
+run arbitrary code.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The contracts represented here are for demonstrative purposes only and
+do not represent proper encryption. They should not be used for
+encryption.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_7">Preventative Techniques</h4>
+<div class="paragraph">
+<p>As demonstrated previously, safe contracts can (in some cases)
+be deployed in such a way that they behave maliciously. An auditor could
+publicly verify a contract and have its owner deploy it in a malicious
+way, resulting in a publicly audited contract that has vulnerabilities
+or malicious intent.</p>
+</div>
+<div class="paragraph">
+<p>There are a number of techniques that prevent these scenarios.</p>
+</div>
+<div class="paragraph">
+<p>One technique is to use the <code>new</code> keyword to create contracts. In the
+preceding example, the constructor could be written as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">constructor() {
+    encryptionLibrary = new Rot13Encryption();
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This way an instance of the referenced contract is created at deployment
+time, and the deployer cannot replace the <code>Rot13Encryption</code> contract
+without changing it.</p>
+</div>
+<div class="paragraph">
+<p>Another solution is to hardcode external contract addresses.</p>
+</div>
+<div class="paragraph">
+<p>In general, code that calls external contracts should always be
+audited carefully. As a developer, when defining external contracts, it can
+be a good idea to make the contract addresses public (which is not the
+case in the honey-pot example in the following section) to allow users to easily examine
+code referenced by the contract. Conversely, if a contract has
+a private variable contract address it can be a sign of someone behaving
+maliciously (as shown in the real-world example). If a user can change
+a contract address that is used to
+call external functions, it can be important (in a decentralized system
+context) to implement a time-lock and/or voting mechanism to allow users to
+see what code is being changed, or to give participants a chance to opt
+in/out with the new contract address.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_reentrancy_honey_pot">Real-World Example: Reentrancy Honey Pot</h4>
+<div class="paragraph">
+<p>A number of recent honey pots have been released on the mainnet. These
+contracts try to outsmart Ethereum hackers who try to exploit the
+contracts, but who in turn end up losing ether to the contract
+they expect to exploit. One example employs this attack by
+replacing an expected contract with a malicious one in the constructor.
+The code can be found
+<a href="http://bit.ly/2JtdqRi">here</a>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">pragma solidity ^0.4.19;
+
+contract Private_Bank
+{
+    mapping (address =&gt; uint) public balances;
+    uint public MinDeposit = 1 ether;
+    Log TransferLog;
+
+    function Private_Bank(address _log)
+    {
+        TransferLog = Log(_log);
+    }
+
+    function Deposit()
+    public
+    payable
+    {
+        if(msg.value &gt;= MinDeposit)
+        {
+            balances[msg.sender]+=msg.value;
+            TransferLog.AddMessage(msg.sender,msg.value,"Deposit");
+        }
+    }
+
+    function CashOut(uint _am)
+    {
+        if(_am&lt;=balances[msg.sender])
+        {
+            if(msg.sender.call.value(_am)())
+            {
+                balances[msg.sender]-=_am;
+                TransferLog.AddMessage(msg.sender,_am,"CashOut");
+            }
+        }
+    }
+
+    function() public payable{}
+
+}
+
+contract Log
+{
+    struct Message
+    {
+        address Sender;
+        string  Data;
+        uint Val;
+        uint  Time;
+    }
+
+    Message[] public History;
+    Message LastMsg;
+
+    function AddMessage(address _adr,uint _val,string _data)
+    public
+    {
+        LastMsg.Sender = _adr;
+        LastMsg.Time = now;
+        LastMsg.Val = _val;
+        LastMsg.Data = _data;
+        History.push(LastMsg);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This
+<a href="http://bit.ly/2Q58VyX">post</a>
+by one reddit user explains how they lost 1 ether to this contract
+by trying to exploit the reentrancy bug they expected to be present in the
+contract.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_short_addressparameter_attack">Short Address/Parameter Attack</h3>
+<div class="paragraph">
+<p>This attack is not performed on Solidity contracts
+themselves, but on third-party applications that may interact with them. This
+section is added for completeness and to give the reader an awareness of how parameters can be
+manipulated in contracts.</p>
+</div>
+<div class="paragraph">
+<p>For further reading, see
+<a href="http://bit.ly/2yKme14">&#x201c;The ERC20
+Short Address Attack Explained&#x201d;</a>,
+<a href="http://bit.ly/2yFOGRQ">&#x201c;ICO
+Smart Contract Vulnerability: Short Address Attack&#x201d;</a>, or this
+<a href="http://bit.ly/2CQjBhc">Reddit
+post</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_8">The Vulnerability</h4>
+<div class="paragraph">
+<p>When passing parameters to a smart contract, the parameters are encoded
+according to the
+<a href="http://bit.ly/2Q5VIG9">ABI
+specification</a>. It is possible to send encoded parameters that are
+shorter than the expected parameter length (for example, sending an
+address that is only 38 hex chars (19 bytes) instead of the standard 40
+hex chars (20 bytes)). In such a scenario, the EVM will add zeros to the
+end of the encoded parameters to make up the expected length.</p>
+</div>
+<div class="paragraph">
+<p>This becomes an issue when third-party applications do not validate
+inputs. The clearest example is an exchange that doesn’t verify the
+address of an
+ERC20 token
+when a user requests a withdrawal. This example is covered in more
+detail in Peter Vessenes’s post,
+<a href="http://bit.ly/2Q1ybpQ">&#x201c;The ERC20
+Short Address Attack Explained&#x201d;</a>.</p>
+</div>
+<div class="paragraph">
+<p>Consider the standard
+<a href="http://bit.ly/2CUf7WG">ERC20</a>
+transfer function interface, noting the order of the parameters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">function transfer(address to, uint tokens) public returns (bool success);</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now consider an exchange holding a large amount of a token (let’s say
+<code>REP</code>) and a user who wishes to withdraw their share of 100 tokens. The user
+would submit their address, <code>0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead</code>,
+and the number of tokens, <code>100</code>. The exchange would encode these
+parameters in the order specified by the <code><span class="keep-together">transfer</span></code> function; that is,
+<code>address</code> then <code>tokens</code>. The encoded result would be:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeaddead0000000000000
+000000000000000000000000000000000056bc75e2d63100000</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first 4
+bytes (<code>a9059cbb</code>) are the <code>transfer</code>
+<a href="http://bit.ly/2RmueMP">function
+signature/selector</a>, the next 32 bytes are the address, and
+the final 32 bytes represent the <code>uint256</code> number of tokens.
+Notice that the hex <code>56bc75e2d63100000</code> at the end corresponds to 100
+tokens (with 18 decimal places, as specified by the <code>REP</code> token
+<span class="keep-together">contract</span>).</p>
+</div>
+<div class="paragraph">
+<p>Let us now look at what would happen if one were to send an address that
+was missing 1 byte (2 hex digits). Specifically, let’s say an attacker
+sends <code>0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde</code> as an address (missing
+the last two digits) and the same <code>100</code> tokens to withdraw. If the
+exchange does not validate this input, it will get encoded as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeadde00000000000000
+00000000000000000000000000000000056bc75e2d6310000000</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The difference
+is subtle. Note that <code>00</code> has been added to the end of the encoding, to
+make up for the short address that was sent. When this gets sent to the
+smart contract, the <code>address</code> parameters will be read as
+<code>0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde00</code> and the value will be read
+as <code>56bc75e2d6310000000</code> (notice the two extra 0s). This value is
+now <code>25600</code> tokens (the value has been multiplied by <code>256</code>). In this
+example, if the exchange held this many tokens, the user would withdraw
+<code>25600</code> tokens (while the exchange thinks the user is only withdrawing
+<code>100</code>) to the modified address. Obviously the attacker won&#8217;t possess the
+modified address in this example, but if the attacker were to generate
+any address that ended in 0s (which can be easily brute-forced) and
+used this generated address, they could steal tokens from the
+unsuspecting exchange.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_8">Preventative Techniques</h4>
+<div class="paragraph">
+<p>All input parameters in external applications should be validated before
+sending them to the blockchain. It should
+also be noted that parameter ordering plays an important role here. As padding
+only occurs at the end, careful ordering of parameters in the smart contract
+can mitigate some forms of this attack.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_unchecked_call_return_values">Unchecked CALL Return Values</h3>
+<div class="paragraph">
+<p>There are a number of ways of performing external calls in Solidity. Sending
+ether to external accounts is commonly performed via the <code>transfer</code> method.
+However, the <code>send</code> function can also be used, and for more versatile
+external calls the <code>CALL</code> opcode can be directly employed in Solidity.
+The <code>call</code> and <code>send</code> functions return a Boolean indicating whether the
+call succeeded or failed. Thus, these functions have a simple caveat, in
+that the transaction that executes these functions will not revert if
+the external call (intialized by <code>call</code> or <code>send</code>) fails; rather, the
+functions will simply return <code>false</code>. A common error is
+that the developer expects a revert to occur if the external call fails, and does not check the return value.</p>
+</div>
+<div class="paragraph">
+<p>For further reading, see #4 on the <a href="http://www.dasp.co/#item-4">DASP Top 10 of 2018</a> and
+<a href="http://bit.ly/2RnS1vA">&#x201c;Scanning
+Live Ethereum Contracts for the &lsquo;Unchecked-Send&rsquo; Bug&#x201d;</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_9">The Vulnerability</h4>
+<div class="paragraph">
+<p>Consider the following example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Lotto {
+
+    bool public payedOut = false;
+    address public winner;
+    uint public winAmount;
+
+    // ... extra functionality here
+
+    function sendToWinner() public {
+        require(!payedOut);
+        winner.send(winAmount);
+        payedOut = true;
+    }
+
+    function withdrawLeftOver() public {
+        require(payedOut);
+        msg.sender.send(this.balance);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This represents a Lotto-like contract, where a <code>winner</code>
+receives <code>winAmount</code> of ether, which typically leaves a little left over
+for anyone to withdraw.</p>
+</div>
+<div class="paragraph">
+<p>The vulnerability exists on line 11, where a <code>send</code> is used without checking
+the response. In this trivial example, a <code>winner</code> whose transaction
+fails (either by running out of gas or by being a contract that intentionally
+throws in the fallback function) allows <code>payedOut</code> to be set to <code>true</code> regardless
+of whether ether was sent or not. In this case, anyone can withdraw
+the <code>winner</code>’s winnings via the <code>withdrawLeftOver</code> function.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_9">Preventative Techniques</h4>
+<div class="paragraph">
+<p>Whenever possible, use the <code>transfer</code> function rather than <code>send</code>, as
+<code>transfer</code> will revert if the external transaction reverts. If
+<code>send</code> is required, always check the return value.</p>
+</div>
+<div class="paragraph">
+<p>A more robust
+<a href="http://bit.ly/2CSdF7y">recommendation</a>
+is to adopt a <em>withdrawal pattern</em>. In this solution, each user must
+call an isolated withdraw function
+that handles the sending of ether out of the contract and
+deals with the consequences of failed send transactions.
+The idea is to logically isolate the external send functionality from
+the rest of the codebase, and place the burden of a potentially failed
+transaction on the end user calling the withdraw function.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_etherpot_and_king_of_the_ether">Real-World Example: Etherpot and King of the Ether</h4>
+<div class="paragraph">
+<p><a href="http://bit.ly/2OfHalK">Etherpot</a> was a smart contract lottery, not
+too dissimilar to the example contract mentioned earlier.
+The downfall of this contract was primarily due to incorrect use of
+block hashes (only the last 256 block hashes are usable; see Aakil
+Fernandes’s
+<a href="http://bit.ly/2Jpzf4x">post</a>
+about how Etherpot failed to take account of this correctly). However, this
+contract also suffered from an unchecked call value. Consider the
+function <code>cash</code> in <a href="#lotto_security">lotto.sol: Code snippet</a>.</p>
+</div>
+<div id="lotto_security" class="exampleblock">
+<div class="title">Example 9. lotto.sol: Code snippet</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">...
+  function cash(uint roundIndex, uint subpotIndex){
+
+        var subpotsCount = getSubpotsCount(roundIndex);
+
+        if(subpotIndex&gt;=subpotsCount)
+            return;
+
+        var decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
+
+        if(decisionBlockNumber&gt;block.number)
+            return;
+
+        if(rounds[roundIndex].isCashed[subpotIndex])
+            return;
+        //Subpots can only be cashed once. This is to prevent double payouts
+
+        var winner = calculateWinner(roundIndex,subpotIndex);
+        var subpot = getSubpot(roundIndex);
+
+        winner.send(subpot);
+
+        rounds[roundIndex].isCashed[subpotIndex] = true;
+        //Mark the round as cashed
+}
+...</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that on line 21 the <code>send</code> function’s return value is not
+checked, and the following line then sets a Boolean indicating that the
+winner has been sent their funds. This bug can allow a state where the
+winner does not receive their ether, but the state of the contract can
+indicate that the winner has already been paid.</p>
+</div>
+<div class="paragraph">
+<p>A more serious version of this bug occurred in the
+<a href="http://bit.ly/2ACsfi1">King of
+the Ether</a>. An excellent
+<a href="http://bit.ly/2ESoaub">post-mortem</a> of this
+contract has been written that details how an unchecked failed <code>send</code>
+could be used to attack the <span class="keep-together">contract</span>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="frontrunning_security">Race Conditions/Front Running</h3>
+<div class="paragraph">
+<p>The combination of external calls to other contracts and the multiuser
+nature of the underlying blockchain gives rise to a variety of potential
+Solidity pitfalls whereby users <em>race</em> code execution to obtain
+unexpected states. Reentrancy (discussed earlier in this chapter) is one example of such
+a race condition. In this section we will discuss
+other kinds of race conditions that can occur on the Ethereum
+blockchain. There are a variety of good posts on this subject, including
+&#x201c;Race Conditions&#x201d; on the <a href="http://bit.ly/2yFesFF">Ethereum
+Wiki</a>, <a href="http://www.dasp.co/#item-7">#7 on the DASP Top10 of 2018</a>, and the
+<a href="http://bit.ly/2Q6E4lP">Ethereum Smart Contract Best Practices</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_10">The Vulnerability</h4>
+<div class="paragraph">
+<p>As with most blockchains, Ethereum nodes pool transactions and form them
+into blocks. The transactions are only considered valid once a miner has
+solved a consensus mechanism (currently
+<a href="http://bit.ly/2yI5Dv7">Ethash</a> PoW for Ethereum).
+The miner who solves the block also chooses which transactions from the
+pool will be included in the block, typically ordered by the
+<code>gasPrice</code> of each transaction. Here is a potential attack vector. An
+attacker can watch the transaction pool for transactions that may
+contain solutions to problems, and modify or revoke the solver&#8217;s
+permissions or change state in a contract detrimentally to the
+solver. The attacker can then get the data from this transaction and
+create a transaction of their own with a higher <code>gasPrice</code> so their
+transaction is included in a block before the original.</p>
+</div>
+<div class="paragraph">
+<p>Let’s see how this could work with a simple example. Consider the
+contract shown in <a href="#findthishash_security">FindThisHash.sol</a>.</p>
+</div>
+<div id="findthishash_security" class="exampleblock">
+<div class="title">Example 10. FindThisHash.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract FindThisHash {
+    bytes32 constant public hash =
+      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
+
+    constructor() public payable {} // load with ether
+
+    function solve(string solution) public {
+        // If you can find the pre-image of the hash, receive 1000 ether
+        require(hash == sha3(solution));
+        msg.sender.transfer(1000 ether);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Say this contract contains 1,000 ether. The user who can find the
+preimage of the following SHA-3 hash:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>can submit the solution and retrieve the 1,000 ether. Let&#8217;s say one user
+figures out the solution is <code>Ethereum!</code>. They call <code>solve</code> with
+<code>Ethereum!</code> as the parameter. Unfortunately, an attacker has been clever
+enough to watch the transaction pool for anyone submitting a solution.
+They see this solution, check its validity, and then submit an
+equivalent transaction with a much higher <code>gasPrice</code> than the original
+transaction. The miner who solves the block will likely give the
+attacker preference due to the higher <code>gasPrice</code>, and mine their
+transaction before the original solver&#8217;s. The attacker will take the 1,000
+ether, and the user who solved the problem will get nothing. Keep in mind that in this type of "front-running" vulnerability, miners are uniquely incentivized to run the attacks themselves (or can be bribed to run these attacks with extravagant fees). The possibility of the attacker being a miner themselves should not be underestimated.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_10">Preventative Techniques</h4>
+<div class="paragraph">
+<p>There are two classes of actor who can perform these kinds of
+front-running attacks: users (who modify the <code>gasPrice</code> of their
+transactions) and miners themselves (who can reorder the transactions
+in a block how they see fit). A contract that is vulnerable to the first
+class (users) is significantly worse off than one vulnerable to the
+second (miners), as miners can only perform the attack when they solve a
+block, which is unlikely for any individual miner targeting a specific
+block. Here we’ll list a few mitigation measures relative to both
+classes of attackers.</p>
+</div>
+<div class="paragraph">
+<p>One method is to place an upper bound on the <code>gasPrice</code>.
+This prevents users from
+increasing the <code>gasPrice</code> and getting preferential transaction ordering
+beyond the upper bound. This measure only guards against the
+first class of attackers (arbitrary users). Miners in this scenario can
+still attack the contract, as they can order the transactions in their
+block however they like, regardless of gas price.</p>
+</div>
+<div class="paragraph">
+<p>A more robust method is to use a
+<a href="http://bit.ly/2CUh2KS">commit–reveal</a>
+scheme. Such a scheme dictates that users send
+transactions with hidden information (typically a hash). After the
+transaction has been included in a block, the user sends a transaction
+revealing the data that was sent (the reveal phase). This method
+prevents both miners and users from front-running transactions, as they
+cannot determine the contents of the transaction. This method, however,
+cannot conceal the transaction value (which in some cases is the
+valuable information that needs to be hidden). The
+<a href="https://ens.domains/">ENS</a> smart contract allowed users to send
+transactions whose committed data included the amount of ether they
+were willing to spend. Users could then send transactions of arbitrary
+value. During the reveal phase, users were refunded the difference
+between the amount sent in the transaction and the amount they were
+willing to spend.</p>
+</div>
+<div class="paragraph">
+<p>A further suggestion by Lorenz Breidenbach, Phil Daian, Ari Juels, and Florian Tramèr is to use
+<a href="http://bit.ly/2SygqQx">&#x201c;submarine
+sends&#x201d;</a>. An efficient implementation of this idea requires the <code>CREATE2</code>
+opcode, which currently hasn’t been adopted but seems likely to be in
+upcoming hard forks.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_examples_erc20_and_bancor">Real-World Examples: ERC20 and Bancor</h4>
+<div class="paragraph">
+<p>The <a href="http://bit.ly/2CUf7WG">ERC20
+standard</a> is quite well-known for building tokens on Ethereum. This
+standard has a potential front-running vulnerability that comes about
+due to the <code>approve</code> function. <a href="http://bit.ly/2DbvQpJ">Mikhail Vladimirov and Dmitry Khovratovich</a> have written a good explanation of this
+vulnerability (and ways to mitigate the attack).</p>
+</div>
+<div class="paragraph">
+<p>The standard specifies the <code>approve</code> function as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">function approve(address _spender, uint256 _value) returns (bool success)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This function allows a user to permit other users to transfer tokens on
+their behalf. The front-running vulnerability occurs in the scenario where
+a user Alice <em>approves</em> her friend Bob to spend 100 tokens. Alice
+later decides that she wants to revoke Bob’s approval to spend, say,
+100 tokens, so she creates a transaction that sets Bob’s allocation
+to 50 tokens. Bob, who has been carefully watching the chain, sees
+this transaction and builds a transaction of his own spending the
+100 tokens. He puts a higher <code>gasPrice</code> on his transaction than
+Alice&#8217;s, so gets his transaction prioritized over hers. Some
+implementations of <code>approve</code> would allow Bob to transfer his
+100 tokens and then, when Alice’s transaction is committed, reset
+Bob’s approval to 50 tokens, in effect giving Bob access to
+150 tokens.</p>
+</div>
+<div class="paragraph">
+<p>Another prominent real-world example is
+<a href="https://www.bancor.network/">Bancor</a>. Ivan Bogatyy and his team
+documented a profitable attack on the initial Bancor implementation. His
+<a href="http://bit.ly/2EUlLzb">blog
+post</a> and <a href="http://bit.ly/2yHgkhs">DevCon3 talk</a>
+discuss in detail how this was done. Essentially, prices of tokens are
+determined based on transaction value; users can watch the transaction
+pool for Bancor transactions and front-run them to profit from the price
+differences. This attack has been addressed by the Bancor team.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_denial_of_service_dos">Denial of Service (DoS)</h3>
+<div class="paragraph">
+<p>This category is very broad, but fundamentally consists of attacks where
+users can render a contract inoperable for a period of time, or
+in some cases permanently. This can trap ether in these contracts
+forever, as was the case in <a href="#multisig_secondhack">Real-World Example: Parity Multisig Wallet (Second Hack)</a>.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_11">The Vulnerability</h4>
+<div class="paragraph">
+<p>There are various ways a contract can become inoperable. Here we
+highlight just a few less-obvious Solidity
+coding patterns that can lead to DoS vulnerabilities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Looping through externally manipulated mappings or arrays</dt>
+<dd>
+<p>This pattern typically appears when an owner wishes to distribute tokens
+to investors with a <code>distribute</code>-like function,
+as in this example contract:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract DistributeTokens {
+    address public owner; // gets set somewhere
+    address[] investors; // array of investors
+    uint[] investorTokens; // the amount of tokens each investor gets
+
+    // ... extra functionality, including transfertoken()
+
+    function invest() public payable {
+        investors.push(msg.sender);
+        investorTokens.push(msg.value * 5); // 5 times the wei sent
+        }
+
+    function distribute() public {
+        require(msg.sender == owner); // only owner
+        for(uint i = 0; i &lt; investors.length; i++) {
+            // here transferToken(to,amount) transfers "amount" of
+            // tokens to the address "to"
+            transferToken(investors[i],investorTokens[i]);
+        }
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that the loop in this contract runs over an array that can be
+artificially inflated. An attacker can create many user accounts, making
+the <code>investor</code> array large. In principle this can be done such that the
+gas required to execute the for loop exceeds the block gas limit,
+essentially making the <code>distribute</code> function inoperable.</p>
+</div>
+</dd>
+<dt class="hdlist1">Owner operations</dt>
+<dd>
+<p>Another common pattern is where owners have
+specific privileges in contracts and must perform some task in order for
+the contract to proceed to the next state. One example would be an Initial Coin Offering (ICO)
+contract that requires the owner to <code>finalize</code> the contract, which then
+allows tokens to be transferable. For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">bool public isFinalized = false;
+address public owner; // gets set somewhere
+
+function finalize() public {
+    require(msg.sender == owner);
+    isFinalized == true;
+}
+
+// ... extra ICO functionality
+
+// overloaded transfer function
+function transfer(address _to, uint _value) returns (bool) {
+    require(isFinalized);
+    super.transfer(_to,_value)
+}
+
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In such cases, if the privileged user loses their private keys or becomes
+inactive, the entire token contract becomes inoperable. In this case, if
+the owner cannot call <span class="keep-together"><code>finalize</code></span> no tokens can be transferred;
+the entire operation of the token ecosystem hinges on a single
+address.</p>
+</div>
+</dd>
+<dt class="hdlist1">Progressing state based on external calls</dt>
+<dd>
+<p>Contracts are sometimes written
+such that progressing to a new state requires sending ether to an
+address, or waiting for some input from an external source.  These patterns can
+lead to DoS attacks when the external call fails or is prevented for external
+reasons. In the example of sending ether, a user can create a contract that
+does not accept ether. If a contract requires ether to be withdrawn in order to progress to a new state (consider a
+time-locking contract that requires all ether to be withdrawn before being
+usable again), the contract will never
+achieve the new state, as ether can never be sent to the user&#8217;s contract that
+does not accept ether.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_11">Preventative Techniques</h4>
+<div class="paragraph">
+<p>In the first example, contracts should not loop through data structures
+that can be artificially manipulated by external users. A withdrawal
+pattern is recommended, whereby each of the investors call a withdraw
+function to claim tokens independently.</p>
+</div>
+<div class="paragraph">
+<p>In the second example, a privileged user was required to change the state
+of the contract. In such examples a failsafe can be
+used in the event that the owner becomes incapacitated. One solution
+is to make the owner a multisig contract. Another solution
+is to use a time-lock: in the example given the require on line 13 could include a
+time-based mechanism, such as
+<code>require(msg.sender == owner || now &gt; unlockTime)</code>, that allows any user
+to finalize after a period of time specified by <code>unlockTime</code>. This kind
+of mitigation technique can be used in the third example also. If
+external calls are required to progress to a new state, account for
+their possible failure and potentially add a time-based state
+progression in the event that the desired call never comes.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Of course, there are centralized alternatives to these suggestions:
+one can add a <code>maintenanceUser</code> who can come along and fix
+problems with DoS-based attack vectors if need be. Typically these kinds
+of contracts have trust issues, because of the power of such an entity.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_examples_governmental">Real-World Examples: GovernMental</h4>
+<div class="paragraph">
+<p><a href="http://governmental.github.io/GovernMental/">GovernMental</a> was an old
+Ponzi scheme that accumulated quite a large amount of ether (1,100 ether, at one point). Unfortunately, it was
+susceptible to the DoS vulnerabilities mentioned in this section. A <a href="http://bit.ly/2DcgvFc">Reddit post</a> by etherik describes how the contract required the deletion of a large
+mapping in order to withdraw the ether. The deletion of this mapping had
+a gas cost that exceeded the block gas limit at the time, and thus it was
+not possible to withdraw the 1,100 ether. The contract address is
+<a href="http://bit.ly/2Oh8j7R">0xF45717552f12Ef7cb65e95476F217Ea008167Ae3</a>,
+and you can see from transaction <a href="http://bit.ly/2Ogzrnn">0x0d80d67202bd9cb6773df8dd2020e719&amp;thinsp;0a1b0793e8ec4fc105257e8128f0506b</a> that the 1,100 ether were finally obtained with a transaction that used
+2.5M gas (when the block gas limit had risen enough to allow such a transaction).</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_block_timestamp_manipulation">Block Timestamp Manipulation</h3>
+<div class="paragraph">
+<p>Block timestamps have historically been used for a variety of
+applications, such as entropy for random numbers (see the
+<a href="#entropyillusion_security">Entropy Illusion</a> for further details), locking
+funds for periods of time, and various state-changing conditional
+statements that are time-dependent. Miners have the ability to adjust
+timestamps slightly, which can prove to be dangerous if block
+timestamps are used incorrectly in smart contracts.</p>
+</div>
+<div class="paragraph">
+<p>Useful references for this include
+<a href="http://bit.ly/2OdUC9C">the
+Solidity docs</a> and <a href="http://bit.ly/2CQ8gh4">Joris Bontje&#8217;s Ethereum Stack
+Exchange question</a> on the topic.</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_12">The Vulnerability</h4>
+<div class="paragraph">
+<p><code>block.timestamp</code> and its alias <code>now</code> can be manipulated by miners if
+they have some incentive to do so. Let&#8217;s construct a simple game, shown in <a href="#roulette_security">roulette.sol</a>, that
+would be vulnerable to miner exploitation.</p>
+</div>
+<div id="roulette_security" class="exampleblock">
+<div class="title">Example 11. roulette.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Roulette {
+    uint public pastBlockTime; // forces one bet per block
+
+    constructor() public payable {} // initially fund contract
+
+    // fallback function used to make a bet
+    function () public payable {
+        require(msg.value == 10 ether); // must send 10 ether to play
+        require(now != pastBlockTime); // only 1 transaction per block
+        pastBlockTime = now;
+        if(now % 15 == 0) { // winner
+            msg.sender.transfer(this.balance);
+        }
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract behaves like a simple lottery. One transaction per block
+can bet 10 ether for a chance to win the balance of the contract. The
+assumption here is that `block.timestamp&#8217;s last two digits are uniformly distributed. If that were the case, there would be a 1 in 15
+chance of winning this lottery.</p>
+</div>
+<div class="paragraph">
+<p>However, as we know, miners can adjust the timestamp should they need
+to. In this particular case, if enough ether pools in the contract, a
+miner who solves a block is incentivized to choose a timestamp such that
+<code>block.timestamp</code> or <code>now</code> modulo 15 is <code>0</code>. In doing so they may win
+the ether locked in this contract along with the block reward. As there
+is only one person allowed to bet per block, this is also vulnerable to
+front-running attacks (see <a href="#frontrunning_security">Race Conditions/Front Running</a> for further details).</p>
+</div>
+<div class="paragraph">
+<p>In practice, block timestamps are monotonically increasing and so miners
+cannot choose arbitrary block timestamps (they must be later than their
+predecessors). They are also limited to setting block times not too far
+in the future, as these blocks will likely be rejected by the network
+(nodes will not validate blocks whose timestamps are in the future).</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_12">Preventative Techniques</h4>
+<div class="paragraph">
+<p>Block timestamps should not be used for entropy or generating random
+numbers&#x2014;i.e., they should not be the deciding factor (either directly
+or through some derivation) for winning a game or changing an important
+state.</p>
+</div>
+<div class="paragraph">
+<p>Time-sensitive logic is sometimes required; e.g., for unlocking contracts
+(time-locking), completing an ICO after a few weeks, or enforcing expiry
+dates. It is sometimes recommended to use <a href="http://bit.ly/2OdUC9C"><code>block.number</code></a> and an average block time to estimate times; with
+a <code>10 second</code> block time, <code>1 week</code> equates to approximately, <code>60480 blocks</code>.
+Thus, specifying a block number at which to change a contract state can
+be more secure, as miners are unable easily to manipulate the block number. The
+<a href="http://bit.ly/2AAebFr">BAT
+ICO</a> contract employed this strategy.</p>
+</div>
+<div class="paragraph">
+<p>This can be unnecessary if contracts aren’t particularly concerned with
+miner manipulations of the block timestamp, but it is something to be
+aware of when developing contracts.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_governmental">Real-World Example: GovernMental</h4>
+<div class="paragraph">
+<p><a href="http://governmental.github.io/GovernMental/">GovernMental</a>, the old Ponzi scheme mentioned above, was also
+vulnerable to a timestamp-based attack. The contract paid out to the
+player who was the last player to join (for at least one minute) in a
+round. Thus, a miner who was a player could adjust the timestamp (to a
+future time, to make it look like a minute had elapsed) to make it
+appear that they were the last player to join for over a minute (even
+though this was not true in reality). More detail on this can be found in
+the
+<a href="http://bit.ly/2Q1AMA6">&#x201c;History
+of Ethereum Security Vulnerabilities, Hacks and Their Fixes&#x201d; post</a> by Tanya <span class="keep-together">Bahrynovska</span>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_constructors_with_care">Constructors with Care</h3>
+<div class="paragraph">
+<p>Constructors are special functions that often perform critical,
+privileged tasks when initializing contracts. Before Solidity v0.4.22,
+constructors were defined as functions that had the same name as the
+contract that contained them. In such cases, when the contract name is changed in
+development, if the constructor name isn’t changed too it becomes a normal,
+callable function. As you can imagine, this can lead (and has) to some
+interesting contract hacks.</p>
+</div>
+<div class="paragraph">
+<p>For further insight, the reader may be interested in attempting the
+<a href="https://github.com/OpenZeppelin/ethernaut">Ethernaut challenges</a> (in
+particular the Fallout level).</p>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_13">The Vulnerability</h4>
+<div class="paragraph">
+<p>If the contract name is modified, or there is a typo in the
+constructor&#8217;s name such that it does not match the name of the
+contract, the constructor will behave like a normal function. This can
+lead to dire consequences, especially if the constructor performs
+privileged operations. Consider the following contract:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract OwnerWallet {
+    address public owner;
+
+    // constructor
+    function ownerWallet(address _owner) public {
+        owner = _owner;
+    }
+
+    // Fallback. Collect ether.
+    function () payable {}
+
+    function withdraw() public {
+        require(msg.sender == owner);
+        msg.sender.transfer(this.balance);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This contract collects ether and allows only the owner to withdraw it,
+by calling the <code>withdraw</code> function. The issue arises because the constructor is not named exactly the same as the contract:
+the first letter is different! Thus, any
+user can call the <code>ownerWallet</code> function, set themselves as the owner,
+and then take all the ether in the contract by calling <code>withdraw</code>.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_13">Preventative Techniques</h4>
+<div class="paragraph">
+<p>This issue has been addressed in version 0.4.22 of the Solidity compiler. This version introduced a <code>constructor</code> keyword that
+specifies the constructor, rather than requiring the name of the
+function to match the contract name. Using this keyword to specify
+constructors is recommended to prevent naming issues.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_rubixi">Real-World Example: Rubixi</h4>
+<div class="paragraph">
+<p><a href="http://bit.ly/2ESWG7t">Rubixi</a> was another pyramid scheme that exhibited this kind of
+vulnerability. It was originally called <code>DynamicPyramid</code>, but the
+contract name was changed before deployment to <code>Rubixi</code>. The
+constructor’s name wasn’t changed, allowing any user to become the
+creator. Some interesting discussion related to this bug can be found
+on <a href="http://bit.ly/2P0TRWw">Bitcointalk</a>. Ultimately, it allowed users to fight for creator status to
+claim the fees from the pyramid scheme. More detail on this particular
+bug can be found in <a href="http://bit.ly/2Q1AMA6">&#x201c;History of Ethereum Security Vulnerabilities, Hacks and Their Fixes&#x201d;</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_uninitialized_storage_pointers">Uninitialized Storage Pointers</h3>
+<div class="paragraph">
+<p>The EVM stores data either as storage or as memory. Understanding
+exactly how this is done and the default types for local variables of
+functions is highly recommended when developing contracts. This is
+because it is possible to produce vulnerable contracts by
+inappropriately intializing variables.</p>
+</div>
+<div class="paragraph">
+<p>To read more about storage and memory in the EVM, see the Solidity documentation on <a href="http://bit.ly/2OdUU0l">data location</a>, <a href="http://bit.ly/2JslDWf">layout of state variables in storage</a>, and <a href="http://bit.ly/2Dch2Hc">layout in memory</a>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This section is based on an excellent
+<a href="http://bit.ly/2ERI0pb">post
+by Stefan Beyer</a>. Further reading on this topic, inspired by Stefan, can be found in this
+<a href="http://bit.ly/2OgxPtG">Reddit
+thread</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_14">The Vulnerability</h4>
+<div class="paragraph">
+<p>Local variables within functions default to storage or memory
+depending on their type. Uninitialized local storage variables may
+contain the value of other storage variables in the contract; this fact
+can cause unintentional vulnerabilities, or be exploited deliberately.</p>
+</div>
+<div class="paragraph">
+<p>Let’s consider the relatively simple name registrar contract in <a href="#nameregistrar_security">NameRegistrar.sol</a>.</p>
+</div>
+<div id="nameregistrar_security" class="exampleblock">
+<div class="title">Example 12. NameRegistrar.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">// A locked name registrar
+contract NameRegistrar {
+
+    bool public unlocked = false;  // registrar locked, no name updates
+
+    struct NameRecord { // map hashes to addresses
+        bytes32 name;
+        address mappedAddress;
+    }
+
+    // records who registered names
+    mapping(address =&gt; NameRecord) public registeredNameRecord;
+    // resolves hashes to addresses
+    mapping(bytes32 =&gt; address) public resolve;
+
+    function register(bytes32 _name, address _mappedAddress) public {
+        // set up the new NameRecord
+        NameRecord newRecord;
+        newRecord.name = _name;
+        newRecord.mappedAddress = _mappedAddress;
+
+        resolve[_name] = _mappedAddress;
+        registeredNameRecord[msg.sender] = newRecord;
+
+        require(unlocked); // only allow registrations if contract is unlocked
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>This simple name registrar has only one function. When the contract is
+<code>unlocked</code>, it allows anyone to register a name (as a <code>bytes32</code> hash)
+and map that name to an address. The registrar is
+initially locked, and the <code>require</code> on line 25 prevents <code>register</code>
+from adding name records. It seems that the contract is unusable, as
+there is no way to unlock the registry! There is, however, a vulnerability
+that allows name registration regardless of the <code>unlocked</code> variable.</p>
+</div>
+<div class="paragraph">
+<p>To discuss this vulnerability, first we need to understand how storage
+works in Solidity. As a high-level overview (without any proper
+technical detail&#x2014;we suggest reading the Solidity docs for a proper
+review), state variables are stored sequentially in <em>slots</em> as they
+appear in the contract (they can be grouped together but aren&#8217;t in this
+example, so we won&#8217;t worry about that). Thus, <code>unlocked</code> exists in
+<code>slot[0]</code>, <code>registeredNameRecord</code> in <code>slot[1]</code>, and <code>resolve</code> in
+<code>slot[2]</code>, etc. Each of these slots is 32 bytes in size (there are added
+complexities with mappings, which we&#8217;ll ignore for now). The Boolean
+<code>unlocked</code> will look like <code>0x000&#8230;&#8203;0</code> (64 0s, excluding the <code>0x</code>) for
+<code>false</code> or <code>0x000&#8230;&#8203;1</code> (63 0s) for <code>true</code>. As you can see, there is a
+significant waste of storage in this particular example.</p>
+</div>
+<div class="paragraph">
+<p>The next piece of the puzzle is that Solidity by default puts
+complex data types, such as structs, in storage when initializing
+them as local variables. Therefore, <span class="keep-together"><code>newRecord</code></span> on line 18 defaults to storage. The vulnerability is caused by the fact that <span class="keep-together"><code>newRecord</code></span> is
+not initialized. Because it defaults to storage, it is mapped to
+storage slot[0], which currently contains a pointer to <code>unlocked</code>.
+Notice that on lines 19 and 20 we
+then set <code>newRecord.name</code> to <code>_name</code> and <code>newRecord.mappedAddress</code> to <span class="keep-together"><code>_mappedAddress</code></span>; this updates the storage locations of slot[0]
+and slot[1], which modifies both <code>unlocked</code> and the storage slot
+associated with <code>registeredNameRecord</code>.</p>
+</div>
+<div class="paragraph">
+<p>This means that <code>unlocked</code> can be directly modified, simply by the
+<code>bytes32 _name</code> parameter of the <code>register</code> function. Therefore, if
+the last byte of <code>_name</code> is nonzero, it will modify the last byte of
+storage <code>slot[0]</code> and directly change <code>unlocked</code> to <code>true</code>. Such <code>_name</code>
+values will cause the <code>require</code> call on line 25 to succeed, as we have set
+<code>unlocked</code> to <code>true</code>. Try this in Remix. Note the function will pass
+if you use a <code>_name</code> of the form:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>0x0000000000000000000000000000000000000000000000000000000000000001</pre>
+</div>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_14">Preventative Techniques</h4>
+<div class="paragraph">
+<p>The Solidity compiler shows a warning for unintialized storage variables;
+developers should pay careful attention to these warnings when
+building smart contracts. The current version of Mist (0.10) doesn’t
+allow these contracts to be compiled. It is often good practice to
+explicitly use the <code>memory</code> or <code>storage</code> specifiers when dealing with complex types,
+to ensure they behave as expected.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_examples_openaddresslottery_and_cryptoroulette_honey_pots">Real-World Examples: OpenAddressLottery and CryptoRoulette Honey Pots</h4>
+<div class="paragraph">
+<p>A honey pot named <a href="http://bit.ly/2AAVnWD">OpenAddressLottery</a> was deployed that used this uninitialized storage variable quirk
+to collect ether from some would-be hackers. The contract is rather
+involved, so we will leave the analysis to the <a href="http://bit.ly/2OgxPtG">Reddit
+thread</a> where the attack is quite clearly explained.</p>
+</div>
+<div class="paragraph">
+<p>Another honey pot, <a href="http://bit.ly/2OfNGJ2">CryptoRoulette</a>, also utilized this trick <span class="keep-together">to try</span> and collect some ether. If you
+can’t figure out how the attack works, see
+<a href="http://bit.ly/2OVkSL4">&#x201c;An
+Analysis of a Couple Ethereum Honeypot Contracts&#x201d;</a> for an overview of
+this contract and others.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_floating_point_and_precision">Floating Point and Precision</h3>
+<div class="paragraph">
+<p>As of this writing (v0.4.24), Solidity does not support fixed-point and floating-point
+numbers. This means that floating-point
+representations must be constructed with integer types in Solidity. This
+can lead to errors and vulnerabilities if not implemented correctly.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For further reading, see the
+<a href="http://bit.ly/2Ogp2Ia">Ethereum
+Contract Security Techniques and Tips wiki</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_15">The Vulnerability</h4>
+<div class="paragraph">
+<p>As there is no fixed-point type in Solidity, developers are required to
+implement their own using the standard integer data types. There are a
+number of pitfalls developers can run into during this process. We will
+try to highlight some of these in this section.</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s begin with a code example (we&#8217;ll ignore over/underflow issues, discussed earlier in this chapter, for simplicity):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract FunWithNumbers {
+    uint constant public tokensPerEth = 10;
+    uint constant public weiPerEth = 1e18;
+    mapping(address =&gt; uint) public balances;
+
+    function buyTokens() public payable {
+        // convert wei to eth, then multiply by token rate
+        uint tokens = msg.value/weiPerEth*tokensPerEth;
+        balances[msg.sender] += tokens;
+    }
+
+    function sellTokens(uint tokens) public {
+        require(balances[msg.sender] &gt;= tokens);
+        uint eth = tokens/tokensPerEth;
+        balances[msg.sender] -= tokens;
+        msg.sender.transfer(eth*weiPerEth);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This simple token buying/selling contract has some obvious problems. Although the mathematical calculations
+for buying and selling tokens are correct, the lack of floating-point
+numbers will give erroneous results. For example, when buying tokens on
+line 8, if the value is less than <code>1 ether</code> the initial division will
+result in <code>0</code>, leaving the result of the final multiplication as <code>0</code> (e.g., <code>200 wei</code>
+divided by <code>1e18</code> <code>weiPerEth</code> equals <code>0</code>). Similarly, when selling
+tokens, any number of tokens less than <code>10</code> will also result in <code>0 ether</code>. In
+fact, rounding here is always down, so selling <code>29 tokens</code> will result
+in <code>2 ether</code>.</p>
+</div>
+<div class="paragraph">
+<p>The issue with this contract is that the precision is only to the
+nearest ether (i.e., 1e18 wei). This can get tricky when
+dealing with decimals in
+<a href="https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md">ERC20</a>
+tokens when you need higher precision.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_15">Preventative Techniques</h4>
+<div class="paragraph">
+<p>Keeping the right precision in your smart contracts is very important,
+especially when dealing with ratios and rates that reflect economic
+decisions.</p>
+</div>
+<div class="paragraph">
+<p>You should ensure that any ratios or rates you are using allow for large
+numerators in fractions. For example, we used the rate <code>tokensPerEth</code> in
+our example. It would have been better to use <code>weiPerTokens</code>, which would
+be a large number. To calculate the corresponding number of tokens we could do
+<code>msg.sender/weiPerTokens</code>. This would give a more precise result.</p>
+</div>
+<div class="paragraph">
+<p>Another tactic to keep in mind is to be mindful of order of operations.
+In our example, the calculation to purchase tokens was
+<code>msg.value/weiPerEth*tokenPerEth</code>. Notice that the division occurs
+before the multiplication. (Solidity, unlike some languages, guarantees to perform operations in the order in which they are written.) This example would have achieved a greater
+precision if the calculation performed the multiplication first and then
+the division; i.e., <code>msg.value*tokenPerEth/weiPerEth</code>.</p>
+</div>
+<div class="paragraph">
+<p>Finally, when defining arbitrary precision for numbers it can be a good
+idea to convert values to higher precision, perform all
+mathematical operations, then finally convert back down to
+the precision required for output. Typically uint256s are used (as they are
+optimal for gas usage); these give approximately 60 orders of magnitude
+in their range, some of which can be dedicated to the precision of
+mathematical operations. It may be the case that it is better to keep
+all variables in high precision in Solidity and convert back to lower
+precisions in external apps (this is essentially how the <code>decimals</code>
+variable works in ERC20 token
+contracts). To see an example of how this can be done, we recommend looking at <a href="https://github.com/dapphub/ds-math">DS-Math</a>. It uses some
+funky naming (&#x201c;wads&#x201d; and &#x201c;rays&#x201d;), but the concept is useful.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_real_world_example_ethstick">Real-World Example: Ethstick</h4>
+<div class="paragraph">
+<p>The <a href="http://bit.ly/2Qb7PSB">Ethstick contract</a> does not use extended precision; however, it deals with wei. So,
+this contract will have issues of rounding, but only at the wei level
+of precision. It has some more serious flaws, but these relate
+back to the difficulty in getting entropy on the blockchain (see
+<a href="#entropyillusion_security">Entropy Illusion</a>). For a further discussion of
+the Ethstick contract, we’ll refer you to another post by Peter Vessenes,
+<a href="http://bit.ly/2SwDnE0">&#x201c;Ethereum
+Contracts Are Going to Be Candy for Hackers&#x201d;</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_tx_origin_authentication">Tx.Origin Authentication</h3>
+<div class="paragraph">
+<p>Solidity has a global variable, <code>tx.origin</code>, which traverses the entire
+call stack and contains the address of the account that originally sent
+the call (or transaction). Using this variable for authentication in a smart contract leaves the contract vulnerable to a phishing-like
+attack.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>For further reading, see dbryson&#8217;s Ethereum <a href="http://bit.ly/2PxU1UM">Stack
+Exchange question</a>,
+<a href="http://bit.ly/2qm7ocJ">&#x201c;Tx.Origin and Ethereum Oh My!&#x201d;</a> by Peter Vessenes, and
+<a href="http://bit.ly/2P3KVA4">&#x201c;Solidity: Tx Origin Attacks&#x201d;</a> by Chris Coverdale.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3 notoc">
+<h4 id="_the_vulnerability_16">The Vulnerability</h4>
+<div class="paragraph">
+<p>Contracts that authorize users using the <code>tx.origin</code> variable are
+typically vulnerable to phishing attacks that can trick users into
+performing authenticated actions on the vulnerable contract.</p>
+</div>
+<div class="paragraph">
+<p>Consider the simple contract in <a href="#phishable_security">Phishable.sol</a>.</p>
+</div>
+<div id="phishable_security" class="exampleblock">
+<div class="title">Example 13. Phishable.sol</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">contract Phishable {
+    address public owner;
+
+    constructor (address _owner) {
+        owner = _owner;
+    }
+
+    function () public payable {} // collect ether
+
+    function withdrawAll(address _recipient) public {
+        require(tx.origin == owner);
+        _recipient.transfer(this.balance);
+    }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>Notice that on line 11 the contract authorizes the <code>withdrawAll</code>
+function using <code>tx.origin</code>. This contract allows for an attacker to
+create an attacking contract of the form:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-solidity" data-lang="solidity">import "Phishable.sol";
+
+contract AttackContract {
+
+    Phishable phishableContract;
+    address attacker; // The attacker's address to receive funds
+
+    constructor (Phishable _phishableContract, address _attackerAddress) {
+        phishableContract = _phishableContract;
+        attacker = _attackerAddress;
+    }
+
+    function () payable {
+        phishableContract.withdrawAll(attacker);
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The attacker might disguise this contract as their own private address and socially engineer the victim (the owner of the Phishable contract) to send some form of transaction to the address—perhaps sending this contract some amount of ether. The victim, unless careful, may not notice that
+there is code at the attacker’s address, or the attacker might pass it off
+as being a multisignature wallet or some advanced storage wallet (remember
+that the source code of public contracts is not available by default).</p>
+</div>
+<div class="paragraph">
+<p>In any case, if the victim sends a transaction with enough gas to the
+<code>AttackContract</code> address, it will invoke the fallback function, which in
+turn calls the <code>withdrawAll</code> function of the <code>Phishable</code> contract
+with the parameter <code>attacker</code>. This will result in the withdrawal of all
+funds from the <code>Phishable</code> contract to the <code>attacker</code> address. This is
+because the address that first initialized the call was the victim
+(i.e., the owner of the <code>Phishable</code> contract). Therefore, <code>tx.origin</code>
+will be equal to <code>owner</code> and the <code>require</code> on line 11 of the
+<code>Phishable</code> contract will pass.</p>
+</div>
+</div>
+<div class="sect3 notoc">
+<h4 id="_preventative_techniques_16">Preventative Techniques</h4>
+<div class="paragraph">
+<p><code>tx.origin</code> should not be used for authorization in smart contracts.
+This isn’t to say that the <code>tx.origin</code> variable should never be used. It
+does have some legitimate use cases in smart contracts. For example, if
+one wanted to deny external contracts from calling the current contract,
+one could implement a <code>require</code> of the form
+<code>require(tx.origin == msg.sender)</code>. This prevents intermediate contracts
+being used to call the current contract, limiting the contract to
+regular codeless addresses.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="contract_libraries_sec">Contract Libraries</h3>
+<div class="paragraph">
+<p>There is a lot of existing code available for reuse, both deployed on-chain as callable libraries and off-chain as code template libraries. On-platform libraries, having been deployed, exist as bytecode smart contracts, so great care should be taken before using them in production. However, using well-established existing on-platform libraries comes with many advantages, such as being able to benefit from the latest upgrades, and saves you money and benefits the Ethereum ecosystem by reducing the total number of live contracts in Ethereum.</p>
+</div>
+<div class="paragraph">
+<p>In Ethereum, the most widely used resource is the <a href="https://openzeppelin.org/">OpenZeppelin suite</a>, an ample library of contracts ranging from implementations of ERC20 and ERC721 tokens, to many flavors of crowdsale models, to simple behaviors commonly found in contracts, such as <code>Ownable</code>, <code>Pausable</code>, or <code>LimitBalance</code>. The contracts in this repository have been extensively tested and in some cases even function as <em>de facto</em> standard implementations. They are free to use, and are built and maintained by <a href="https://zeppelin.solutions">Zeppelin</a> together with an ever-growing list of external contributors.</p>
+</div>
+<div class="paragraph">
+<p>Also from Zeppelin is <a href="https://zeppelinos.org/">ZeppelinOS</a>, an open source platform of services and tools to develop and manage smart contract applications securely. ZeppelinOS provides a layer on top of the EVM that makes it easy for developers to launch upgradeable DApps linked to an on-chain library of well-tested contracts that are themselves upgradeable. Different versions of these libraries can coexist on the Ethereum platform, and a vouching system allows users to propose or push improvements in different directions. A set of off-chain tools to debug, test, deploy, and monitor decentralized applications is also provided by the platform.</p>
+</div>
+<div class="paragraph">
+<p>The project ethpm aims to organize the various resources that are developing in the ecosystem by providing a package management system. As such, their registry provides more examples for you to browse:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Website: <a href="https://www.ethpm.com/" class="bare">https://www.ethpm.com/</a></p>
+</li>
+<li>
+<p>Repository link: <a href="https://www.ethpm.com/registry" class="bare">https://www.ethpm.com/registry</a></p>
+</li>
+<li>
+<p>GitHub link: <a href="https://github.com/ethpm" class="bare">https://github.com/ethpm</a></p>
+</li>
+<li>
+<p>Documentation: <a href="https://www.ethpm.com/docs/integration-guide" class="bare">https://www.ethpm.com/docs/integration-guide</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_conclusions">Conclusions</h3>
+<div class="paragraph">
+<p>There is a lot for any developer working in the smart contract domain to know and understand. By following best practices in your smart contract design and code writing, you will avoid many severe pitfalls and traps.</p>
+</div>
+<div class="paragraph">
+<p>Perhaps the most fundamental software security principle is to maximize reuse of trusted code. In cryptography, this is so important it has been condensed into an adage: "Don&#8217;t roll your own crypto." In the case of smart contracts, this amounts to gaining as much as possible from freely available libraries that have been thoroughly vetted by the community.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2019-02-16 20:57:41 +0900
+</div>
+</div>
+</body>
+</html>
