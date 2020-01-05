@@ -15,6 +15,10 @@ To read this book, open [book.asciidoc](https://github.com/ethereumbook/ethereum
 
 There is no PDF version available. While it is possible to produce one, and you may do so for personal use, please **DO NOT** publish a PDF. The publishers and the authors provide a very generous open license that allows anyone to read this book for free on GitHub. It is not convenient to read that way, but it is free. Convenience, in the form of a nicely packaged PDF, ebook or printed book, is what the publishers charge money for and what pays for the publishers and authors work. Just like buying bottled water instead of drinking from the tap, buying a printed copy, PDF or ebook pays for the packaging. If you publish a PDF copy, you are violating the license, as a PDF is a derivative form and the -ND part of the license means "no derivatives". Doing so makes publishers less likely to publish with open licenses.
 
+## Reading this book
+
+To read this book, see [book.asciidoc](https://github.com/ethereumbook/ethereumbook/blob/develop/book.asciidoc). Click on each of the chapters to read in your browser. Other parties may choose to release PDFs of the book online.
+
 ## Content
 
 The content status is "COMPLETE". The first edition of this book was published on December 1st, 2018. That edition is available in print and ebook format at many popular bookstores. It is tagged ["first_edition_first_print"](https://github.com/ethereumbook/ethereumbook/tree/first_edition_first_print) in the develop branch of this repository.
