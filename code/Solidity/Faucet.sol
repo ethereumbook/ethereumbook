@@ -1,3 +1,6 @@
+// Version of Solidity compiler this program was written for
+pragma solidity 0.5.12;
+
 // Our first contract is a faucet!
 contract Faucet {
 
@@ -12,6 +15,6 @@ contract Faucet {
     }
 
     // Accept any incoming amount
-    function () public payable {}
+    function () external payable {}
 
 }
