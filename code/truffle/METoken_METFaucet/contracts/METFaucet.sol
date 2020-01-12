@@ -29,6 +29,6 @@ contract METFaucet {
     }
 
 	// REJECT any incoming ether
-	function () public payable { revert(); }
+	function () external payable { revert(); }
 
 }
