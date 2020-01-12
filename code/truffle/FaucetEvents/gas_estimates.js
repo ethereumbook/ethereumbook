@@ -16,6 +16,6 @@ FaucetContract.web3.eth.getGasPrice(function(error, result) {
 
         console.log("gas estimation = " + gas + " units");
         console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
-        console.log("gas cost estimation = " + FaucetContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+        console.log("gas cost estimation = " + FaucetContract.web3.utils.fromWei((gas * gasPrice), 'ether') + " ether");
     });
 });
