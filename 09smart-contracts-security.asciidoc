@@ -68,7 +68,7 @@ contract EtherStore {
     mapping(address => uint256) public lastWithdrawTime;
     mapping(address => uint256) public balances;
 
-    function depositFunds() public payable {
+    function depositFunds() external payable {
         balances[msg.sender] += msg.value;
     }
 
@@ -111,7 +111,7 @@ contract Attack {
       etherStore = EtherStore(_etherStoreAddress);
   }
 
-  function attackEtherStore() public payable {
+  function attackEtherStore() external payable {
       // attack to the nearest ether
       require(msg.value >= 1 ether);
       // send eth to the depositFunds() function
@@ -223,7 +223,7 @@ contract EtherStore {
     mapping(address => uint256) public lastWithdrawTime;
     mapping(address => uint256) public balances;
 
-    function depositFunds() public payable {
+    function depositFunds() external payable {
         balances[msg.sender] += msg.value;
     }
 
@@ -307,7 +307,7 @@ contract TimeLock {
     mapping(address => uint) public balances;
     mapping(address => uint) public lockTime;
 
-    function deposit() public payable {
+    function deposit() external payable {
         balances[msg.sender] += msg.value;
         lockTime[msg.sender] = now + 1 weeks;
     }
@@ -445,7 +445,7 @@ contract TimeLock {
     mapping(address => uint256) public balances;
     mapping(address => uint256) public lockTime;
 
-    function deposit() public payable {
+    function deposit() external payable {
         balances[msg.sender] = balances[msg.sender].add(msg.value);
         lockTime[msg.sender] = now.add(1 weeks);
     }
@@ -564,7 +564,7 @@ contract EtherGame {
 
     mapping(address => uint) redeemableEther;
     // Users pay 0.5 ether. At specific milestones, credit their accounts.
-    function play() public payable {
+    function play() external payable {
         require(msg.value == 0.5 ether); // each play is 0.5 ether
         uint currentBalance = this.balance + msg.value;
         // ensure no players after the game has finished
@@ -646,7 +646,7 @@ contract EtherGame {
 
     mapping (address => uint) redeemableEther;
 
-    function play() public payable {
+    function play() external payable {
         require(msg.value == 0.5 ether);
         uint currentBalance = depositedWei + msg.value;
         // ensure no players after the game has finished
@@ -774,7 +774,7 @@ contract FibonacciBalance {
     bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
 
     // constructor - loads the contract with ether
-    constructor(address _fibonacciLibrary) public payable {
+    constructor(address _fibonacciLibrary) external payable {
         fibonacciLibrary = _fibonacciLibrary;
     }
 
@@ -1487,7 +1487,7 @@ contract Private_Bank
         }
     }
 
-    function() public payable{}
+    function() external payable{}
 
 }
 
@@ -1800,7 +1800,7 @@ contract FindThisHash {
     bytes32 constant public hash =
       0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
 
-    constructor() public payable {} // load with ether
+    constructor() external payable {} // load with ether
 
     function solve(string solution) public {
         // If you can find the pre-image of the hash, receive 1000 ether
@@ -1940,7 +1940,7 @@ contract DistributeTokens {
 
     // ... extra functionality, including transfertoken()
 
-    function invest() public payable {
+    function invest() external payable {
         investors.push(msg.sender);
         investorTokens.push(msg.value * 5); // 5 times the wei sent
         }
@@ -2078,10 +2078,10 @@ would be vulnerable to miner exploitation.
 contract Roulette {
     uint public pastBlockTime; // forces one bet per block
 
-    constructor() public payable {} // initially fund contract
+    constructor() external payable {} // initially fund contract
 
     // fallback function used to make a bet
-    function () public payable {
+    function () external payable {
         require(msg.value == 10 ether); // must send 10 ether to play
         require(now != pastBlockTime); // only 1 transaction per block
         pastBlockTime = now;
@@ -2379,7 +2379,7 @@ contract FunWithNumbers {
     uint constant public weiPerEth = 1e18;
     mapping(address => uint) public balances;
 
-    function buyTokens() public payable {
+    function buyTokens() external payable {
         // convert wei to eth, then multiply by token rate
         uint tokens = msg.value/weiPerEth*tokensPerEth;
         balances[msg.sender] += tokens;
@@ -2490,7 +2490,7 @@ contract Phishable {
         owner = _owner;
     }
 
-    function () public payable {} // collect ether
+    function () external payable {} // collect ether
 
     function withdrawAll(address _recipient) public {
         require(tx.origin == owner);
