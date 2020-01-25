@@ -9,7 +9,7 @@ import "./ERC721.sol";
  * @dev Use ERC721 for interacting with new contracts which are standard-compliant
  */
 contract DeprecatedERC721 is ERC721 {
-   function takeOwnership(uint256 _tokenId) public;
-   function transfer(address _to, uint256 _tokenId) public;
-   function tokensOf(address _owner) public view returns (uint256[]);
+    function takeOwnership(uint256 _tokenId) public;
+    function transfer(address _to, uint256 _tokenId) public;
+    function tokensOf(address _owner) public view returns (uint256[]);
 }
