@@ -1,5 +1,7 @@
 pragma solidity ^0.4.17;
+
 import "./ERC721/ERC721Token.sol";
+
 
 /**
  * @title Repository of ERC721 Deeds
@@ -8,7 +10,12 @@ import "./ERC721/ERC721Token.sol";
  * to the repository.
  */
 contract DeedRepository is ERC721Token {
-
+    /**
+    * @dev Event is triggered if deed/token is registered
+    * @param _by address of the registrar
+    * @param _tokenId uint256 represents a specific deed
+    */
+    event DeedRegistered(address _by, uint256 _tokenId);
 
     /**
     * @dev Created a DeedRepository with a name and symbol
@@ -36,15 +43,8 @@ contract DeedRepository is ERC721Token {
     * @param _uri text which describes the characteristics of a given deed
     * @return whether the deed metadata was added to the repository
     */
-    function addDeedMetadata(uint256 _tokenId, string _uri) public returns(bool){
+    function addDeedMetadata(uint256 _tokenId, string _uri) public returns (bool) {
         _setTokenURI(_tokenId, _uri);
         return true;
     }
-
-    /**
-    * @dev Event is triggered if deed/token is registered
-    * @param _by address of the registrar
-    * @param _tokenId uint256 represents a specific deed
-    */
-    event DeedRegistered(address _by, uint256 _tokenId);
 }
