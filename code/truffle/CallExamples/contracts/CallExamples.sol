@@ -1,34 +1,37 @@
 pragma solidity ^0.4.22;
 
-contract calledContract {
-	event callEvent(address sender, address origin, address from);
-	function calledFunction() public {
-		emit callEvent(msg.sender, tx.origin, this);
-	}
+library CalledLibrary {
+    event CallEvent(address sender, address origin,  address from);
+    
+    function calledFunction() public {
+        emit CallEvent(msg.sender, tx.origin, this);
+    }
 }
 
-library calledLibrary {
-	event callEvent(address sender, address origin,  address from);
-	function calledFunction() public {
-		emit callEvent(msg.sender, tx.origin, this);
-	}
+
+contract CalledContract {
+    event CallEvent(address sender, address origin, address from);
+    
+    function calledFunction() public {
+        emit CallEvent(msg.sender, tx.origin, this);
+    }
 }
 
-contract caller {
 
-	function make_calls(calledContract _calledContract) public {
+contract Caller {
+    function make_calls(CalledContract _calledContract) public {
+        // Calling calledContract and calledLibrary directly
+        _calledContract.calledFunction();
 
-		// Calling calledContract and calledLibrary directly
-		_calledContract.calledFunction();
-		calledLibrary.calledFunction();
+        CalledLibrary.calledFunction();
 
-		// Low-level calls using the address object for calledContract
-		require(address(_calledContract).
-		        call(bytes4(keccak256("calledFunction()"))));
-		require(address(_calledContract).
-		        delegatecall(bytes4(keccak256("calledFunction()"))));
+        // Low-level calls using the address object for calledContract
+        require(
+            address(_calledContract).call(bytes4(keccak256("calledFunction()")))
+        );
 
-
-
-	}
+        require(
+            address(_calledContract).delegatecall(bytes4(keccak256("calledFunction()")))
+        );
+    }
 }
