@@ -6,29 +6,25 @@ import 'openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 
 // A faucet for ERC20 token MET
 contract METFaucet {
+    StandardToken public METoken;
+    address public METOwner;
 
-	StandardToken public METoken;
-	address public METOwner;
+    // REJECT any incoming ether
+    function () external payable { revert(); }
 
-	// METFaucet constructor, provide the address of METoken contract and
-	// the owner address we will be approved to transferFrom
-	function METFaucet(address _METoken, address _METOwner) public {
-
-		// Initialize the METoken from the address provided
-		METoken = StandardToken(_METoken);
-		METOwner = _METOwner;
-	}
-
-	function withdraw(uint withdraw_amount) public {
-
-    	// Limit withdrawal amount to 10 MET
-    	require(withdraw_amount <= 1000);
-
-		// Use the transferFrom function of METoken
-		METoken.transferFrom(METOwner, msg.sender, withdraw_amount);
+    // METFaucet constructor, provide the address of METoken contract and
+    // the owner address we will be approved to transferFrom
+    function METFaucet(address _METoken, address _METOwner) public {
+        // Initialize the METoken from the address provided
+        METoken = StandardToken(_METoken);
+        METOwner = _METOwner;
     }
 
-	// REJECT any incoming ether
-	function () external payable { revert(); }
+    function withdraw(uint withdraw_amount) public {
+        // Limit withdrawal amount to 10 MET
+        require(withdraw_amount <= 1000);
 
+        // Use the transferFrom function of METoken
+        METoken.transferFrom(METOwner, msg.sender, withdraw_amount);
+    }
 }
