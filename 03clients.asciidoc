@@ -161,7 +161,7 @@ Before we get started, you may need to install some software. If you've never do
 
 ((("git")))Git can be installed by following the instructions at https://git-scm.com[].
 
-((("Go", seealso="Geth (Go-Ethereum)")))Go can be installed by following the instructions at https://golang.org[].
+((("Go", seealso="Geth (Go-Ethereum)")))Go can be installed by following the instructions at https://golang.org[], or https://github.com/golang/go/wiki/Ubuntu[] if you are using Ubuntu.
 
 [NOTE]
 =====
@@ -273,7 +273,7 @@ Great! Now that Parity is installed, you can sync the blockchain and get started
 
 * https://github.com/ethereum/go-ethereum[Ethereum] (or https://geth.ethereum.org/)
 
-* https://github.com/ethereumproject/go-ethereum[Ethereum Classic]
+* https://github.com/etclabscore/go-ethereum[Ethereum Classic]
 
 * https://github.com/ellaism/go-ellaism[Ellaism]
 
@@ -306,12 +306,10 @@ You should see a progress report as the repository is copied to your local syste
 [[cloning_status]]
 ----
 Cloning into 'go-ethereum'...
-remote: Counting objects: 62587, done.
-remote: Compressing objects: 100% (26/26), done.
-remote: Total 62587 (delta 10), reused 13 (delta 4), pack-reused 62557
-Receiving objects: 100% (62587/62587), 84.51 MiB | 1.40 MiB/s, done.
-Resolving deltas: 100% (41554/41554), done.
-Checking connectivity... done.
+remote: Enumerating objects: 86915, done.
+remote: Total 86915 (delta 0), reused 0 (delta 0), pack-reused 86915
+Receiving objects: 100% (86915/86915), 134.73 MiB | 29.30 MiB/s, done.
+Resolving deltas: 100% (57590/57590), done.
 ----
 
 Great! Now that you have a local copy of Geth, you can compile an executable for your platform.
@@ -355,12 +353,12 @@ Let's make sure +geth+ works without actually starting it running:
 $ <strong>./build/bin/geth version</strong>
 
 Geth
-Version: 1.6.6-unstable
-Git Commit: 58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c
+Version: 1.9.11-unstable
+Git Commit: 0b284f6c6cfc6df452ca23f9454ee16a6330cb8e
+Git Commit Date: 20200123
 Architecture: amd64
-Protocol Versions: [63 62]
-Network Id: 1
-Go Version: go1.8.3
+Protocol Versions: [64 63]
+Go Version: go1.13.4
 Operating System: linux
 [...]
 </pre>
@@ -368,15 +366,15 @@ Operating System: linux
 
 Your +geth version+ command may show slightly different information, but you should see a version report much like the one seen here.
 
-Don't run +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks).(((range="endofrange", startref="ix_03clients-asciidoc8")))(((range="endofrange", startref="ix_03clients-asciidoc7"))) The next sections explains the challenge with the initial synchronization of Ethereum's blockchain(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
+The next sections explains the challenge with the initial synchronization of Ethereum's blockchain(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
 
 
 [[first_sync]]
 === The First Synchronization of Ethereum-Based Blockchains
 
-((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange")))Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the very start&#x2014;i.e., from the genesis block.
+((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange")))Traditionally, when syncing an Ethereum blockchain, your client would download and validate every block and every transaction since the very start&#x2014;i.e., from the genesis block.
 
-While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high resource requirements (it will need much more RAM, and will take a very long time indeed if you don't have fast storage).
+While it is possible to fully sync the blockchain this way, this type of sync will take a very long time and has high resource requirements (it will need much more RAM, and will take a very long time indeed if you don't have fast storage).
 
 Many Ethereum-based blockchains were the victim of denial-of-service attacks at the end of 2016. Affected blockchains will tend to sync slowly when doing a full sync.
 
@@ -384,11 +382,11 @@ For example, on Ethereum, a new client will make rapid progress until it reaches
 
 If you are syncing with full validation, your client will slow down and may take several days, or perhaps even longer, to validate the blocks affected by the DoS attacks.
 
-((("fast synchronization")))Fortunately, most Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
+((("fast synchronization")))Fortunately, most Ethereum clients by default now perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
 
-For Geth, the option to enable fast synchronization is typically called +--fast+. You may need to refer to the specific instructions for your chosen Ethereum chain.
+Geth performs fast synchronization by default for Ethereum. You may need to refer to the specific instructions for other chosen Ethereum chain.
 
-Parity does fast synchronization by default.
+Parity also does fast synchronization by default.
 
 [NOTE]
 =====
@@ -397,7 +395,7 @@ Geth can only operate fast synchronization when starting with an empty block dat
 
 ==== Running Geth or Parity
 
-((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Now that you understand the challenges of the "first sync," you're ready to start an Ethereum client and sync the blockchain. For both Geth and Parity, you can use the +--help+ option to see all the configuration parameters. Other than using +--fast+ for Geth, as outlined in the previous section, the default settings are usually sensible and appropriate for most uses. Choose how to configure any optional parameters to suit your needs, then start Geth or Parity to sync the chain. Then wait...
+((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Now that you understand the challenges of the "first sync," you're ready to start an Ethereum client and sync the blockchain. For both Geth and Parity, you can use the +--help+ option to see all the configuration parameters. The default settings are usually sensible and appropriate for most uses. Choose how to configure any optional parameters to suit your needs, then start Geth or Parity to sync the chain. Then wait...
 
 [TIP]
 ====
@@ -411,7 +409,7 @@ Syncing the Ethereum blockchain will take anywhere from half a day on a very fas
 
 Usually, the RPC interface is offered as an HTTP service on port 8545. For security reasons it is restricted, by default, to only accept connections from localhost (the IP address of your own computer, which is 127.0.0.1).
 
-To access the JSON-RPC API, you can use a specialized library (written in the programming language of your choice) that provides "stub" function calls corresponding to each available RPC command, or you can manually construct HTTP requests and send/receive JSON-encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth configured and running, then switch to a new terminal window (e.g., with Ctrl-Shift-N or Ctrl-Shift-T in an existing terminal window) as shown here:
+To access the JSON-RPC API, you can use a specialized library (written in the programming language of your choice) that provides "stub" function calls corresponding to each available RPC command, or you can manually construct HTTP requests and send/receive JSON-encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth up and running, configured with --rpc to allow HTTP access to the RPC interface, then switch to a new terminal window (e.g., with Ctrl-Shift-N or Ctrl-Shift-T in an existing terminal window) as shown here:
 
 ++++
 <pre data-type="programlisting">
@@ -420,7 +418,7 @@ $ <strong>curl -X POST -H "Content-Type: application/json" --data \
   http://localhost:8545</strong>
 
 {"jsonrpc":"2.0","id":1,
-"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
 </pre>
 ++++
 
@@ -451,10 +449,10 @@ The response we receive is:
 
 ----
 {"jsonrpc":"2.0","id":1,
-"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
 ----
 
-This tells us that the JSON-RPC API is being served by Geth client version 1.8.0.
+This tells us that the JSON-RPC API is being served by Geth client version 1.13.4.
 
 Let's try something a bit more interesting. In the next example, we ask the JSON-RPC API for the current price of gas in wei:
 
