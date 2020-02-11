@@ -1,5 +1,5 @@
 // Version of Solidity compiler this program was written for
-pragma solidity ^0.4.22;
+pragma solidity 0.6.2;
 
 contract Owned {
     address owner;
@@ -25,7 +25,7 @@ contract Mortal is Owned {
 
 contract Faucet is Mortal {
     // Accept any incoming amount
-    function () external payable {}
+    receive() external payable {}
 
     // Give out ether to anyone who asks
     function withdraw(uint withdraw_amount) public {

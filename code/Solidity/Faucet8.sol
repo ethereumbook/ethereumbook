@@ -1,5 +1,5 @@
 // Version of Solidity compiler this program was written for
-pragma solidity ^0.4.22;
+pragma solidity 0.6.2;
 
 contract Owned {
     address owner;
@@ -28,7 +28,7 @@ contract Faucet is Mortal {
     event Deposit(address indexed from, uint amount);
 
     // Accept any incoming amount
-    function () external payable {
+    receive() external payable {
         emit Deposit(msg.sender, msg.value);
     }
 
