@@ -6,7 +6,7 @@ contract Faucet {
     address owner;
 
     // Contract constructor: set owner
-    constructor() {
+    constructor() public {
         owner = msg.sender;
     }
 
