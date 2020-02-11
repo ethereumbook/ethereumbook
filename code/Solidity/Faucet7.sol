@@ -33,7 +33,7 @@ contract Faucet is Mortal {
         require(withdraw_amount <= 0.1 ether);
 
         require(
-            this.balance >= withdraw_amount,
+            address(this).balance >= withdraw_amount,
             "Insufficient balance in faucet for withdrawal request"
         );
 
