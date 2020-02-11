@@ -3,7 +3,7 @@ pragma solidity 0.6.2;
 
 // Our first contract is a faucet!
 contract Faucet {
-    address owner;
+    address payable owner;
 
     // Contract constructor: set owner
     constructor() public {

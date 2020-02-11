@@ -2,7 +2,7 @@
 pragma solidity 0.6.2;
 
 contract Owned {
-    address owner;
+    address payable owner;
 
     // Contract constructor: set owner
     constructor() public {
