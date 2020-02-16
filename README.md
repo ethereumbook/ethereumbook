@@ -9,14 +9,6 @@ Mastering Ethereum is a book for developers, offering a guide to the operation a
 
 ## Reading this book
 
-To read this book, open [book.asciidoc](https://github.com/ethereumbook/ethereumbook/tree/develop/book.asciidoc) and click on each chapter.
-
-## PDF Version
-
-There is no PDF version available. While it is possible to produce one, and you may do so for personal use, please **DO NOT** publish a PDF. The publishers and the authors provide a very generous open license that allows anyone to read this book for free on GitHub. It is not convenient to read that way, but it is free. Convenience, in the form of a nicely packaged PDF, ebook or printed book, is what the publishers charge money for and what pays for the publishers and authors work. Just like buying bottled water instead of drinking from the tap, buying a printed copy, PDF or ebook pays for the packaging. If you publish a PDF copy, you are violating the license, as a PDF is a derivative form and the -ND part of the license means "no derivatives". Doing so makes publishers less likely to publish with open licenses.
-
-## Reading this book
-
 To read this book, see [book.asciidoc](https://github.com/ethereumbook/ethereumbook/blob/develop/book.asciidoc). Click on each of the chapters to read in your browser. Other parties may choose to release PDFs of the book online.
 
 ## Content
@@ -29,10 +21,12 @@ At this time, **only bug fix requests are accepted**. If you find a bug, start a
 
 The [first edition](https://github.com/ethereumbook/ethereumbook/tree/first_edition_first_print) of this book, as printed and sold by O'Reilly Media, is available in this repository.
 
-Mastering Ethereum is released under the Creative Commons CC-BY-NC-ND license, which allows sharing the source code for personal use only. You may read this book for free. You may not create derivatives (such as PDF copies), or distribute the book commercially. The full terms of the license can be found here:
+Mastering Ethereum is released under the *Creative Commons CC-BY-SA license*.
 
-[![Creative Commons License](https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+This "Free Culture" compliant license was approved by our publisher O'Reilly Media (http://oreilly.com), who understands the value of open source. O'Reilly Media is not just the world's best publisher of technical books, but is also a strong supporter of this open culture and the sharing of knowledge.
 
-<span xmlns:dct="http://purl.org/dc/terms/" property="dct:title">Mastering Ethereum</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://antonopoulos.com/" property="cc:attributionName" rel="cc:attributionURL">The Ethereum Book LLC and Gavin Wood</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License</a>.
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Text" property="dct:title" rel="dct:type">Mastering Ethereum</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://ethereumbook.info" property="cc:attributionName" rel="cc:attributionURL">Andreas M. Antonopoulos, Gavin Wood</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.<br />Based on a work at <a xmlns:dct="http://purl.org/dc/terms/" href="https://github.com/ethereumbook/ethereumbook" rel="dct:source">https://github.com/ethereumbook/ethereumbook</a>.
 
-It is expected that the book will be released under a more permissive CC-BY-SA license within a year of publication.
+# Translate This Book!
+
+If you are interested in translating this book, please join our team of volunteers at: https://www.transifex.com/aantonop/ethereumbook
