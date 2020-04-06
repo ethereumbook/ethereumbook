@@ -78,7 +78,7 @@ To get started, we will download a binary executable of the Solidity compiler. T
 
 ((("semantic versioning")))((("Solidity","selecting version of")))Solidity follows a versioning model called https://semver.org/[_semantic versioning_], which specifies version numbers structured as three numbers separated by dots: __++MAJOR.MINOR.PATCH++__. The "major" number is incremented for major and _backward-incompatible_ changes, the "minor" number is incremented as backward-compatible features are added in between major releases, and the "patch" number is incremented for backward-compatible bug fixes.
 
-At the time of writing, Solidity is at version 0.4.24.  The rules for major version 0, which is for initial development of a project, are different: anything may change at any time. In practice, Solidity treats the "minor" number as if it were the major version and the "patch" number as if it were the minor version. Therefore, in 0.4.24, 4 is considered to be the major version and 24 the minor version.
+At the time of writing, Solidity is at version 0.6.4.  The rules for major version 0, which is for initial development of a project, are different: anything may change at any time. In practice, Solidity treats the "minor" number as if it were the major version and the "patch" number as if it were the minor version. Therefore, in 0.6.4, 6 is considered to be the major version and 4 the minor version.
 
 The 0.5 major version release of Solidity is anticipated imminently.
 
@@ -444,7 +444,7 @@ First, our constructor:
 [source,solidity]
 ----
 // Version of Solidity compiler this program was written for
-pragma solidity ^0.4.22;
+pragma solidity ^0.6.0;
 
 // Our first contract is a faucet!
 contract Faucet {
@@ -459,7 +459,7 @@ contract Faucet {
 [...]
 ----
 
-We've changed the pragma directive to specify v0.4.22 as the minimum version for this example, as we are using the new +constructor+ keyword introduced in v0.4.22 of Solidity. Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
+Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
 
 Next, our constructor, which runs as part of the contract creation transaction, assigns the address from +msg.sender+ to the +owner+ variable. We used +msg.sender+ in the pass:[<span class="keep-together"><code>withdraw</code></span>] function to identify the initiator of the withdrawal request. In the constructor, however, the +msg.sender+ is the EOA or contract address that initiated contract creation. We know this is the case _because_ this is a constructor function: it only runs once, during contract creation.
 
@@ -534,11 +534,11 @@ Contract inheritance allows us to write our contracts in such a way as to achiev
 
 In our +Faucet+ contract, we introduced the constructor and destructor, together with access control for an owner, assigned on construction. Those capabilities are quite generic: many contracts will have them. We can define them as generic contracts, then use inheritance to extend them to the +Faucet+ contract.
 
-We start by defining a base contract +owned+, which has an +owner+ variable, setting it in the contract's constructor:
+We start by defining a base contract +Owned+, which has an +owner+ variable, setting it in the contract's constructor:
 
 [source,solidity]
 ----
-contract owned {
+contract Owned {
 	address owner;
 
 	// Contract constructor: set owner
@@ -554,11 +554,11 @@ contract owned {
 }
 ----
 
-Next, we define a base contract +mortal+, which inherits +owned+:
+Next, we define a base contract +Mortal+, which inherits +Owned+:
 
 [source,solidity]
 ----
-contract mortal is owned {
+contract Mortal is Owned {
 	// Contract destructor
 	function destroy() public onlyOwner {
 		selfdestruct(owner);
@@ -566,13 +566,13 @@ contract mortal is owned {
 }
 ----
 
-As you can see, the +mortal+ contract can use the +onlyOwner+ function modifier, defined in +owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +owned+. Inheritance makes each contract simpler and focused on its specific functionality, allowing us to manage the details in a modular way.
+As you can see, the +Mortal+ contract can use the +onlyOwner+ function modifier, defined in +Owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +Owned+. Inheritance makes each contract simpler and focused on its specific functionality, allowing us to manage the details in a modular way.
 
 Now we can further extend the +owned+ contract, inheriting its capabilities in +Faucet+:
 
 [source,solidity]
 ----
-contract Faucet is mortal {
+contract Faucet is Mortal {
     // Give out ether to anyone who asks
     function withdraw(uint withdraw_amount) public {
         // Limit withdrawal amount
@@ -581,11 +581,11 @@ contract Faucet is mortal {
         msg.sender.transfer(withdraw_amount);
     }
     // Accept any incoming amount
-    function () external payable {}
+    receive () external payable {}
 }
 ----
 
-By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
+By inheriting +Mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
 
 ==== Error Handling (assert, require, revert)
 
@@ -604,7 +604,7 @@ require(msg.sender == owner);
 
 The +require+ function acts as a _gate condition_, preventing execution of the rest of the function and producing an error if it is not satisfied.
 
-As of Solidity v0.4.22, +require+ can also include a helpful text message that can be used to show the reason for the error. The error message is recorded in the transaction log. So, we can improve our code by adding an error message in our +require+ function:
+As of Solidity v0.6.0, +require+ can also include a helpful text message that can be used to show the reason for the error. The error message is recorded in the transaction log. So, we can improve our code by adding an error message in our +require+ function:
 
 [source,solidity]
 ----
@@ -665,7 +665,7 @@ function withdraw(uint withdraw_amount) public {
     emit Withdrawal(msg.sender, withdraw_amount);
 }
 // Accept any incoming amount
-function () external payable {
+receive () external payable {
     emit Deposit(msg.sender, msg.value);
 }
 ----
