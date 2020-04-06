@@ -175,12 +175,11 @@ We use the +solc+ command-line Solidity compiler to produce the ABI for our pass
 ++++
 <pre data-type="programlisting">
 $ <strong>solc --abi Faucet.sol</strong>
-======= Faucet.sol:Faucet =======
+======= code/Solidity/Faucet.sol:Faucet =======
 Contract JSON ABI
-[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}], \
-"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable", \
-"type":"function"},{"payable":true,"stateMutability":"payable", \
-"type":"fallback"}]
+[{"inputs":[{"internalType":"uint256","name":"withdraw_amount","type":"uint256"}], \
+"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}, \
+{"stateMutability":"payable","type":"receive"}]
 </pre>
 ++++
 
@@ -191,16 +190,16 @@ All that is needed for an application to interact with a contract is an ABI and 
 [[solidity_pragma]]
 ==== Selecting a Solidity Compiler and Language Version
 
-((("Solidity","selecting compiler and language version")))As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.4.19 and we tried to compile it with 0.4.18?
+((("Solidity","selecting compiler and language version")))As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.6.4. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.6.1 and we tried to compile it with 0.6.0?
 
 ((("compiler directive")))((("version pragma")))To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
 
 [[compiler_version]]
 ----
-pragma solidity ^0.4.19;
+pragma solidity ^0.6.0;
 ----
 
-The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of 0.4.19. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above 0.4.19; e.g., 0.4.20, but not 0.5.0 (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
+The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of 0.6.0. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above 0.6.0; e.g., 0.6.1, but not 0.7.0 (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
 
 Let’s add a pragma directive to our +Faucet+ contract. We will name the new file pass:[<span class="keep-together"><em>Faucet2.sol</em></span>], to keep track of our changes as we proceed through these examples starting in <<add_pragma_to_faucet>>.
 
