@@ -175,7 +175,7 @@ We use the +solc+ command-line Solidity compiler to produce the ABI for our pass
 ++++
 <pre data-type="programlisting">
 $ <strong>solc --abi Faucet.sol</strong>
-======= code/Solidity/Faucet.sol:Faucet =======
+======= Faucet.sol:Faucet =======
 Contract JSON ABI
 [{"inputs":[{"internalType":"uint256","name":"withdraw_amount","type":"uint256"}], \
 "name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}, \
@@ -568,7 +568,7 @@ contract Mortal is Owned {
 
 As you can see, the +Mortal+ contract can use the +onlyOwner+ function modifier, defined in +Owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +Owned+. Inheritance makes each contract simpler and focused on its specific functionality, allowing us to manage the details in a modular way.
 
-Now we can further extend the +owned+ contract, inheriting its capabilities in +Faucet+:
+Now we can further extend the +Owned+ contract, inheriting its capabilities in +Faucet+:
 
 [source,solidity]
 ----
@@ -585,7 +585,7 @@ contract Faucet is Mortal {
 }
 ----
 
-By inheriting +Mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
+By inheriting +Mortal+, which in turn inherits +Owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
 
 ==== Error Handling (assert, require, revert)
 
@@ -644,7 +644,7 @@ Event objects take arguments that are serialized and recorded in the transaction
 
 [source,solidity]
 ----
-contract Faucet is mortal {
+contract Faucet is Mortal {
 	event Withdrawal(address indexed to, uint amount);
 	event Deposit(address indexed from, uint amount);
 
@@ -750,7 +750,7 @@ Events are a very useful mechanism, not only for intra-contract communication, b
 [role="pagebreak-before"]
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
 	constructor() {
@@ -765,7 +765,7 @@ This mechanism for contract construction ensures that you know the exact type of
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
 	constructor() {
@@ -780,7 +780,7 @@ You can optionally specify the +value+ of ether transfer on creation, and pass a
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
 	constructor() {
@@ -795,7 +795,7 @@ You can also then call the +Faucet+ functions. In this example, we call the +des
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
 	constructor() {
@@ -818,7 +818,7 @@ Note that while you are the owner of the +Token+ contract, the +Token+ contract 
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 
 	Faucet _faucet;
 
@@ -839,7 +839,7 @@ Solidity offers some even more "low-level" functions for calling other contracts
 
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	constructor(address _faucet) {
 		_faucet.call("withdraw", 0.1 ether);
 	}
@@ -850,7 +850,7 @@ contract Token is mortal {
 
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	constructor(address _faucet) {
 		if !(_faucet.call("withdraw", 0.1 ether)) {
 			revert("Withdrawal from faucet failed");
