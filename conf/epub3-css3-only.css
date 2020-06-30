@@ -1,0 +1,313 @@
+/* Gitden & Namo default to 16px font-size; bump it to 20px (125%) */
+body.gitden-reader,
+body.namo-epub-library {
+  font-size: 125%;
+}
+
+/* Gitden doesn't give us much margin, so let's match Kindle */
+body.gitden-reader {
+  margin: 0 25pt;
+}
+
+/* Namo has the same margin problem, except setting side margins doesn't work */
+/*body.namo-epub-library > section.chapter {
+  margin: 0 25pt;
+}*/
+
+/* Use tighter margins and smaller font (18px) on phones (Nexus 4 and smaller) */
+@media only screen and (max-device-width: 768px) and (max-device-height: 1280px),
+only screen and (max-device-width: 1280px) and (max-device-height: 768px) {
+  body.gitden-reader,
+  body.namo-epub-library {
+    font-size: 112.5%;
+  }
+
+  body.gitden-reader {
+    margin: 0 5pt;
+  }
+
+  /*body.namo-epub-library > section.chapter {
+    margin: 0 5pt;
+  }*/
+}
+
+body h1, body h2, body h3:not(.list-heading), body h4, body h5, body h6,
+h1 :not(code), h2 :not(code), h3:not(.list-heading) :not(code), h4 :not(code), h5 :not(code), h6 :not(code) {
+  /* !important required to override custom font setting in Kindle / Gitden / Namo */
+  /* Gitden requires the extra weight of a parent selector; it also makes headings bold when custom font is specified */
+  /* Kindle and Gitden require the override on heading child elements */
+  font-family: "M+ 1p", sans-serif !important;
+}
+
+/* QUESTION what about nested elements inside code? */
+body code, body kbd, body pre, pre :not(code) {
+  /* !important required to override custom font setting in Kindle / Gitden / Namo */
+  /* Gitden requires the extra weight of a parent selector */
+  /* Kindle and Gitden require the override on pre child elements */
+  font-family: "M+ 1mn", monospace !important;
+}
+
+@media amzn-kf8 {
+  /* Kindle does its own margin management, so don't use an explicit margin */
+  /*body {
+    margin: 0 !important;
+  }*/
+
+  /* text-rendering is the only way to enable kerning in Kindle (and Calibre, though it seems to kern automatically) */
+  /* personally, I think Kindle overdoes kerning, but we're running with it for now */
+  /* text-rendering: optimizeLegibility kills certain Kindle eInk devices */
+  /*h1, h2, h3, h4, h5, h6,
+  body p, li, dd, blockquote > footer,
+  th, td, figcaption, caption {
+    text-rendering: optimizeLegibility;
+  }*/
+
+  /* hack line height of subtitle using floats on Kindle */
+  h1.chapter-title .subtitle {
+    margin-top: -0.2em;
+    margin-bottom: 0.3em; /* compensate for reduced line height */
+  }
+
+  /* NOTE using b instead of span since Firefox ePubReader applies immutable styles to span */
+  h1.chapter-title .subtitle > b {
+    float: left;
+    display: inline-block;
+    margin-bottom: -0.3em; /* reduce the line height */
+    padding-right: 0.2em; /* spacing between words */
+  }
+
+  h1.chapter-title .subtitle > b:last-child {
+    padding-right: 0;
+  }
+
+  h1.chapter-title .subtitle::after {
+    display: table;
+    content: ' ';
+    clear: both;
+  }
+}
+
+.chapter-header p.byline {
+  height: auto; /* Aldiko requires this value to be 0; reset it for all others */
+}
+
+/* Font-based icons */
+.icon {
+  display: inline-block;
+  /* !important required to override custom font setting in Kindle (since .icon can appear inside a span) */
+  font-family: "FontAwesome" !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  line-height: 1;
+}
+
+.icon-1_5x {
+  padding: 0 0.25em;
+  -webkit-transform: scale(1.5, 1.5);
+  transform: scale(1.5, 1.5);
+}
+
+.icon-2x {
+  padding: 0 0.5em;
+  -webkit-transform: scale(2, 2);
+  transform: scale(2, 2);
+}
+
+.icon-small {
+  font-size: 0.85em;
+  vertical-align: 0.075em;
+}
+
+.icon-1_5em {
+  font-size: 1.5em;
+}
+
+.icon-2em {
+  font-size: 2em;
+}
+
+.icon-3em {
+  font-size: 3em;
+}
+
+.icon-4em {
+  font-size: 4em;
+}
+
+.icon-rotate-90 {
+  -webkit-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+.icon-rotate-90i {
+  -webkit-transform: scale(-1, 1) rotate(90deg);
+  transform: scale(-1, 1) rotate(90deg);
+}
+
+.icon-rotate-180 {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+
+.icon-rotate-180i {
+  -webkit-transform: scale(-1, 1) rotate(180deg);
+  transform: scale(-1, 1) rotate(180deg);
+}
+
+.icon-rotate-270 {
+  -webkit-transform: rotate(270deg);
+  transform: rotate(270deg);
+}
+
+.icon-rotate-270i {
+  -webkit-transform: scale(-1, 1) rotate(270deg);
+  transform: scale(-1, 1) rotate(270deg);
+}
+
+.icon-flip-h {
+  -webkit-transform: scale(-1, 1);
+  transform: scale(-1, 1);
+}
+
+.icon-flip-v {
+  -webkit-transform: scale(1, -1);
+  transform: scale(1, -1);
+}
+
+
+aside.admonition {
+  margin-top: 1em;
+  padding: 1em;
+  border-left: 0.5em solid transparent;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* overrides for CSS3-enabled clients */
+aside[class~="admonition"] {
+  margin: 1.5em 2em; /* even if admonition is at bottom of block, we want that extra space below */
+  padding: 0;
+  border-width: 0;
+  background: none !important;
+}
+
+aside.note {
+  border-left-color: #B3B3B1;
+  background-color: #E1E1E1; /* 25% opacity of border */
+}
+
+aside.tip {
+  border-left-color: #57AD68;
+  background-color: #D4EAD9; /* 25% opacity of border */
+}
+
+aside.caution {
+  border-left-color: #666665;
+  background-color: #D8D8D8; /* 25% opacity of border */
+}
+
+aside.warning {
+  border-left-color: #C83737;
+  background-color: #F1CCCC; /* 25% opacity of border */
+}
+
+aside.important {
+  border-left-color: #FFC14F;
+  background-color: #FFEFD2; /* 25% opacity of border */
+}
+
+aside.admonition::before {
+  display: block;
+  font-family: "FontAwesome";
+  font-size: 2em;
+  line-height: 1;
+  width: 1em;
+  text-align: center;
+  margin-bottom: -0.25em;
+  margin-left: -0.5em;
+  text-shadow: 0px 1px 2px rgba(102, 102, 101, 0.3);
+}
+
+aside.admonition > div.content {
+  font-size: 90%;
+  margin-top: -1em; /* prevent at top of content when using block form of admonition */
+}
+
+aside[class~="admonition"] > div[class~="content"] {
+  margin-top: 0;
+  padding-bottom: 1em;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 bottom;
+  /* template
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, <color> 45%, <color> 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, <color> 45%, <color> 55%, rgba(255,255,255,0) 57.5%);
+  */
+}
+
+aside.note::before {
+  /*content: "\f0f4";*/ /* fa-coffee */
+  content: "\f040"; /* fa-pencil */
+  color: #B3B3B1; /* 179,179,177 */
+}
+
+aside[class~="note"] > div[class~="content"] {
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, #B3B3B1 45%, #B3B3B1 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, #B3B3B1 45%, #B3B3B1 55%, rgba(255,255,255,0) 57.5%);
+}
+
+aside.tip::before {
+  /*content: "\f069";*/ /* fa-asterisk */
+  /*content: "\f0d6";*/ /* fa-money */
+  content: "\f15a"; /* fa-bitcoin */
+  color: #57AD68; /* 87,173,104 */
+}
+
+aside[class~="tip"] > div[class~="content"] {
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, #57AD68 45%, #57AD68 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, #57AD68 45%, #57AD68 55%, rgba(255,255,255,0) 57.5%);
+}
+
+aside.caution::before {
+  content: "\f0c2"; /* fa-cloud */
+  color: #666665; /* 102,102,101 */
+}
+
+aside[class~="caution"] > div[class~="content"] {
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, #666665 45%, #666665 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, #666665 45%, #666665 55%, rgba(255,255,255,0) 57.5%);
+}
+
+aside.warning::before {
+  content: "\f0e7"; /* fa-bolt */
+  color: #C83737; /* 200,55,55 */
+}
+
+aside[class~="warning"] > div[class~="content"] {
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, #C83737 45%, #C83737 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, #C83737 45%, #C83737 55%, rgba(255,255,255,0) 57.5%);
+}
+
+aside.important::before {
+  content: "\f12a"; /* fa-exclamation */
+  color: #FFC14F; /* 255,193,79 */
+}
+
+aside[class~="important"] > div[class~="content"] {
+  background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 42.5%, #FFC14F 45%, #FFC14F 55%, rgba(255,255,255,0) 57.5%);
+  background-image: linear-gradient(to right, rgba(255,255,255,0) 42.5%, #FFC14F 45%, #FFC14F 55%, rgba(255,255,255,0) 57.5%);
+}
+
+aside.admonition > h2 {
+  margin-top: 0;
+  margin-bottom: 1.5em;
+  font-size: 1em;
+  text-align: center;
+}
+
+aside[class~="admonition"] > h2 {
+  float: left;
+  width: 100%;
+  margin-top: -1.25em;
+  margin-bottom: 0;
+}
