@@ -12,7 +12,8 @@ console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
 const optionDefinitions = [
   { name: 'localRPC', alias: 'l', type: Boolean },
-  { name: 'infuraFileToken', type: String, defaultOption: true }
+  { name: 'infuraFileToken', type: String, defaultOption: true },
+  { name: 'alchemyFileToken', type: String, defaultOption: true }
 ]
 
 const commandLineArgs = require('command-line-args')
@@ -31,21 +32,32 @@ if (options.infuraFileToken && !options.localRPC) {
   console.log(infura_token);
 
   // Prepare your Infura host url
-  var infura_host = `https://kovan.infura.io/${infura_token}`
+  var node_host = `https://kovan.infura.io/${infura_token}`
+  
+} else if (options.alchemyFileToken && !options.localRPC) {
+  console.log(options.alchemyFileToken);
 
+  // Loading an Alchemy Token from a file
+  var alchemy_token = fs.readFileSync(options.alchemyFileToken, 'utf8');
+
+  // Show your Alchemy token
+  console.log(alchemy_token);
+
+  // Prepare your Alchemy host url
+  var node_host = `https://eth-kovan.alchemyapi.io/v2/${alchemy_token}`
+  
 } else {
-  console.log('Not argument found for infura token');
+  console.log('No argument found for node provider token');
 
-  // Prepare your Infura host url
-  var infura_host = "https://kovan.infura.io"
-
+  // Prepare your Node host url
+  var node_host = "https://kovan.infura.io"
 }
 
-// Show your Infura host url for your web3 connection
-console.log(infura_host);
+// Show your Node host url for your web3 connection
+console.log(node_host);
 
 // Instantiate web3 provider
-var web3 = new Web3(infura_host);
+var web3 = new Web3(node_host);
 
 // Let's do some basic interactions at web3 level
 // Let's see the Protocol Version
