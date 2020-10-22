@@ -10,8 +10,8 @@ console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
 const optionDefinitions = [
   { name: 'localRPC', alias: 'l', type: Boolean },
-  { name: 'infuraFileToken', type: String, defaultOption: true },
-  { name: 'alchemyFileToken', type: String, defaultOption: true }
+  { name: 'infuraFileToken', type: String },
+  { name: 'alchemyFileToken', type: String }
 ]
 
 const commandLineArgs = require('command-line-args')
