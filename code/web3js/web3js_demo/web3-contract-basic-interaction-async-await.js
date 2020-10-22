@@ -7,14 +7,52 @@
 console.log('Mastering Ethereum - web3.js basic interactions using async/await')
 console.log('Author: Francisco Javier Rojas García - fjrojasgarcia@gmail.com')
 
+
+const optionDefinitions = [
+  { name: 'localRPC', alias: 'l', type: Boolean },
+  { name: 'infuraFileToken', type: String, defaultOption: true },
+  { name: 'alchemyFileToken', type: String, defaultOption: true }
+]
+
+const commandLineArgs = require('command-line-args')
+const options = commandLineArgs(optionDefinitions)
+
 var Web3 = require('web3');
 var fs = require('fs')
 
-// Prepare your Infura host url
-var infura_host = "https://kovan.infura.io"
+if (options.infuraFileToken && !options.localRPC) {
+  console.log(options.infuraFileToken);
+
+  // Loading an Infura Token from a file
+  var infura_token = fs.readFileSync(options.infuraFileToken, 'utf8');
+
+  // Show your Infura token
+  console.log(infura_token);
+
+  // Prepare your Infura host url
+  var node_host = `https://kovan.infura.io/${infura_token}`
+  
+} else if (options.alchemyFileToken && !options.localRPC) {
+  console.log(options.alchemyFileToken);
+
+  // Loading an Alchemy Token from a file
+  var alchemy_token = fs.readFileSync(options.alchemyFileToken, 'utf8');
+
+  // Show your Alchemy token
+  console.log(alchemy_token);
+
+  // Prepare your Alchemy host url
+  var node_host = `https://eth-kovan.alchemyapi.io/v2/${alchemy_token}`
+  
+} else {
+  console.log('No argument found for node provider token');
+
+  // Prepare your Node host url
+  var node_host = "https://kovan.infura.io"
+}
 
 // Instantiate web3 provider
-var web3 = new Web3(infura_host);
+var web3 = new Web3(node_host);
 
 // Let's do some basic interactions at web3 level
 async function basicInterations() {
