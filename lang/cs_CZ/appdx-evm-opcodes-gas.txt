@@ -1,0 +1,331 @@
+[appendix]
+[[evm_opcodes]]
+== Instrukce Ethereum EVM a spotřeba plynu
+
+((("EVM (Ethereum Virtual Machine)","opcodes and gas consumption")))((("gas","EVM opcodes and gas consumption")))Tento dodatek je založen na konsolidaci provedené lidmi https://github.com/trailofbits/evm-opcodes jako reference pro instrukční informace Ethereum VM (EVM) licencované podle http://bit.ly/2zfrv0b[Apache License 2.0].
+
+[[evm_opcodes_table]]
+[cols=",,,,",options="header",]
+.EVM instrukce a náklady na plyn
+|=======================================================================================================================================================================================================
+|Instrukce |Název |Popis |Dodatečné informace |Plyn
+|`0x00` |+STOP+ |Zastaví běh |- |0
+
+|`0x01` |+ADD+ |Operace sčítání |- |3
+
+|`0x02` |+MUL+ |Operace násobení |- |5
+
+|`0x03` |+SUB+ |Operace odečítání |- |3
+
+|`0x04` |+DIV+ |Operace celočíselného dělení |- |5
+
+|`0x05` |+SDIV+ |Operace znaménkového celočíselného dělení (oříznutá) |- |5
+
+|`0x06` |+MOD+ |Operace zbytku po celočíselném dělení |- |5
+
+|`0x07` |+SMOD+ |Operace zbytku po znaménkovém celočístelném dělení |- |5
+
+|`0x08` |+ADDMOD+ |Operace sčítání následovaná zbytkem po dělení |- |8
+
+|`0x09` |+MULMOD+ |Operace násobení následovaná zbytkem po dělení |- |8
+
+|`0x0a` |+EXP+ |Operace mocnění |- |10***
+
+|`0x0b` |+SIGNEXTEND+ |Dvojkový doplněk znaménkového celého čísla prodloužené délky |- |5
+
+|`0x0c` - `0x0f` |Nepoužito |Nepoužito |- |
+
+|`0x10` |+LT+ |Porovnání menší než |- |3
+
+|`0x11` |+GT+ |Porovnání větší než |- |3
+
+|`0x12` |+SLT+ |Znaménkové porovnání menší než |- |3
+
+|`0x13` |+SGT+ |Znaménkové porovnání větší než |- |3
+
+|`0x14` |+EQ+ |Porovnání na rovnost |- |3
+
+|`0x15` |+ISZERO+ |Jednoduchý operátor negace NOT |- |3
+
+|`0x16` |+AND+ |Operace bitové konjunkce AND |- |3
+
+|`0x17` |+OR+ |Operace bitové disjunkce OR |- |3
+
+|`0x18` |+XOR+ |Operace bitové exkluzivní disjunkce XOR |- |3
+
+|`0x19` |+NOT+ |Operace bitové negace NOT |- |3
+
+|`0x1a` |+BYTE+ |Načte jeden bajt ze slova |- |3
+
+|`0x1b` - `0x1f` |Nepoužito |Nepoužito |- |
+
+|`0x20` |+SHA3+ |Spočte Keccak-256 haš |- |30
+
+|`0x21` - `0x2f` |Nepoužito |Nepoužito |- |
+
+|`0x30` |+ADDRESS+ |Vrátí adresu právě prováděného účtu |- |2
+
+|`0x31` |+BALANCE+ |Vrátí zůstatek daného účtu |- |400
+
+|`0x32` |+ORIGIN+ |Vrátí adresu tvůrce transakce |- |2
+
+|`0x33` |+CALLER+ |Vrátí adresu volajícího |- |2
+
+|`0x34` |+CALLVALUE+ |Vrátí uloženou hodnotu instrukce/transakce odpovědné za toto vykonání |- |2
+
+|`0x35` |+CALLDATALOAD+ |Vrátí vstupní data současného prostředí |- |3
+
+|`0x36` |+CALLDATASIZE+ |Vrátí velikost vstupních dat v současném prostředí |- |2
+
+|`0x37` |+CALLDATACOPY+ |Zkopíruje vstupní data ze současného prostředí do paměti |- |3
+
+|`0x38` |+CODESIZE+ |Vrátí velikost běžícího kódu v současném prostředí |- |2
+
+|`0x39` |+CODECOPY+ |Okopíruje běžící kód současného prostředí do paměti |- |3
+
+|`0x3a` |+GASPRICE+ |Vrátí cenu plynu v současném prostředí|- |2
+
+|`0x3b` |+EXTCODESIZE+ |Vrátí velikost kódu kontraktu |- |700
+
+|`0x3c` |+EXTCODECOPY+ |Okopíruje kód kontraktu do paměti |- |700
+
+|`0x3d` |+RETURNDATASIZE+ |Vloží do zásobníku velikost vrácených dat |http://bit.ly/2zaBcNe[EIP-211] |2
+
+|`0x3e` |+RETURNDATACOPY+ |Okopíruje do paměti vrácená data |http://bit.ly/2zaBcNe[EIP-211] |3
+
+|`0x3f` |Nepoužito |- |- |
+
+|`0x40` |+BLOCKHASH+ |Vrátí haš jednoho z posledních 256 bloků |- |20
+
+|`0x41` |+COINBASE+ |Vrátí adresu příjemce odměny za vytvoření bloku |- |2
+
+|`0x42` |+TIMESTAMP+ |Vrátí časovou značku bloku |- |2
+
+|`0x43` |+NUMBER+ |Vrátí číslo bloku |- |2
+
+|`0x44` |+DIFFICULTY+ |Vrátí obtížnost bloku |- |2
+
+|`0x45` |+GASLIMIT+ |Vrátí limit plynu v bloku |- |2
+
+|`0x46` - `0x4f` |Nepoužito |- |- |
+
+|`0x50` |+POP+ |Odstraní slovo ze zásobníku |- |2
+
+|`0x51` |+MLOAD+ |Načte slovo z paměti |- |3
+
+|`0x52` |+MSTORE+ |Uloží slovo do paměti |- |3*
+
+|`0x53` |+MSTORE8+ |Uloží bajt do paměti |- |3
+
+|`0x54` |+SLOAD+ |Načte slovo z úložiště |- |200
+
+|`0x55` |+SSTORE+ |Uloží slovo do úložiště |- |0*
+
+|`0x56` |+JUMP+ |Změní programový čítač |- |8
+
+|`0x57` |+JUMPI+ |Podmíněně změní programový čítač |- |10
+
+|`0x58` |+GETPC+ |Vrátí hodnotu programového čítače před zvýšením |- |2
+
+|`0x59` |+MSIZE+ |Vrátí velikost aktivní paměti v bajtech |- |2
+
+|`0x5a` |+GAS+ |Vrátí množství dostupného plynu, včetně odpovídajícího snížení množství dostupného plynu |- |2
+
+|`0x5b` |+JUMPDEST+ |Označí platný cíl skoku |- |1
+
+|`0x5c` - `0x5f` |Nepoužito |- |- |
+
+|`0x60` |+PUSH1+ |Umístí 1 bajt dat na zásobník |- |3
+
+|`0x61` |+PUSH2+ |Umístí 2 bajty dat na zásobník |- |3
+
+|`0x62` |+PUSH3+ |Umístí 3 bajty dat na zásobník |- |3
+
+|`0x63` |+PUSH4+ |Umístí 4 bajty dat na zásobník |- |3
+
+|`0x64` |+PUSH5+ |Umístí 5 bajtů dat na zásobník |- |3
+
+|`0x65` |+PUSH6+ |Umístí 6 bajtů dat na zásobník |- |3
+
+|`0x66` |+PUSH7+ |Umístí 7 bajtů dat na zásobník |- |3
+
+|`0x67` |+PUSH8+ |Umístí 8 bajtů dat na zásobník |- |3
+
+|`0x68` |+PUSH9+ |Umístí 9 bajtů dat na zásobník |- |3
+
+|`0x69` |+PUSH10+ |Umístí 10 bajtů dat na zásobník |- |3
+
+|`0x6a` |+PUSH11+ |Umístí 11 bajtů dat na zásobník |- |3
+
+|`0x6b` |+PUSH12+ |Umístí 12 bajtů dat na zásobník |- |3
+
+|`0x6c` |+PUSH13+ |Umístí 13 bajtů dat na zásobník |- |3
+
+|`0x6d` |+PUSH14+ |Umístí 14 bajtů dat na zásobník |- |3
+
+|`0x6e` |+PUSH15+ |Umístí 15 bajtů dat na zásobník |- |3
+
+|`0x6f` |+PUSH16+ |Umístí 16 bajtů dat na zásobník |- |3
+
+|`0x70` |+PUSH17+ |Umístí 17 bajtů dat na zásobník |- |3
+
+|`0x71` |+PUSH18+ |Umístí 18 bajtů dat na zásobník |- |3
+
+|`0x72` |+PUSH19+ |Umístí 19 bajtů dat na zásobník |- |3
+
+|`0x73` |+PUSH20+ |Umístí 20 bajtů dat na zásobník |- |3
+
+|`0x74` |+PUSH21+ |Umístí 21 bajtů dat na zásobník |- |3
+
+|`0x75` |+PUSH22+ |Umístí 22 bajtů dat na zásobník |- |3
+
+|`0x76` |+PUSH23+ |Umístí 23 bajtů dat na zásobník |- |3
+
+|`0x77` |+PUSH24+ |Umístí 24 bajtů dat na zásobník |- |3
+
+|`0x78` |+PUSH25+ |Umístí 25 bajtů dat na zásobník |- |3
+
+|`0x79` |+PUSH26+ |Umístí 26 bajtů dat na zásobník |- |3
+
+|`0x7a` |+PUSH27+ |Umístí 27 bajtů dat na zásobník |- |3
+
+|`0x7b` |+PUSH28+ |Umístí 28 bajtů dat na zásobník |- |3
+
+|`0x7c` |+PUSH29+ |Umístí 29 bajtů dat na zásobník |- |3
+
+|`0x7d` |+PUSH30+ |Umístí 30 bajtů dat na zásobník |- |3
+
+|`0x7e` |+PUSH31+ |Umístí 31 bajtů dat na zásobník |- |3
+
+|`0x7f` |+PUSH32+ |Umístí 32 bajtů dat (plné slovo) na zásobník |- |3
+
+|`0x80` |+DUP1+ |Zdvojí 1. položku (vrchol) v zásobníku |- |3
+
+|`0x81` |+DUP2+ |Zdvojí 2. položku v zásobníku |- |3
+
+|`0x82` |+DUP3+ |Zdvojí 3. položku v zásobníku |- |3
+
+|`0x83` |+DUP4+ |Zdvojí 4. položku v zásobníku |- |3
+
+|`0x84` |+DUP5+ |Zdvojí 5. položku v zásobníku |- |3
+
+|`0x85` |+DUP6+ |Zdvojí 6. položku v zásobníku |- |3
+
+|`0x86` |+DUP7+ |Zdvojí 7. položku v zásobníku |- |3
+
+|`0x87` |+DUP8+ |Zdvojí 8. položku v zásobníku |- |3
+
+|`0x88` |+DUP9+ |Zdvojí 9. položku v zásobníku |- |3
+
+|`0x89` |+DUP10+ Zdvojí 10. položku v zásobníku |- |3
+
+|`0x8a` |+DUP11+ |Zdvojí 11. položku v zásobníku |- |3
+
+|`0x8b` |+DUP12+ |Zdvojí 12. položku v zásobníku |- |3
+
+|`0x8c` |+DUP13+ |Zdvojí 13. položku v zásobníku |- |3
+
+|`0x8d` |+DUP14+ |Zdvojí 14. položku v zásobníku |- |3
+
+|`0x8e` |+DUP15+ |Zdvojí 15. položku v zásobníku |- |3
+
+|`0x8f` |+DUP16+ |Zdvojí 16. položku v zásobníku |- |3
+
+|`0x90` |+SWAP1+ |Vymění 1. a 2. položku v zásobníku |- |3
+
+|`0x91` |+SWAP2+ |Vymění 1. a 3. položku v zásobníku |- |3
+
+|`0x92` |+SWAP3+ |Vymění 1. a 4. položku v zásobníku |- |3
+
+|`0x93` |+SWAP4+ |Vymění 1. a 5. položku v zásobníku |- |3
+
+|`0x94` |+SWAP5+ |Vymění 1. a 6. položku v zásobníku |- |3
+
+|`0x95` |+SWAP6+ |Vymění 1. a 7. položku v zásobníku |- |3
+
+|`0x96` |+SWAP7+ |Vymění 1. a 8. položku v zásobníku |- |3
+
+|`0x97` |+SWAP8+ |Vymění 1. a 9. položku v zásobníku |- |3
+
+|`0x98` |+SWAP9+ |Vymění 1. a 10. položku v zásobníku |- |3
+
+|`0x99` |+SWAP10+ |Vymění 1. a 11. položku v zásobníku |- |3
+
+|`0x9a` |+SWAP11+ |Vymění 1. a 12. položku v zásobníku |- |3
+
+|`0x9b` |+SWAP12+ |Vymění 1. a 13. položku v zásobníku |- |3
+
+|`0x9c` |+SWAP13+ |Vymění 1. a 14. položku v zásobníku |- |3
+
+|`0x9d` |SWAP14 |Vymění 1. a 15. položku v zásobníku |- |3
+
+|`0x9e` |+SWAP15+ |Vymění 1. a 16. položku v zásobníku |- |3
+
+|`0x9f` |+SWAP16+ |Vymění 1. a 17. položku v zásobníku |- |3
+
+|`0xa0` |+LOG0+ |Připojí do protokolu 0 témat |- |375
+
+|`0xa1` |+LOG1+ |Připojí do protokolu 1 témata |- |750
+
+|`0xa2` |+LOG2+ |Připojí do protokolu 2 témata |- |1125
+
+|`0xa3` |+LOG3+ |Připojí do protokolu 3 témata |- |1500
+
+|`0xa4` |+LOG4+ |Připojí do protokolu 4 témata |- |1875
+
+|`0xa5` - `0xaf` |Nepoužito |- |- |
+
+|`0xb0` |+JUMPTO+ |Předběžný http://bit.ly/2Sx2Vkg[libevmasm má různá čísla] | http://bit.ly/2CR77pu[EIP 615] |
+
+|`0xb1` |+JUMPIF+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb2` |+JUMPSUB+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb4` |+JUMPSUBV+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb5` |+BEGINSUB+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb6` |+BEGINDATA+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb8` |+RETURNSUB+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb9` |+PUTLOCAL+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xba` |+GETLOCA+ |Předběžný |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xbb` - `0xe0` |Nepoužito |- |- |
+
+|`0xe1` |+SLOADBYTES+ |Pouze uvedené v +pyethereum+ |- |-
+
+|`0xe2` |+SSTOREBYTES+ |Pouze uvedené v +pyethereum+ |- |-
+
+|`0xe3` |+SSIZE+ |Pouze uvedené v +pyethereum+ |- |-
+
+|`0xe4` - `0xef` |Nepoužito |- |- |
+
+|`0xf0` |+CREATE+ |Vytvoří nový účet s přiřazeným kódem |- |32000
+
+|`0xf1` |+CALL+ |Volání zprávy do účtu |- |Complicated
+
+|`0xf2` |+CALLCODE+ |Volání zprávy do tohoto účtu s alternativním kódem účtu |- |Complicated
+
+|`0xf3` |+RETURN+ |Ukončí provádění a vrátí výstupní data |- |0
+
+|`0xf4` |+DELEGATECALL+ |Volání zprávy do účtu s alternativním kódem účtu, ale přetrvávajícím na tomto úču s alternativním kódem účtu |- |Complicated
+
+|`0xf5` |+CALLBLACKBOX+ |- |- |40
+
+|`0xf6` - `0xf9` |Nepoužito |- |- |
+
+|`0xfa` |+STATICCALL+ |Podobné +CALL+, ale nemění stav |- |40
+
+|`0xfb` |+CREATE2+ |Vytvoří nový účet a nastaví adresu vytvoření na `sha3(sender + sha3(init code)) % 2**160` |- |
+
+|`0xfc` |+TXEXECGAS+ |Není ve Žluté knize FIXME |- |-
+
+|`0xfd` |+REVERT+ |Zastaví provádění a anuluje změnu stavu bez spotřebování všeho potřebného plynu a poskytnutí důvodu |- |0
+
+|`0xfe` |+INVALID+ |Záměrně navržená neplatná instrukce |- |0
+
+|`0xff` |+SELFDESTRUCT+ |Ukončí provádění a označí účet pro pozdější smazání |- |5000*
+|=======================================================================================================================================================================================================

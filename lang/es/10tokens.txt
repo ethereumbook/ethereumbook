@@ -1,0 +1,1025 @@
+[[tokens_chapter]]
+== Tokens
+
+
+((("tokens", id="ix_10tokens-asciidoc0", range="startofrange")))La palabra "token" deriva del inglés antiguo "tācen", que significa un signo o símbolo. Se usa comúnmente para referirse a artículos similares a monedas o fichas de propósito especial emitidas de forma privada y de valor intrínseco insignificante, como pueden ser tickets de transporte, de lavandería y fichas de juegos de arcade (consolas de vídeo-juegos).
+
+Hoy en día, los "tokens" administrados en cadenas de bloques están redefiniendo la palabra para referirse a abstracciones más generales basadas en dicha cadena de bloques, que pueden tener un dueño y que representan activos, monedas o derechos de acceso.
+
+La asociación entre la palabra "token" y el valor insignificante, tiene mucho que ver con el uso limitado de las versiones físicas de los tokens. A menudo restringido a negocios, organizaciones o ubicaciones específicas, los tokens físicos no son fácilmente intercambiables y generalmente tienen una sola función. Con los tokens basados en la cadena de bloques, estas restricciones se eliminan&#x2014;o, más exactamente, se pueden redefinir por completo. Muchos tokens de cadenas de bloques tienen múltiples propósitos a nivel mundial y pueden intercambiarse entre sí o por otras monedas, en mercados líquidos a nivel global. Con la eliminación de las restricciones de uso y propiedad, la expectativa de "valor insignificante" también es cosa del pasado.
+
+En este capítulo, veremos varios usos que reciben los tokens y cómo éstos se crean. También discutimos algunos atributos de los tokens como la indistinguibilidad y la intrinsecalidad. Finalmente, examinamos los estándares y tecnologías en los que éstos se basan y experimentaremos construyendo nuestros propios tokens.
+
+[[tokens_use]]
+=== Cómo se Utilizan los Tokens
+
+((("tokens","sus usos", id="ix_10tokens-asciidoc1", range="startofrange")))El uso más obvio de los tokens, es como monedas digitales privadas. Sin embargo, este es solo uno de sus usos posibles. Los tokens se pueden programar para servir en muchas funciones diferentes, a menudo superpuestas. Por ejemplo, un token puede transmitir simultáneamente un derecho de voto, un derecho de acceso y la propiedad de un recurso. Como muestra la siguiente lista, la moneda es solo la primera "aplicación":
+
+Moneda:: Un token puede servir como una forma de moneda, cuyo valor es determinado a través del comercio privado.
+
+Recurso:: Un token puede representar un recurso obtenido o producido en una economía compartida o en un entorno de intercambio de recursos; por ejemplo, un ticket de memoria o de capacidad de procesamiento, que representa recursos que se pueden compartir en una red.
+
+Activo:: Un token puede representar la propiedad de un activo intrínseco o extrínseco, tangible o intangible; por ejemplo, oro, bienes raíces, un automóvil, petróleo, energía, artículos de juegos en línea, etc.
+
+Acceso:: Un token puede representar derechos de acceso y otorgar acceso a una propiedad digital o física, como un foro de discusión, un sitio web exclusivo, una habitación de hotel o un auto de alquiler.
+
+Participación:: Un token puede representar la participación de accionistas en una organización digital (por ejemplo, una Organización Autónoma-Descentralizada o del inglés, DAO) o una entidad legal (por ejemplo, una corporación).
+
+Derecho al Voto:: Un token puede representar derechos de voto en un sistema digital o legal.
+
+Valor Coleccionable:: Un token puede representar un valor digital coleccionable (por ejemplo, los CryptoPunks) o un valor físico coleccionable (por ejemplo, una pintura).
+
+Identidad:: Un token puede representar una identidad digital (por ejemplo, un avatar) o una identidad legal (por ejemplo, un registro de identificación nacional).
+
+Certificación:: Un token puede representar una certificación o la verificación de un hecho por alguna autoridad o por un sistema descentralizado de reputación (por ejemplo, registro de matrimonio, certificado de nacimiento, título universitario).
+
+Servicio Público:: Se puede usar un token para acceder o pagar un servicio.
+
+A menudo, un solo token puede abarcar varias de estas funciones. A veces es difícil discernir entre ellas, ya que sus equivalentes físicos siempre han estado inseparablemente vinculados. Por ejemplo, en el mundo físico, una licencia de conducir (que es una certificación) también es un documento de identidad (es una ficha de identidad) y los dos no se pueden separar. En el ámbito digital, las funciones previamente combinadas sí se pueden separar y desarrollar de forma independiente (por ejemplo, una certificación anónima).(((range="endofrange", startref="ix_10tokens-asciidoc1")))
+
+[[tokens_fungibility]]
+=== Tokens y la Indistinguibilidad
+
+((("tokens indistinguibles", seealso="ERC20 token standard")))((("tokens","indistinguibilidad")))La https://en.wikipedia.org/wiki/Fungibility[Wikipedia] dice: "En economía, la indistinguibilidad es la propiedad de un bien o mercancía cuyas unidades individuales son esencialmente intercambiables."
+
+Los tokens son indistinguibles cuando podemos sustituir cualquier unidad individual del token por otra sin ninguna diferencia en su valor o función.
+
+Estrictamente hablando, si es posible rastrear la procedencia histórica de un token, entonces no es completamente indistinguible. La capacidad de rastrear la procedencia, puede llevar a listas negras y listas blancas, reduciendo o eliminando la indistinguibilidad.
+
+((("tokens no indistinguibles (NFT)")))Los tokens no indistinguibles son tokens que representan un elemento tangible o intangible único y, por lo tanto, no son intercambiables. Por ejemplo, una ficha que representa la propiedad de una pintura específica de Van Gogh no es equivalente a otra ficha que represente a un Picasso, a pesar de que podrían ser parte del mismo sistema de "constancias de propiedad de obras de arte". Del mismo modo, un token que represente un artículo digital coleccionable _específico_, como lo puede ser un "CryptoKitty" determinado, no es intercambiable por ningún otro "CryptoKitty". Cada token distinguible está asociado con un identificador único, como por ejemplo, un número de serie.
+
+Más adelante veremos ejemplos de tokens tanto distinguibles como indistinguibles, en este capítulo.
+
+[NOTE]
+====
+Nótese que el término "indistinguible" a menudo se usa para hacer referencia a activos "directamente intercambiables por dinero" (por ejemplo, una ficha de casino se puede "cobrar", mientras que éste no es el caso para con los tickets de lavandería). Pero éste no es el sentido en el que usamos aquí dicho término.
+====
+
+[[counterparty_risk]]
+=== Riesgo de la Contraparte
+
+((("riesgo de incumplimiento")))((("tokens","riesgo de incumplimiento")))El riesgo de incumplimiento es el riesgo de que la _otra_ parte en una transacción, no cumpla con sus obligaciones. Algunos tipos de transacciones adolecen de un riesgo de incumplimiento adicional, porque hay más de dos partes involucradas. Por ejemplo, si se tiene un certificado de depósito para un metal precioso y se lo vendemos a alguien más, entonces allí hay al menos tres partes en esa transacción: el vendedor, el comprador y el custodio del metal precioso. Alguien tiene que conservar el activo físico; e inevitablemente este tercero se convierte en parte del compromiso a cumplir de la transacción y le agrega un riesgo adicional de incumplimiento a cualquier transacción que involucre ese activo. En general, cuando la propiedad de un activo se intercambia indirectamente a través de una casa de cambios que comercia con la ficha o token que lo representa, existe otro riesgo de incumplimiento adicional respecto al custodio del activo. ¿Seguirán en posesión del activo? ¿Reconocerán (o permitirán) que se hubiese realizado una transferencia de propiedad basada en la transferencia del mencionado token (en su forma de certificado, escritura, título o ficha digital)? En el mundo de los tokens digitales que representan activos, así como en el mundo físico o no digital, es importante comprender quién posee el activo que está representado por el token y qué reglas subyacentes se aplican a ese activo.
+
+[[tokens_intrinsicality]]
+=== Tokens e intrinsecalidad
+
+((("tokens","intrinsecalidad")))La palabra "intrínseco" deriva del latín "intra," que significa "desde dentro".
+
+Algunos tokens representan elementos digitales que son intrínsecos a la cadena de bloques. Esos activos digitales se rigen por reglas de consenso, al igual que los tokens. Esto tiene una implicación importante: los tokens que representan activos intrínsecos no conllevan un riesgo de incumplimiento adicional. Si uno posee las llaves asociadas a un CryptoKitty, no hay otra instancia que posea por uno&#x2014;a ese CryptoKitty, uno mismo lo posee directamente. Las reglas de consenso de la cadena de bloques se aplican con todo su rigor y la posesión (es decir, el control) de las llaves privadas, es equivalente a la posesión del activo en sí mismo, sin ningún intermediario.
+
+Por el contrario, muchos tokens se utilizan para representar cosas _extrínsecas_, tales como bienes raíces, acciones de voto corporativas, marcas comerciales y lingotes de oro. La posesión de estos artículos, que no están "dentro" de la cadena de bloques, se rige por la ley, la costumbre y la política, los cuales son factores ajenos a las reglas de consenso que rigen al token. En otras palabras, los emisores y propietarios de los tokens aún pueden depender de contratos del mundo real, en lugar de contratos inteligentes. Como resultado, estos activos extrínsecos conllevan un riesgo de incumplimiento adicional porque están en manos de custodios, con expedientes en registros externos o controlados por leyes y políticas que quedan fuera del entorno de la cadena de bloques.
+
+Una de las ramificaciones más importantes de los tokens basados en la cadena de bloques es la capacidad que poseen de convertir activos extrínsecos en activos intrínsecos y, por lo tanto, eliminar el riesgo de incumplimiento. Un buen ejemplo es canjear la posesión de una participación o derecho a voto, en una corporación (extrínseca) por la de un token de participación o voto en una organización tipo _DAO_ o similar (intrínseca).
+
+[[using_tokens]]
+=== Uso de Tokens: Servicio o Participación
+
+((("tokens","tipos de servicios/participación", id="ix_10tokens-asciidoc2", range="startofrange")))Casi todos los proyectos en Ethereum hoy día se lanzan con la asociación de algún tipo de token. ¿Pero todos estos proyectos realmente necesitan tokens? ¿Hay alguna desventaja en usar un token, o seremos acaso los testigos que verán hacerse realidad al eslogan "tokenízense todas las cosas!"? En principio, el uso de tokens puede verse como la herramienta cumbre de gerencia y organización. En la práctica, la integración de las estructuras pre-existentes de la sociedad a las plataformas con base a la cadena de bloques, incluido Ethereum, significa que hasta ahora, existen muchas limitaciones para la utilidad de los tokens.
+
+Comencemos aclarando el papel que juega un token en un nuevo proyecto. La mayoría de los proyectos usan tokens de alguna de las dos siguientes maneras: ya sea como "tokens de servicios" o como "tokens de participación". Muy a menudo, esos dos roles se entremezclan.
+
+((("tokens de servicios","definición")))Los tokens de servicio son aquellos en los que el uso del token es requerido para obtener acceso a algún tipo de servicio, aplicación, o recurso. Algunos ejemplos de tokens de servicios, incluyen tokens que representan recursos como el almacenamiento compartido o el acceso a servicios como los medios de redes sociales.
+
+((("tokens de participación","definición")))Los tokens de participación son aquellos que representan acciones en el control o la propiedad de algo, como por ejemplo, un emprendimiento. Los tokens de participación pueden ser tan limitados como las acciones sin derecho a voto para la distribución de dividendos y ganancias, o tan extensivos como las acciones con derecho a voto en una organización autónoma descentralizada, donde la administración de la plataforma se ejecuta a través de un complejo sistema de gobierno basado en los votos de los titulares de los tokens.
+
+[[its_not_duck]]
+==== ¡Es un Pato!
+
+((("tokens de participación","formas de tokens de participación")))((("tokens de participación","tokens de participación camuflados")))Muchos emprendimientos enfrentan un problema difícil: los tokens son un gran mecanismo de recaudación de fondos, pero ofrecer valores (capitales) al público, es una actividad regulada en la mayoría de las jurisdicciones. Al camuflar los tokens de participación para hacerlos pasar como tokens de servicios, muchas nuevas empresas esperan sortear estas restricciones regulatorias y recaudar dinero de una oferta pública mientras la presentan como una pre-venta de "vales de acceso a servicios" o, como los hemos llamado, tokens de servicios. Queda por ver si estas ofertas de activos de capitales, apenas disfrazadas, podrán eludir a los reguladores.
+
+Como dice el dicho popular: "Si camina como un pato y hace "quack" como un pato, entonces ¡es un pato!". No es probable que los entes reguladores se dejen engatusar con estas contorsiones semánticas; al contrario, es más probable que vean tal sofisma legal como un intento de engañar al público.
+
+[[who_needs_utility_tokens]]
+==== Tokens de Servicios: ¿Quién los necesita?
+
+((("tokens de servicios","limitaciones a tomar en cuenta al usarlos", id="ix_10tokens-asciidoc3", range="startofrange")))El verdadero problema es que los tokens de servicios introducen riesgos significativos y barreras de adopción para los emprendimientos. Quizás en un futuro lejano "tokenizar todas las cosas" se convierta en una realidad, pero en la actualidad el conjunto de personas que comprenden y desean usar los tokens es un subconjunto en extremo pequeño del mercado de las criptomonedas.
+
+Para un emprendimiento, cada innovación representa un riesgo y un desafío para acceder al mercado. La innovación equivale a tomar el camino menos transitado, alejarse del camino de lo tradicional. Ya de por sí, es un paseo solitario. Si un emprendimiento está tratando de innovar en una nueva área de tecnología, como el almacenamiento compartido en redes P2P, ese es un camino bastante solitario. Agregar un token de servicios a esa innovación y exigir a los usuarios que adopten ésos tokens para usar el servicio aumenta el riesgo y aumenta las barreras para la adopción. Esto equivale a salirse del sendero ya bastante solitario de la innovación, que representa el almacenamiento P2P, para irse caminando hacia el desierto.
+
+Consideremos a cada innovación como un filtro adicional. Limita la adopción al subconjunto del mercado que puede convertirse en los primeros en adoptar dicha innovación. Agregar un segundo filtro involucra el efecto de limitar aún más el mercado objetivo. Equivale a pedirle a nuestros primeros usuarios que adopten no una, sino dos tecnologías completamente nuevas: la nueva aplicación / plataforma / servicio que hemos creado y la economía basada en tokens.
+
+Para un emprendimiento, cada innovación introduce riesgos que aumentan sus probabilidades de fracaso. Si tomamos una idea innovadora que ya de inicio es arriesgada y le agregamos un token de servicios, estamos agregando todos los riesgos de la plataforma subyacente (Ethereum), una economía más amplia (casas de cambio, riesgos de iliquidez), un entorno regulatorio (reguladores de acciones y productos) y tecnología (contratos inteligentes y estándares para los tokens). Eso es un gran riesgo para un emprendimiento.
+
+Los defensores de "tokenizar todas las cosas" probablemente refutarán que al adoptar tokens también están heredando el entusiasmo del mercado, los primeros usuarios, la tecnología, la innovación y la liquidez de toda la economía de tokens. Eso también es cierto. La pregunta es si los beneficios y el entusiasmo superan los riesgos e incertidumbres.
+
+Sin embargo, algunas de las ideas de negocios más innovadoras están teniendo lugar en el ámbito de la criptografía. Si los reguladores no son lo suficientemente rápidos como para adoptar leyes y respaldar nuevos modelos de negocios, los empresarios y el talento asociado buscarán operar en otras jurisdicciones que sean más amigables con el ámbito de las cripto. Esto ya está sucediendo.
+
+Finalmente, al comienzo de este capítulo, cuando presentamos los tokens, discutimos el significado coloquial de "token" como "algo de valor insignificante". La razón subyacente del valor insignificante de la mayoría de los tokens es porque solo se pueden usar en un contexto muy limitado: una compañía de autobuses, una lavandería, una sala de juegos, un hotel o cierta tienda de alguna compañía. La liquidez limitada, la aplicabilidad limitada y los altos costos de conversión reducen el valor de los tokens hasta que solo son del valor de un... "token". Entonces, cuando se agrega un token de servicios a una plataforma, pero el token sólo se puede usar en esa plataforma única con un mercado pequeño, estamos recreando las condiciones que hicieron que los tokens físicos no valieran nada. De hecho, esta puede que sea la forma correcta de incorporar la tokenización en cualquier proyecto. Sin embargo, si para usar una plataforma, un usuario tiene que convertir algo de valor en un token de servicios, entonces hace uso de la referida plataforma y luego puede convertir el resto de los tokens no utilizados en otro valor generalmente más útil, hemos creado entonces un vale empresarial. Los costos de intercambio para un token digital son órdenes de magnitud inferiores a los que se incurre para un token físico sin mercado, pero no son cero. Los tokens de servicios que funcionan en todo un sector industrial serán muy interesantes y probablemente muy valiosos. Pero si configuramos nuestro emprendimiento para que tenga que hacer arrancar todo un estándar completo de industria para tener éxito, es posible que ya hayamos fracasado.
+
+[NOTE]
+====
+Uno de los beneficios de implementar servicios en plataformas de uso general tales como Ethereum, es el de poder interconectar contratos inteligentes (y, por lo tanto, la utilidad de los tokens) entre distintos proyectos, lo que aumenta el nivel potencial de liquidez y de utilidad de los tokens.
+====
+
+((("tokens","razones para su adopción")))Esta decisión debe ser tomada por los motivos correctos. Adopte un token porque su producto _no podría funcionar más que con un token_. Adóptelo porque sólo con un token podemos levantar ciertas barreras fundamentales del mercado o resuelve un verdadero problema de acceso. No introduzcamos un token de servicios, por ser la única forma en que podríamos recaudar rápidamente la cantidad de dinero que queremos y porque necesitamos pretender que no se trata de una oferta pública de valores(((range="endofrange", startref="ix_10tokens-asciidoc3"))).(((range="endofrange", startref="ix_10tokens-asciidoc2")))
+
+[[token_std]]
+=== Tokens en Ethereum
+
+((("tokens","en Ethereum", id="ix_10tokens-asciidoc4", range="startofrange")))Los tokens con base a la cadena de bloques, han existido desde antes de Ethereum((("Bitcoin","como un token")))En cierta manera, la primera moneda con base a una cadena de bloques, Bitcoin, es en sí misma un token. Muchas plataformas para tokens fueron también desarrolladas sobre la capa de Bitcoin y otras criptomonedas antes de Ethereum. Sin embargo, la introducción del primer estándar para tokens en Ethereum condujo a una explosión creativa de tokens.
+
+((("Buterin, Vitalik","sobre los tokens")))Vitalik Buterin sugirió a los tokens como una de las más obvias y útiles aplicaciones de una cadena de bloques capaz de ejecutar programas de propósito generalizado tal como Ethereum. De hecho, en el primer año de vida de Ethereum, fue muy común ver a Vitalik y otros llevando camisetas estampadas con el logo de Ethereum y un ejemplo de un contrato inteligente en la espalda. Hubo distintas variantes de estas camisetas, pero las más comunes mostraban la implementación de un token.
+
+Antes de profundizar en los detalles de la creación de tokens en Ethereum, es importante tener una visión general de cómo funcionan los tokens en Ethereum. Los tokens son diferentes del éter porque el protocolo de Ethereum no sabe nada sobre ellos. Enviar éter es una acción intrínseca de la plataforma Ethereum, pero enviar o incluso poseer tokens no lo es. El saldo de éter en las cuentas de Ethereum se maneja a nivel de protocolo, mientras que el saldo de tokens asociado a estas mismas cuentas de Ethereum se maneja a nivel de contratos inteligentes. Para crear un nuevo token en Ethereum, se debe crear primero un nuevo contrato inteligente. Una vez desplegado, el contrato inteligente maneja todo, incluidas la propiedad, las transferencias y los derechos de acceso. Podemos escribir un contrato inteligente para realizar todas las acciones necesarias de la forma que deseemos, pero probablemente sea mejor seguir algún estándar existente. A continuación analizaremos dichos estándares. Discutimos los pros y los contras de los siguientes estándares al final del capítulo.
+
+
+[[ERC20_std]]
+==== El Estándar de Token ERC20
+
+((("estándar de tokens ERC20", id="ix_10tokens-asciidoc5", range="startofrange")))((("tokens","el estándar ERC20", id="ix_10tokens-asciidoc6", range="startofrange")))El primer estándar fue introducido en noviembre de 2015 por Fabian Vogelsteller como una "Solicitud de Comentarios en Ethereum" (o del inglés, ERC). Se le asignó automáticamente el número "20" de asuntos en GitHub, dando pie al nombre de "token ERC20". La vasta mayoría de los tokens están actualmente fundamentados en el estándar ERC20. La solicitud de comentarios ERC20 terminó convirtiéndose en la Propuesta de Mejora de Ethereum número 20 (o la EIP-20), pero hasta el día de hoy aún se le hace referencia de acuerdo a su nombre original, ERC20.
+
+ERC20 es un estándar para _tokens indistinguibles_, lo que significa que diferentes unidades de tokens ERC20 son plenamente intercambiables y no poseen propiedades únicas.
+
+En el enlace: http://bit.ly/2CUf7WG[The ERC20 standard] se define una interfaz común para contratos que implementan un token, de tal manera que cualquier token compatible puede ser accesado y utilizado de la misma manera. La interfaz consta de una serie de funciones obligatorias que deben estar presentes en cada implementación del estándar, así como algunas funciones y atributos opcionales que los desarrolladores pueden agregar.
+
+[[ERC20_reqd_func]]
+===== ERC20: funciones y eventos obligatorios
+
+((("estándar de tokens ERC20","funciones y eventos obligatorios")))Un contrato de tokens compatible con el estándar ERC20, debe proporcionar al menos las siguientes funciones y eventos:
+
++totalSupply+:: Devuelve el total de unidades que actualmente existen de este token. Los tokens ERC20 pueden tener un emisión variable o también una emisión única y definitiva.
+
++balanceOf+:: Dada una dirección, esta función devuelve el saldo de tokens que posee esa dirección.
+
++transfer+:: Dada una dirección y una cantidad, esta función transfiere esa cantidad de tokens a esa dirección como destino, y a partir del saldo de la dirección que ejecutó la orden de la transferencia.
+
++transferFrom+:: Dado un remitente, un destinatario y una cantidad, esta función transfiere esa cantidad de tokens desde una cuenta a otra. Esta función debe usarse en combinación con la función +approve+.
+
++approve+:: Dada una dirección y el monto del destinatario, esta función autoriza a esa dirección a ejecutar varias transferencias hasta ese monto límite, desde la cuenta que emitió la aprobación.
+
++allowance+:: Dada una dirección de un propietario y una dirección de un administrador, esta función devuelve cuál es la cantidad remanente que el administrador está autorizado a manejar a nombre del propietario.
+
++Transfer+:: Es un evento desencadenado tras la ejecución de una transferencia exitosa (bien sea una invocación a +transfer+ o a +transferFrom+) (incluso si se trata de transferencias con valor de importe igual a cero).
+
++ Aprobación + :: Un evento que es registrado después de la invocación exitosa de la función +approve+.
+
+[[ERC20_optional_func]]
+===== ERC20: funciones opcionales
+
+((("estándar de tokens ERC20","funciones opcionales")))Además de las funciones obligatorias, listadas en la sección anterior, el estándar también define las siguientes funciones opcionales:
+
++name+:: Devuelve el nombre humanamente legible (por ejemplo, "US Dollars") del token.
+
++symbol+:: Devuelve un símbolo legible por humanos (por ejemplo, "USD") para el token.
+
++decimals+:: Devuelve el número de decimales utilizados para dividir las cantidades del token. Por ejemplo, si +decimals+ es igual a +2+, entonces las cantidades del token pueden dividirse entre 100 para obtener su mínima pass:[<span class="keep-together">representación</span>].
+
+[[ERC20_interface]]
+===== La interfaz ERC20 definida en Solidity
+
+((("estándar de tokens ERC20","interfaz definida en Solidity")))Así es como se ve una especificación de interfaz ERC20 en Solidity:
+
+[[ERC20_interface_example]]
+[source,solidity]
+----
+contract ERC20 {
+   function totalSupply() constant returns (uint theTotalSupply);
+   function balanceOf(address _owner) constant returns (uint balance);
+   function transfer(address _to, uint _value) returns (bool success);
+   function transferFrom(address _from, address _to, uint _value) returns
+      (bool success);
+   function approve(address _spender, uint _value) returns (bool success);
+   function allowance(address _owner, address _spender) constant returns
+      (uint remaining);
+   event Transfer(address indexed _from, address indexed _to, uint _value);
+   event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+----
+
+[[ERC20_data_struct]]
+===== Estructuras de datos del ERC20 
+
+((("mapeo de datos")))((("estándar de tokens ERC20","estructura de datos")))Si examinamos cualquier implementación de tokens ERC20 veremos que contiene dos estructuras de datos, una para rastrear saldos y otra para rastrear autorizaciones. En Solidity, estas estructuras se implementan mediante un _mapeo de datos_.
+
+El primer mapeo de datos implementa una tabla interna de saldos de tokens, para cada propietario. Esto permite que el contrato del token realice un seguimiento de quién posee cuántos tokens. Cada transferencia es una deducción de un saldo y una adición a otro saldo:
+
+[[balance_mapping]]
+[source,solidity]
+----
+mapping(address => uint256) balances;
+----
+
+La segunda estructura de datos es un mapeo de autorizaciones. Como veremos en la siguiente sección, con los tokens ERC20, el propietario de un token puede delegar la autoridad a un administrador, lo que le permite gastar una cantidad específica (la asignación) del saldo del propietario. El contrato ERC20 realiza un seguimiento de estas asignaciones mediante un mapeo bidimensional, siendo la llave principal la dirección del propietario del token, correspondiéndose con una dirección para el administrador y también con un monto de asignación:
+
+[[allowance_mapping]]
+[source,solidity]
+----
+mapping (address => mapping (address => uint256)) public allowed;
+----
+
+
+[[transfer_workflows]]
+===== Mecanismos de ERC20: "transfer" y  la combinación "approve & transferFrom"
+
+((("estándar de tokens ERC20","funciones de transferencia", id="ix_10tokens-asciidoc7", range="startofrange")))((("función transfer","estándar de tokens ERC20", id="ix_10tokens-asciidoc8", range="startofrange")))El estándar de tokens ERC20 tiene dos funciones de transferencia. Tal vez te estés preguntando por qué.
+
+ERC20 permite dos mecanismos de transferencia diferentes. El primero es un mecanismo sencillo y de transacción única que utiliza la función +transfer+. Este mecanismo es el que usan las billeteras para enviar tokens a otras billeteras. La gran mayoría de las transacciones de tokens ocurren con el mecanismo +transfer+.
+
+La ejecución del procedimiento de transferencia "transfer" es muy simple. Si Alice quiere enviar 10 tokens a Bob, su billetera envía una transacción a la dirección del contrato del token, llamando a la función pass:[<span class="keep-together"><code>transfer</code></span>], usando la dirección de Bob y la cifra +10+ como argumentos. El contrato del token ajusta el saldo de Alice (en &#x2013;10) y el saldo de Bob en (pass:[+10]) y se emite un evento +Transfer+.
+
+((("mecanismo approve & transferFrom")))El segundo mecanismo es un procedimiento de dos transacciones que hace uso de la función +approve+ seguido por la ejecución de la función +transferFrom+. Este mecanismo permite al dueño de un token el delegar el control del mismo a otra dirección. Se usa con mayor frecuencia para delegar el control a un contrato para la distribución de tokens, pero también puede ser utilizado por casas de cambio.
+
+((("Ofertas Iniciales de Monedas (ICOs)","tokens e ICOs")))Por ejemplo, si una empresa está vendiendo tokens para la recaudación de una ICO, ellos pueden ejecutar la función +approve+ del contrato del token, a favor de la dirección de un contrato de venta masiva, para la distribución de una cierta cantidad de éstos tokens. El contrato de venta masiva, podrá entonces ejecutar la función +transferFrom+ para enviar valores desde el saldo de la cuenta del dueño del contrato del token, hacia las cuentas de cada comprador del token, tal como se ilustra en <<approve_transferFrom_workflow>>.
+
+[NOTE]
+====
+((("Ofertas Iniciales de Monedas (ICOs)","definición")))Una _Oferta Inicial de Monedas_ (del inglés, una "ICO") es un mecanismo de colecta de fondos utilizado por compañías y organizaciones para recaudar dinero mediante la venta de tokens. El término se deriva del conocido concepto de "Oferta Pública Inicial" (del inglés, una "IPO"), el cual es el proceso típico a través del cual una compañía de capital abierto, ofrece sus acciones a la venta para inversionistas que participan de una casa de bolsa. A diferencia de estos mercados extremadamente regulados donde se desarrollan las IPOs, las ICOs son abiertas, globales, y desastrosamente confusas. Los ejemplos y explicaciones que de las ICO se ofrecen en este libro, no representan respaldo alguno a esta modalidad de recaudación de fondos.
+====
+
+[[approve_transferFrom_workflow]]
+.Las dos etapas del mecanismo "approve & transferFrom" de los tokens ERC20
+image::images/approve_transferFrom_workflow.png["Las dos etapas del mecanismo approve &amp; transferFrom de los tokens ERC20"]
+
+Para llevar a cabo el mecanismo +approve+ & +transferFrom+, son indispensables la ejecución de dos transacciones. Digamos que Alice desea autorizar al contrato +ICOdeAlice+ para que venda el 50% de todos los tokens "AliceCoins" a compradores como Bob y Charlie. En primer lugar, Alice despliega el contrato ERC20 del +AliceCoin+, acuñando todas las monedas, inicialmente a favor de su propia dirección. A continuación, Alice despliega el contrato +ICOdeAlice+ que puede vender sus tokens a cambio de éter. Seguidamente, Alice inicia el mecanismo +approve+ & +transferFrom+. Ella genera una transacción contra el contrato +AliceCoin+, invocando a la función +approve+ a favor de la dirección del contrato +ICOdeAlice+ aprobando la movilización del 50% del +totalSupply+ de su token como argumentos. Esto desencadenará le emisión del evento +Approval+. Ahora, el contrato +ICOdeAlice+ puede vender las monedas "AliceCoin".
+
+Cuando el contrato +ICOdeAlice+ reciba éter de parte de Bob, tendrá que enviar algunas monedas AliceCoin a favor de Bob en retribución. Dentro del contrato +ICOdeAlice+ habrá indicada una tasa de cambio entre las monedas AliceCoin y el éter. La tasa de cambio que Alice estableció cuando ella creó el contrato +ICOdeAlice+ determinará cuántos tokens Bob va a recibir de la cantidad de éter enviado al contrato +ICOdeAlice+. Cuando el contrato +ICOdeAlice+ invoque la función +transferFrom+ del token AliceCoin, indicará a la dirección de Alice como la dirección remitente y a la dirección de Bob como la dirección receptora, y utilizará la tasa de cambio para determinar cuantos tokens AliceCoin serán transferidos a Bob in el campo +value+. El contrato del token +AliceCoin+ transfiere el saldo desde la dirección de Alice a la de Bob y desencadenará un evento +Transfer+. El contrato +ICOdeAlice+ podrá invocar a la función +transferFrom+ una cantidad ilimitada de veces, siempre y cuando no se exceda el límite autorizado que Alice estableció. El contrato +ICOdeAlice+ puede llevar la cuenta de cuantos tokens "AliceCoin" todavía puede vender, invocando a la función +allowance+ del contrato del token.(((range="endofrange", startref="ix_10tokens-asciidoc8")))(((range="endofrange", startref="ix_10tokens-asciidoc7")))
+
+[[ERC20_implementation]]
+===== Implementaciones ERC20
+
+Si bien es posible implementar un token compatible con el estándar ERC20 en aproximadamente 30 líneas de código de Solidity, la mayoría de las implementaciones son más complejas que eso. Esto es para tener en cuenta las posibles vulnerabilidades de seguridad. Hay dos implementaciones mencionadas en el estándar EIP-20:
+
+http://bit.ly/2EUYCMR[Consensys EIP20]:: Una implementación simple y fácil de leer, de un token compatible con ERC20.
+
+https://bit.ly/2xPYck6[OpenZeppelin ; Estándar de Token]:: Esta implementación es compatible con ERC20 y con precauciones de seguridad adicionales. Forma la base de las bibliotecas OpenZeppelin que implementan tokens más complejos compatibles con ERC20 con capas de recaudación de fondos, subastas, programas de adjudicación y otras características.(((range="endofrange", startref="ix_10tokens-asciidoc6")))(((range="endofrange", startref="ix_10tokens-asciidoc5")))
+
+[[METoken_example]]
+==== Lanzamiento de Nuestro Propio Token ERC20
+
+((("estándar de tokens ERC20","ejemplo de creación y lanzamiento del METoken", id="ix_10tokens-asciidoc9", range="startofrange")))((("METoken (El token de Dominando a Ethereum)","ejemplo de creación y lanzamiento", id="ix_10tokens-asciidoc10", range="startofrange")))Vamos a crear y lanzar nuestro propio token. Para este ejemplo, utilizaremos el Ambiente Truffle de programación. El ejemplo asume que ya hemos instalado +truffle+ y que ya lo hemos configurado, y asumiremos que el lector ya está familiarizado al menos con su funcionamiento básico (para más detalles, consúltese <<truffle>>).
+
+Vamos a llamar a nuestro token, el "Token de Dominando a Ethereum,&#x201d; (del inglés Mastering Ethereum Token) con el símbolo "MET."
+
+[NOTE]
+====
+También podemos encontrar este ejemplo en el repositorio GitHub del libro, en el enlace https://github.com/ethereumbook/ethereumbook/blob/develop/code/truffle/METoken[GitHub repository].
+====
+
+Primero, vamos a crear e inicializar un directorio de proyectos de Truffle. Ejecutemos estos cuatro comandos y aceptemos las respuestas predeterminadas a cualquier pregunta:
+
+++++
+<pre data-type="programlist">
+$ <strong>mkdir METoken</strong>
+$ <strong>cd METoken</strong>
+METoken $ <strong>truffle init</strong>
+METoken $ <strong>npm init</strong>
+</pre>
+++++
+
+Ahora deberíamos tener la siguiente estructura de directorios:
+
+[[truffle_directory]]
+----
+METoken/
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- package.json
++---- test
++---- truffle-config.js
+`---- truffle.js
+----
+
+Editemos el archivo de configuración _truffle.js_ o _truffle-config.js_ para configurar nuestro entorno Truffle, o también podemos copiar este último desde el enlace http://bit.ly/2DdP2mz[del repositorio].
+
+Si usamos el ejemplo _truffle-config.js_, recuérdese crear un archivo _.env_ en la carpeta _METoken_ que contenga sus llaves privadas de prueba para probar y desplegar en redes públicas de prueba para Ethereum, tales como Ropsten o Kovan. Podemos exportar la llave privada de la red de prueba desde MetaMask.
+
+Después de eso, este directorio debería verse así:
+
+[[truffle_directory_metoken]]
+----
+METoken/
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- package.json
++---- test
++---- truffle-config.js
++---- truffle.js
+`---- .env *new file*
+----
+
+[WARNING]
+====
+Solo use llaves de prueba o mnemónicos de prueba que _no_ se utilicen para mantener fondos en la red principal de Ethereum. _Nunca_ use llaves que contengan dinero real, para hacer pruebas.
+====
+
+Para nuestro ejemplo, importaremos la biblioteca OpenZeppelin, que implementa algunas comprobaciones de seguridad importantes y es fácil de ampliar:
+
+++++
+<pre data-type="programlist">
+$ <strong>npm install openzeppelin-solidity@1.12.0</strong>
+
++ openzeppelin-solidity@1.12.0
+added 1 package from 1 contributor and audited 2381 packages in 4.074s
+</pre>
+++++
+
+El paquete +openzeppelin-solidity+ agregará alrededor de 250 archivos en el directorio __node_modules__. La biblioteca OpenZeppelin incluye mucho más que el token ERC20, pero solo utilizaremos una pequeña parte de ella.
+
+A continuación, redactemos nuestro contrato del token. Creamos un nuevo archivo, _METoken.sol_, y copiamos el código de ejemplo del link de http://bit.ly/2qfIFH0[GitHub].
+
+Nuestro contrato, que se muestra en <<solidity_token_example>>, es muy simple, ya que hereda toda su funcionalidad de la biblioteca OpenZeppelin.
+
+[[solidity_token_example]]
+.METoken.sol: Un contrato en Solidity que implementa un token tipo ERC20
+====
+[source,solidity,linenums]
+----
+include::code/truffle/METoken/contracts/METoken.sol[]
+----
+====
+
+Aquí, se están definiendo las variables opcionales +name+, +symbol+, y +decimals+. También estamos definiendo una variable de suministro inicial +_initial_supply+, que ha sido establecida a 21 millones de tokens; con dos decimales de subdivisión esto equivale a un total de 2.1 millardos de unidades. En la función inicializadora del contrato (es decir, el constructor) hemos configurado el valor total de tokens, +totalSupply+, para que sea igual a +_initial_supply+ y para que sea asignada la totalidad de +_initial_supply+ al saldo de la cuenta (+msg.sender+) que creará el contrato +METoken+.
+
+Ahora usamos +truffle+ para compilar el código del contrato +METoken+:
+
+++++
+<pre data-type="programlist">
+$ <strong>truffle compile</strong>
+Compiling ./contracts/METoken.sol...
+Compiling ./contracts/Migrations.sol...
+Compiling openzeppelin-solidity/contracts/math/SafeMath.sol...
+Compiling openzeppelin-solidity/contracts/token/ERC20/BasicToken.sol...
+Compiling openzeppelin-solidity/contracts/token/ERC20/ERC20.sol...
+Compiling openzeppelin-solidity/contracts/token/ERC20/ERC20Basic.sol...
+Compiling openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol...
+</pre>
+++++
+
+Como puede verse, +truffle+ incorpora las dependencias necesarias de las bibliotecas OpenZeppelin y también compila esos contratos.
+
+Configuremos ahora un script de migración para desplegar el contrato +METoken+. Para ello creamos un nuevo archivo llamado __2_deploy_contracts.js__, en la carpeta _METoken/migrations_. Cópiese el contenido para este archivo del ejemplo del http://bit.ly/2P0rHLl[repositorio de GitHub]:
+
+
+[[METoken_migration]]
+.2_deploy_contracts: Migration to deploy METoken
+[source,javascript,linenums]
+----
+include::code/truffle/METoken/migrations/2_deploy_contracts.js[]
+----
+
+Antes de llevar a cabo un despliegue en una de las redes de prueba de Ethereum, comencemos con algo menos definitivo, como una cadena de bloques local, que nos permita probar todo primero. Iniciemos una cadena de bloques con +ganache+, ya sea desde la línea de comandos con +ganache-cli+ o desde la interfaz gráfica de usuario de esta aplicación.
+
+Una vez que se inicia el entorno de +ganache+, podemos implementar nuestro contrato +METoken+ y ver si todo funciona como se esperaba:
+
+++++
+<pre data-type="programlist">
+$ <strong>truffle migrate --network ganache</strong>
+Using network 'ganache'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xb2e90a056dc6ad8e654683921fc613c796a03b89df6760ec1db1084ea4a084eb
+  Migrations: 0x8cdaf0cd259887258bc13a92c0a6da92698644c0
+Saving successful migration to network...
+  ... 0xd7bc86d31bee32fa3988f1c1eabce403a1b5d570340a3a9cdba53a472ee8c956
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying METoken...
+  ... 0xbe9290d59678b412e60ed6aefedb17364f4ad2977cfb2076b9b8ad415c5dc9f0
+  METoken: 0x345ca3e014aaf5dca488057592ee47305d9b3e10
+Saving successful migration to network...
+  ... 0xf36163615f41ef7ed8f4a8f192149a0bf633fe1a2398ce001bf44c43dc7bdda0
+Saving artifacts...
+</pre>
+++++
+
+En la consola de +ganache+, deberíamos ver que nuestro despliegue ha creado cuatro nuevas transacciones, como se muestra en <<ganache_METoken>>.
+
+[[ganache_METoken]]
+.Despliegue del contrato METoken en ganache
+image::images/ganache_metoken.png["Despliegue del contrato METoken en Ganache"]
+
+[[truffle_console]]
+===== Interactuando con el contrato METoken mediante el uso de la consola de Truffle
+
+((("METoken (El token de Dominando a Ethereum)","interacción mediante la consola de Truffle", id="ix_10tokens-asciidoc11", range="startofrange")))((("Truffle","interactuando con el contrato METoken mediante la consola de Truffle", id="ix_10tokens-asciidoc12", range="startofrange")))Podemos interactuar con nuestro contrato en la cadena de bloques local de +ganache+ usando la consola de Truffle. Este es un entorno JavaScript interactivo que proporciona acceso al entorno Truffle y, a través de web3, a la cadena de bloques. En este caso, conectaremos la consola de Truffle a la cadena de bloques de +ganache+:
+
+++++
+<pre data-type="programlist">
+$ <strong>truffle console --network ganache</strong>
+truffle(ganache)&gt;
+</pre>
+++++
+
+El puntero de comandos de +truffle(ganache)>+ indica que nos hemos conectado a la cadena de bloques de +ganache+ y que está listo para aceptar nuestras instrucciones. La consola de Truffle admite todos los comandos de +truffle+, de modo que podemos compilar mediante el comando +compile+ y migrar esta compilación a la cadena de bloques, mediante el comando +migrate+, desde la consola. Ya hemos ejecutado estos comandos, de modo que ya podemos dirigirnos directamente al contrato en sí. El contrato +METoken+ existe como un objeto JavaScript dentro del ambiente de Truffle. Escribamos ++**METoken**++ en el puntero de comandos y esto nos recuperará toda la definición del contrato:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken</strong>
+{ [Function: TruffleContract]
+  _static_methods:
+
+[...]
+
+currentProvider:
+ HttpProvider {
+   host: 'http://localhost:7545',
+   timeout: 0,
+   user: undefined,
+   password: undefined,
+   headers: undefined,
+   send: [Function],
+   sendAsync: [Function],
+   _alreadyWrapped: true },
+network_id: '5777' }
+</pre>
+++++
+
+El objeto +METoken+ también expone varios atributos, tales como la dirección del contrato (de acuerdo al despliegue ejecutado por el comando +migrate+):
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken.address</strong>
+'0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+</pre>
+++++
+
+Si queremos interactuar con el contrato desplegado, tenemos que usar una invocación asincrónica, en forma de una promesa ("promise") de JavaScript. Usamos la función +deployed+ para obtener la instancia del contrato y luego llamamos a la función +totalSupply+:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance => instance.totalSupply())</strong>
+BigNumber { s: 1, e: 9, c: [ 2100000000 ] }
+</pre>
+++++
+
+A continuación, usemos las cuentas creadas por +ganache+ para verificar nuestro saldo en tokens del contrato METoken y enviar algunos "METoken" a otra dirección. Primero, obtengamos las direcciones de las cuentas:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>let accounts</strong>
+undefined
+truffle(ganache)&gt; <strong>web3.eth.getAccounts((err,res) => { accounts = res })</strong>
+undefined
+truffle(ganache)&gt; <strong>accounts[0]</strong>
+'0x627306090abab3a6e1400e9345bc60c78a8bef57'
+</pre>
+++++
+
+La lista almacenada en la variable +accounts+ ahora posee todas las cuentas creadas por +ganache+, y el elemento +accounts[0]+ es la cuenta que ejecutó el despliegue del contrato +METoken+. Esta cuenta debería tener un saldo en pass:[<span class="keep-together">METoken</span>], pues el constructor de METoken asigna la totalidad del suministro total de tokens a la cuenta que desplegó el contrato. Vamos a verificarlo:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =></strong>
+                  <strong>{ instance.balanceOf(accounts[0]).then(console.log) })</strong>
+undefined
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 9, c: [ 2100000000 ] }</strong>
+</pre>
+++++
+
+Para finalizar, vamos a transferir 1000.00 METoken desde la cuenta +accounts[0]+ a la +accounts[1]+, invocando a la función +transfer+ del contrato:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+                  { instance.transfer(accounts[1], 100000) })</strong>
+undefined
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+                  { instance.balanceOf(accounts[0]).then(console.log) })</strong>
+undefined
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 9, c: [ 2099900000 ] }</strong>
+undefined
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+                  { instance.balanceOf(accounts[1]).then(console.log) })</strong>
+undefined
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 5, c: [ 100000 ] }</strong>
+</pre>
+++++
+
+[TIP]
+====
+El token METoken tiene 2 decimales de precisión, lo que significa que 1 METoken son 100 unidades para el contrato. Cuando transferimos 1.000 METoken, especificamos el valor como +100000+ en la invocación a la función +transfer+.
+====
+
+Como puede verse en la consola, la cuenta +accounts[0]+ ahora tiene 20.999.000 MET, y la cuenta +accounts[1]+ tiene 1.000 MET.
+
+ Si cambiamos a la interfaz gráfica de usuario de +ganache+, como se muestra en <<ganache_METoken_transfer>>, se observará cual fue la transacción que invocó a la función +transfer+.(((range="endofrange", startref="ix_10tokens-asciidoc12")))(((range="endofrange", startref="ix_10tokens-asciidoc11")))
+
+[[ganache_METoken_transfer]]
+.Transferencia de METoken en ganache
+image::images/ganache_metoken_transfer.png["Transferencia de METoken en ganache"]
+
+[[sending_erc20_tokens_contracts]]
+===== Envío de tokens ERC20 a direcciones de contratos
+
+((("contrato tipo grifo Faucet.sol (ejemplo de prueba)","proyecto METoken", id="ix_10tokens-asciidoc13", range="startofrange")))((("METoken (El token de Dominando a Ethereum)","envío a direcciones de contratos", id="ix_10tokens-asciidoc14", range="startofrange")))Hasta ahora, hemos configurado un token ERC20 y hemos transferido algunos tokens de una cuenta a otra. Todas las cuentas que utilizamos para estas demostraciones han sido cuentas de titularidad externa, lo que significa que están controladas por una llave privada, no un contrato. ¿Qué sucede si enviamos MET a una dirección de contrato? ¡Vamos a averiguar!
+
+Primero, hay que desplegar otro contrato en nuestro entorno de pruebas. Para este ejemplo, utilizaremos nuestro primer contrato, _Faucet.sol_. Vamos a agregarlo al proyecto METoken, copiándolo en el directorio _contracts_. Nuestro directorio debería verse así:
+
+[[METoken_directory]]
+----
+METoken/
++---- contracts
+|   +---- Faucet.sol
+|   +---- METoken.sol
+|   `---- Migrations.sol
+----
+
+También agregaremos una migración, para implementar +Faucet+ separadamente de +METoken+:
+
+[[faucet_migration]]
+[source,solidity]
+----
+var Faucet = artifacts.require("Faucet");
+
+module.exports = function(deployer) {
+  // Instruimos desplegar al contrato Faucet como nuestra única tarea
+  deployer.deploy(Faucet);
+};
+----
+
+A continucación, compilamos y migramos los contratos desde la consola de Truffle:
+
+++++
+<pre data-type="programlist">
+$ <strong>truffle console --network ganache</strong>
+truffle(ganache)&gt; <strong>compile</strong>
+Compiling ./contracts/Faucet.sol...
+Writing artifacts to ./build/contracts
+
+truffle(ganache)&gt; <strong>migrate</strong>
+Using network 'ganache'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0x89f6a7bd2a596829c60a483ec99665c7af71e68c77a417fab503c394fcd7a0c9
+  Migrations: 0xa1ccce36fb823810e729dce293b75f40fb6ea9c9
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Replacing METoken...
+  ... 0x28d0da26f48765f67e133e99dd275fac6a25fdfec6594060fd1a0e09a99b44ba
+  METoken: 0x7d6bf9d5914d37bcba9d46df7107e71c59f3791f
+Saving artifacts...
+Running migration: 3_deploy_faucet.js
+  Deploying Faucet...
+  ... 0x6fbf283bcc97d7c52d92fd91f6ac02d565f5fded483a6a0f824f66edc6fa90c3
+  Faucet: 0xb18a42e9468f7f1342fa3c329ec339f254bc7524
+Saving artifacts...
+</pre>
+++++
+
+Excelente. Ahora enviemos algo de tokens MET al contrato +Faucet+:
+
+++++
+<pre data-type="programlist">
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
+                  { instance.transfer(Faucet.address, 100000) })</strong>
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
+                  { instance.balanceOf(Faucet.address).then(console.log)})</strong>
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 5, c: [ 100000 ] }</strong>
+</pre>
+++++
+
+Bravo!, hemos logrado transferir 1.000 tokens MET al contrato +Faucet+. Ahora, ¿cómo retiramos esas fichas?
+
+Recuérdese que _Faucet.sol_ es un contrato bastante simple. Solo tiene una función, pass:[<span class="keep-together"><code>withdraw</code></span>], que solamente sirve para retirar _éter_. No tiene una función específica para retirar tokens MET ni ningún otro token ERC20. Si usamos la función +withdraw+ lo que intentará es enviar éter, pero dado que +Faucet+ aún no tiene ningún saldo en éter, este intento debería fallar.
+
+El contrato +METoken+ sabe que la dirección del contrato +Faucet+ tiene un saldo, pero la única forma en que puede transferir ese saldo es si recibe una invocación a su función de transferencia +transfer+, desde la dirección del contrato. De alguna manera, necesitamos lograr que el contrato +Faucet+ llame a la función +transfer+ del contrato pass:[<span class="keep-together"><code>METoken</code></span>]. 
+
+Si te preguntas qué hacer a continuación, no lo hagas. No hay solución a este problema. Los tokens MET que hemos enviado a +Faucet+ quedarán estancados allí, para siempre. Únicamente el contrato +Faucet+ puede transferirlos, y el contrato +Faucet+ no tiene instrucciones de código para invocar a la función +transfer+ del contrato de un token ERC20.
+
+Quizás anticipaste este problema. Lo más probable es que no lo hayas hecho. De hecho, tampoco lo hicieron cientos de usuarios de Ethereum que transfirieron accidentalmente varios tokens a contratos que no tenían ninguna capacidad para manejar a los ERC20. Según algunas estimaciones, los tokens que valen más de aproximadamente $ 2,5 millones de dólares (al momento de escribir esto) se han "atascado" de esta manera y se perdieron para siempre.
+
+Una de las formas en que los usuarios de tokens ERC20 pueden perder sus tokens inadvertidamente en una transferencia, es cuando intentan transferir sus activos a una casa de cambio u otro servicio. Copian una dirección de Ethereum del sitio web de una casa de cambio, pensando que simplemente pueden enviarle sus tokens. Sin embargo, muchas casas de cambio publican direcciones de recepción que en realidad son contratos. Estos contratos solo están destinados a recibir éter, no tokens ERC20, y con frecuencia, barren con todos los fondos que se les envían a un "almacenamiento en frío" u otra billetera centralizada. A pesar de las muchas advertencias que claman "Favor no enviar tokens a esta dirección", se pierden muchos tokens de esta manera.(((range="endofrange", startref="ix_10tokens-asciidoc14")))(((range="endofrange", startref="ix_10tokens-asciidoc13")))
+
+[[transfer_workflow_demo]]
+===== Una demostración del mecanismo &#x201c;approve & transferFrom&#x201d;
+
+((("el mecanismo approve & transferFrom", id="ix_10tokens-asciidoc15", range="startofrange")))((("contrato Faucet.sol (ejemplo de prueba)","demostración del mecanismo approve & transferFrom del token METoken", id="ix_10tokens-asciidoc16", range="startofrange")))((("METoken (El token de Dominando a Ethereum)","demostración del mecanismo approve & transferFrom", id="ix_10tokens-asciidoc17", range="startofrange")))Nuestro contrato +Faucet+ no fue capaz de manejar tokens ERC20. El envío de tokens a su dirección mediante la función +transfer+, resultó en la pérdida de esos tokens. Ahora vamos a re-escribir este contrato para que sea capaz de manejar tokens ERC20. Específicamente, vamos a convertirlo en un grifo que le entregue a cualquiera que se lo pida, tokens MET.
+
+Para este ejemplo, haremos una copia del directorio del proyecto _truffle_ (lo llamaremos __METoken_METFaucet__), inicializaremos +truffle+ y también al paquete +npm+, instalaremos las dependencias de OpenZeppelin y copiaremos el contrato _METoken.sol_. Véase nuestro primer ejemplo, en <<METoken_example>>, para conocer las instrucciones detalladas.
+
+Nuestro nuevo contrato tipo grifo, _METFaucet.sol_, lucirá como se muestra en <<METFaucet>>.
+
+[[METFaucet]]
+.METFaucet.sol: Un grifo para METoken
+====
+[source,solidity,linenums]
+----
+include::code/truffle/METoken_METFaucet/contracts/METFaucet.sol[]
+----
+====
+
+Hemos realizado algunos pequeños cambios en el ejemplo básico de +Faucet+. Dado que +METFaucet+ necesitará utilizar la función +transferFrom+ de +METoken+, necesitará dos variables adicionales. Una de ellas, tendrá la dirección del contrato desplegado +METoken+. La otra tendrá la dirección del propietario del token MET, quien aprobará los retiros de los grifos. El contrato +METFaucet+ invocará a +METoken.transferFrom+ y le indicará que mueva los tokens MET desde la dirección del propietario a la dirección de donde provino la solicitud de retiro del grifo.
+
+
+Declaramos estas dos variables aquí:
+
+[source,solidity]
+----
+StandardToken public METoken;
+address public METOwner;
+----
+
+Dado que nuestro grifo debe inicializarse con las direcciones correctas para +METoken+ y +METOwner+, debemos declarar un constructor a la medida:
+
+[[custom_constructor]]
+[source,solidity]
+----
+// constructor de METFaucet - se proveen las direcciones del contrato METoken y la
+// del dueño del que recibiremos aprobación para ejecutar "transferFrom"
+function METFaucet(address _METoken, address _METOwner) public {
+
+	// Inicialización del contrato METoken para la dirección suministrada
+	METoken = StandardToken(_METoken);
+	METOwner = _METOwner;
+}
+----
+
+El siguiente cambio se refiere a la función +withdraw+ del grifo original. En lugar de llamar a +transfer+, el nuevo grifo +METFaucet+ usa la función +transferFrom+ del contrato +METoken+ y le pide a +METoken+ que transfiera los MET al solicitante del retiro:
+
+[[transfer_met]]
+[source,solidity]
+----
+// Se utiliza ahora la función transferFrom de METoken
+METoken.transferFrom(METOwner, msg.sender, withdraw_amount);
+----
+
+Finalmente, dado que nuestro grifo ya no envía éter, probablemente deberíamos evitar que alguien envíe éter a +METFaucet+, ya que no queremos que esos fondos se bloqueen. Configuramos la función pagadera "fallback" para que rechace cualquier éter entrante, utilizando la instrucción +revert+ para devolver cualquier intento de pago entrante:
+
+[[reject_incoming_eth]]
+[source,solidity]
+----
+// RECHAZAR cualquier ingreso de éter
+function () external payable { revert(); }
+----
+
+Ahora que nuestro código _METFaucet.sol_ está listo y corregido, necesitamos modificar las instrucciones del archivo script de migración para desplegarlo. Este script de migración será un poco más complejo, ya que +METFaucet+ depende de la dirección del contrato +METoken+. Usaremos una promesa ("promise") de JavaScript, para desplegar a los dos contratos en orden secuencial. Para ello crearemos el archivo __2_deploy_contracts.js__ de la siguiente manera:
+
+[source,solidity]
+----
+var METoken = artifacts.require("METoken");
+var METFaucet = artifacts.require("METFaucet");
+var owner = web3.eth.accounts[0];
+
+module.exports = function(deployer) {
+
+	// Hay que desplegar primero, al contrato METoken
+	deployer.deploy(METoken, {from: owner}).then(function() {
+		// Y luego es que podemos desplegar a METFaucet, dándole la dirección del contrato METoken y la
+		// dirección del dueño de todos los tokens MET quien autorizará a METFaucet
+		return deployer.deploy(METFaucet, METoken.address, owner);
+  	});
+}
+----
+
+Ahora sí, podemos hacer una prueba completa en la consola de Truffle. En primer lugar, utilizamos +migrate+ para desplegar los contratos. Cuando se despliega +METoken+ éste le asignará todos los tokens MET a la cuenta que lo creó, la cuenta +web3.eth.accounts[0]+. A continuación, invocaremos la función +approve+ en pass:[<code><span class="keep-together">METoken</span></code>] para autorizar al grifo +METFaucet+ para que envíe, como máximo, hasta 1.000 MET, a nombre de +web3.eth.accounts[0]+. Finalmente, para probar nuestro nuevo grifo, invocamos +METFaucet.withdraw+ desde la cuenta +web3.eth.accounts[1]+ e intentaremos retirar 10 MET. A continuación, los comandos de consola:
+
+++++
+<pre data-type="programlist">
+$ <strong>truffle console --network ganache</strong>
+truffle(ganache)&gt; <strong>migrate</strong>
+Using network 'ganache'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0x79352b43e18cc46b023a779e9a0d16b30f127bfa40266c02f9871d63c26542c7
+  Migrations: 0xaa588d3737b611bafd7bd713445b314bd453a5c8
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Replacing METoken...
+  ... 0xc42a57f22cddf95f6f8c19d794c8af3b2491f568b38b96fef15b13b6e8bfff21
+  METoken: 0xf204a4ef082f5c04bb89f7d5e6568b796096735a
+  Replacing METFaucet...
+  ... 0xd9615cae2fa4f1e8a377de87f86162832cf4d31098779e6e00df1ae7f1b7f864
+  METFaucet: 0x75c35c980c0d37ef46df04d31a140b65503c0eed
+Saving artifacts...
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
+                  { instance.approve(METFaucet.address, 100000) })</strong>
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
+                  { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })</strong>
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 0, c: [ 0 ] }</strong>
+truffle(ganache)&gt; <strong>METFaucet.deployed().then(instance =>
+                  { instance.withdraw(1000, {from:web3.eth.accounts[1]}) } )</strong>
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
+                  { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })</strong>
+truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 3, c: [ 1000 ] }</strong>
+</pre>
+++++
+
+Como puede desprenderse de los resultados, podemos utilizar el mecanismo +approve+ &amp; +transferFrom+ para autorizar a un contrato a transferir los tokens definidos en otro contrato. Si se les da el uso apropiado, los tokens ERC20 pueden ser utilizados por cuentas poseídas externamente (EOAs) y por otros contratos también.
+
+Sin embargo, la carga de administrar correctamente los tokens ERC20, se transfiere a la interfaz de usuario. Si un usuario intenta transferir incorrectamente tokens ERC20 a una dirección de contrato y ese contrato no está equipado para recibir tokens ERC20, los tokens se perderán(((range="endofrange", startref="ix_10tokens-asciidoc17")))(((range="endofrange", startref="ix_10tokens-asciidoc16")))(((range="endofrange", startref="ix_10tokens-asciidoc15"))).(((range="endofrange", startref="ix_10tokens-asciidoc10")))(((range="endofrange", startref="ix_10tokens-asciidoc9")))
+
+[[ERC20_issues]]
+==== Limitaciones con los tokens ERC20
+
+((("estándar de tokens ERC20","limitantes con los tokens ERC20")))La adopción del estándar de tokens ERC20 ha sido realmente explosiva. Miles de tokens han sido lanzados, tanto para experimentar con nuevas capacidades, como para recaudar  fondos en distintas "colectas", subastas e ICOs. Sin embargo, existen algunos riesgos potenciales, como vimos con el tema de la transferencia de tokens a las direcciones de los contratos.
+
+Uno de los problemas menos obvios con los tokens ERC20 es que exhiben diferencias sutiles entre sus propiedades y las del propio éter. Mientras que el éter se transfiere mediante una transacción que tiene a la dirección receptora de los fondos como destino, las transferencias de tokens se producen dentro del _estado específico del contrato del token_ y tienen al contrato de los tokens en cuestión como destino de esa transacción, en lugar de la dirección del receptor del token. El contrato del token rastrea saldos y emite eventos. En una transferencia de tokens, no se envía ninguna transacción al receptor del token. En cambio, la dirección del receptor se agrega a un mapa dentro del contrato del token. Una transacción que envía éter a una dirección, cambia el estado de esa dirección. Una transacción que transfiere un token a una dirección solo cambia el estado del contrato del token, no el estado de la dirección del destinatario. Incluso una billetera que tiene soporte para tokens ERC20 no se da cuenta de cual es el saldo de cierto token, a menos que el usuario agregue explícitamente al contrato específico del token para así "observarlo". Algunas billeteras están por defecto, atentas a los contratos de tokens más populares para detectar los saldos de las direcciones que las controlan, pero eso se limita a una pequeña fracción de los pass:[<span class="keep-together">contratos</span>] ERC20 existentes.
+
+De hecho, es poco probable que un usuario _quiera_ rastrear todos sus saldos de todos los posibles contratos de tokens ERC20. Muchos tokens ERC20 se parecen más al correo electrónico no deseado que a los tokens que tienen utilidad real. Crean automáticamente saldos para cuentas que tienen actividad en éter, para atraer usuarios. Si tiene una dirección de Ethereum con un largo historial de actividad, especialmente si se creó esa cuenta durante la preventa de algún token, la encontrará llena de tokens "basura" que aparecieron de la nada. Por supuesto, la dirección no está realmente llena de tokens; son los contratos simbólicos los que tienen a su dirección en ellos. Solo verá estos saldos si el explorador de bloques o la billetera que utiliza para ver su dirección están viendo estos contratos de tokens.
+
+Los tokens no se comportan de la misma manera que el éter. El éter se envía con la función +send+ y es aceptado por cualquier función pagadera en un contrato o cualquier dirección manejada externamente. Los tokens se envían utilizando las funciones +transfer+ o +approve+ & +transferFrom+ que existen únicamente en contratos ERC20 y no activan (no al menos en el estándar ERC20) ninguna función pagadera en un contrato destinatario. Los tokens están destinados a funcionar como una criptomoneda como el éter, pero vienen con ciertas diferencias que rompen esa ilusión.
+
+((("gas","tokens y el gas")))((("tokens","gas para los tokens")))Considérese este otro problema. Para enviar éter o para usar cualquier contrato de Ethereum, se necesita éter para pagar el combustible (o el "gas"). Para enviar tokens, también se necesita éter. No podemos pagar el gas de una transacción con un token y el contrato del token no puede pagar el gas por nosotros. Esto puede cambiar en algún momento en un futuro lejano, pero mientras tanto esto puede causar algunas experiencias de usuario bastante extrañas. Por ejemplo, supongamos que usaremos una casa de cambios o más específicamente, la plataforma ShapeShift para convertir algo de bitcoin en un token. Entonces uno "recibe" el token en una billetera que rastrea el contrato de ese token y muestra su saldo. Se ve igual que cualquiera de las otras criptomonedas que tenemos en la billetera. Sin embargo, si intentásemos enviar el token a otra cuenta, la billetera nos informará que necesitamos éter para hacerlo. Quizá estemos un poco confundidos&#x2014;después de todo, no necesitamos nada de éter para recibir el token. Quizás no tengamos éter. Quizás ni siquiera sabíamos que el token era un token tipo ERC20 en Ethereum; tal vez pensamos que era una criptomoneda con su propia cadena de bloques. La ilusión simplemente se rompió.
+
+Algunos de estos problemas son específicos para los tokens ERC20. Otros, son problemas más generales y se relacionan con la abstracción y los límites de una interfaz dentro de Ethereum. Algunos se pueden resolver cambiando la interfaz del token, mientras que otros pueden necesitar cambios en las estructuras fundamentales dentro de Ethereum (como la distinción entre cuentas externas o EOA y los contratos, y entre transacciones y mensajes). Algunos pueden no ser "solucionables" exactamente y pueden requerir un diseño de interfaz de usuario para ocultar los matices y hacer que la experiencia del usuario sea coherente, independientemente de las distinciones subyacentes.
+
+En las siguientes secciones veremos varias propuestas que intentan abordar algunos de estos problemas.
+
+[[ERC223_std]]
+==== ERC223: Un Estándar de Interfaz de Contrato Propuesto para Tokens
+
+((("propuesta de estándar ERC223 para tokens")))((("tokens","propuesta de estándar ERC223")))La propuesta ERC223 intenta resolver el problema de la transferencia involuntaria de tokens a un contrato (que puede o no ser compatible con tokens) al detectar si la dirección de destino es un contrato o no. ERC223 requiere que los contratos diseñados para aceptar tokens implementen una función llamada +tokenFallback+. Si el destino de una transferencia es un contrato y el contrato no tiene soporte para tokens (es decir, no implementa +tokenFallback+), la transferencia debe fallar.
+
+[[is_contract]]
+Para detectar si la dirección de destino es un contrato, la implementación de referencia ERC223 utiliza un pequeño segmento de código binario en lenguaje de ensamblaje, de una manera bastante creativa:
+
+[source,solidity]
+----
+function isContract(address _addr) private view returns (bool is_contract) {
+  uint length;
+    assembly {
+       // recupera el tamaño de la data almacenada como código en la dirección de envío; para ello se requiere el comando assembly
+       length := extcodesize(_addr)
+    }
+    return (length>0);
+}
+----
+
+[[ERC223_interface]]
+La especificación de la interfaz del contrato ERC223 es la siguiente:
+
+[source,solidity]
+----
+interface ERC223Token {
+  uint public totalSupply;
+  function balanceOf(address who) public view returns (uint);
+
+  function name() public view returns (string _name);
+  function symbol() public view returns (string _symbol);
+  function decimals() public view returns (uint8 _decimals);
+  function totalSupply() public view returns (uint256 _supply);
+
+  function transfer(address to, uint value) public returns (bool ok);
+  function transfer(address to, uint value, bytes data) public returns (bool ok);
+  function transfer(address to, uint value, bytes data, string custom_fallback)
+      public returns (bool ok);
+
+  event Transfer(address indexed from, address indexed to, uint value,
+                 bytes indexed data);
+}
+----
+
+El estándar ERC223 no está ampliamente implementado, y hay un debate en el hilo:  https://github.com/ethereum/EIPs/issues/223[the ERC discusión] sobre la compatibilidad retroactiva y los compromisos entre la implementación de estos cambios a nivel de interfaz del contrato versus de hacerlo a nivel de la interfaz de usuario. El debate continúa.
+
+==== ERC777: Un Estándar de Interfaz de Contrato Propuesto para Tokens
+
+((("propuesta de estándar ERC777 para tokens", id="ix_10tokens-asciidoc18", range="startofrange")))((("tokens","propuesta de estándar ERC777", id="ix_10tokens-asciidoc19", range="startofrange")))Otra propuesta para un estándar mejorado de contratos para tokens es la https://eips.ethereum.org/EIPS/eip-777[ERC777]. Esta propuesta tiene varios objetivos, que incluyen:
+
+* Ofrecer una interfaz compatible con el estándar ERC20
+* Transferir tokens usando una función +send+, similar a la que se usa en las transferencias de éter
+* Ser compatible con el estándar ERC820 para el registro de contratos de tokens
+* Permitir que los contratos y las direcciones controlen qué tokens envían a través de una función `tokensToSend` que se invoca antes de hacer un envío
+* Permitir que los contratos y las direcciones sean notificados del recibo de los tokens invocando a una función `tokensReceived` en el destinatario, y para reducir la probabilidad de que los tokens se bloqueen en los contratos al exigir que éstos proporcionen una función pass:[<span class="keep-together"><code>tokensReceived</code></span>]
+* Permitir que los contratos existentes utilicen contratos "proxy" para las funciones propuestas, denominadas +tokensToSend+ y +tokensReceived+
+* Operar de la misma manera ya sea enviando tokens a un contrato o a una dirección externamente controlada, o "EOA"
+* Proporcionar eventos específicos para la emisión y destrucción de tokens.
+* Permitir a los operadores (terceros de confianza, destinados a ser contratos verificados) mover tokens en nombre de un titular de tokens
+* Proporcionar metadatos en las transacciones de transferencia de tokens, en ciertos campos propuestos, llamados +userData+ y +operatorData+
+
+La discusión en curso sobre el estándar ERC777 se puede encontrar en el link: https://github.com/ethereum/EIPs/issues/777[on GitHub].
+
+[[ERC777_interface]]
+La especificación de la interfaz para contratos según el estándar ERC777 es:
+
+[source,solidity]
+----
+interface ERC777Token {
+    function name() public constant returns (string);
+    function symbol() public constant returns (string);
+    function totalSupply() public constant returns (uint256);
+    function granularity() public constant returns (uint256);
+    function balanceOf(address owner) public constant returns (uint256);
+
+    function send(address to, uint256 amount, bytes userData) public;
+
+    function authorizeOperator(address operator) public;
+    function revokeOperator(address operator) public;
+    function isOperatorFor(address operator, address tokenHolder)
+        public constant returns (bool);
+    function operatorSend(address from, address to, uint256 amount,
+                          bytes userData,bytes operatorData) public;
+
+    event Sent(address indexed operator, address indexed from,
+               address indexed to, uint256 amount, bytes userData, 
+               bytes operatorData);
+    event Minted(address indexed operator, address indexed to,
+                 uint256 amount, bytes operatorData);
+    event Burned(address indexed operator, address indexed from,
+                 uint256 amount, bytes userData, bytes operatorData);
+    event AuthorizedOperator(address indexed operator,
+                             address indexed tokenHolder);
+    event RevokedOperator(address indexed operator, address indexed tokenHolder);
+}
+----
+
+[[ERC777_hooks]]
+===== Los Enganches en ERC777
+
+[[ERC777TokensSender_interface]]
+La especificación de "enganche" para el remitente de tokens ERC777 es:
+
+[source,solidity]
+----
+interface ERC777TokensSender {
+    function tokensToSend(address operator, address from, address to,
+                          uint value, bytes userData, bytes operatorData) public;
+}
+----
+
+La implementación de esta interfaz es necesaria para cualquier dirección que desee ser notificada sobre, administrar o evitar, el débito de tokens. La dirección para la cual el contrato implementa esta interfaz debe registrarse a través del estándar ERC820, ya sea que el contrato implemente la interfaz para sí mismo o para otra dirección.
+
+[[ERC777TokensRecipient_interface]]
+La especificación de "enganche" para el destinatario de tokens ERC777 es:
+
+[source,solidity]
+----
+interface ERC777TokensRecipient {
+  function tokensReceived(
+     address operator, address from, address to,
+    uint amount, bytes userData, bytes operatorData
+  ) public;
+}
+----
+
+La implementación de esta interfaz es necesaria para cualquier dirección que desee ser notificada sobre, administrar o rechazar, la recepción de tokens. La misma lógica y requisitos se aplican tanto al destinatario de los tokens como a la interfaz del remitente de los tokens, con la restricción adicional de que si el destinatario fuera un contrato, tiene que implementar esta interfaz para evitar que los tokens que éste reciba, se bloqueen. Si el destinatario es un contrato y no registra una dirección que implemente esta interfaz, la transferencia de tokens fallará.
+
+Un aspecto importante es que solo se puede registrar un remitente de token y un destinatario de token por dirección. Por lo tanto, para cada transferencia de token ERC777, se invocan las mismas funciones de enganche tanto al debitar como al recibir tokens ERC777. Se puede reconocer a cada token específicamente en estas funciones de enganche, mediante el valor de msg.sender (la dirección del remitente) de la transacción, que será la dirección específica del contrato del token, para manejar un caso de uso particular.
+
+Por otro lado, los mismos enganches para el remitente y el destinatario de los tokens se pueden registrar para múltiples direcciones y los enganches pueden distinguir quiénes son el remitente y el destinatario deseado utilizando los parámetros `from` y` to`.
+
+En el enlace http://bit.ly/2qkAKba[reference implementación] se puede consultar una implementación del estándar ERC777 que está mencionada a la propuesta. ERC777 depende de una propuesta paralela para un contrato de registro, especificado en el estándar ERC820. Parte del debate sobre ERC777 es sobre la complejidad de adoptar dos grandes cambios a la vez: un nuevo estándar de token y un estándar de registro. La discusión continúa.(((range="endofrange", startref="ix_10tokens-asciidoc19")))(((range="endofrange", startref="ix_10tokens-asciidoc18")))
+
+[[erc721]]
+==== ERC721: Estándar para Tokens Distinguibles (o No-Indistinguibles) (Testamentos, Títulos de Propiedad, Letras)
+
+((("escrituras","escrituras y el estándar ERC721 para tokens distinguibles", id="ix_10tokens-asciidoc20", range="startofrange")))((("estándar ERC721 para tokens distinguibles", id="ix_10tokens-asciidoc21", range="startofrange")))((("tokens distinguibles (del inglés NFTs)","estándar ERC721 para tokens distinguibles", id="ix_10tokens-asciidoc22", range="startofrange")))((("tokens","estándar ERC721 para tokens distinguibles", id="ix_10tokens-asciidoc23", range="startofrange")))Todos los estándares de tokens que hemos visto hasta ahora son para tokens _indistinguibles_, lo que significa que las unidades del mismo tipo de token son intercambiables. El estándar de token ERC20 solo rastrea el saldo final de cada cuenta y no (explícitamente) rastrea la procedencia de ningún token.
+
+((("escritura","definición")))La propuesta http://bit.ly/2Ogs7Im[ERC721] se concibe como un estándar para tokens _no-indistingibles_, también conocidos como _escrituras_.
+
+Del Diccionario de Oxford (traducido al español):
+
+____
+_escritura_: es un documento legal que se firma y se entrega, especialmente uno relacionado con la posesión o titularidad de, o bien, cierta propiedad, o ciertos derechos legales.
+____
+
+El uso de la palabra "escritura" tiene en este ámbito, la intención de reflejar específicamente aquella parte de "titularidad de cierta propiedad", aún si no se le reconociere  como un "documento legal" en ninguna jurisdicción&#x2014;aún. Es probable que en algún momento del futuro, la propiedad legal basada en firmas digitales con base a una plataforma implementada sobre la cadena de bloques, sea reconocida legalmente.
+
+Los tokens no-indistinguibles rastrean la propiedad de una cosa única. Aquello que se posee puede ser un elemento digital, tal como un elemento de un juego o un objeto de colección digital; la "cosa" también puede ser un elemento físico cuya propiedad sea rastreable por un token, como una casa, un automóvil o una obra de arte. Las escrituras también pueden representar cosas con un valor negativo, tales como préstamos (deudas o compromisos), gravámenes, servidumbres, etc. El estándar ERC721 no establece ninguna limitación o expectativa sobre la naturaleza de la "cosa", cuya propiedad puede ser rastreada por una escritura, y solo se requiere que dicha "cosa" se pueda identificar de forma única, que en el caso de este estándar se logra mediante un pass:[<span class="keep-together">identificador</span>] de 256 bits.
+
+Los detalles del estándar y la discusión sobre éste, se pueden consultar en dos diferentes pass:[<span class="keep-together">segmentos</span>] de GitHub: 
+
+* Un foro de discusión sobre "incidentes" (issues) en el link: https://github.com/ethereum/EIPs/issues/721[Initial proposal]
+
+* Un foro de discusión para la integración de contenidos o "pull request": https://github.com/ethereum/EIPs/pull/841[Continued discussion]
+
+[[map_deed_owner]]
+Para alcanzar un entendimiento básico de las diferencias entre los estándares ERC20 y ERC721, es suficiente con consultar la estructura de datos interna utilizada en el ERC721:
+
+[source,solidity]
+----
+// Mapeo del identificador (ID) de una escritura con su titular
+mapping (uint256 => address) private deedOwner;
+----
+
+Mientras que el estándar ERC20 rastrea los saldos que le pertenecen a cada propietario, siendo el propietario la llave principal de la asignación, en el estándar ERC721 se rastrea al identificador o ID de cada escritura y quién es el propietario de ésta, siendo el ID de la escritura la llave principal de la asignación. De esta diferencia básica fluyen todas las demás propiedades de un token no-indistinguible.
+
+[[ERC721_interface]]
+La especificación de la interfaz de un contrato ERC721 es la siguinete:
+
+[source,solidity]
+----
+interface ERC721 /* is ERC165 */ {
+    event Transfer(address indexed _from, address indexed _to, uint256 _deedId);
+    event Approval(address indexed _owner, address indexed _approved,
+                   uint256 _deedId);
+    event ApprovalForAll(address indexed _owner, address indexed _operator,
+                         bool _approved);
+
+    function balanceOf(address _owner) external view returns (uint256 _balance);
+    function ownerOf(uint256 _deedId) external view returns (address _owner);
+    function transfer(address _to, uint256 _deedId) external payable;
+    function transferFrom(address _from, address _to, uint256 _deedId)
+        external payable;
+    function approve(address _approved, uint256 _deedId) external payable;
+    function setApprovalForAll(address _operateor, boolean _approved) payable;
+    function supportsInterface(bytes4 interfaceID) external view returns (bool);
+}
+----
+
+ERC721 also supports two _optional_ interfaces, one for metadata and one for enumeration of deeds and owners.
+
+[[ERC721_metadata]]
+La interfaz opcional del estándar ERC721 para metadatos es:
+
+[source,solidity]
+----
+interface ERC721Metadata /* is ERC721 */ {
+    function name() external pure returns (string _name);
+    function symbol() external pure returns (string _symbol);
+    function deedUri(uint256 _deedId) external view returns (string _deedUri);
+}
+----
+
+[[ERC721_enum]]
+Una interfaz opcional del estándar ERC721 destinada a la enumeración es(((range="endofrange", startref="ix_10tokens-asciidoc23")))(((range="endofrange", startref="ix_10tokens-asciidoc22")))(((range="endofrange", startref="ix_10tokens-asciidoc21")))(((range="endofrange", startref="ix_10tokens-asciidoc20"))):(((range="endofrange", startref="ix_10tokens-asciidoc4")))
+
+[source,solidity]
+----
+interface ERC721Enumerable /* is ERC721 */ {
+    function totalSupply() external view returns (uint256 _count);
+    function deedByIndex(uint256 _index) external view returns (uint256 _deedId);
+    function countOfOwners() external view returns (uint256 _count);
+    function ownerByIndex(uint256 _index) external view returns (address _owner);
+    function deedOfOwnerByIndex(address _owner, uint256 _index) external view
+        returns (uint256 _deedId);
+}
+----
+
+[[token_std_review]]
+=== Estándares para el Uso de Tokens
+
+((("estándares para tokens (en general)", seealso="specific standards, e.g.: ERC20 token standard", id="ix_10tokens-asciidoc24", range="startofrange")))((("tokens","aplicaciones de los estándares de tokens", id="ix_10tokens-asciidoc25", range="startofrange")))En la sección anterior revisamos varios estándares propuestos y un par de estándares ampliamente implementados para contratos de tokens. ¿Qué hacen exactamente estos estándares? ¿Deberíamos usar estos estándares? ¿Cómo deberían ser usados? ¿Deberían agregarse funcionalidades más allá de estos estándares? ¿Qué estándares deberíamos usar? Examinaremos algunas de esas preguntas a continuación.
+
+[[token_std_purpose]]
+==== ¿Qué son los Estándares de Tokens? ¿Cuál es su Razón de Ser?
+
+((("estándares para tokens (en general)","definición")))Los estándares para tokens son las especificaciones _mínimas_ para llevar a cabo una implementación. Lo que esto significa, es que para cumplir con, digamos, el estándar ERC20, se deben implementar como mínimo las funciones obligatorias y los comportamientos especificados por el estándar ERC20. Pero somos libres de agregar a las funcionalidades básicas, la implementación de funciones que no son parte del estándar.
+
+((("estándares para tokens (en general)","su propósito")))El objetivo principal de estos estándares es fomentar la interoperatividad entre contratos. Por lo tanto, todas las billeteras, casas de cambio, interfaces de usuario y otros componentes de infraestructura pueden _inter-acoplarse_ de manera predecible, con cualquier contrato que siga la especificación. En otras palabras, si implementamos un contrato que siga el estándar ERC20, todos los usuarios de billeteras existentes pueden comenzar a comerciar sin problema alguno, con nuestro token, sin necesitar ninguna actualización o esfuerzo de su parte.
+
+Los estándares están destinados a ser _descriptivos_, en lugar de _prescriptivos_. La forma en que se elija implementar a esas funciones depende del programador&#x2014;el funcionamiento interno del contrato no es relevante para el estándar. Tienen algunos requisitos funcionales, que rigen el comportamiento en circunstancias específicas, pero no prescriben una implementación de manera impositiva. Un ejemplo de esto es el comportamiento de una función +transfer+, si el valor a ser transferido, se establece en cero.
+
+[[should_use_std]]
+==== ¿Debemos Usar Estos Estándares?
+
+((("estándares para tokens (en general)","motivos para usarlos")))Dados todos estos estándares, cada desarrollador enfrenta un dilema: usar los estándares existentes o innovar más allá de las restricciones que imponen.
+
+Este dilema no es fácil de resolver. Los estándares necesariamente restringen nuestra capacidad de innovar, creando una "ruta" estrecha que debemos seguir. Por otro lado, los estándares básicos han surgido de la experiencia con cientos de aplicaciones y, a menudo, encajan bien con la gran mayoría de los casos de uso.
+
+Como parte de estas consideraciones, hay un problema aún mayor: el valor de la interoperabilidad y la adopción generalizada. Si elegimos utilizar un estándar existente, obtendremos a cambio el valor operativo de todos los sistemas diseñados para funcionar con ese estándar. Si elegimos apartarnos del estándar, deberemos tomar seriamente en cuenta el costo de construir toda la infraestructura de soporte por nuestra cuenta, o convencer a otros para que apoyen nuestro diseño como un nuevo estándar. La tendencia a forjarnos un camino propio, ignorando los estándares existentes, se conoce como el síndrome de "Esto Nadie Lo Ha Inventado" y es una actitud totalmente contraria a la cultura cooperativa del código abierto. Por otro lado, el progreso y la innovación dependen a veces de apartarse de la tradición. Es una elección difícil, así que: ¡considérela con cuidado!
+
+[NOTE]
+====
+Según Wikipedia, en su link: https://en.wikipedia.org/wiki/Not_invented_here[&#x201c;Not Invented Here&#x201d;] la postura de "Esto Nadie Lo Ha Inventado" suele ser adoptada por las culturas sociales, corporativas o institucionales que evitan el uso o la compra de productos, investigaciones, estándares o conocimientos ya existentes, debido a sus orígenes y costos externos, como regalías.
+====
+
+
+[[security_maturity]]
+==== Seguridad por Maduración
+
+((("seguridad (contratos inteligentes)","elecciones de implementación de estándares para tokens")))((("estándares para tokens (en general)","elecciones de implementación")))Más allá de la elección del estándar, existe la elección paralela de la _implementación_. Cuando se decide utilizar un estándar como ERC20, se debe decidir también cómo implementar un diseño compatible. Hay una serie de implementaciones de "referencia" existentes que se utilizan ampliamente en el ecosistema Ethereum, o podría escribir la suya desde cero. Nuevamente, esta elección representa un dilema que puede tener serias implicaciones de seguridad.
+
+Las implementaciones existentes son &#x201c;probadas-en-el-campo-de-batalla.&#x201d; Si bien es imposible demostrar que son seguras, muchas de ellas son el fundamento de apoyo para albergar fondos (en forma de tokens) valorados en millones de dólares. Han sido atacadas, repetida y vigorosamente. Y hasta ahora, no se han descubierto vulnerabilidades significativas. Escribir nuestra propia implementación no es nada fácil&#x2014;hay muchas formas sutiles en que un contrato puede verse comprometido. Es mucho más seguro usar una implementación bien comprobada y ampliamente utilizada. En nuestros ejemplos, utilizamos la implementación OpenZeppelin del estándar ERC20, ya que esta implementación se centra en la seguridad desde el principio.
+
+Si utilizamos una implementación existente, también puede ser extendida. Una vez más, sin embargo, hay que tener cuidado con esta tentativa. La complejidad es el enemigo de la seguridad. ((("superficies de ataque")))Cada línea de código que agregamos expande la _superficie de ataque_ de nuestro contrato y podría representar una vulnerabilidad al acecho. Es posible que no se note ningún problema de seguridad al momento del despliegue, hasta el día que se ponga mucho dinero sobre el contrato y alguien venga y lo desbarate.
+
+[TIP]
+====
+Las diversas opciones para elegir estándares y modos de implementación, son partes importantes del diseño general de contratos inteligentes seguros, pero no son las únicas consideraciones. Véase <<smart_contract_security>>.(((range="endofrange", startref="ix_10tokens-asciidoc25")))(((range="endofrange", startref="ix_10tokens-asciidoc24")))
+====
+
+
+[[extend_token_interface]]
+=== Extensiones a los Estándares de Interfaz del Token
+
+((("estándares para tokens (en general)","sus extensiones")))Los estándares de tokens discutidos en este capítulo proporcionan una interfaz muy mínima, con funcionalidad limitada. Muchos proyectos han creado implementaciones extendidas para admitir las características que necesitan para sus aplicaciones. Algunas de estas características incluyen:
+
+Controles Especiales para el Dueño:: La capacidad de dar direcciones específicas o conjuntos de direcciones (es decir, esquemas de múltiples firmas), capacidades especiales, tales como asignar listas negras, listas blancas, acuñado de nuevas monedas, recuperación de monedas, etc.
+
+"Quema" o Eliminación:: La capacidad de destruir deliberadamente, o (&#x201c;quemar&#x201d;) tokens al transferirlos a direcciones inmanejables o mediante la eliminación del saldo a favor de ciertas cuentas y la disminución del saldo neto de tokens en el contrato.
+
+Emisión o Acuñado:: La capacidad de agregar al suministro total de tokens nuevas monedas, a un ritmo predecible (predeterminado), o bien por "mandato" del creador del token.
+
+Colectas:: La capacidad de ofrecer tokens en venta, por ejemplo a través de una subasta, ventas en el mercado, subastas inversas, etc.
+
+Techos:: La habilidad de establecer de manera predefinida e inmutable, límites en el suministro total (lo opuesto a la característica de "emisión").
+
+Recuperación Mediante Accesos Privilegiados:: Funciones para recuperar fondos, revertir transferencias o desmantelar el token que puede ser activado por una dirección designada o un conjunto de direcciones.
+
+Asignar a Listas Blancas:: Es la capacidad de restringir acciones (como transferencias de tokens) a direcciones específicas. Se usa más comúnmente para ofrecer tokens a "inversionistas acreditados" después de examinar las reglas de diferentes jurisdicciones. Generalmente hay un mecanismo para actualizar la lista blanca.
+
+Asignar a Listas Negras:: La capacidad de restringir las transferencias de tokens al bloquear en el contrato a ciertas  direcciones específicas. Generalmente hay una función para actualizar la lista negra.
+
+Existen implementaciones de referencia para muchas de estas funciones, por ejemplo en la biblioteca OpenZeppelin. Algunas de estas son específicas para cada caso de uso y solo se implementan en unos pocos tokens. Hasta el momento, no hay estándares ampliamente aceptados para las interfaces de estas funciones.
+
+Como se discutió anteriormente, la decisión de extender un estándar de token con funcionalidades adicionales, representa un equilibrio entre innovación y riesgo así como entre interoperatividad y seguridad.
+
+[[tokens_ico]]
+=== Tokens y sus Ofertas Iniciales al Público (ICOs)
+
+((("Ofertas Iniciales de Monedas (ICOs)","ICOs y Tokens")))((("tokens",tokens e ICOs")))Los tokens han tenido un desarrollo explosivo en el ecosistema Ethereum. Es probable que se conviertan en un componente muy importante de todas las plataformas de contratos inteligentes como Ethereum.
+
+Sin embargo, la importancia y el impacto futuro de estos estándares no deben confundirse con ningún tipo de respaldo a las actuales ofertas de tokens. Como en cualquier tecnología de etapa inicial, la primera ola de productos y compañías fracasará casi por completo, y algunas fracasarán espectacularmente. Muchos de los tokens que se ofrecen en Ethereum hoy, son estafas apenas disfrazadas, esquemas piramidales y acaparamiento de dinero.
+
+El truco consiste en separar la visión a largo plazo y el impacto de esta tecnología, que probablemente sea enorme, de la burbuja cortoplacista de las ICO de diversos tokens, que destila fraudes por todas sus aristas. Los estándares de tokens y la plataforma sobrevivirán a la manía actual de los tokens, y luego probablemente cambiarán el mundo.
+
+=== Conclusiones
+
+Los tokens son un concepto muy poderoso en Ethereum y pueden formar la base de muchas aplicaciones descentralizadas importantes. En este capítulo analizamos los diferentes tipos de tokens y estándares de tokens, y hemos creado nuestro primer token con sus aplicaciones relacionadas. Volveremos a visitar los tokens nuevamente en <<decentralized_applications_chap>>, donde usaremos un token no-indistinguible como base para una aplicación descentralizada de subastas.(((range="endofrange", startref="ix_10tokens-asciidoc0")))

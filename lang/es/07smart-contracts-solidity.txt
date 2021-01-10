@@ -1,0 +1,1051 @@
+[[smart_contracts_chapter]]
+== Contratos Inteligentes y Solidity
+
+((("contratos inteligentes", id="ix_07smart-contracts-solidity-asciidoc0", range="startofrange")))Tal y como lo discutimos en el <<intro_chapter>>, existen dos tipos diferentes de cuentas en Ethereum: ((("cuentas de titularidad externa o EOA (del inglés Externally Owned Account)","cuentas de contratos en comparación")))las cuentas de titularidad externa (del inglés, EOAs) y las cuentas de contratos. Las EOAs son controladas por usuarios, generalmente mediante un tipo especial de software tales como las aplicaciones de carteras que son externas a la plataforma de Ethereum. ((("cuentas de contratos","cuentas EOA en comparación")))((("contratos inteligentes","cuentas EOA en comparación")))Por el contrario, las cuentas de contratos están controladas por el código del programa (también conocido comúnmente como &#x201c;contrato inteligente&#x201d;) que es ejecutado por la misma máquina virtual de Ethereum. En resumen, las EOAs son cuentas simples sin ningún código asociado o almacenamiento de datos, mientras que las cuentas de contratos tienen código asociado y un almacenamiento de datos. Las EOAs están controladas por transacciones creadas y firmadas criptográficamente con una llave privada en el "mundo real" externo e independiente del protocolo, mientras que las cuentas de contratos no tienen llaves privadas y, por lo tanto, "se controlan" de la manera predeterminada y prescrita por el código de su contrato inteligente. Ambos tipos de cuentas se identifican mediante direcciones de Ethereum. En este capítulo, discutiremos las cuentas de contratos y el código del programa que las controla.
+
+[[smart_contracts_definition]]
+=== ¿Qué es un Contrato Inteligente?
+
+((("contratos inteligentes","definición")))El término _contrato inteligente_ ha sido utilizado a lo largo de los años para describir una amplia variedad de cosas diferentes. ((("transacción creadora de un contrato")))((("Szabo, Nick")))En la década que siguió a 1990, el criptógrafo Nick Szabo acuñó el término y lo definió como “un conjunto de promesas, especificadas de manera digital, incluyendo protocolos dentro de los cuales las partes se desempeñan con base a las promesas de los otros.” Desde entonces, el concepto de contratos inteligentes ha evolucionado, especialmente tras la introducción de plataformas basadas en las cadenas de bloques descentralizadas, como resultado de la invención del Bitcoin en 2009. En el contexto de Ethereum, el término es realmente un poco inapropiado, dado que los contratos inteligentes de Ethereum no son ni inteligentes (en el sentido de la inteligencia artificial) ni son contratos en el sentido legal, pero el termino se ha terminado consolidando. En este libro, utilizamos el término “contratos inteligentes” para referirnos a un programa de computadora inmutable que se ejecuta de manera determinista en el contexto de la Máquina Virtual de Ethereum como parte del protocolo de la red de Ethereum&#x2014;es decir, en la computadora global descentralizada de Ethereum.
+
+Vamos a desentrañar esta definición:
+
+Programas de computador::
+Los contratos inteligentes no son más que programas de computadora. La palabra &#x201c;contrato&#x201d; no poseerá un significado legal en este contexto.
+
+Inmutable::
+Una vez desplegado, el código de un contrato inteligente no se puede cambiar. A diferencia del software tradicional, la única forma de modificar un contrato inteligente es implementar una nueva instancia de mismo.
+
+Determinístico::
+El resultado de la ejecución de un contrato inteligente siempre será el mismo para todos los nodos que lo ejecutan, dado que queden definidos el contexto de la transacción que inició su ejecución y el estado de la cadena de bloques de Ethereum en el momento de la ejecución.
+
+Contexto de la Máquina Virtual o EVM::
+Los contratos inteligentes operan con un contexto de ejecución bastante limitado. Pueden acceder a su propio estado, al contexto de la transacción que los llamó y a cierta información sobre los bloques de la cadena, más recientes.
+
+Computadora global descentralizada::
+La máquina virtual o EVM se ejecuta como una instancia local en cada nodo de Ethereum, pero debido a que todas las instancias de la EVM operan en el mismo estado inicial y producen el mismo estado final, el sistema en su conjunto opera como una única "computadora global".
+
+[[smart_contract_lifecycle]]
+=== Ciclo de Vida de un Contrato Inteligente
+
+((("contratos inteligentes","su ciclo de vida")))Los contratos inteligentes están típicamente redactados en un lenguaje de alto nivel, tal como Solidity. Pero con el fin de ejecutarse, estos deben ser compilados a un código binario de bajo nivel que se ejecuta en la máquina virtual, la EVM. Una vez compilados, estos se pueden desplegar en la plataforma de Ethereum mediante una transacción especial _creadora del contrato_; dicha transacción es identificada con ésa designación, al tener como destino a la dirección especial creadora de contratos, a saber: +0x0+ (véase <<contract_reg>>). Todo contrato es identificado mediante una dirección de Ethereum, la cual es calculada a partir de la transacción creadora del contrato, en función de la cuenta originadora y el nonce. La dirección de Ethereum de un contrato se puede usar en cualquier transacción como el destinatario de la misma, enviando fondos al contrato o invocando una de las funciones del mismo. Tenga en cuenta que, a diferencia de las cuentas manejadas externamente, o las EOA, aquí no hay llaves privadas asociadas con una cuenta creada para un nuevo contrato inteligente. Como creador del contrato, nadie obtiene necesariamente, privilegios especiales a nivel de protocolo (aunque podemos instruir estos privilegios explícitamente en el contrato inteligente). A ciencia cierta, no vamos a recibir la "llave privada" de la cuenta del contrato, que de hecho no va a existir&#x2014;podemos decir que la cuenta de un contrato inteligente se posee a sí misma.
+
+((("transacciones","transacciones y contratos inteligentes")))Es de destacar, que los contratos _únicamente se ejecutan si se les invoca mediante una transacción_. Todos los contratos inteligentes en Ethereum son ejecutados, en ultima instancia, debido a una transacción iniciada por una cuenta manejada externamente, o una EOA. Un contrato puede invocar a otro contrato que a su vez, puede invocar a otro contrato, y así sucesivamente, pero el primer contrato en ser invocado en semejante cadena de ejecuciones, siempre habrá sido invocado por una transacción desencadenada por una EOA. Los contratos nunca se ejecutan “por sí mismos” o “en segundo plano”. Los contratos, efectivamente permanecen inactivos, hasta que una transacción desencadena alguna forma de ejecución respecto a ellos, bien sea directa o indirectamente, como parte de una cadena de invocaciones de contratos. También vale la pena destacar que los contratos inteligentes no se pueden ejecutar "en paralelo" de ninguna manera&#x2014;el computador global de Ethereum puede considerarse como una máquina de una sola secuencia de ejecuciones.
+
+((("transacciones","como procesos atómicos")))Las transacciones son _atómicas_, independientemente de cuantos contratos las mismas invoquen, o de lo que tales contratos hacen cuando son invocados. Las transacciones son ejecutadas en su integridad, y cualquier cambio en el estado global del mundo de Ethereum (ya sea en contratos, en cuentas, etc.) únicamente quedará asentado si la ejecución de todas las instrucciones de la transacción son ejecutadas de manera exitosa. Una ejecución exitosa significa que todas las instrucciones fueron ejecutadas sin error alguno y que se completó la ejecución de la última instrucción. Si la ejecución falla debido a algún error, todos sus efectos (cualquier cambio de estado que se hubiera estado acumulando) es “abortado” tal y como si la transacción nunca se hubiese intentado ejecutar en primer lugar. Una transacción fallida es, sin embrago, registrada como un proceso que se intentó en la cadena de bloques, y el éter consumido como combustible para esta ejecución es deducido del saldo de la cuenta originadora, pero por lo demás, esta transacción fallida no tiene otros efectos en el estado del contrato o de la cuenta.
+
+((("contratos inteligentes","eliminándolos")))Como se mencionó previamente, es importante recordar que el código de un contrato no se puede cambiar. Sin embargo, un contrato puede ser “eliminado,” borrando su código y su estado interno (su almacenamiento) de su dirección, dejando una cuenta en blanco. Cualquier transacción enviada a la cuenta de ésta dirección una vez que el contrato ha sido eliminado no va a desencadenar la ejecución de ninguna instrucción de código, porque ya no habrá allí ningún código que ejecutar. ((("código operacional SELFDESTRUCT")))Para eliminar un contrato, podemos ejecutar un código operacional se la máquina virtual, la EVM, llamado +SELFDESTRUCT+ (antiguamente llamado +SUICIDE+). ((("combustible negativo")))Semejante operación genera un costo de combustible “negativo en unidades de gas”, es decir, genera un reembolso de combustible, incentivando de este modo la liberación los recursos de la red cliente a partir de la eliminación de los estados almacenados. La eliminación de un contrato no eliminará, por ende, el historial de transacciones (el "pasado") del contrato, dado que la misma cadena de bloques de por sí, es inmutable. También es importante destacar que la instrucción +SELFDESTRUCT+ únicamente estará disponible si el autor del contrato programó al contrato inteligente para tener específicamente esa funcionalidad. Si las líneas de código del contrato no albergan el comando operacional +SELFDESTRUCT+, o bien fuera una instrucción inaccesible, el contrato inteligente no podrá ser eliminado.
+
+[[high_level_languages]]
+=== Introducción a los lenguajes de alto nivel de Ethereum
+
+((("EVM (Máquina Virtual de Ethereum)","y los lenguajes de alto nivel de Ethereum", id="ix_07smart-contracts-solidity-asciidoc1", range="startofrange")))((("contratos inteligentes","y los lenguajes de alto nivel de Ethereum", id="ix_07smart-contracts-solidity-asciidoc2", range="startofrange")))La EVM es una máquina virtual que ejecuta una forma especial ((("código binario de la EVM")))de código llamado _código binario de la EVM_, similar al de nuestros CPUs en nuestros computadores, que ejecutan un código de máquina tal como el del estándar x86_64. A continuación examinaremos el funcionamiento y el lenguaje de la EVM con mucho más detalle en el <<evm_chapter>>. En esta sección veremos cómo se escriben los contratos inteligentes para ejecutarse en la EVM.
+
+Si bien es posible programar contratos inteligentes directamente en código binario, el código binario específicamente de la EVM es bastante difícil de manejar y muy difícil de leer y comprender para los programadores. En cambio, la mayoría de los desarrolladores de Ethereum usan un lenguaje de alto nivel para escribir programas y un compilador para convertirlos en su código binario.
+
+Si bien cualquier lenguaje de alto nivel podría adaptarse para escribir contratos inteligentes, adaptar un lenguaje arbitrario para que sea compilable al código binario específico de la EVM es un ejercicio bastante engorroso y, en general, conduciría a un cierto nivel de confusión. Los contratos inteligentes operan en un entorno de ejecución altamente limitado y minimalista (la máquina virtual EVM). Además de esto, deben estar disponibles un conjunto especial de variables y funciones del sistema que son específicas de la EVM. Como tal, es más fácil construir un lenguaje para contratos inteligentes desde cero, que crear un lenguaje de propósito general, adaptado para la redacción de contratos inteligentes. Como resultado, han surgido varios lenguajes de propósito especial para programar contratos inteligentes. Ethereum tiene varios lenguajes de este tipo, junto con los compiladores necesarios para producir el código binario ejecutable en la EVM.
+
+((("programación declarativa")))En general, los lenguajes de programación pueden clasificarse en dos paradigmas de programación amplios: el _declarativo_ y el _imperativo_, también conocidos como _funcionales_ y _procedimentales_, respectivamente. En la programación declarativa, escribimos funciones que expresan la _lógica_ de un programa, pero no su _secuencia_. ((("efectos colaterales")))La programación declarativa se utiliza para crear programas donde no hay _efectos colaterales_, lo que significa que no hay cambios de estado fuera de una función. Los lenguajes de programación declarativos incluyen Haskell y SQL. ((("lenguajes de programación híbridos")))((("programación imperativa")))La programación imperativa, por el contrario, es donde un programador escribe un conjunto de procedimientos que combinan la lógica y la secuencia de un programa. Los lenguajes de programación imperativos incluyen C++ y Java. Algunos lenguajes son “híbridos”, lo que significa que fomentan la programación declarativa, pero también pueden usarse para expresar un paradigma de programación imperativo. Dichos lenguajes híbridos incluyen Lisp, JavaScript y Python. En general, cualquier lenguaje imperativo puede usarse para redactar código en un paradigma declarativo, pero a menudo resulta en un código poco elegante. En comparación, los lenguajes declarativos puros no pueden usarse para redactar el código en un paradigma imperativo. En lenguajes puramente declarativos, _no hay “variables”._
+
+Si bien la programación imperativa es más utilizada por los programadores, puede resultar muy difícil para escribir programas que se ejecuten _exactamente como se esperaba_. La capacidad de cualquier parte del programa para cambiar el estado de cualquier otra hace que sea difícil razonar sobre la ejecución de un programa e introduce muchas oportunidades para errores de código. La programación declarativa, en comparación, facilita la comprensión de cómo se comportará un programa: dado que no tiene efectos colaterales, cualquier parte de un programa puede entenderse de forma aislada.
+
+En los contratos inteligentes, los errores literalmente cuestan dinero. Como resultado, es muy importante escribir contratos inteligentes sin efectos inesperados. Para hacer esto, debemos poder razonar claramente sobre el comportamiento esperado del programa. Por lo tanto, los lenguajes declarativos juegan un papel mucho más importante en los contratos inteligentes, que el papel que juegan en el software de uso general. Sin embargo, como lo veremos próximamente, el lenguaje más utilizado para los contratos inteligentes (Solidity) es imperativo. ¡Los programadores, al igual que la mayoría de los seres humanos, se resisten al cambio!
+
+Los lenguajes de programación de alto nivel actualmente admitidos para contratos inteligentes incluyen (ordenados por su antigüedad aproximada):
+
+LLL:: ((("LLL")))Un lenguaje de programación funcional (declarativo), con sintaxis tipo Lisp. Fue el primer lenguaje de alto nivel para los contratos inteligentes de Ethereum, pero hoy en día rara vez se usa.
+
+Serpent:: ((("Serpent")))Un lenguaje de programación procedimental (imperativo) con una sintaxis similar a la de Python. También se puede usar para escribir código funcional (declarativo), aunque no está completamente libre de efectos colaterales.
+
+Solidity:: ((("Solidity")))Un lenguaje de programación procedimental (imperativo) con una sintaxis similar a la de JavaScript, pass:[C ++], o Java. Es el lenguaje más popular y el utilizado con mayor frecuencia para los contratos inteligentes de Ethereum.
+
+Vyper:: ((("Vyper")))Un lenguaje desarrollado más recientemente, similar a Serpent y nuevamente con una sintaxis similar a la de Python. Pretendía acercarse todo lo posible a un lenguaje puramente funcional, más aún que Serpent, siendo similar a Python, pero sin la intención de reemplazar a Serpent.
+
+Bamboo:: ((("Bamboo")))Un lenguaje recientemente desarrollado, influenciado por Erlang, con transiciones de estado explícitas y sin secuencias iterativas (o bucles). Destinado a reducir los efectos colaterales y aumentar la auditabilidad. Es un lenguaje muy nuevo, y aún no se ha adoptado ampliamente.
+
+Como puede verse, hay muchos lenguajes para elegir. Sin embargo, de todos estos, Solidity es, con mucho, el más popular, hasta el punto de ser el lenguaje de alto nivel _de facto_ de Ethereum e incluso el de otras cadenas de bloques similares a la EVM. Pasaremos la mayor parte de nuestro tiempo usando Solidity, pero también exploraremos algunos de los ejemplos en otros lenguajes de alto nivel para comprender sus diferentes filosofías.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc2")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc1")))
+
+[[building_a_smart_contract_sec]]
+=== Desarrollando un Contrato Inteligente con Solidity
+
+((("contratos inteligentes","desarrollando con Solidity", id="ix_07smart-contracts-solidity-asciidoc3", range="startofrange")))((("Solidity","desarrollando un contrato inteligente con Solidity", id="ix_07smart-contracts-solidity-asciidoc4", range="startofrange")))Solidity ((("contratos inteligentes","Solidity y contratos inteligentes", id="ix_07smart-contracts-solidity-asciidoc5", range="startofrange")))((("Solidity","contratos inteligentes y Solidity", id="ix_07smart-contracts-solidity-asciidoc6", range="startofrange")))fue concebido por el ((("Dr. Wood, Gavin","Dr. Wood y Solidity")))Dr. Gavin Wood (co-autor de este libro), como un lenguaje explícito para escribir contratos inteligentes con funciones para apoyar directamente la ejecución en el entorno descentralizado de la computadora global de Ethereum. Los atributos resultantes son bastante generales, por lo que terminó siendo utilizado para desarrollar contratos inteligentes en varias otras plataformas basadas en cadenas de bloques. Fue desarrollado por Christian Reitiwessner y luego también por Alex Beregszaszi, Liana Husikyan, Yoichi Hirai, además de varios otros antiguos contribuyentes del núcleo de Ethereum. Solidity ahora se desarrolla y se mantiene como un proyecto independiente https://github.com/ethereum/solidity[en GitHub].
+
+El principal "producto" del proyecto Solidity es el compilador de Solidity, +solc+, que convierte en código binario de la EVM, los programas escritos en el lenguaje de Solidity. El proyecto también gestiona el importante estándar de "interfaz binaria de aplicación" (del inglés, ABI) para contratos inteligentes de Ethereum, que exploraremos en detalle en este capítulo. Cada versión del compilador de Solidity, corresponde a, y compila, una versión específica del pass:[<span class="keep-together">lenguaje</span>] de Solidity.
+
+Para comenzar, descargaremos un ejecutable binario del compilador Solidity. Luego desarrollaremos y compilaremos un contrato simple, dándole entonces, continuidad al ejemplo con el que comenzamos en el <<intro_chapter>>.
+
+==== Eligiendo una Versión de Solidity
+
+((("versiones semánticas")))((("Solidity","seleccionando la versión de Solidity")))Solidity sigue un modelo de versiones llamado https://semver.org/[_versiones semánticas_], que se especifica mediante números de versión estructurados como tres números separados por puntos: __++MAYOR.MENOR.PARCHE++__. El número "mayor" se incrementa para los cambios mayores e _incompatibles con versiones anteriores_, el número "menor" se incrementa a medida que se agregan características compatibles con versiones anteriores entre las divulgaciones (relesases) principales, y el número de "parche" se incrementa para las correcciones de errores de código, compatibles con versiones anteriores.
+
+Al momento de escribirse este libro, Solidity está en la versión 0.4.24. Las reglas para la versión principal 0, que es para el desarrollo inicial de un proyecto, son diferentes: cualquier cosa puede cambiar en cualquier momento. En la práctica, Solidity trata el número "menor" como si fuera la versión principal y el número "parche" como si fuera la versión menor. Por lo tanto, en 0.4.24, el número 4 se considera la versión principal y el número 24, la versión secundaria.
+
+La versión principal 0.5 de Solidity se anticipa inminentemente.
+
+Como vimos en el <<intro_chapter>>, nuestros programas en Solidity pueden contener una directiva "pragma" que especifica las versiones mínimas y máximas de Solidity con las que es compatible el código y que pueden usarse para compilar nuestro contrato.
+
+Dado que Solidity está evolucionando rápidamente, a menudo es mejor instalar la última versión.
+
+==== Descarga e Instalación
+
+((("Solidity", "descargar e instalar")))Existen varios métodos que pueden usarse para descargar e instalar Solidity, ya sea como versión binaria o compilándola desde su código fuente. Puede encontrar instrucciones detalladas en el enlace: http://bit.ly/2RrZmup[the Solidity documentation].
+
+Aquí se explica cómo instalar la última versión binaria de Solidity en un sistema operativo Ubuntu ó Debian, utilizando el administrador de paquetes +apt+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo add-apt-repository ppa:ethereum/ethereum</strong>
+$ <strong>sudo apt update</strong>
+$ <strong>sudo apt install solc</strong>
+</pre>
+++++
+
+Una vez que tengamos +solc+ instalado, verificamos la versión, ejecutando el siguiente comando:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --version</strong>
+solc, the solidity compiler commandline interface
+Version: 0.4.24+commit.e67f0147.Linux.g++
+</pre>
+++++
+
+Hay muchas otras formas de instalar Solidity, dependiendo de su sistema operativo y sus requerimientos, incluida la compilación del código fuente directamente. Para obtener más información, consúltese https://github.com/ethereum/solidity [].
+
+
+
+==== Entorno de Desarrollo
+
+((("Solidity","entorno de desarrollo")))Para desarrollar en Solidity, puede usar cualquier editor de texto y el uso de +solc+ en la línea de comandos. Sin embargo, es posible que algunos editores de texto diseñados para el desarrollo, como Emacs, Vim y Atom, ofrezcan características adicionales como el resaltado de sintaxis y macros que facilitan el desarrollo en Solidity.
+
+También hay entornos de desarrollo basados en la web, como https://remix.ethereum.org/[Remix IDE] y https://ethfiddle.com/[EthFiddle].
+
+Utilice las herramientas que le hagan más productivo. Al final, los programas basados en Solidity son solo archivos de texto sin formato. Si bien los sofisticados editores y los entornos de desarrollo pueden facilitar las cosas, no necesita nada más que un simple editor de texto, como nano (para Linux/Unix), TextEdit (para macOS) o incluso NotePad (para Windows). Simplemente guarde el código fuente de su programa con una extensión _.sol_ y el compilador de Solidity lo reconocerá como un programa Solidity.
+
+==== Redactando un Simple Programa en Solidity
+
+((("Solidity", "escribir un simple programa en")))En el <<intro_chapter>>, escribimos nuestro primer programa en Solidity. Cuando creamos el contrato +Faucet+, utilizamos el Entorno de Desarrollo Integrado (del inglés IDE) de Remix (o Remix IDE),  para compilar y desplegar el contrato. En esta sección, volveremos a visitar, mejorar y embellecer nuestro contrato +Faucet+.
+
+Nuestro primer intento lucía como en el <<original_sol_faucet>>.
+
+[[original_sol_faucet]]
+.Faucet.sol: La implementación de un grifo de monedas en Solidity
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet.sol[]
+----
+====
+
+==== Compilando con el Compilador de Solidity (solc)
+
+((("contrato Faucet.sol (ejemplo de prueba)", "compilación"))) ((("solc (Compilador de Solidity)")))(((("Compilador de Solidity (solc)")))Ahora, lo que haremos será usar el compilador de Solidity en la línea de comandos para compilar nuestro contrato directamente. El compilador de Solidity +solc+ ofrece una variedad de opciones, que pueden verse utilizando el argumento +-help+.
+
+Utilizaremos los argumentos +-bin+ y +-optimize+ de +solc+ para producir un código binario optimizado de nuestro contrato de ejemplo:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --optimize --bin Faucet.sol</strong>
+======= Faucet.sol:Faucet =======
+Binary:
+6060604052341561000f57600080fd5b60cf8061001d6000396000f300606060405260043610603e5
+763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416
+632e1a7d4d81146040575b005b3415604a57600080fd5b603e60043567016345785d8a00008111156
+06357600080fd5b73ffffffffffffffffffffffffffffffffffffffff331681156108fc0282604051
+600060405180830381858888f19350505050151560a057600080fd5b505600a165627a7a723058203
+556d79355f2da19e773a9551e95f1ca7457f2b5fbbf4eacf7748ab59d2532130029
+</pre>
+++++
+
+
+El resultado que +solc+ produce es un código binario serializado en formato hexadecimal que puede enviarse a la cadena de bloques de Ethereum.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc6")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc5")))
+
+[[eth_contract_abi_sec]]
+=== El ABI de un Contrato de Ethereum
+
+((("ABI (interfaz binaria de aplicación)", id="ix_07smart-contracts-solidity-asciidoc7", range="startofrange")))((("interfaz binaria de aplicación (ABI)", id="ix_07smart-contracts-solidity-asciidoc8", range="startofrange")))((("contratos inteligentes","ABI", id="ix_07smart-contracts-solidity-asciidoc9", range="startofrange")))En el ámbito del software de computadoras, una _interfaz binaria de aplicación_ es una interfaz entre dos módulos de programación; a menudo, entre el sistema operativo y los programas de usuario. Una ABI define cómo se accede a las estructuras y funciones de datos a nivel de _código de máquina_; Esto no debe confundirse con una API, que define este acceso en formatos de alto nivel, a menudo legibles por humanos, como _código fuente_. La ABI es, por lo tanto, la forma principal de codificar y decodificar datos dentro y fuera del código a nivel de máquina.
+
+En Ethereum, la ABI se usa para codificar las llamadas a contratos para la EVM y para leer datos provenientes de las transacciones. El propósito de una ABI es definir las funciones que en un contrato que se pueden invocar y describir cómo es que cada función aceptará argumentos y devolverá sus resultados.
+
+La ABI de un contrato se especifica dentro de un arreglo JSON de descripciones de funciones (consúltese <<solidity_functions>>) y de eventos (consúltese <<solidity_events>>). Una descripción de función es un objeto JSON con los campos `tipo`,`nombre`, `entradas`,`salidas`, `constante` y `pagable` (`type`, `name`, `inputs`, `outputs`, `constant`, y `payable`). Un objeto de descripción de evento tiene los campos `tipo`,`nombre`, `entradas` y `anónimo` (`type`, `name`, `inputs`, y `anonymous`).
+
+Usamos el compilador de Solidity para la línea de comandos, el +solc+ para producir la ABI para nuestro contrato de ejemplo pass:[<span class="keep-together"><em>Faucet.sol</em></span>] :
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --abi Faucet.sol</strong>
+======= Faucet.sol:Faucet =======
+Contract JSON ABI
+[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}], \
+"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable", \
+"type":"function"},{"payable":true,"stateMutability":"payable", \
+"type":"fallback"}]
+</pre>
+++++
+
+Como puede verse, el compilador produce un arreglo tipo JSON que describe las dos funciones definidas por _Faucet.sol_. Este JSON puede ser utilizado por cualquier aplicación que quiera acceder al contrato +Faucet+ una vez que se despliegue. Usando la ABI, una aplicación tal como una billetera o un navegador para una aplicación descentralizada (o DApp) puede construir transacciones que llamen a las funciones de +Faucet+ con los argumentos, correspondientes a los tipos de argumentos, correctos. Por ejemplo, una billetera sabría que para llamar a la función +withdraw+ tendría que proporcionar un argumento tipo +uint256+ denominado +withdraw_amount+. La billetera podría solicitar al usuario que proporcione ese valor, para luego crear una transacción que lo codifique, para así ejecutar la función +withdraw+.
+
+Todo lo que se necesita para que una aplicación interactúe con un contrato, es la ABI de dicho contrato y la dirección donde el mismo se ha desplegado.
+
+[[solidity_pragma]]
+==== Seleccionando un Compilador para Solidity y una Versión del Lenguaje
+
+((("Solidity","seleccionando el compilador y la versión del lenguaje")))Como pudo verse en el código anterior, nuestro contrato +Faucet+ se compila exitosamente con la versión 0.4.21 de Solidity. Pero, ¿y si hubiéramos usado una versión diferente del compilador Solidity? El lenguaje todavía está en constante cambio y las cosas pueden cambiar de maneras inesperadas. Nuestro contrato es bastante simple, pero ¿qué pasa si nuestro programa usa una función que solo se agregó en Solidity para la versión 0.4.19 y tratamos de compilarlo con la versión 0.4.18?
+
+((("directiva del compilador")))((("versión pragma")))Para resolver tales problemas, Solidity ofrece una directiva de _compilador_ conocida como _versión pragma_ que le instruye al compilador que el programa espera una versión específica de compilador y de lenguaje. Veamos un ejemplo:
+
+[[compiler_version]]
+----
+pragma solidity ^0.4.19;
+----
+
+El compilador de Solidity leerá la versión pragma y generará un error si la versión del compilador es incompatible con la versión pragma. En este caso, nuestra versión pragma dice que este programa puede ser compilado por un compilador Solidity con una versión mínima de 0.4.19. Sin embargo, el símbolo +^+ establece que permitimos la compilación con cualquier _revisión menor_ por encima de la versión 0.4.19; por ejemplo, la 0.4.20, pero no la 0.5.0 (que es una revisión mayor, no una revisión menor). Las directivas de pragma no se compilan en el código binario para la EVM. Solo los utiliza el compilador para verificar la compatibilidad.
+
+Agreguemos una directiva pragma a nuestro contrato +Faucet+. Denominaremos al nuevo archivo con el nombre de pass:[<span class="keep-together"><em>Faucet2.sol</em></span>], para realizar un seguimiento de nuestros cambios a medida que avanzamos a través de estos ejemplos que comienzan en el <<add_pragma_to_faucet>>.
+
+[[add_pragma_to_faucet]]
+.Faucet2.sol: Agregando la versión pragma a Faucet
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet2.sol[]
+----
+====
+
+Agregar una versión pragma es una práctica recomendada, ya que evita problemas con el compilador y las versiones del lenguaje que no coinciden. Exploraremos otras prácticas recomendadas y continuaremos mejorando el contrato +Faucet+ a lo largo de este capítulo.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc9")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc8")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc7")))
+
+=== Programando con Solidity
+
+((("Solidity","programación con Solidity", id="ix_07smart-contracts-solidity-asciidoc10", range="startofrange")))En esta sección, veremos algunas de las capacidades del lenguaje Solidity. Como lo mencionamos en el <<intro_chapter>>, nuestro primer ejemplo del contrato fue muy simple y también defectuoso de varias maneras. Aquí lo mejoraremos gradualmente, mientras exploramos cómo usar Solidity. Sin embargo, esto no será un tutorial completo de Solidity, ya que Solidity es sumamente complejo y evoluciona rápidamente. Cubriremos los conceptos básicos y ofreceremos una base suficiente para que el lector pueda explorar el resto por su cuenta. La documentación para Solidity se puede encontrar en el enlace:
+https://solidity.readthedocs.io/en/latest/[on Solidity].
+
+==== Tipos de Datos
+
+((("Solidity","tipos de datos", id="ix_07smart-contracts-solidity-asciidoc11", range="startofrange")))Primeramente, veamos algunos de los tipos de datos básicos que nos ofrece Solidity:
+
+Booleano (+bool+):: Valores lógicos o booleanos, verdadero o +true+ y falso o +false+, junto con operadores lógicos +!+ (negado), +&&+ ("and" lógico), +||+ ("or" lógico), +==+ (igualdad), y +!=+ (no es igual).
+
+Valores Enteros (+int+, +uint+):: Enteros con signo (+int+) y sin signo (+uint+), declarables en incrementos de 8 bits, desde el tipo +int8+ hasta el +uint256+. Cuando no llevan un sufijo de tamaño, se utilizan cantidades de 256 bits para designar a la variable, de modo que coincida con el tamaño de una palabra de la EVM.
+
+Puntuación Fija Decimal (+fixed+, +ufixed+):: Números con puntuación decimal fija, declarados con pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] donde __++M++__ es el tamaño en bits (con incrementos de 8 en 8, hasta 256) y __++N++__ es el número de decimales después del punto (hasta 18); por ejemplo, +ufixed32x2+. Estos tipos de datos, pueden ser declarados, pero no utilizados, pues aún no son soportados por Solidity.
+
+Direcciones (address):: Una dirección de Ethereum constituida por un dato de 20 bytes. El objeto +address+ tiene muchas funciones intrínsecas útiles, estando entre las principales +balance+ (que devuelve el saldo en éter de la cuenta) y pass:[<span class="keep-together"><code>transfer</code></span>] (que transfiere éter a otra cuenta).
+
+Cadena de Data Binaria (de tamaño fijo):: Los objetos de data binaria de tamaño fijo, son declarados mediante comandos del tipo +bytes1+ en incrementos de 1 en 1, hasta +bytes32+.
+
+Data Binaria (de tamaño dinámico):: Los objetos de data binaria de tamaño dinámico, son declarados mediante la instrucción +bytes+ o +string+.
+
+Enumeraciones o Enum:: Son tipos de datos definidos por el usuario, para la enumeración de valores discretos: +enum NOMBRE {ETIQUETA1, ETIQUETA2, pass:[...]}+.
+
+Arreglos, Matrices o Formaciones (Array):: Un arreglo o array son formaciones de cualquier tipo, bien sean de tamaño fijo o dinámico, por ejemplo: +uint32[][5]+ es un arreglo de tamaño fijo de cinco arreglos de tamaño dinámico, constituido por números de enteros sin signo, con tamaños de 32 bits.
+
+Estructos o Struct:: Son contenedores de datos definidos por el usuario para agrupar variables: pass:[<code>struct NOMBRE {TIPO1 <span class="keep-together">VARIABLE1</span>; TIPO2 VARIABLE2; ...}</code>].
+
+Mapeos o "Mapping":: Es un tipo de tabla hash o de datos dispersos pero indexados, capaces de asociar pares de __++llaves++__ +=>+ _++valores++_: +mapping(TIPO_DE_LLAVE => TIPO_DE_VALOR) NOMBRE+.
+
+Además de estos tipos de datos, Solidity también ofrece una variedad de literales que se pueden usar para calcular diferentes unidades:
+
+Unidades de tiempo:: Las unidades +seconds+ (segundos), +minutes+ (minutos), +hours+ (horas), y +days+ (días) pueden ser usadas como sufijos, para convertir valores "unit" a múltiplos del valor base +seconds+.
+
+Unidades de éter:: Las unidades +wei+, +finney+, +szabo+, y +ether+ pueden ser utilizadas como sufijos, para convertir valores "unit" a múltiplos del valor base +wei+.
+
+En nuestro ejemplo del contrato +Faucet+, usamos un +uint+ (que es un alias para +uint256+) para la variable +withdraw_amount+. También utilizamos indirectamente una variable +address+, que configuramos con +msg.sender+. Usaremos más de estos tipos de datos en nuestros ejemplos en el resto de este capítulo.
+
+Usemos uno de los multiplicadores de unidades para mejorar la legibilidad de nuestro ejemplo de contrato. En la función +withdraw+ limitamos la cantidad máxima de retiro, expresando el límite en weis, la unidad base del éter:
+
+----
+require(withdraw_amount <= 100000000000000000);
+----
+
+Eso no es muy fácil de leer. Podemos mejorar nuestro código usando el multiplicador de unidades +éter+, para expresar el valor en éter en lugar de weis:(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc11")))
+
+----
+require(withdraw_amount <= 0.1 ether);
+----
+
+==== Variables y Funciones Globales Predefinidas
+
+((("Solidity","variables y funciones globales predefinidas", id="ix_07smart-contracts-solidity-asciidoc12", range="startofrange")))Cuando un contrato se ejecuta en la EVM, tiene acceso a un pequeño Conjunto de objetos globales. Estos incluyen los objetos +block+, +msg+ y +tx+. Además, Solidity pone a disposición varios códigos operacionales de la EVM como funciones predefinidas. En esta sección examinaremos las variables y funciones a las que se puede acceder desde un contrato inteligente en Solidity.
+
+===== Contexto de invocaciones en las transacciones/mensajes
+
+((("mensaje invocador")))((("objeto de mensajería")))((("transacción invocadora")))El objeto +msg+ es el contenido de la invocación de una transacción (para el caso de una invocación originada por una cuenta EOA) o el contenido de la invocación de un mensaje (originado por un contrato) que fueron generadas por la ejecución de este contrato. Contiene una serie de atributos útiles:
+
++msg.sender+:: Ya habíamos utilizado esta propiedad. Representa la dirección que inició la llamada de este contrato, y no es necesariamente la dirección EOA que originó la transacción. Si nuestro contrato ha sido invocado directamente por una transacción desencadenada por una EOA, entonces esta es la dirección que firmó la transacción, pero en los demás casos se tratará de la dirección de un contrato.
+
++msg.value+:: El valor en éter (expresado en weis), que es enviado por esta llamada o invocación.
+
++msg.gas+:: La cantidad de unidades de gas o combustible que ha sido destinado al suministro de de gas para este ambiente de ejecución. Este parámetro fue dado de baja o depreciado, en la versión de Solidity v0.4.21 y fue reemplazado por la función +gasleft+.
+
++msg.data+:: Es la data útil o el "payload" de una invocación o llamada, dirigida hacia un contrato.
+
++msg.sig+:: Son los primeros cuatro bytes de la data útil o "payload", que corresponden al "function selector" o identificador de la función que está siendo invocada.
+
+[NOTE]
+====
+Cada vez que un contrato invoca a otro contrato, los valores de todos los atributos de +msg+ cambian para reflejar la información del nuevo invocador. La única excepción a esto es la función +delegatecall+, que ejecuta el código de otro contrato o biblioteca dentro del pass:[<span class="keep-together">contexto</span>] original de +msg+.
+====
+
+===== Contexto de la transacción
+
+((("el objeto tx")))El objeto +tx+ proporciona un medio para acceder a información relacionada con la misma transacción:
+
+++tx.gasprice++:: El precio propuesto a pagar por las unidades de gas, por parte de la transacción invocadora.
+
+++tx.origin++:: La dirección de la cuenta EOA que origina en primera instancia a una transacción. ADVERTENCIA: es vulnerable!
+
+===== El contexto de los bloques
+
+((("el objeto block")))El objeto +block+ contiene información relativa al bloque más reciente de la cadena:
+
+++block.blockhash(__blockNumber__)++:: Es el valor hash identificador del número del bloque especificado en el parámetro de esta función, el cual esta limitado hasta los 256 últimos bloques de la cadena. Esta función fue dada de baja y reemplazada por la función +blockhash+ en la versión de Solidity v0.4.22.
+
+++block.coinbase++:: Es la dirección del beneficiario de las comisiones y recompensas del bloque más reciente de la cadena.
+
+++block.difficulty++:: Es el nivel de dificultad (para el algoritmo "proof of work") del bloque más reciente de la cadena.
+
+++block.gaslimit++:: Es la máxima cantidad de unidades de combustible o gas que pueden ser consumidos por todas las transacciones incluidas en el bloque actual de la cadena.
+
+++block.number++:: Es el número de bloque más reciente (o bien, es la altura actual de la cadena de bloques).
+
+++block.timestamp++:: Es el sello de tiempo colocado por el minero, en el bloque más reciente de la cadena (es el número de segundos transcurridos desde la época Unix).
+
+[[solidity_address_object]]
+===== El objeto address
+
+((("el objeto address")))Cualquier dirección, tanto si es utilizada como argumento de entrada o emitida como salida desde un objeto de contrato, tiene varios atributos y métodos:
+
++address.balance+:: Es el saldo de ésa dirección, en weis. Por ejemplo, el saldo del contrato actual es +address(this).balance+.
+
+++address.transfer(__amount__)++:: Es una función que transfiere una cantidad de éter (en weis) hacia la dirección "address", arrojando una excepción ante cualquier error. Nosotros dimos uso a esta función en nuestro ejemplo del contrato +Faucet+ como un método para la dirección del +msg.sender+, en la instrucción +msg.sender.transfer+.
+
+++address.send(__amount__)++:: Una función similar a la de +transfer+, solo que ésta en lugar de arrojar una excepción, devuelve +false+ (falso) ante un error. ADVERTENCIA: hay que verificar siempre, el resultado que devuelve +send+.
+
+++address.call(__payload__)++:: Es una función que ejecuta la instrucción de bajo nivel: +CALL+ &#x2014;puede construir un mensaje invocador arbitrario con la apropiada data útil o "payload". Devuelve +false+ (falso) ante un error. ADVERTENCIA: es vulnerable&#x2014;el destinatario (address) puede (accidental o maliciosamente) consumirse todo nuestro combustible, provocando una parada en la ejecución de nuestro contrato, mediante una excepción +OOG+ (del inglés, "out of gas"); hay que verificar siempre el resultado que devuelve +call+.
+
+++address.callcode(__payload__)++:: Es una función que ejecuta la instrucción de bajo nivel: +CALLCODE+, similar a +address(this).call(pass:[...])+ pero con el código de "este" contrato, reemplazado por el código que yace en la dirección +address+. Devuelve +false+ (falso) ante un error. ADVERTENCIA: sólo para usuarios avanzados!
+
++address.delegatecall()+:: Función que invoca a la instrucción de bajo nivel +DELEGATECALL+, similar a +callcode(pass:[...])+ pero con la totalidad del contexto del objeto +msg+, asumido bajo el contrato actual. Devuelve +false+ (falso) ante un error. ADVERTENCIA: sólo para usuarios avanzados!
+
+===== Funciones Pre-Incluidas
+
+Otras funciones que vale la pena destacar son:
+
++addmod+, +mulmod+:: Son funciones destinadas al álgebra modular, respectivamente para la adición y para la multiplicación. Por ejemplo, +addmod(x,y,k)+ calcula +pass:[(x + y) % k]+.
+
++keccak256+, +sha256+, +sha3+, +ripemd160+:: Son varias funciones vinculadas al cálculo de diversos algoritmos criptográficos hash estandarizados.
+
++ecrecover+:: Recupera la dirección involucrada en la firma criptográfica de un mensaje a partir de la data de la firma.
+
+++selfdestruct(__recipient_address__)++:: Elimina el contrato actual, enviando cualquier cantidad de éter remanente de la cuenta del contrato, hacia la dirección del destinatario, indicada en el argumento de la función.
+
++this+:: Es la dirección de la cuenta del actual contrato bajo ejecución.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc12")))
+
+==== Definición de Contrato
+
+((("el contrato como un tipo de datos")))((("definición del contrato, Solidity")))((("Solidity","definición del contrato")))El tipo de datos principal en Solidity es +contract+; nuestro ejemplo de contrato +Faucet+ simplemente define un pass:[<span class="keep-together"><code>contrato</code></span>] como objeto. Similar a cualquier objeto en un lenguaje orientado a objetos, el contrato es un contenedor que incluye datos y métodos.
+
+Solidity ofrece otros dos tipos de objetos que son similares a un contrato:
+
+interfaz o +interface+:: ((("la interfaz como tipo de objeto")))((("retazo")))La definición de una interfaz está estructurada exactamente igual que un contrato, excepto que ninguna de sus funciones están definidas, solo se declaran. Este tipo de declaración a menudo se llama _stub_ (retazo); nos indica los argumentos que deben requerir las funciones y los tipos de dato retornados, pero sin ninguna implementación. Una interfaz especifica la "forma" que debe tomar un contrato; cuando se hereda una interfaz, el contrato descendiente debe definir detalladamente cada una de las funciones declaradas por la interfaz.
+
+bibliotecas o +library+:: ((("contratos tipo biblioteca")))Un contrato tipo biblioteca, es uno que está destinado a ser desplegado una sola vez, pero ser utilizado por múltiples contratos, mediante el método +delegatecall+ (véase <<solidity_address_object>>).
+
+[[solidity_functions]]
+==== Funciones
+
+((("Solidity","funciones", id="ix_07smart-contracts-solidity-asciidoc13", range="startofrange")))Dentro de un contrato, definimos funciones que pueden ser invocadas por una transacción desencadenada desde una cuenta EOA o por otro contrato. En nuestro ejemplo, el contrato +Faucet+, tiene dos funciones: la función +withdraw+ y la _fallback_ (que no tiene nombre).
+
+((("Solidity","sintaxis de una función")))La sintaxis que usamos para declarar una función en Solidity es la siguiente:
+
+++++
+<pre data-type="programlisting">
+function NombreDeLaFunción([<em>parámetros</em>]) {public|private|internal|external}
+[pure|constant|view|payable] [<em>modificadores</em>] [returns (<em>tipo de datos que devuelve</em>)]
+</pre>
+++++
+
+
+Vamos a examinar cada uno de estos componentes:
+
+++NombreDeLaFunción++:: Es el nombre de la función, que se necesita para poderla invocar desde una transacción (cuando se desencadena por una cuenta EOA), o bien desde otro contrato o incluso desde el mismo contrato. ((("función fallback")))Una sola función en cada contrato puede definirse sin un nombre, en cuyo caso es la función _fallback_, que se invoca cuando no se nombra ninguna otra función. La función fallback no puede tener argumentos ni devolver nada.
+
+__++parámetros++__:: A continuación del nombre, especificamos los argumentos que deben pasarse a la función, incluyendo sus nombres y tipos de dato. En nuestro ejemplo +Faucet+ se definió al parámetro +uint withdraw_amount+ como el único argumento requerido para la función pass:[<code><span class="keep-together">withdraw</span></code>].
+
+La siguiente colección de comandos (+public+, +private+, +internal+, +external+) especifican la _visibilidad_ de la función:
+
++public+:: ((("function pública")))"Public" (o pública) es la visibilidad por defecto de una función; tales funciones pueden ser invocadas por otros contratos o por transacciones desencadenadas por cuentas EOA, o incluso, pueden ser invocadas desde el interior del mismo contrato. En nuestro ejemplo +Faucet+, sus dos funciones son definidas como públicas (public).
+
++external+:: ((("funciones externas")))"External" (o externas) son funciones similares a las funciones públicas, a excepción que éstas no pueden ser invocadas desde el interior del mismo contrato, a no ser que explícitamente vengan con el comando prefijo +this+.
+
++internal+:: ((("funciones internas")))"Internal" (o internas) son las funciones que son únicamente accesibles desde el interior del contrato&#x2014;no pueden ser invocadas por otro contrato o por transacciones desencadenadas por cuentas EOA. Sin embargo, pueden ser invocadas por contratos derivados (aquellos que heredan al contrato en cuestión).
+
++private+:: ((("funciones privadas")))"Private" (o privadas) son aquellas funciones similares a las internas, pero que no pueden ser invocadas por pass:[<span class="keep-together">contratos</span>] derivados.
+
+Téngase en cuenta que los términos _interna_ y _privada_ son algo engañosos. Cualquier función o dato dentro de un contrato siempre es _visible_ en la cadena de bloques pública, lo que significa que cualquiera puede ver el código o los datos. Los comandos aquí descritos solo afectan cómo y cuándo se puede _invocar_ a una función.
+
+La segunda colección de comandos (+pure+, +constant+, +view+, +payable+) afectan el comportamiento de la función:
+
++constant+ o +view+:: ((("view (comando de funciones)")))Una función identificada como _view_ ("solo ver") es una función que le promete a la maquina virtual, no realizar ningún cambio de estado. ((("constant (comando de funciones)")))El término _constant_ es una especie de sinónimo para "view" que será dado de baja en futuras entregas del compilador. En este momento, el compilador no impone la promesa del modificador +view+, y únicamente produce una advertencia, pero se espera que este pase a ser un comando impositivo en la versión v0.5 de Solidity.
+
++pure+:: ((("function pura")))Una función "pure" (o "pura"), es una que ni lee ni escribe ningún valor sobre ninguna variable en la memoria de almacenamiento (storage). Únicamente puede realizar operaciones sobre los argumentos que se le entregan a la función y devolver data, sin hacer referencia a ningún dato contenido en la memoria de almacenamiento. Las funciones puras están destinadas a alentar un estilo de programación declarativo, sin provocar efectos colaterales en el estado del mundo Ethereum.
+
++payable+:: ((("función pagadera")))Una función "payable" (pagable o pagadera) es aquella función capaz de aceptar pagos (en éter, desde luego). Aquellas funciones que no son declaradas como +payable+ repudiarán todo intento de pago. Existen dos excepciones, debidas a desiciones de diseño en la EVM: los pagos debidos al comando "coinbase" y los pagos heredados de la ejecución de la función +SELFDESTRUCT+ los cuales son pagos a ser ejecutados aún si la función fallback no fuera declarada como +payable+, pero esto tiene una razón de ser debido a que la ejecución del código de la función, es independiente de dichos pagos pass:[<span class="keep-together">de cualquier manera</span>].
+
+Como puede verse en nuestro ejemplo +Faucet+, tenemos una única función pagadera (la función fallback), que es la única que puede recibir pagos entrantes.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc13")))
+
+==== Función Constructora de Contratos y Función de Autodestrucción
+
+((("la función constructor")))((("contratos inteligentes","la función constructor")))((("Solidity"," la función constructor de un contrato")))Hay una función especial que solo se usa una vez. Cuando se crea un contrato, también se ejecuta la _función constructor_ si esta existe, para inicializar el estado del contrato. La función constructor se ejecuta en la misma transacción que ejecuta la creación del contrato. La función "constructor" es opcional; como podrá notarse, nuestro contrato de ejemplo +Faucet+ no tiene una.
+
+La función constructor se puede especificar de dos maneras. Hasta e incluyendo en la versión de Solidity v0.4.21, el constructor es una función cuyo nombre coincide con el nombre del contrato, como puede verse aquí:
+
+[source,solidity]
+----
+contract MEContract {
+	function MEContract() {
+		// Esta es la función constructora
+	}
+}
+----
+
+
+La dificultad con este formato es que si se cambia el nombre del contrato y no se atina a cambiar también el nombre de la función constructor, ya ésta no será la función constructor. Del mismo modo, si hay un error tipográfico accidental al nombrar el contrato y/o a la función constructor, la función ya no será un constructor. Esto puede causar algunos errores bastante desagradables, inesperados y difíciles de encontrar. Imagínese, por ejemplo, si el constructor establece el propietario del contrato para fines de control. Si la función deja de ser realmente el constructor debido a un error de nomenclatura, no solo el propietario quedará sin ser configurado en el momento de la creación del contrato, sino que la función también se puede implementar como una parte permanente e "invocable" del contrato, como un funcionamiento normal, lo que permite a cualquier tercero secuestrar el contrato y convertirse en el "dueño" después de la creación del contrato.
+
+Para prevenir los posibles problemas con la función constructor, que se basan en que deba tener un nombre idéntico al nombre del contrato, en la versión de Solidity v0.4.22 se introdujo una palabra clave, +constructor+ que funciona como la declaración de la función constructora, pero sin tener un nombre. Cambiar el nombre del contrato ahora no afecta al constructor en absoluto. Además, es más fácil identificar cuál función es el constructor. Se parece a esto:
+
+[source,solidity]
+----
+pragma ^0.4.22
+contract MEContract {
+	constructor () {
+		// Esta es la función constructora
+	}
+}
+----
+
+Para resumir, el ciclo de vida de un contrato comienza con una transacción de creación, desde una cuenta EOA o una cuenta de contrato. Si hay una función constructor, ésta se ejecuta como parte de la creación del contrato, para inicializar el estado del contrato a medida que se crea, y luego la misma se descarta.
+
+((("destrucción de contratos")))((("función selfdestruct")))((("Solidity","destrucción de contratos"))) ((("Solidity","función selfdestruct")))El otro extremo del ciclo de vida de un contrato es _su destrucción_. ((("código operacional SELFDESTRUCT")))Los contratos se destruyen mediante un código operacional especial de la EVM llamado +SELFDESTRUCT+. Este código solía llamarse pass:[<span class="keep-together"><code>SUICIDE</code></span>], pero ese nombre fue dado de baja debido a las asociaciones psicológicamente negativas de la palabra. En Solidity, este código operativo se ofrece como una función incorporada de alto nivel llamada +selfdestruct+, que toma un solo argumento: la dirección para recibir cualquier saldo de éter restante en la cuenta del contrato. Se parece a lo siguiente:
+
+[source,solidity]
+----
+selfdestruct(address destinatario);
+----
+
+Es importante destacar que este comando debe agregarse explícitamente en nuestro contrato, si deseamos tener la opción de que se pueda eliminar&#x2014;esta es la única forma en que se puede eliminar un contrato, y no está presente de manera predeterminada. De esta manera, los usuarios de un contrato que deberían confiar en que el mismo estará allí para siempre, pueden estar seguros de que tal contrato no se podrá eliminar, si no contiene el código operacional pass:[<span class="keep-together"><code>SELFDESTRUCT</code></span>].
+
+==== Agregando un constructor y una función de autodestrucción a nuestro ejemplo de Faucet
+
+((("función constructor","agregando funciones al ejemplo de faucet")))((("contrato Faucet.sol (ejemplo de prueba)","agregándole constructor y selfdestruct")))((("Solidity","agregando constructor y selfdestruct al ejemplo de faucet")))El contrato del ejemplo +Faucet+ que presentamos en el <<intro_chapter>> no contenía ninguna función constructor o +selfdestruct+. Se trata de un contrato eterno que no se puede eliminar. Cambiemos eso, agregando una función constructor y +selfdestruct+. Probablemente desearemos que +selfdestruct+ sea una función _únicamente_ invocable por la cuenta EOA que creó originalmente el contrato. Por convención, esta generalmente se almacena en una variable de dirección llamada +owner+ (el dueño del contrato). Nuestro constructor debe establecer la variable +owner+, para que de este modo, la función +selfdestruct+ primero verifique que sea solo el dueño quien la haya invocado directamente.
+
+Primeramente, nuestro constructor:
+
+[source,solidity]
+----
+// La versión del compilador de Solidity para el que se escribió este programa
+pragma solidity ^0.4.22;
+
+// Nuestro primer contrato es un grifo!
+contract Faucet {
+
+	address owner;
+
+	// Inicializando el contrato Faucet: se establece el dueño
+	constructor() {
+		owner = msg.sender;
+	}
+
+[...]
+----
+
+Hemos cambiado la directiva pragma para especificar la versión v0.4.22, como la versión mínima de compilador aceptable para este ejemplo, ya que estamos usando la nueva palabra clave +constructor+ introducida en la versión v0.4.22 de Solidity. Nuestro contrato tiene ahora una nueva variable tipo +address+ (dirección), llamada +owner+. El nombre "owner" no es especial de ninguna manera. Podríamos haber llamado a esta variable tipo dirección, como "papa" y seguir usándola de la misma manera. El nombre +owner+ es un convencionalismo que deja claro su propósito.
+
+A continuación, nuestro constructor, que se ejecuta como parte de la transacción de creación del contrato, asigna la dirección del +msg.sender+ a la variable +owner+. Utilizamos el parámetro +msg.sender+ en la función pass:[<span class="keep-together"><code>withdraw</code></span>] para identificar al iniciador de la solicitud de retiro. Sin embargo, en el caso del constructor, el valor de +msg.sender+ es la cuenta EOA, o la dirección de algún contrato que inició la creación de nuestro contrato. Sabemos que este es el caso _porque_ esta es una función constructora: solo se ejecuta una vez, durante la creación del contrato.
+
+Ahora podemos agregar una función para destruir el contrato. Debemos asegurarnos de que solo el dueño pueda ejecutar esta función, por lo que utilizaremos una instrucción +require+ para controlar el acceso. Así es como se verá:
+
+[source,solidity]
+----
+// El destructor del contrato
+function destroy() public {
+	require(msg.sender == owner);
+	selfdestruct(owner);
+}
+----
+
+Cualquiera que invoque a esta función +destroy+ desde una dirección que no se corresponda con +owner+, fallará en el intento. Pero si la misma dirección almacenada por el constructor en la variable +owner+ la invoca, el contrato se autodestruirá y enviará cualquier saldo de éter restante a la dirección +owner+. Tenga en cuenta que no fué utilizado el comando +tx.origin+, el cual es inseguro para determinar si el propietario deseaba o no destruir el contrato&#x2014;el uso de +tx.origin+ permitiría que los contratos maliciosos destruyeran nuestro contrato, sin que necesariamente mediase el debido consentimiento.
+
+==== Modificadores de Funciones
+
+((("modificadores de funciones")))((("" Solidity","modificadores de funciones")))Solidity ofrece un tipo especial de función llamada _modificador de función_. Este tipo de funciones aplica modificaciones a las funciones normales, al agregar el nombre del modificador en la declaración de dichas funciones. Los modificadores se usan con mayor frecuencia para crear condicionales lógicos, que se aplican a muchas funciones dentro de un contrato. Ya tenemos una declaración de control de acceso, en nuestra función +destroy+. Creemos ahora un modificador de función que exprese esa condición:
+
+[source,solidity]
+----
+modifier onlyOwner {
+    require(msg.sender == owner);
+    _;
+}
+----
+
+
+Este modificador de función, llamado +onlyOwner+, establece una condición lógica en cualquier función que este modifique, requiriendo que la dirección almacenada en la variable +owner+ del contrato sea la misma que la dirección del +msg.sender+ de la transacción. Este es el patrón de diseño básico para el control de acceso, que permite que solo el propietario de un contrato ejecute cualquier función que tenga un modificador semejante a +onlyOwner+.
+
+Es posible que se haya notado que nuestro modificador de función tiene un "marcador de posición" sintáctico peculiar, un guión bajo seguido de un punto y coma (+&#95;;+). Este marcador de posición se reemplaza por el resto del código de la función que se está modificando. Esencialmente, el modificador está "envuelto" en la función modificada, colocando su código en la ubicación identificada por el carácter "guión bajo" (también llamado "piso").
+
+Para aplicar un modificador, agréguese su nombre a la declaración de la función en cuestión. Se puede aplicar más de un modificador a una función; se aplican en la secuencia en que se declaran, como una lista separada por comas.
+
+Vamos a redefinir nuestra función +destroy+ utilizando el modificador +onlyOwner+:
+
+[source,solidity]
+----
+function destroy() public onlyOwner {
+    selfdestruct(owner);
+}
+----
+
+El nombre del modificador de función (+onlyOwner+) está después de la palabra clave +public+ y nos dice que la función +destroy+ es modificada por el modificador +onlyOwner+. Esencialmente, podemos leer esto como "Solo el dueño puede destruir este contrato". En la práctica, el código resultante es equivalente a "empaquetar" el condicional de +onlyOwner+ dentro de +destroy+.
+
+Los modificadores de funciones son una herramienta extremadamente útil porque nos permiten escribir condiciones lógicas previas para la ejecución de funciones y aplicarlas consistentemente, haciendo que el código sea más fácil de leer y, como resultado, más fácil de auditar por seguridad. Se usan con mayor frecuencia para el control de accesos, pero también son bastante versátiles y se pueden usar para una variedad de otros propósitos.
+
+Dentro de un modificador, podemos acceder a todos los valores (variables y argumentos) visibles para la función modificada. En este caso, podemos acceder a la variable +owner+, que se declara dentro del contrato. Sin embargo, lo inverso no es cierto: no se pueden acceder necesariamente a cualquiera de las variables de un modificador desde dentro de una función modificada.
+
+==== Herencia de Contratos
+
+((("el contrato como objeto", id="ix_07smart-contracts-solidity-asciidoc14", range="startofrange")))((("herencia", id="ix_07smart-contracts-solidity-asciidoc15", range="startofrange")))((("contratos inteligentes","herencia", id="ix_07smart-contracts-solidity-asciidoc16", range="startofrange")))((("Solidity","heredación de contratos", id="ix_07smart-contracts-solidity-asciidoc17", range="startofrange")))El objeto +contract+ (es decir, los contratos como objeto) de Solidity admiten la _herencia_, que es un mecanismo para extender la funcionalidad de un contrato base, con funciones adicionales. Para hacer uso de la herencia, especificamos al contrato principal con la palabra clave +is+:
+
+[source,solidity]
+----
+contract Hijo is Padre {
+  ...
+}
+----
+
+Con esta declaración, el contrato +Hijo+ hereda todos los métodos, funciones y variables del +Padre+. Solidity también admite la herencia múltiple, que puede especificarse mediante nombres de contratos separados por comas, después del comando +is+:
+
+[source,solidity]
+----
+contract Hijo is Ancestro1, Ancestro2 {
+  ...
+}
+----
+
+La herencia de contratos nos permite escribir nuestros contratos de tal manera que logremos modularidad, extensibilidad y reutilización. Comenzamos con contratos que son simples e implementamos las capacidades más genéricas; luego las ampliamos heredando esas capacidades en contratos más especializados.
+
+En nuestro contrato +Faucet+, definimos a un constructor y a un destructor, junto con el control de acceso para un propietario, asignado en la construcción. Estas capacidades son bastante genéricas: muchos contratos las tendrán también. Podemos definirlos como propiedades de contratos genéricos, para luego usar la herencia como una extención al contrato +Faucet+.
+
+Comenzamos definiendo un contrato base, que se define como +owned+ (es decir, "adueñado"), que tiene una variable +owner+, que establecemos en el constructor del contrato:
+
+[source,solidity]
+----
+contract owned {
+	address owner;
+
+	// Constructor del contrato: designación del dueño
+	constructor() {
+		owner = msg.sender;
+	}
+
+	// Modificador del control de accesos
+	modifier onlyOwner {
+	    require(msg.sender == owner);
+	    _;
+	}
+}
+----
+
+A continuación, definimos un contrato base +mortal+, que hereda al contrato +owned+:
+
+[source,solidity]
+----
+contract mortal is owned {
+	// Destructor del contrato
+	function destroy() public onlyOwner {
+		selfdestruct(owner);
+	}
+}
+----
+
+Como puede verse, el contrato +mortal+ puede usar el modificador de función denominado como +onlyOwner+, definido en el contrato +owned+. De manera indirecta, también se utiliza la variable tipo address, +owner+ y el constructor definido en el contrato +owned+. La herencia hace que cada contrato sea más simple y centrado en su funcionalidad específica, lo que nos permite gestionar los detalles de forma modular.
+
+Ahora podemos extender aún más el contrato +owned+, heredando sus capacidades en +Faucet+:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+    // Entrega el éter sobrante a cualquiera que lo pida
+    function withdraw(uint withdraw_amount) public {
+        // Se limita el monto de retiro
+        require(withdraw_amount <= 0.1 ether);
+        // Enviar el importe a la dirección que lo solicitó
+        msg.sender.transfer(withdraw_amount);
+    }
+    // Acepta cualquier pago entrante
+    function () external payable {}
+}
+----
+
+Al heredar +mortal+, que a su vez hereda +owned+, el contrato +Faucet+ ahora posee las funciones constructor y +destroy+, y posee un dueño definido. Las funcionalidades son las mismas que cuando tales funciones estaban dentro del contrato +Faucet+, pero ahora podemos reutilizar dichas funciones en otros contratos sin tener que volverlas a escribir. La reutilización de código y la modularidad hacen de nuestro desarrollo un trabajo más limpio, fácil de leer, y más sencillo de auditar.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
+
+==== Manejo de errores (comandos assert, require, revert)
+
+((("manejo de errores, Solidity")))((("Solidity","manejo de errores")))La invocación de un contrato pudiera finalizar en y devolver un error. La administración de errores en Solidity es manejada por cuatro funciones: +assert+, +require+, +revert+, y +throw+ (la ultima fue dada de baja recientemente).
+
+Cuando la ejecución de un contrato finaliza con un error, todos los cambios de estado (los cambios en las variables, los saldos, etc.) se revierten, hasta antes del paso inicial de la cadena de invocaciones del contrato, en caso de haberse invocado a más de un contrato. Esto garantiza que las transacciones sean _atómicas_, lo que significa que o bien se completan con éxito, o no tienen efecto alguno sobre el estado del mundo Ethereum y se revierten por completo.
+
+((("función assert","Solidity y assert")))((("función require")))Las funciones +assert+ y +require+ operan de la misma manera, evaluando una condición lógica y dando parada a la ejecución con un error si la condición arroja falso. Se ha acordado por convenio, que el uso de +assert+ se reserve para cuando esperamos que el resultado de la evaluación de la condición lógica sea verdadero, es decir que utilizamos +assert+ para poner a prueba condiciones internas. En comparación, +require+ es utilizado cuando probamos valores de entradas (tales como los argumentos de las funciones o los valores de los campos de las transacciones), estableciendo en cada caso nuestras expectativas para tales pass:[<span class="keep-together">condiciones</span>].
+
+Hemos utilizado +require+ en nuestro modificador +onlyOwner+, para probar que el remitente del mensaje sea el propietario del contrato:
+
+[source,solidity]
+----
+require(msg.sender == owner);
+----
+
+La función +require+ actúa como una _condición de permisividad_, evitando la ejecución del resto de la función y produciendo un error si no se cumple.
+
+A partir de Solidity v0.4.22, el uso de +require+ también puede incluir un mensaje de texto útil que se puede utilizar para mostrar el motivo del error. El mensaje del error se asienta en el registro de las transacciones. Entonces, podemos mejorar nuestro código agregando un mensaje de error a nuestra función +require+:
+
+[source,solidity]
+----
+require(msg.sender == owner, "Sólo el due#o del contrato puede invocar esta funcion");
+----
+
+((("función revert")))((("función throw")))Las funciones +revert+ y +throw+ provocan una parada en la ejecución del contrato, reversando cualquier cambio de estados. La función +throw+ ha sido depreciada y será removida en futuras veriones de Solidity; en lugar de este comando deberíamos usar +revert+. La función +revert+ también puede tomar un mensaje de error como único argumento, el cual es registrado en el historial de las transacciones (el historial "log").
+
+Ciertas condiciones en un contrato generarán errores independientemente de si los verificamos explícitamente. Por ejemplo, en nuestro contrato +Faucet+, no verificamos si hay suficiente éter para satisfacer una solicitud de retiro. Esto se debe a que la función +transfer+ fallará de todos modos ante un error y revertirá la transacción si no hay saldo suficiente para realizar la transferencia:
+
+[source,solidity]
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+Sin embargo, podría ser mejor verificar explícitamente y proporcionar un mensaje de error claro en caso de ocurrir una falla. Podemos hacerlo agregando una declaración +require+ antes de intentar la ejecución de una transferencia:
+
+[source,solidity]
+----
+require(this.balance >= withdraw_amount,
+	"Saldo insuficiente en el grifo para esta solicitud de retiro");
+msg.sender.transfer(withdraw_amount);
+----
+
+Un código adicional de verificación de errores como este, aumentará ligeramente el consumo de combustible (gas), pero ofrece un mejor informe de errores que si se omite. Debemos encontrar el equilibrio adecuado entre el consumo de gas y la verificación detallada de errores en función del uso previsto de nuestros contratos. En el caso de un contrato +Faucet+ destinado a una red de pruebas, probablemente fallemos a favor de la presentación de informes de errores extra, incluso si ello cuesta más combustible. Tal vez para un contrato en la red principal (mainnet o red de producción) optaríamos por ser frugales con nuestro uso de gas.
+
+[[solidity_events]]
+==== Eventos
+
+((("eventos","Solidity", id="ix_07smart-contracts-solidity-asciidoc18", range="startofrange")))((("Solidity","eventos como objetos", id="ix_07smart-contracts-solidity-asciidoc19", range="startofrange")))Cuando ((("recibo de una transacción")))una transacción logra completarse (bien sea exitosamente o no), se produce un _recibo de la transacción_, tal y como lo veremos en el <<evm_chapter>>. Los recibos de las transacciones contienen registros de historiales o _logs_ que proveen información sobre las acciones que ocurrieron durante la ejecución de la transacción. Los _Eventos_ son los objetos de alto nivel de Solidity que son utilizados para construir estos historiales "logs".
+
+Los eventos son especialmente útiles para clientes ligeros y servicios DApp, que pueden "escuchar" atentos por eventos específicos e informarlos a la interfaz de usuario, o hacer un cambio en el estado sobre la aplicación para emular un evento en un contrato subyacente.
+
+Los eventos como objetos, toman argumentos que se serializan y se registran en los historiales de las transacciones, en la cadena de bloques. Se puede añadir la palabra clave +indexed+ antes de cierto argumento, para que el valor de éste forme parte de una tabla indexada (tabla hash) que una aplicación puede buscar o filtrar.
+
+((("contrato Faucet.sol (ejemplo de prueba)","añadiéndole eventos", id="ix_07smart-contracts-solidity-asciidoc20", range="startofrange")))Hasta ahora no hemos agregado ningún evento en nuestro ejemplo +Faucet+, así que hagamos eso. Agregaremos dos eventos, uno para registrar cualquier retiro y otro para registrar cualquier depósito. Llamaremos a estos eventos +Withdrawal+ y +Deposit+, respectivamente. Primero, definiremos los eventos en el contrato +Faucet+:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+	event Withdrawal(address indexed to, uint amount);
+	event Deposit(address indexed from, uint amount);
+
+	[...]
+}
+----
+
+Hemos elegido hacer las direcciones +indexed+ (indexables), para permitir su búsqueda y su filtrado en cualquier interfaz de usuario creada para acceder a nuestro contrato +Faucet+.
+
+A continuación, usamos el comando +emit+ para incorporar los datos del evento en los registros "log" de la transacción:
+
+[source,solidity]
+----
+// Entrega éter a cualquiera que lo pida
+function withdraw(uint withdraw_amount) public {
+    [...]
+    msg.sender.transfer(withdraw_amount);
+    emit Withdrawal(msg.sender, withdraw_amount);
+}
+// Acepta cualquier pago entrante
+function () external payable {
+    emit Deposit(msg.sender, msg.value);
+}
+----
+
+El contrato _Faucet.sol_ resultante luce como en el <<Faucet8_sol>>.
+
+[[Faucet8_sol]]
+.Faucet8.sol: Contrato Faucet revisado, incluyendo eventos
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet8.sol[]
+----
+====
+
+===== Captura de Eventos
+
+((("eventos","capturándolos")))((("contrato Faucet.sol (ejemplo de prueba)","captura de eventos")))Bien, entonces hemos establecido nuestro contrato para emitir eventos. ¿Cómo consultamos entonces, los resultados de una transacción y "capturamos" sus eventos? La biblioteca web3.js proporciona una estructura de datos que nos puede revelar los registros de una transacción. Dentro de estos registros podemos revisar los eventos generados por una transacción.
+
+((("Truffle","ejecutando transacciones de prueba con Truffle")))Vamos a utilizar +truffle+ para ejecutar una transacción de prueba, sobre nuestro contrato recién mejorado, +Faucet+. Seguiremos las instrucciones vistas en <<truffle>> para configurar una carpeta de proyectos y compilar el código de pass:[<span class="keep-together"><code>Faucet</code></span>]. Podemos encontrar el código en el repositorio Git Hub del libro: https://github.com/ethereumbook/ethereumbook[the book's GitHub repository] en la carpeta _code/truffle/FaucetEvents_.
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+truffle(develop)> <strong>compile</strong>
+truffle(develop)> <strong>migrate</strong>
+Usando la red 'develop'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xb77ceae7c3f5afb7fbe3a6c5974d352aa844f53f955ee7d707ef6f3f8e6b4e61
+  Migrations: 0x8cdaf0cd259887258bc13a92c0a6da92698644c0
+Saving successful migration to network...
+  ... 0xd7bc86d31bee32fa3988f1c1eabce403a1b5d570340a3a9cdba53a472ee8c956
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xfa850d754314c3fb83f43ca1fa6ee20bc9652d891c00a2f63fd43ab5bfb0d781
+  Faucet: 0x345ca3e014aaf5dca488057592ee47305d9b3e10
+Saving successful migration to network...
+  ... 0xf36163615f41ef7ed8f4a8f192149a0bf633fe1a2398ce001bf44c43dc7bdda0
+Saving artifacts...
+
+truffle(develop)> <strong>Faucet.deployed().then(i => {FaucetDeployed = i})</strong>
+truffle(develop)> <strong>FaucetDeployed.send(web3.utils.toWei(1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+truffle(develop)> <strong>FaucetDeployed.withdraw(web3.utils.toWei(0.1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+</pre>
+++++
+
+Tras desplegar el contrato, y mediante la función +deployed+, hemos ejecutado un par de transacciones. La primera transacción fue un deposito (usando +send+), la cual "emite" un evento +Deposit+ en el historial (o log) de transacciones:
+
+----
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+----
+
+A continuación, utilizamos la función +withdraw+ para hacer un retiro. Esta acción emitió otro evento que denominamos +Withdrawal+:
+
+----
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+----
+
+Para recuperar estos eventos, hicimos lectura del vector de historiales +logs+ devuelta como resultado (+res+) de las transacciones. El primer dato del vector de historiales (+logs[0]+) contiene un nombre de evento en el parámetro +logs[0].event+ y los argumentos de tal evento en el parámetro +logs[0].args+. Al mostrarlos en la consola, podemos ver el nombre del evento emitido y los argumentos del evento.
+
+Los eventos constituyen un mecanismo muy útil, no solo para fines de la comunicación interna de los contratos, sino también para depurar errores durante el desarrollo de código(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc20"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc19")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc18")))
+
+==== Invocando a otros contratos (comandos: send, call, callcode, delegatecall)
+
+((("contratos inteligentes","invocando a otros contratos desde dentro de un contrato", id="ix_07smart-contracts-solidity-asciidoc21", range="startofrange")))((("Solidity","invocando a otros contratos desde dentro de un contrato", id="ix_07smart-contracts-solidity-asciidoc22", range="startofrange")))Invocar a otros contratos desde nuestro contrato es una operación muy útil pero potencialmente peligrosa. Examinaremos las diversas formas en que podemos lograr esto y evaluaremos los riesgos de cada método. En resumen, los riesgos surgen del hecho de que es posible que no se sepa mucho sobre un contrato al que se está invocando, o de aquél que está invocando a nuestro contrato. Al escribir contratos inteligentes, se debe tener en cuenta que, si bien se puede esperar tratar con cuentas EOA, no hay nada que impida que los códigos arbitrarios complejos y quizás malignos invoquen y sean invocados por nuestro código.
+
+===== Creando una nueva instancia
+
+((("contratos inteligentes","creando una nueva instancia")))La forma más segura de invocar a otro contrato es si nosotros mismos creamos a ese otro contrato. De esa manera, estaremos seguros de las interfaces involucradas y del comportamiento esperado. Para hacer esto, simplemente podemos crear una instancia, usando la palabra clave +new+, como en otros lenguajes orientados a objetos. En Solidity, la palabra clave +new+ creará el contrato en la cadena de bloques y devolverá un objeto que podremos usar para referenciarlo. Supongamos que deseamos crear y llamar a un contrato +Faucet+ desde otro contrato llamado +Token+:
+
+[role="pagebreak-before"]
+[source,solidity]
+----
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Este mecanismo para construir contratos garantiza que conoceremos el tipo exacto de contrato y su interfaz. El contrato +Faucet+ debe definirse dentro del alcance de +Token+, lo que podemos hacer con una declaración +import+ si las especificaciones están en otro archivo:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Opcionalmente, podemos especificar el parámetro +value+ de la transferencia de éter en la creación y pasar argumentos al constructor del nuevo contrato:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+}
+----
+
+También podremos llamar a las funciones de +Faucet+. En este ejemplo, llamaremos a la función +destroy+ de +Faucet+ desde dentro de la función +destroy+ de +Token+:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+
+	function destroy() ownerOnly {
+		_faucet.destroy();
+	}
+}
+----
+
+Tenga en cuenta que si bien uno es el propietario del contrato +Token+, el mismísimo contrato +Token+ es el dueño del nuevo contrato +Faucet+, por lo que solo el contrato +Token+ puede destruirlo.
+
+===== Administrando una instancia existente
+
+((("contratos inteligentes","administrando una instancia existente")))Otra forma de invocar a un contrato es emitiendo la dirección específica de una instancia existente del contrato. Con este método, se aplica una interfaz conocida a una instancia existente. Por lo tanto, es de vital importancia que sepamos con certeza que la instancia a la que nos dirigimos es, de hecho, del tipo que hemos asumido. Veamos un ejemplo:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+
+	Faucet _faucet;
+
+	constructor(address _f) {
+		_faucet = Faucet(_f);
+		_faucet.withdraw(0.1 ether)
+	}
+}
+----
+
+Aquí, tomamos una dirección proporcionada como argumento para el constructor, +_f+, y la convertimos en un objeto +Faucet+. Esto es mucho más riesgoso que el mecanismo anterior, porque no sabemos con certeza si esa dirección es realmente un objeto +Faucet+. Cuando invocamos la función +withdraw+, estamos asumiendo que acepta los mismos argumentos y ejecuta el mismo código que nuestra declaración de +Faucet+, pero no podemos estar seguros. Por lo que sabemos, la función +withdraw+ en esta dirección podría ejecutar algo completamente diferente de lo que esperamos, incluso si tiene el mismo nombre. Por lo tanto, usar direcciones proporcionadas como argumentos y convertirlas en objetos específicos es mucho más peligroso que crear el contrato nosotros mismos.
+
+===== Invocación sin procesar, delegatecall
+
+Solidity ofrece algunas otras funciones, de más "bajo nivel" para invocar a otros contratos. Estas se corresponden directamente con los códigos de operación de la EVM que tienen el mismo nombre y nos permiten construir una invocación de contrato a contrato manualmente. Como tales, éstas funciones representan los mecanismos más flexibles y peligrosos para invocar a otros contratos.
+
+((("contratos inteligentes","el método call", id="ix_07smart-contracts-solidity-asciidoc23", range="startofrange")))Aquí tenemos el mismo ejemplo, utilizando un método +call+:
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		_faucet.call("withdraw", 0.1 ether);
+	}
+}
+----
+
+((("invocaciones ciegas")))Como puede verse, este tipo de invocación, con el comando +call+ es una invocación a _ciegas_ a una función, muy parecida a construir una transacción sin procesar, sólo desde el contexto de un contrato. ((("ataques de reingreso","invocaciones a ciegas")))Este tipo de invocaciones pueden exponer nuestros contratos a numerosos riesgos de seguridad, especialmente, riesgos de _reingreso_, que discutiremos en detalle, cuando abordemos <<reentrancy_security>>. La función +call+ nos devolverá +false+ (falso) si hay algún problema, así que  podemos evaluar el valor del argumento que se devuelve para la administración de errores:
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		if !(_faucet.call("withdraw", 0.1 ether)) {
+			revert("Withdrawal from faucet failed");
+		}
+	}
+}
+----
+
+((("el método delegatecall")))((("contratos inteligentes","el método delegatecall")))Otra variante de la función +call+ es +delegatecall+, que reemplazó al mucho más peligroso comando +callcode+. El método pass:[<code><span class="keep-together">callcode</span></code>] será pronto dado de baja, de modo que no deberíamos utilizarlo.
+
+Tal y como se mencionó en <<solidity_address_object>>, una "invocación delegada" de acuerdo al comando +delegatecall+, es diferente a la función de invocación directa o +call+ en el sentido de que el contexto de +msg+ no se ve alterado. Por ejemplo, mientras que una invocación directa +call+ modifica el valor del +msg.sender+ para convertirse en la dirección del contrato invocador, una invocación delegada, +delegatecall+ conserva el mismo +msg.sender+ sin modificar la dirección de quien realiza la invocación en primer lugar. Esencialmente, +delegatecall+ ejecuta el código de otro contrato dentro del contexto de ejecución del contrato actual. Se le utiliza con mayor frecuencia para invocar el código de una biblioteca. Esto también nos permite recurrir a los patrones de uso de las funciones de bibliotecas almacenadas en otro lugar, pero haciendo que semejante código se ejecute utilizando a los datos almacenados en nuestro propio contrato.
+
+La invocación +delegatecall+ deberá usarse con gran precaución. Puede tener algunos efectos inesperados, especialmente si el contrato al que llamamos no fue diseñado para ser una biblioteca.
+
+Vamos a usar un ejemplo de contrato para demostrar las diversas semánticas de invocación utilizadas por +call+ y +delegatecall+ para invocar bibliotecas y contratos. En el <<call_examples_code>>, utilizamos un evento para registrar los detalles de cada invocación y ver cómo cambia el contexto de la misma según el tipo de invocación.
+
+[[call_examples_code]]
+.CallExamples.sol: Un ejemplo de diferentes semánticas para invocaciones
+====
+[source,solidity,linenums]
+----
+include::code/truffle/CallExamples/contracts/CallExamples.sol[]
+----
+====
+
+Como puede verse en este ejemplo, nuestro contrato principal es +caller+, que invoca a una biblioteca +calledLibrary+ y a otro contrato denominado +calledContract+. Tanto la biblioteca invocada como el contrato foráneo tienen funciones idénticas, llamadas +calledFunction+, que emiten un evento +calledEvent+. El evento +calledEvent+ registra tres datos: +msg.sender+, +tx.origin+, y el valor de +this+. Cada vez que se invoca a +calledFunction+, ésta puede tener un contexto de ejecución diferente (con valores diferentes para potencialmente todas las variables de su contexto), dependiendo de si se realiza una invocación directa o mediante +delegatecall+.
+
+En el contrato +caller+, primero invocamos al otro contrato y a la biblioteca directamente, haciendo referencia a la función +calledFunction+ para cada caso. Luego, explícitamente utilizamos las funciones de bajo nivel +call+ y +delegatecall+ para llamar a +calledContract.calledFunction+. De esta manera podemos ver cómo se comportan los diversos mecanismos de invocación.
+
+Ejecutemos esto en un entorno de desarrollo Truffle y recuperemos los eventos, para ver cómo se ve:
+
+++++
+<pre data-type="programlisting">
+truffle(develop)> <strong>migrate</strong>
+Usando la red 'develop'.
+[...]
+Saving artifacts...
+truffle(develop)> <strong>web3.eth.accounts[0]</strong>
+'0x627306090abab3a6e1400e9345bc60c78a8bef57'
+truffle(develop)> <strong>caller.address</strong>
+'0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+truffle(develop)> <strong>calledContract.address</strong>
+'0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+truffle(develop)> <strong>calledLibrary.address</strong>
+'0xf25186b5081ff5ce73482ad761db0eb0d25abfbf'
+truffle(develop)> <strong>caller.deployed().then( i => { callerDeployed = i })</strong>
+
+truffle(develop)> <strong>callerDeployed.make_calls(calledContract.address).then(res => \
+                  { res.logs.forEach( log => { console.log(log.args) })})</strong>
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+</pre>
+++++
+
+Veamos que ocurrió aquí. Llamamos a la función +make_calls+ y suministramos la dirección de +calledContract+, luego capturamos los cuatro eventos emitidos por cada una de las diferentes invocaciones. Examinemos la función +make_calls+ y revisemos su ejecución paso por paso.
+
+La primera invocación es:
+
+----
+_calledContract.calledFunction();
+----
+
+Aquí, estamos invocando +calledContract.calledFunction+ directamente, utilizando la ABI de alto nivel para +calledFunction+. El evento emitido es:
+
+----
+sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+----
+
+Como puede verse, +msg.sender+ es la dirección del contrato +caller+. +Tx.origin+ es la dirección de nuestra cuenta, +web3.eth.accounts[0]+, que envió la transacción al contrato +caller+. El evento fue emitido por +calledContract+, como podemos ver en el último argumento del evento.
+
+La siguiente invocación en +make_calls+, es para la biblioteca:
+
+----
+calledLibrary.calledFunction();
+----
+
+Luce idéntico a cómo invocamos al contrato, pero se comporta de manera muy diferente. Veamos el segundo evento emitido:
+
+----
+sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+----
+
+Esta vez, el valor de +msg.sender+ no se corresponde con la dirección del contrato +caller+. En su lugar, corresponde con la dirección de nuestra cuenta, y es la misma que la de la transacción originaria (tx.origin). Esto es debido a que cuando estamos invocando a la biblioteca, la invocación siempre se realiza mediante +delegatecall+ y se ejecuta dentro del contexto del invocador. De manera que, cuando el código de +calledLibrary+ se estaba ejecutando, éste heredó el contexto de ejecución del contrato +caller+, como si su código hubiese sido ejecutado dentro del contrato +caller+. El valor de la variable +this+ (mostrado como el parámetro +from+ en el evento emitido) es la dirección del contrato +caller+, aún cuando este valor fue accesado desde el interior del contrato pass:[<span class="keep-together"><code>calledLibrary</code></span>].
+
+Las siguientes dos invocaciones, utilizando los comandos de bajo nivel +call+ y +delegatecall+, verifican nuestras expectativas, emitiendo eventos que reflejan lo que acabamos de(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc23"))) ver(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc22")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc21"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc10")))
+
+[[gas_sec]]
+=== Consideraciones sobre el Combustible (Gas)
+
+((("gas","su conservación", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("contratos inteligentes","consideraciones sobre el gas", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","consideraciones sobre el gas", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))El gas o combustible, descrito en mayor detalle en <<gas>>, es un factor increíblemente importante en el desarrollo de contratos inteligentes. El gas es un recurso que limita la cantidad máxima de cómputos que Ethereum permitirá que una transacción consuma. Si se excede el límite de gas durante los cálculos, se produce la siguiente serie de eventos:
+
+* Una excepción "out of gas" ("se acabó el combustible") es arrojada.
+* El estado del contrato previo al inicio de la ejecución de la transacción es restaurado (se produce una "reversión").
+* Todo el éter gastado para pagar por el combustible utilizado, es irreversiblemente deducido como parte de las comisiones de la transacción; y esto _no es_ reembolsable.
+
+Debido a que el gas es pagado por el usuario que inicia la transacción, se desaconseja que los usuarios invoquen funciones que tienen un alto costo de gas. Por lo tanto, lo mejor para el programador es minimizar el costo del gas de las funciones de un contrato. Con este fin, hay ciertas prácticas que se recomiendan al construir contratos inteligentes, para minimizar el costo del gas cuando se invoca a una función.
+
+==== Evítense arreglos de tamaño dinámico
+
+((("arreglos dinámicamente dimensionados")))((("gas","gas y los arreglos dinámicamente dimensionados")))Cualquier bucle que se ejecuta a lo largo de un arreglo dinámicamente dimensionado, donde una función ejecuta operaciones sobre cada elemento del arreglo, o hace búsquedas en dicho arreglo por algún elemento en particular, introduce un riesgo significativo de consumir demasiado combustible o gas. De hecho, el contrato puede consumirse todo el gas disponible, antes de conseguir el resultado deseado, o antes de llevar a cabo sus efectos sobre cada elemento, desperdiciando de este modo tiempo y éter sin poder arrojar ningún resultado.
+
+==== Evítense Invocaciones a Otros Contratos
+
+((("gas","evitando invocaciones hacia otros contratos")))La invocación hacia otros contratos, especialmente cuando se desconoce el costo en gas de invocar a sus funciones, introduce un riesgo adicional de quedarnos sin combustible. Evítese el uso de bibliotecas que no han sido apropiadamente probadas y no han recibido un uso amplio. Entre menor haya sido el escrutinio recibido por una biblioteca por parte de otros desarrolladores, mayor será el riesgo de utilizarla.
+
+==== Estimando el Costo de la Unidad de Gas
+
+((("gas","estimando el costo del gas", id="ix_07smart-contracts-solidity-asciidoc27", range="startofrange")))Si necesitamos estimar cuanto combustible es necesario para ejecutar un determinado método de un contrato tomando en cuanta sus argumentos, podemos utilizar el siguiente procedimiento:
+
+[source, javascript]
+var contract = web3.eth.contract(abi).at(address);
+var gasEstimate = contract.miMetodoParticular.estimateGas(argumento1, argumento2,
+    {from: account});
+
++gasEstimate+ nos va a decir la cantidad de unidades de gas necesarias para ejecutar nuestro método. Esto será sólo un estimado, debido a la completitud de Turing de la EVM&#x2014;es relativamente sencillo crear una función que requerirá cantidades vastamente diferentes de combustible para ejecutar diferentes invocaciones. Incluso el código que ya está en producción, puede cambiar sus rutas de ejecución en formas sutiles, resultando en costos de combustible enormemente diferentes entre una invocación y la próxima. Sin embargo, la mayoría de las funciones son sensibles y +estimateGas+ nos va a devolver una buena estimación la mayoría de las veces.
+
+Para obtener el precio de la unidad de gas de la red, podemos usar:
+
+[source, javascript]
+var gasPrice = web3.eth.getGasPrice();
+
+Y desde allí podemos estimar el costo de las unidades de gas:
+
+[source, javascript]
+var gasCostInEther = web3.utils.fromWei((gasEstimate * gasPrice), 'ether');
+
+Vamos a emplear nuestra función estimadora de gas para estimar el costo del combustible para nuestro ejemplo de +Faucet+, utilizando el código http://bit.ly/2zf0SIO[del repositorio del libro].
+
+Iniciemos Truffle en modo "development" (desarrollo) y ejecutemos el archivo JavaScript del <<estimateGas_function>>, _gas_estimates.js_.
+
+[source, javascript]
+[[estimateGas_function]]
+.gas_estimates.js: Utilizando la función "estimateGas"
+====
+[source,javascript]
+----
+var FaucetContract = artifacts.require("./Faucet.sol");
+
+FaucetContract.web3.eth.getGasPrice(function(error, result) {
+    var gasPrice = Number(result);
+    console.log("El precio del gas es " + gasPrice + " wei"); // "10000000000000"
+
+    // Obteniendo la instancia del contrato
+    FaucetContract.deployed().then(function(FaucetContractInstance) {
+
+		// Se utiliza del comando 'estimateGas' después del nombre de la función, para obtener la cantidad estimada de unidades de gas
+		// una estimación para esta función particular (aprove)
+		FaucetContractInstance.send(web3.utils.toWei(1, "ether"));
+        return FaucetContractInstance.withdraw.estimateGas(web3.utils.toWei(0.1, "ether"));
+
+    }).then(function(result) {
+        var gas = Number(result);
+
+        console.log("gas estimado = " + gas + " unidades");
+        console.log("estimacion del costo del gas = " + (gas * gasPrice) + " wei");
+        console.log("estimacion del costo del gas = " +
+                FaucetContract.web3.utils.fromWei((gas * gasPrice), 'ether') + " ether");
+    });
+});
+----
+====
+
+Así es como se ve en la consola de desarrollo Truffle:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+
+truffle(develop)> <strong>exec gas_estimates.js</strong>
+Usando la red 'develop'.
+
+El precio del gas es 20000000000 wei
+gas estimado = 31397 units
+estimacion del costo del gas = 627940000000000 wei
+estimacion del costo del gas = 0.00062794 ether
+</pre>
+++++
+
+Se recomienda verificar el costo en unidades de gas, de las funciones de nuestros contratos, como parte de nuestra rutina de trabajo de desarrollo de código, para evitar sorpresas al implementar estos contratos en la red principal(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc27"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc26")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc25")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc24")))
+
+=== Conclusiones
+
+En este capítulo comenzamos a trabajar con contratos inteligentes en detalle y exploramos el lenguaje de programación de contratos de Solidity.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc4")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc3")))Tomamos un ejemplo simple de contrato, _Faucet.sol_, y lo mejoramos gradualmente y lo volvimos más complejo, utilizándolo para explorar varios aspectos del lenguaje Solidity. En el <<vyper_chap>> trabajaremos con Vyper, otro lenguaje de programación orientado a contratos. Compararemos Vyper con Solidity, mostrando algunas de las diferencias en el diseño de estos dos lenguajes y profundizando nuestra comprensión de la programación de contratos inteligentes.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc0")))

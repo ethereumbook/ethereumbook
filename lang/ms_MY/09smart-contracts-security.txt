@@ -1,0 +1,2574 @@
+[[smart_contract_security]]
+== Keselamatan Kontrak Pintar
+
+(&quot;(kontrak&quot; pintar &quot;), id =&quot; ix_09smart-contracts-security-asciidoc0 &quot;, range =&quot; startofrange &quot;))) (((&quot; kontrak pintar &quot; keselamatan-asciidoc1 &quot;, range =&quot; startofrange &quot;))) Keselamatan adalah salah satu pertimbangan yang paling penting apabila menulis kontrak pintar. Dalam bidang pengaturcaraan kontrak pintar, kesilapan adalah mahal dan mudah dimanfaatkan. Dalam bab ini kita akan melihat amalan terbaik keselamatan dan corak reka bentuk, serta &quot;antipatterns keselamatan&quot;, yang merupakan amalan dan corak yang boleh memperkenalkan kelemahan dalam kontrak pintar kita.
+
+Seperti program lain, kontrak pintar akan melaksanakan apa yang ditulis, yang tidak selalu apa yang dimaksudkan oleh programmer. Selain itu, semua kontrak pintar adalah umum, dan mana-mana pengguna boleh berinteraksi dengan mereka hanya dengan membuat transaksi. Apa-apa kelemahan boleh dieksploitasi, dan kerugian hampir selalu mustahil untuk pulih. Oleh itu, adalah penting untuk mengikuti amalan terbaik dan menggunakan pola reka bentuk yang diuji dengan baik.
+
+=== Amalan Terbaik Keselamatan
+
+(((&quot;pengaturcaraan pertahanan&quot;))) (((&quot;keselamatan (kontrak pintar)&quot;, &quot;amalan terbaik&quot;))) _ Program pengaturcaraan adalah gaya pengaturcaraan yang sangat sesuai dengan kontrak pintar. Ia menekankan perkara berikut, yang semuanya adalah amalan terbaik:
+
+Minimalism / kesederhanaan :: Kerumitan adalah musuh keselamatan. Semakin mudah kod itu, dan semakin kurang, semakin rendah kemungkinan kemungkinan bug atau kesan yang tidak diduga. Apabila pertama kali terlibat dalam pengaturcaraan kontrak pintar, pemaju sering tergoda untuk mencuba menulis banyak kod. Sebaliknya, anda harus melihat kod kontrak pintar anda dan cuba mencari jalan untuk melakukan kurang, dengan lebih sedikit baris kod, kurang kerumitan, dan kurang &quot;ciri.&quot; Jika seseorang memberitahu anda bahawa projek mereka telah menghasilkan &quot;beribu-ribu baris kod&quot; untuk kontrak pintar mereka, anda harus mempersoalkan keselamatan projek itu. Lebih mudah lebih selamat.
+
+Penggunaan semula kod :: Cuba untuk tidak mencipta semula roda. Sekiranya perpustakaan atau kontrak sudah wujud yang paling banyak yang anda perlukan, gunakan semula. Dalam kod anda sendiri, ikut prinsip DRY: Jangan Ulangi Diri Anda. Jika anda melihat sebarang coretan kod yang diulang lebih daripada sekali, tanya diri anda sama ada ia boleh ditulis sebagai fungsi atau pustaka dan digunakan semula. Kod yang telah digunakan secara meluas dan diuji mungkin lebih selamat daripada mana-mana kod baru yang anda tulis. Berhati-hatilah dengan sindrom &quot;Tidak Di Sini&quot;, di mana anda tergoda untuk &quot;memperbaiki&quot; ciri atau komponen dengan membinanya dari awal. Risiko keselamatan sering kali lebih besar daripada nilai penambahbaikan.
+
+Kualiti kod :: Kod kontrak pintar tidak dapat diterima. Setiap bug boleh menyebabkan kerugian kewangan. Anda tidak boleh merawat pengaturcaraan kontrak pintar dengan cara yang sama seperti pengaturcaraan umum. Menulis DApps dalam Soliditi tidak seperti membuat widget web dalam JavaScript. Sebaliknya, anda harus menggunakan metodologi kejuruteraan dan pembangunan perisian yang ketat, seperti yang anda mahukan dalam kejuruteraan aeroangkasa atau sebarang disiplin yang sama sekali tidak dibenarkan. Sebaik sahaja anda &quot;melancarkan&quot; kod anda, ada sedikit yang anda boleh lakukan untuk menyelesaikan sebarang masalah.
+
+Kebolehbacaan / pengauditan :: Kod anda harus jelas dan mudah difahami. Semakin mudahnya dibaca, semakin mudah untuk di audit. Kontrak pintar adalah umum, kerana semua orang boleh membaca bytecode dan siapa saja boleh membalikkan-juruteranya. Oleh itu, adalah bermanfaat untuk membangunkan karya anda di khalayak ramai, menggunakan kaedah kolaborasi dan sumber terbuka, untuk memanfaatkan kebijaksanaan kolektif komuniti pemaju dan mendapat manfaat daripada penyebut utama pembangunan sumber terbuka yang paling tinggi. Anda harus menulis kod yang didokumenkan dengan baik dan mudah dibaca, mengikuti gaya dan penamaan konvensyen yang merupakan sebahagian daripada komuniti Ethereum.
+
+Liputan ujian: Uji segala-galanya yang anda boleh. Kontrak pintar dijalankan dalam persekitaran pelaksanaan awam, di mana sesiapa sahaja boleh melaksanakannya dengan apa jua input yang mereka mahu. Anda tidak boleh menganggap bahawa masukan, seperti argumen fungsi, dibentuk dengan baik, dibatasi dengan betul, atau mempunyai tujuan yang jinak. Uji semua argumen untuk memastikan ia berada dalam rentang yang diharapkan dan diformat dengan betul sebelum membenarkan pelaksanaan kod anda diteruskan.
+
+=== Risiko Keselamatan dan Antipattern
+
+(&quot;(kontrak keselamatan&quot;), &quot;risiko dan antipattern&quot; risiko keselamatan bersama, supaya dapat mengesan dan mengelakkan corak pengaturcaraan yang meninggalkan kontrak anda terdedah kepada risiko-risiko ini. Dalam beberapa bahagian seterusnya, kita akan melihat risiko keselamatan yang berlainan, contoh bagaimana kerentanan boleh timbul, dan penyelesaian tindakan pencegahan atau pencegahan yang boleh digunakan untuk menangani mereka.
+
+[[reentrancy_security]]
+=== Perpindahan
+
+((&quot;serangan berbalik&quot;, id = &quot;ix_09smart-contracts-security-asciidoc3&quot;, range = &quot;startofrange&quot;))) (((&quot;security (smart contracts)&quot;, -security-asciidoc4 &quot;, range =&quot; startofrange &quot;))) Salah satu ciri kontrak pintar Ethereum adalah kemampuan mereka untuk memanggil
+dan menggunakan kod dari kontrak luaran yang lain. Kontrak biasanya juga
+mengendalikan eter, dan sering menghantar eter ke pelbagai pengguna luaran
+alamat. Operasi ini memerlukan kontrak untuk menghantar panggilan luar. Ini
+panggilan luaran boleh dirampas oleh penyerang, yang boleh memaksa
+kontrak untuk melaksanakan kod selanjutnya (melalui fungsi sandaran),
+termasuk panggilan semula ke dalam diri mereka. Serangan semacam ini digunakan di dalam
+terkenal http://bit.ly/2DamSZT[DAO hack].
+
+Untuk bacaan lanjut mengenai serangan semula, lihat Gus Guimareas&#39;s http://bit.ly/2zaqSEY[blog post] mengenai subjek dan http://bit.ly/2ERDMxV[Eacheum Smart Practices Best Contract].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+////
+NOTA kepada editor
+Tajuk bahagian &quot;Kerentanan&quot; &amp; &quot;Teknik Pencegahan&quot; di seluruh bab ini telah berubah dari tajuk ke format tebal dengan sengaja supaya tidak memecahkan jadual kandungan dengan kata berulang.
+////
+
+(((&quot;serangan semula&quot;, &quot;kelemahan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc5&quot;, range = &quot;startofrange&quot;))) Jenis serangan ini boleh berlaku apabila kontrak menghantar eter ke alamat yang tidak diketahui.
+Penyerang boleh membuat kontrak dengan teliti dengan alamat luar
+yang mengandungi kod berniat jahat dalam fungsi sandaran. Oleh itu, apabila kontrak menghantar eter ke alamat ini, ia akan
+memohon kod jahat. Biasanya kod berniat jahat melaksanakan
+berfungsi pada kontrak yang lemah, melakukan operasi yang tidak dijangka
+oleh pemaju. Istilah &quot;kedatangan&quot; berasal dari fakta bahawa
+kontrak berniat jahat luaran memanggil fungsi yang terdedah
+kontrak dan jalan pelaksanaan kod &quot;__reenters__&quot; itu.
+
+Untuk memperjelaskan ini, pertimbangkan kontrak mudah terdedah di &lt; <etherstore_vulnerable> &gt; yang bertindak sebagai
+peti besi Ethereum yang membenarkan pendeposit mengeluarkan hanya 1 eter seberat
+minggu.
+
+[[eterstore_vulnerable]]
+.EtherStore.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+kontrak EtherStore {
+
+uint256 pengeluaran awamLimit = 1 eter;
+pemetaan (alamat =&gt; uint256) public lastWithdrawTime;
+pemetaan (alamat =&gt; uint256) baki awam;
+
+fungsi depositFunds () luar hutang {
+baki [msg.sender] + = msg.value;
+}
+
+fungsi mengeluarkan wang (uint256 _weiToWithdraw) awam {
+memerlukan (baki [msg.sender]&gt; = _weiToWithdraw);
+/ / menghadkan pengeluaran
+memerlukan (_weiToWithdraw &lt;= withdrawalLimit);
+// tolak waktu yang dibenarkan untuk menarik diri
+memerlukan (sekarang&gt; = lastWithdrawTime [msg.sender] + 1 minggu);
+memerlukan (msg.sender.call.value (_weiToWithdraw) ());
+baki [msg.sender] - = _weiToWithdraw;
+lastWithdrawTime [msg.sender] = now;
+}
+}
+----
+====
+
+Kontrak ini mempunyai dua fungsi awam, `depositFunds` dan
+`withdrawFunds`. Fungsi `depositFunds &#39;hanya meningkat
+keseimbangan pengirim. Fungsi `withdrawFunds` membolehkan pengirim untuk
+nyatakan jumlah wei untuk menarik balik. Fungsi ini bertujuan untuk berjaya
+hanya jika jumlah yang diminta untuk dikeluarkan adalah kurang daripada 1 eter dan pengeluaran
+tidak berlaku pada minggu lepas.
+
+Kelemahannya adalah dalam talian 17, di mana kontrak menghantar pengguna mereka
+permintaan jumlah eter. Pertimbangkan penyerang yang telah membuat kontrak dalam &lt; <etherstore_attack> &gt;.
+
+[[eterstore_attack]]
+.Attack.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+import &quot;EtherStore.sol&quot;;
+
+kontrak Serangan {
+EtherStore public etherStore;
+
+/ / intialize pembolehubah etherStore dengan alamat kontrak
+pembina (alamat _etherStoreAddress) {
+etherStore = EtherStore (_etherStoreAddress);
+}
+
+fungsi seranganEtherStore () luar yang boleh dibayar {
+/ serangan ke eter terdekat
+memerlukan (msg.value&gt; = 1 eter);
+// hantar eth ke fungsi depositFunds ()
+etherStore.depositFunds.value (1 eter) ();
+// mulakan sihir
+etherStore.withdrawFunds (1 eter);
+}
+
+fungsi collectEther () public {
+msg.sender.transfer (this.balance);
+}
+
+// Fungsi fallback - di mana keajaiban berlaku
+fungsi () boleh dibayar {
+jika (etherStore.balance&gt; 1 eter) {
+etherStore.withdrawFunds (1 eter);
+}
+}
+}
+----
+====
+
+Bagaimana mungkin eksploitasi berlaku? Pertama, penyerang akan mewujudkan kontrak yang berniat jahat (katakan pada
+alamat `0x0 ... 123`) dengan alamat kontrak` EtherStore` sebagai satu-satunya
+parameter pembina. Ini akan memulakan dan mengarahkan orang ramai
+variable `etherStore` kepada kontrak untuk diserang.
+
+Penyerang kemudian akan memanggil fungsi &#39;seranganEtherStore`, dengan beberapa
+jumlah eter yang lebih besar daripada atau sama dengan 1-mari kita asumsikan `1 eter` untuk
+pada masa ini. Dalam contoh ini, kami juga akan menganggap sebilangan pengguna lain
+disimpan eter ke dalam kontrak ini, supaya baki semasa adalah
+`10 ether`. Berikut ini akan berlaku:
+
+1. _Attack.sol_, baris 15: Fungsi `depositFunds`` EtherStore`
+kontrak akan dipanggil dengan `msg.value` daripada` 1 eter` (dan banyak gas). The
+pengirim (`msg.sender`) akan menjadi kontrak yang berniat jahat (` 0x0 ... 123`). Oleh itu,
+`baki [0x0..123] = 1 eter`.
+
+2. _Attack.sol_, baris 17: Kontrak yang berniat jahat akan memanggilnya
+`withdrawFunds` dari kontrak` EtherStore` dengan parameter `1
+ether`. Ini akan melepasi semua keperluan (baris 12-16 dari
+`EtherStore` kontrak) kerana tiada pengeluaran sebelumnya telah dibuat.
+
+3. _EtherStore.sol_, baris 17: Kontrak akan menghantar kembali `1 eter`
+lintasan yang berniat jahat: [ <span class="keep-together">kontrak</span> ].
+
+4. _Attack.sol_, baris 25: Bayaran kepada kontrak berniat jahat akan
+kemudian laksanakan fungsi sandaran.
+
+5. _Attack.sol_, baris 26: Jumlah baki kontrak + EtherStore + adalah
+`10 eter` dan kini` 9 eter &#39;, jadi ini jika + pernyataan berlalu.
+
+6. _Attack.sol_, baris 27: Fungsi fallback memanggil `EtherStore`
+`withdrawFunds` function lagi dan &#39;__reenters__&#39;` EtherStore`
+kontrak.
+
+7. _EtherStore.sol_, baris 11: Dalam panggilan kedua ini untuk `withdrawFunds`, yang
+menyerang keseimbangan kontrak masih `1 eter &#39;kerana baris 18 belum dilaksanakan. Oleh itu, kita
+masih mempunyai `baki [0x0..123] = 1 eter`. Ini juga berlaku untuk
+pembolehubah `lastWithdrawTime`. Sekali lagi, kita lulus semua keperluan.
+
+8. _EtherStore.sol_, baris 17: Kontrak menyerang mengeluarkan lagi `1 eter &#39;.
+
+9. Langkah 4-8 ulangi sehingga tidak lagi kes yang `EtherStore.balance&gt; 1`, sebagaimana yang ditentukan oleh baris 26 dalam _Attack.sol_.
+
+10. _Attack.sol_, baris 26: Apabila terdapat 1 (atau kurang) eter yang tersisa dalam kontrak `EtherStore`, pernyataan` if` ini akan gagal. Ini kemudian akan membenarkan baris 18 dan 19 kontrak `EtherStore` dilaksanakan (untuk setiap panggilan ke fungsi` withdrawFunds`).
+
+11. _EtherStore.sol_, garisan 18 dan 19: `baki` dan
+Pemetaan `lastWithdrawTime` akan ditetapkan dan pelaksanaan akan tamat.
+
+Hasil akhir adalah bahawa penyerang telah mengeluarkan semua tetapi 1 eter
+dari kontrak `EtherStore` dalam satu transaksi. (((range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc5 &quot;)))
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+((&quot;serangan serangan semula&quot;, &quot;teknik pencegahan&quot;))) Terdapat beberapa teknik biasa yang membantu mengelakkan potensi
+menimbulkan semula kelemahan dalam kontrak pintar. ((&quot;fungsi pemindahan&quot;, &quot;untuk mengurangkan kelemahan pendengaran&quot;))) Yang pertama ialah (apabila mungkin) menggunakan terbina dalam
+http://bit.ly/2Ogvnng[+transfer+]
+berfungsi apabila menghantar eter ke kontrak luaran. Fungsi + pemindahan +
+hanya menghantar 2300 gas dengan panggilan luar, yang tidak mencukupi untuk destinasi
+alamat / kontrak untuk memanggil kontrak lain (iaitu, masukkan semula penghantaran
+kontrak).
+
+(((&quot;corak kesan-kesan-interaksi&quot;))) Teknik kedua adalah untuk memastikan bahawa semua logik yang mengubah keadaan
+pembolehubah berlaku sebelum ether dihantar keluar dari kontrak (atau mana-mana)
+panggilan luaran). Dalam contoh `EtherStore`, baris 18 dan 19
+_EtherStore.sol_ perlu diletakkan sebelum baris 17. Ini adalah amalan yang baik untuk sebarang kod yang melakukan panggilan luaran ke alamat yang tidak diketahui menjadi
+operasi terakhir dalam fungsi setempat atau sekeping pelaksanaan kod. Ini
+dikenali sebagai
+http://bit.ly/2EVo70v[checks-effects-interactions
+corak].
+
+(((&quot;mutex&quot;))) Teknik ketiga adalah memperkenalkan mutex-iaitu, menambah keadaan
+pembolehubah yang mengunci kontrak semasa pelaksanaan kod, menghalang
+panggilan masuk.
+
+Memohon semua teknik ini (menggunakan ketiga-tiga itu tidak perlu, tetapi kami melakukannya
+untuk tujuan demonstrasi) kepada _EtherStore.sol_, memberikan
+kontrak bebas semula:
+
+[sumber, ketumpatan, lekukan]
+----
+kontrak EtherStore {
+
+/ / permulaan mutex
+bool reEntrancyMutex = false;
+uint256 pengeluaran awamLimit = 1 eter;
+pemetaan (alamat =&gt; uint256) public lastWithdrawTime;
+pemetaan (alamat =&gt; uint256) baki awam;
+
+fungsi depositFunds () luar hutang {
+baki [msg.sender] + = msg.value;
+}
+
+fungsi mengeluarkan wang (uint256 _weiToWithdraw) awam {
+memerlukan (! reEntrancyMutex);
+memerlukan (baki [msg.sender]&gt; = _weiToWithdraw);
+/ / menghadkan pengeluaran
+memerlukan (_weiToWithdraw &lt;= withdrawalLimit);
+// tolak waktu yang dibenarkan untuk menarik diri
+memerlukan (sekarang&gt; = lastWithdrawTime [msg.sender] + 1 minggu);
+baki [msg.sender] - = _weiToWithdraw;
+lastWithdrawTime [msg.sender] = now;
+// menetapkan mutex reEntrancy sebelum panggilan luaran
+reEntrancyMutex = true;
+msg.sender.transfer (_weiToWithdraw);
+// melepaskan mutex selepas panggilan luaran
+reEntrancyMutex = false;
+}
+}
+----
+
+[[real_world_example_the_dao]]
+==== Contoh Dunia Sebenar: DAO
+
+Serangan serangan semula &quot;,&quot; contoh dunia nyata: serangan DAO &quot;))) Penyerang DAO (Organisasi Otonomi Tersusun) adalah salah satu daripada hacks utama yang
+berlaku dalam perkembangan awal Ethereum. Pada masa itu, kontrak itu
+yang diadakan lebih dari $ 150 juta. Keperibadian memainkan peranan utama dalam
+serangan, yang akhirnya membawa kepada garpu keras yang menciptakan Ethereum
+Classic (ETC). Untuk analisis yang baik terhadap eksploitasi DAO, lihat
+http://bit.ly/2EQaLCI. Maklumat lanjut mengenai sejarah garpu Ethereum, garis masa hack DAO, dan kelahiran ETC dalam garpu keras boleh didapati di &lt; <ethereum_standards> &gt;. () () (): ()
+
+=== Arithmetic Over / Underflows
+
+((&quot;aritmetik atas / bawah aliran&quot;, id = &quot;ix_09smart-contracts-security-asciidoc6&quot;, range = &quot;startofrange&quot;))) (((&quot;overflow&quot;, id = &quot;ix_09smart-contracts-security-asciidoc7&quot; = &quot;permulaan&quot;,) () &#39;&#39;, id = &quot;ix_09smart-contracts-security-asciidoc9&quot;, range = &quot;startofrange&quot;))) Mesin Maya Ethereum menentukan jenis data tetap saiz untuk
+integer. Ini bermakna bahawa pemboleh ubah integer hanya boleh mewakili julat tertentu
+nombor. Sebagai contoh, `8 &#39;, hanya boleh menyimpan
+nombor dalam julat [0,255]. Cuba menyimpan `256` menjadi` uint8` akan
+mengakibatkan `0`. Jika penjagaan tidak diambil, pembolehubah dalam Kepantasan boleh
+dieksploitasi jika input pengguna tidak dicentang dan pengiraan dilakukan
+yang menghasilkan nombor yang terletak di luar julat jenis data itu
+menyimpannya.
+
+Untuk bacaan lanjut tentang aritmetik di atas / aliran bawah, lihat https://bit.ly/2nNLuOr[&quot;How to Secure Your Smart Contracts &quot;],
+https://bit.ly/2MOfBPv[Kuat Amalan Terbaik Kontrak Pintar], dan
+https://bit.ly/2xvbx1M[&quot;Ethereum, Padat dan integer limpahan: rantaian blok pengatur seperti 1970 &quot;].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+((&quot;aritmetik ke atas / bawah aliran&quot;, &quot;kelemahan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc10&quot;, range = &quot;startofrange&quot;))) Lebih / bawah aliran terjadi apabila operasi dilakukan yang memerlukan
+pemboleh ubah bersaiz tetap untuk menyimpan nombor (atau sekeping data) yang berada di luar
+julat jenis data pembolehubah.
+
+(((&quot;underflow&quot;))) Sebagai contoh, tolakkan `1` daripada variabel` uint8` (pemboleh ubah tak jenuh 8 bit, iaitu nonnegative) yang nilainya adalah `0` akan menghasilkan
+dalam nombor `255`. Ini adalah _underflow_. Kami telah memberikan nombor
+di bawah julat `uint8`, maka hasil _wraps around_ dan memberikan
+bilangan terbesar `` 8 boleh disimpan. Begitu juga dengan menambahkan `2 ^ 8 = 256` kepada a
+`uint8` akan meninggalkan pemboleh ubah tidak berubah, seperti yang telah kita bungkus
+panjang keseluruhan `mengikat`. Dua analogi mudah tingkah laku ini
+odometers dalam kereta, yang mengukur jarak perjalanan (mereka menetapkan semula kepada 000000, selepas
+nombor terbesar, iaitu, 999999, diatasi) dan fungsi matematik berkala
+(menambah + 2π + kepada hujah + dosa + meninggalkan nilai tidak berubah).
+
+(((&quot;limpahan&quot;, &quot;ditentukan&quot;))) Menambah nombor yang lebih besar daripada julat jenis data dipanggil _overflow_. Untuk
+kejelasan, menambah `257` ke` uint8` yang saat ini mempunyai nilai `0` akan menghasilkan
+dalam nombor `1`. Ia kadang-kadang mengajar untuk memikirkan pembolehubah bersaiz tetap
+sebagai kitaran, di mana kita mula lagi dari sifar jika kita menambah nombor di atas
+nombor yang paling mungkin disimpan, dan mula mengira dari bilangan terbesar jika kita tolak daripada sifar. Dalam kes jenis `int` yang ditandatangani, yang menandakan nombor negatif, kita mula sekali lagi apabila kita mencapai nilai negatif yang terbesar; sebagai contoh, jika kita cuba untuk menolak `1` daripada` int8` yang nilainya adalah `-128`, kita akan mendapat` 127`.
+
+Ini jenis gotchas berangka membolehkan penyerang menyalahgunakan kod dan membuatnya
+aliran logik yang tidak dijangka. Sebagai contoh, pertimbangkan + kontrak + TimeLock di
+<<timelock_sol_security>>.
+
+[[timelock_sol_security]]
+.TimeLock.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+contract TimeLock {
+
+    mapping(address => uint) public balances;
+    mapping(address => uint) public lockTime;
+
+    function deposit() external payable {
+baki [msg.sender] + = msg.value;
+        lockTime[msg.sender] = now + 1 weeks;
+}
+
+    function increaseLockTime(uint _secondsToIncrease) public {
+        lockTime[msg.sender] += _secondsToIncrease;
+}
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+}
+}
+----
+====
+
+Kontrak ini direka bentuk untuk bertindak seperti peti besi masa: pengguna boleh
+deposit eter ke dalam kontrak dan ia akan dikunci di sana untuk sekurang-kurangnya
+seminggu. Pengguna boleh memanjangkan masa tunggu sehingga lebih lama dari 1 minggu jika mereka memilih,
+tetapi sekali disimpan, pengguna boleh memastikan eter mereka terkunci dengan selamat
+selama sekurang-kurangnya seminggu-atau sebulan, kontrak ini bercadang.
+
+Sekiranya pengguna terpaksa menyerahkan kunci peribadi mereka, kontrak seperti
+ini mungkin berguna untuk memastikan ether mereka tidak dapat dikesan untuk jangka masa yang singkat. Tetapi kalau
+pengguna telah mengunci `100 eter &#39;dalam kontrak ini dan menyerahkan kunci mereka kepada
+penyerang, penyerang boleh menggunakan limpahan untuk menerima eter, tanpa mengira
+daripada `lockTime`.
+
+Penyerang boleh menentukan `lockTime` semasa untuk alamat mereka
+kini memegang kunci untuk (ia adalah pembolehubah awam). Mari kita panggil ini
+`userLockTime`. Mereka kemudiannya boleh memanggil fungsi `increaseLockTime` dan
+lulus sebagai hujah nombor `2 ^ 256 - userLockTime`. Nombor ini akan
+ditambah kepada `userLockTime` semasa dan menyebabkan limpahan, menetapkan semula
+`lockTime [msg.sender]` kepada `0`. Penyerang kemudian boleh memanggilnya
+`menarik &#39;fungsi untuk mendapatkan ganjaran mereka.
+
+Mari lihat contoh lain (&lt; <underflow_vulnerability_example_from_ethernaut_challenge> &gt;), ini dari https://github.com/OpenZeppelin/ethernaut[Ethernaut challenges].
+
+* ALERT PENERIMA: * _Jika anda belum menyelesaikan cabaran Ethernaut, ini
+memberikan penyelesaian kepada salah satu daripada level_.
+
+[[underflow_vulnerability_example_from_ethernaut_challenge]]
+Contoh contoh kelemahan dari Ethernaut
+====
+[sumber, ketumpatan, lekukan]
+----
+pepejal pragma ^ 0.4.18;
+
+contract Token {
+
+  mapping(address => uint) balances;
+  uint public totalSupply;
+
+  function Token(uint _initialSupply) {
+    balances[msg.sender] = totalSupply = _initialSupply;
+}
+
+  function transfer(address _to, uint _value) public returns (bool) {
+    require(balances[msg.sender] - _value >= 0);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+}
+
+  function balanceOf(address _owner) public constant returns (uint balance) {
+    return balances[_owner];
+}
+}
+----
+====
+
+Ini adalah kontrak token sederhana yang menggunakan fungsi `pemindahan`,
+membolehkan peserta untuk mengalihkan token mereka. Bolehkah anda melihat kesilapan itu?
+dalam kontrak ini?
+
+Kecacatan datang dalam fungsi `pemindahan`. Pernyataan + memerlukan + pada
+baris 13 boleh dilewati dengan menggunakan aliran bawah. Pertimbangkan pengguna dengan sifar
+seimbang. Mereka boleh memanggil fungsi `pemindahan &#39;dengan mana-mana yang bukan
+`_value` dan lulus + memerlukan + pernyataan pada baris 13. Ini kerana
+`baki [msg.sender]` ialah +0+ (dan `uint256`), jadi tolak apa-apa
+Jumlah positif (tidak termasuk `2 ^ 256`) akan menghasilkan nombor positif seperti yang dinyatakan sebelum ini. Ini juga berlaku untuk baris 14,
+di mana baki akan dikreditkan dengan nombor positif. Oleh itu, dalam hal ini
+contohnya, penyerang boleh mencapai token percuma disebabkan oleh kelemahan bawah bawah. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc10&quot;)))
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+&quot;(teknik&quot; teknik pencegahan &quot;,&quot; = ix_09smart-contracts-security-asciidoc11 &quot;, range =&quot; startofrange &quot;))) Teknik konvensional semasa untuk melindungi dari bawah / limpahan
+Kerentanan adalah menggunakan atau membina perpustakaan matematik yang menggantikannya
+penambahan, pengurangan dan pendaraban matematik standard
+(bahagian dikecualikan kerana ia tidak menyebabkan over / aliran dan EVM
+dibalikkan semula pada bahagian 0).
+
+(((&quot;OpenZeppelin&quot;))) (((&quot;perpustakaan SafeMath&quot;))) https://github.com/OpenZeppelin/openzeppelin-solidity [OpenZeppelin] telah
+melakukan kerja besar dan mengaudit perpustakaan yang selamat untuk komuniti Ethereum. Khususnya, http://bit.ly/2ABhb4l[+SafeMath+ perpustakaan] boleh digunakan untuk mengelakkan kelemahan di bawah / limpahan.
+
+Untuk menunjukkan bagaimana perpustakaan-perpustakaan ini digunakan dalam Soliditi, mari kita betulkan kontrak `TimeLock` menggunakan perpustakaan` SafeMath`. Versi kontrak bebas limpahan adalah:
+
+[sumber, ketumpatan, lekukan]
+----
+library SafeMath {
+
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+}
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+}
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+/ / menegaskan (a == b * c + a% b); // Ini berlaku dalam semua kes
+    return c;
+}
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+}
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+}
+}
+
+contract TimeLock {
+menggunakan SafeMath untuk kegunaan; / / gunakan perpustakaan untuk jenis uint
+pemetaan (alamat =&gt; uint256) baki awam;
+    mapping(address => uint256) public lockTime;
+
+    function deposit() external payable {
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        lockTime[msg.sender] = now.add(1 weeks);
+}
+
+    function increaseLockTime(uint256 _secondsToIncrease) public {
+        lockTime[msg.sender] = lockTime[msg.sender].add(_secondsToIncrease);
+}
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+}
+}
+----
+
+Perhatikan bahawa semua operasi matematik standard telah digantikan oleh mereka
+ditakrifkan dalam pustaka `SafeMath`. Kontrak `TimeLock` tidak lagi
+melakukan sebarang operasi yang mampu di bawah / limpahan. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc11&quot;)))
+
+==== Contoh Dunia Nyata: PoWHC dan Overflow Transfer Batch (CVE-2018-10299)
+
+((&quot;aritmetik di atas / bawah aliran&quot;, &quot;contoh dunia nyata: PoWHC dan pemindahan batch overflow&quot;))) (((&quot;batchTransfer function&quot; ) Bukti Syiling Lemah Tangan (PoWHC), yang asalnya dicipta sebagai jenaka pelbagai, adalah
+Skim Ponzi yang ditulis oleh kolektif internet. Malangnya nampaknya penulis (s) kontrak
+tidak pernah dilihat sebelum / sebelum aliran, dan akibatnya 866 eter adalah
+dibebaskan dari kontraknya. Eric Banisadr memberikan gambaran yang baik mengenai bagaimana pengaliran berlaku
+(yang tidak terlalu berbeza dengan cabaran Ethernaut yang diterangkan sebelum ini) dalam acaranya https://bit.ly/2wrxIFJ[blog post] pada acara itu.
+
+http://bit.ly/2CUf7WGInformasi lain] berasal dari pelaksanaan `batchTransfer ()` berfungsi menjadi sekumpulan kontrak token ERC20. Pelaksanaan ini mengandungi kelemahan limpahan; anda boleh membaca mengenai butiran dalam akaun https://bit.ly/2HDlIs8[PeckShield]. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc9&quot;))) (((range = &quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc8 &quot;))) (((range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc7 &quot; = &quot;ix_09smart-contracts-security-asciidoc6&quot;)))
+
+=== Ether yang tidak dijangka
+
+, (&quot;(eter (umumnya)&quot;, &quot;ancaman keselamatan eter yang tidak dijangka&quot;, id = &quot;ix_09smart-contracts-security-asciidoc12&quot;, range = &quot;startofrange&quot; ancaman eter &quot;, id =&quot; ix_09smart-contracts-security-asciidoc13 &quot;, range =&quot; startofrange &quot;))) (((&quot; ether yang tidak dijangka &quot;,&quot; ancaman keselamatan daripada &quot;, id =&quot; ix_09smart-contracts-security-asciidoc14 &quot; = = &quot;startofrange&quot;))) Biasanya, apabila eter dihantar ke kontrak, ia mesti melaksanakan sama ada
+fungsi mundur atau fungsi lain yang ditakrifkan dalam kontrak. Di sana
+adalah dua pengecualian untuk ini, di mana eter boleh wujud dalam kontrak tanpa
+setelah melaksanakan sebarang kod. Kontrak yang bergantung pada pelaksanaan kod untuk
+semua eter dihantar kepada mereka boleh terdedah kepada serangan di mana
+eter secara paksa dihantar.
+
+Untuk bacaan lanjut tentang ini, lihat https://bit.ly/2MR8Gp0[&quot;How to Secure Your Smart Contracts &quot;] dan http://bit.ly/2RjXmUWl[&quot; Corak Keselamatan Keamanan - Memaksa Ether ke Kontrak&quot;].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;eter yang tidak dijangka&quot;, &quot;kerentanan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc15&quot;, range = &quot;startofrange&quot;))) A teknik pengaturcaraan umum dalam menguatkuasakan
+Peralihan keadaan yang betul atau operasi pengesahan adalah
+pemeriksaan _invariant. Teknik ini melibatkan penentuan satu set
+invarian (metrik atau parameter yang tidak sepatutnya berubah) dan semak
+bahawa mereka kekal tidak berubah selepas operasi tunggal (atau banyak).
+Ini biasanya reka bentuk yang baik, dengan syarat invarian yang diperiksa adalah
+sebenarnya invarian. Salah satu contoh invarian adalah `totalSupply`
+terbitan tetap
+http://bit.ly/2CUf7WG[ERC20 token]. Oleh kerana fungsi tidak perlu mengubah suai invarian ini, seseorang boleh menambah
+semak ke fungsi `pemindahan` yang memastikan` totalSupply`
+masih tidak diubahsuai, untuk menjamin fungsi berfungsi sebagaimana yang dijangkakan.
+
+Khususnya, terdapat satu invarian yang jelas bahawa ia mungkin menggoda untuk digunakan
+tetapi itu sebenarnya boleh dimanipulasi oleh pengguna luaran (tanpa mengira peraturannya
+di tempat dalam kontrak pintar). Ini adalah eter semasa yang disimpan di dalam
+kontrak. Selalunya apabila pemaju mula belajar Ketumpukan mereka ada
+salah tanggapan bahawa kontrak hanya boleh menerima atau mendapatkan ether melalui bayaran
+fungsi. Kesalahpahaman ini boleh membawa kepada kontrak yang mempunyai anggapan palsu
+kira keseimbangan eter di dalamnya, yang boleh membawa kepada pelbagai
+kelemahan. Pistol merokok untuk kelemahan ini adalah penggunaan (salah)
+daripada `ini.balance`.
+
+Terdapat dua cara di mana eter dapat (secara paksa) dihantar ke kontrak
+tanpa menggunakan fungsi yang boleh dibayar atau melaksanakan sebarang kod pada
+kontrak:
+
+Merosakkan diri / bunuh diri ::
+
+(((&quot;fungsi selfdestruct&quot;))) Mana-mana kontrak dapat melaksanakan
+http://bit.ly/2RovrDf [`selfdestruct`
+fungsi], yang menghilangkan semua bytecode dari alamat kontrak dan hantar
+semua eter disimpan di sana ke alamat yang ditentukan parameter. Jika ini
+alamat yang dinyatakan juga merupakan kontrak, tiada fungsi (termasuk
+belakang) boleh dipanggil. Oleh itu, fungsi selfdestruct` boleh
+digunakan untuk secara paksa menghantar eter ke mana-mana kontrak tanpa mengira mana-mana kod itu
+boleh wujud dalam kontrak, walaupun kontrak tanpa
+fungsi yang boleh dibayar. Ini bermakna mana-mana penyerang boleh membuat kontrak dengan a
+`selfdestruct` berfungsi, hantar eter ke sana, panggil` selfdestruct (target) `
+dan memaksa eter dihantar ke kontrak `target`. Martin Swende mempunyai
+baik http://bit.ly/2OfLukM²blog post] menggambarkan beberapa sifat opcode merosakkan sendiri (Quirk # 2) bersama-sama dengan
+satu akaun bagaimana nod klien sedang memeriksa invarian yang salah,
+yang boleh menyebabkan kemalangan agak buruk dari rangkaian Ethereum.
+
+Eterai pra-dihantar ::
+
+Satu lagi cara untuk mendapatkan eter ke dalam kontrak adalah untuk pramuat alamat kontrak
+dengan eter. Alamat kontrak adalah deterministik-sebenarnya, alamatnya adalah
+dikira dari keccak-256 (biasanya sinonim dengan SHA-3) hash daripada
+alamat mewujudkan kontrak dan urus niaga yang tidak mencipta
+kontrak. Khususnya, ia adalah bentuk `alamat = sha3 (rlp.encode ([account_address, transaction_nonce]))`
+(lihat perbincangan Adrian Manning mengenai http://bit.ly/2EPj5Tq[&quot;Etherless Ether &quot;] untuk kegunaan kes kegunaan ini). Ini
+bermaksud sesiapa sahaja boleh mengira alamat kontrak mana yang akan berlaku sebelum itu
+mencipta dan menghantar eter ke alamat tersebut. Apabila kontrak itu berlaku
+dicipta akan mempunyai keseimbangan baki eter.
+
+Mari kita lihat beberapa perangkap yang boleh timbul kerana pengetahuan ini. Pertimbangkan kontrak yang terlalu mudah di &lt; <etherGame_security> &gt;.
+
+[[etherGame_security]]
+.EtherGame.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+
+    mapping(address => uint) redeemableEther;
+// Pengguna membayar 0.5 eter. Pada pencapaian tertentu, kredit akaun mereka.
+    function play() external payable {
+        require(msg.value == 0.5 ether); // each play is 0.5 ether
+        uint currentBalance = this.balance + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance <= finalMileStone);
+        // if at a milestone, credit the player's account
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        return;
+}
+
+    function claimReward() public {
+// pastikan permainan selesai
+        require(this.balance == finalMileStone);
+// pastikan ada hadiah untuk diberikan
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+}
+}
+----
+====
+
+Kontrak ini mewakili permainan mudah (yang secara semula jadi melibatkan
+keadaan perlumbaan) di mana pemain menghantar 0.5 eter ke kontrak dengan harapan menjadi pemain yang mencapai salah satu
+tiga tonggak pertama. Pencapaian disebut dalam eter. Yang pertama
+untuk mencapai kejayaan boleh menuntut sebahagian daripada eter apabila permainan
+telah tamat. Permainan berakhir apabila peristiwa terakhir (10 eter)
+mencapai; pengguna kemudian boleh menuntut ganjaran mereka.
+
+Isu-isu dengan kontrak `EtherGame` datang dari penggunaan yang buruk
+`this.balance` dalam kedua-dua baris 14 (dan oleh persatuan 16) dan 32. A
+penyerang yang nakal boleh secara paksa menghantar sejumlah kecil eter, katakan, 0.1 eter-melalui fungsi &#39;selfdestruct` (dibincangkan lebih awal) untuk
+menghalang mana-mana pemain dari masa depan untuk mencapai kejayaan. `this.balance` tidak akan menjadi berganda sebanyak 0.5 eter terima kasih kepada 0.1 eter ini
+sumbangan, kerana semua pemain yang sah hanya boleh menghantar kenaikan 0.5-eter. Ini menghalang semua + jika + syarat pada baris 18, 21,
+dan 24 daripada menjadi kenyataan.
+
+Lebih buruk lagi, seorang penyerang yang bersalah yang tidak dapat melupakan peristiwa penting
+hantarkan 10 eter (atau jumlah eter yang bersamaan yang menolaknya
+baki kontrak di atas `finalMileStone`), yang akan mengunci semua
+ganjaran dalam kontrak selama-lamanya. Ini kerana `claimReward`
+fungsi akan sentiasa kembali, kerana + memerlukan + pada baris 32 (iaitu, kerana
+`this.balance` lebih besar daripada` finalMileStone`). (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc15&quot;)))
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ether tak terduga&quot;, &quot;teknik pencegahan&quot;))) Kelemahan seperti ini biasanya timbul dari penyalahgunaan `this.balance`.
+Logik kontrak, jika mungkin, harus mengelakkan bergantung kepada tepat
+nilai baki kontrak, kerana ia boleh dibuat secara buatan
+dimanipulasi. Jika menggunakan logik berdasarkan `this.balance`, anda perlu
+mengatasi baki yang tidak dijangka.
+
+Sekiranya nilai-nilai tepat eter yang dideposit diperlukan, pembolehubah yang ditentukan sendiri
+harus digunakan yang dipertingkatkan dalam fungsi yang boleh dibayar, dengan selamat
+menjejaki eter yang disimpan. Pembolehubah ini tidak akan dipengaruhi oleh
+Ether dipaksa dihantar melalui panggilan &#39;selfdestruct`.
+
+Dengan fikiran ini, versi diperbetulkan kontrak `EtherGame` boleh
+seperti:
+
+[sumber, ketumpatan, lekukan]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+    uint public depositedWei;
+
+    mapping (address => uint) redeemableEther;
+
+    function play() external payable {
+        require(msg.value == 0.5 ether);
+        uint currentBalance = depositedWei + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance <= finalMileStone);
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        depositedWei += msg.value;
+        return;
+}
+
+    function claimReward() public {
+// pastikan permainan selesai
+        require(depositedWei == finalMileStone);
+// pastikan ada hadiah untuk diberikan
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+}
+}
+----
+
+Di sini, kami telah mencipta pemboleh ubah baru, `disimpanWei`, yang menyimpan
+menjejaki eter yang diketahui didepositkan, dan ia adalah pembolehubah yang kami
+gunakan untuk ujian kami. Perhatikan bahawa kita tidak lagi mempunyai apa-apa
+merujuk kepada `this.balance`.
+
+==== Contoh Tambahan
+
+Beberapa contoh kontrak eksploit telah diberikan di
+https://github.com/Arachnid/uscc/tree/master/submissions-2017/[Underhanded
+Peraduan Pengekodan Pepejal], yang juga menyediakan contoh lanjutan dari beberapa
+perangkap yang dibangkitkan dalam seksyen ini. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc14&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc13&quot;) )) (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc12&quot;)))
+
+=== DELEGATECALL
+
+(((&quot;DELEGATECALL opcode security threat&quot;, id = &quot;ix_09smart-contracts-security-asciidoc16&quot;, range = &quot;startofrange&quot;))) (((&quot;security (smart smart)&quot;, &quot;DELEGATECALL opcode threat&quot; ix_09smart-contracts-security-asciidoc17 &quot;, range =&quot; startofrange &quot;)))` CALL` dan `DELEGATECALL` opcodes berguna dalam membenarkan Ethereum
+pemaju untuk modularize kod mereka. (((&quot;OPOM CALL&quot;))) Mesej luaran standard panggilan ke
+kontrak dikendalikan oleh opcode `CALL`, di mana kod dijalankan di dalam
+konteks fungsi / kontrak luaran. Opcode `DELEGATECALL` adalah
+hampir sama, kecuali kod yang dilaksanakan di alamat yang disasarkan adalah
+dijalankan dalam konteks kontrak panggilan, dan `msg.sender` dan` msg.value` kekal tidak berubah. Ini
+ciri membolehkan pelaksanaan _libraries_, yang membolehkan pemaju untuk
+menggunakan kod yang boleh digunakan sekali lagi dan hubunginya dari kontrak masa depan.
+
+Walaupun perbezaan di antara kedua-dua opsyen ini adalah mudah dan
+intuitif, penggunaan `DELEGATECALL` boleh membawa kepada kod yang tidak dijangka
+pelaksanaan.
+
+Untuk bacaan lanjut, lihat Loi.Luu&#39;s
+http://bit.ly/2AAElb8[Ethereum
+Stack Exchange soalan mengenai topik ini] dan
+http://bit.ly/2Oi7UlH[Solidity docs].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;Ancaman keselamatan opcode DELEGATECALL&quot;, &quot;kerentanan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc18&quot;, range = &quot;startofrange&quot;))) Sebagai akibat dari sifat perlindungan konteks `DELEGATECALL`
+perpustakaan adat bebas kelemahan tidak semudah yang difikirkan oleh seseorang.
+Kod dalam perpustakaan itu sendiri boleh menjadi selamat dan mudah terjejas;
+bagaimanapun, apabila dijalankan dalam konteks aplikasi lain yang baru
+kerentanan boleh timbul. (((&quot;Jujukan Fibonacci&quot;, id = &quot;ix_09smart-contracts-security-asciidoc19&quot;, range = &quot;startofrange&quot;))) Mari lihat contoh yang agak rumit ini,
+menggunakan nombor Fibonacci.
+
+Pertimbangkan perpustakaan dalam &lt; <fibonacci_security> &gt;, yang boleh menjana urutan Fibonacci
+dan urutan bentuk yang serupa. (Nota: kod ini adalah
+diubah daripada https://bit.ly/2MReuii [].)
+
+[[fibonacci_security]]
+.FibonacciLib.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+// library contract - calculates Fibonacci-like numbers
+contract FibonacciLib {
+/ / memulakan permulaan Fibonacci standard
+    uint public start;
+    uint public calculatedFibNumber;
+
+/ / ubah suai nombor zeroth dalam urutan
+    function setStart(uint _start) public {
+        start = _start;
+}
+
+    function setFibonacci(uint n) public {
+        calculatedFibNumber = fibonacci(n);
+}
+
+    function fibonacci(uint n) internal returns (uint) {
+        if (n == 0) return start;
+        else if (n == 1) return start + 1;
+        else return fibonacci(n - 1) + fibonacci(n - 2);
+}
+}
+----
+====
+
+Perpustakaan ini menyediakan fungsi yang boleh menjana Fibonacci _n_th
+nombor dalam urutan. Ia membolehkan pengguna menukar nombor permulaan
+urutan (`mulakan`) dan kira nombor seperti Fibonacci _n_ -th baru ini
+urutan.
+
+Marilah kita mempertimbangkan kontrak yang menggunakan perpustakaan ini, yang ditunjukkan dalam &lt; <fib_balance_security> &gt;.
+
+[[fib_balance_security]]
+.FibonacciBalance.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+contract FibonacciBalance {
+
+    address public fibonacciLibrary;
+// nombor Fibonacci semasa untuk menarik balik
+    uint public calculatedFibNumber;
+// nombor permulaan Fibonacci bermula
+    uint public start = 3;
+    uint public withdrawalCounter;
+// pemilih fungsi Fibonancci
+    bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
+
+// konstruktor - memuat kontrak dengan eter
+    constructor(address _fibonacciLibrary) external payable {
+        fibonacciLibrary = _fibonacciLibrary;
+}
+
+    function withdraw() {
+        withdrawalCounter += 1;
+// kiraan nombor Fibonacci untuk pengguna pengeluaran semasa
+/ / set ini dihitungFibNumber
+        require(fibonacciLibrary.delegatecall(fibSig, withdrawalCounter));
+        msg.sender.transfer(calculatedFibNumber * 1 ether);
+}
+
+    // allow users to call Fibonacci library functions
+    function() public {
+        require(fibonacciLibrary.delegatecall(msg.data));
+}
+}
+----
+====
+
+Kontrak ini membenarkan peserta menarik balik eter daripada kontrak,
+dengan jumlah eter yang sama dengan nombor Fibonacci
+sama dengan perintah pengeluaran peserta; iaitu, yang pertama
+peserta mendapat 1 eter, yang kedua juga mendapat 1, yang ketiga mendapat 2, yang
+keempat mendapat 3, kelima 5, dan sebagainya (sehingga baki kontrak
+kurang daripada nombor Fibonacci yang ditarik balik).
+
+// TODO: Andreas untuk memutuskan apakah intro ini diperlukan, atau hanya merujuk
+// bahagian lain dalam buku ini.
+
+Terdapat beberapa elemen dalam kontrak ini yang mungkin memerlukan beberapa
+penjelasan. Pertama, terdapat pemboleh ubah yang menarik,
+`fibSig`. Ini memegang 4 bait yang pertama daripada hash Keccak-256 (SHA-3)
+string `&#39;setFibonacci (uint256)&#39; &#39;. Ini dikenali sebagai
+http://bit.ly/2RmueMP[function
+pemilih] dan dimasukkan ke `calldata` untuk menentukan fungsi a
+kontrak pintar akan dipanggil. Ia digunakan dalam fungsi `delegatecall`
+pada baris 21 untuk menyatakan bahawa kami ingin menjalankan `fibonacci (uint256)`
+fungsi. Argumen kedua dalam `delegatecall` adalah parameter yang kita
+lulus kepada fungsi. Kedua, kita menganggap bahawa alamat untuk
+`FibonacciLib` perpustakaan dirujuk dengan betul dalam pembina
+(&lt; <external_contract_referencing> &gt; membincangkan beberapa
+potensi kelemahan yang berkaitan dengan rujukan kontrak jenis ini
+permulaan).
+
+Bolehkah anda melihat kesilapan dalam kontrak ini? Sekiranya seseorang menggunakan kontrak ini,
+isi dengan eter, dan panggil `menarik balik &#39;, kemungkinan akan kembali.
+
+Anda mungkin perasan bahawa pembolehubah negeri `start` digunakan di kedua-dua
+perpustakaan dan kontrak panggilan utama. Dalam kontrak perpustakaan, `mulakan`
+digunakan untuk menentukan permulaan urutan Fibonacci dan ditetapkan kepada
+`0`, sedangkan ia ditetapkan kepada` 3` dalam kontrak panggilan. Anda
+mungkin juga telah menyedari bahawa fungsi sandaran dalam
+Kontrak `FibonacciBalance` membolehkan semua panggilan dihantar ke perpustakaan
+kontrak, yang membolehkan fungsi `setStart` perpustakaan
+kontrak dipanggil. Mengingat bahawa kita memelihara keadaan
+kontrak, mungkin kelihatan bahawa fungsi ini akan membolehkan anda mengubahnya
+nyatakan pembolehubah `start` dalam kontrak` FibonnacciBalance &#39;setempat.
+Jika ya, ini akan membolehkan seseorang menarik lebih banyak eter, seperti yang dihasilkan
+`dikiraFibNumber` bergantung pada pembolehubah` start` (seperti yang terlihat dalam
+kontrak perpustakaan). Sebenarnya, fungsi `setStart` tidak
+tidak (dan tidak boleh) mengubah suai pembolehubah `start` dalam` FibonacciBalance`
+kontrak. Kelemahan asas dalam kontrak ini adalah ketara
+lebih buruk daripada sekadar mengubah suai pembolehubah `bermula &#39;.
+
+// TODO: Andreas untuk memutuskan apakah intro ini diperlukan, atau hanya merujuk
+// bahagian lain dalam buku ini.
+
+Sebelum membincangkan isu sebenar, mari kita lari cepat
+faham bagaimana pemboleh ubah negeri sebenarnya mendapat
+disimpan dalam kontrak. Pembolehubah negeri atau storan (pemboleh ubah yang
+berterusan ke atas transaksi individu) dimasukkan ke dalam _slots_
+secara berurutan kerana ia diperkenalkan dalam kontrak. (Ada beberapa kerumitan di sini; rujuk http://bit.ly/2JslDWf[Solidity docs] untuk pemahaman yang lebih teliti.)
+
+Sebagai contoh, mari kita lihat kontrak perpustakaan. Ia mempunyai dua keadaan
+pembolehubah, `mula` dan` dikiraFibNumber`. Pembolehubah pertama,
+`bermula`, disimpan dalam simpanan kontrak di `slot [0]`
+(iaitu, slot pertama). Pembolehubah kedua, `dihitungFibNumber`, adalah
+diletakkan di dalam slot simpanan yang seterusnya, `slot [1]`. The
+fungsi `setStart` mengambil input dan set` start` kepada apa sahaja
+input itu. Oleh itu fungsi ini menetapkan `slot [0]` kepada apa sahaja
+input yang kami sediakan dalam fungsi `setStart`. Begitu juga dengan
+fungsi `setFibonacci` menetapkan` dikiraFibNumber` kepada hasil
+`fibonacci (n)`. Sekali lagi, ini hanya menetapkan storan `slot [1]` kepada
+nilai `fibonacci (n)`.
+
+Sekarang mari kita lihat kontrak `FibonacciBalance`. Simpanan `slot [0]` sekarang
+sesuai dengan alamat `fibonacciLibrary`, dan` slot [1] `sepadan dengan
+`dikiraFibNumber`. Ia adalah dalam pemetaan yang salah bahawa kelemahan itu berlaku.
+`delegatecall` _preserves konteks konteks_. Ini bermakna bahawa kod itu
+dilaksanakan melalui `delegatecall` akan bertindak di negeri (iaitu penyimpanan)
+kontrak panggilan.
+
+Sekarang perhatikan bahawa dalam `menarik &#39;pada baris 21 kita melaksanakan
+`fibonacciLibrary.delegatecall (fibSig, withdrawalCounter)`. Panggilan ini
+fungsi `setFibonacci`, yang, seperti yang kita dibincangkan, mengubah storan
+`slot [1]`, yang dalam konteks semasa kami `dikiraFibNumber`. Ini
+adalah seperti yang diharapkan (iaitu, selepas pelaksanaan, `dihitungFibNumber` adalah
+diubah suai). Walau bagaimanapun, ingat bahawa pembolehubah `permulaan` dalam
+Kontrak `FibonacciLib` terletak di` slot` penyimpanan [0] `, iaitu
+alamat &#39;fibonacciLibrary` dalam kontrak semasa. Ini bermakna bahawa
+fungsi `fibonacci` akan memberi hasil yang tidak dijangka. Ini adalah kerana
+ia merujuk `mula &#39;(` slot [0] `), yang dalam konteks panggilan semasa
+adalah alamat `fibonacciLibrary` (yang selalunya agak besar, bila
+ditafsirkan sebagai `uint`). Oleh itu, kemungkinan bahawa `menarik &#39;
+fungsi akan kembali, kerana ia tidak akan mengandungi `uint (fibonacciLibrary)`
+jumlah eter, yang mana `dikiraFibNumber` akan kembali.
+
+Lebih buruk lagi, kontrak `FibonacciBalance` membolehkan pengguna memanggil semua
+fungsi `fibonacciLibrary` melalui fungsi sandaran pada baris 26.
+Seperti yang telah dibincangkan sebelumnya, ini termasuk fungsi `setStart`. Kami
+membincangkan bahawa fungsi ini membolehkan sesiapa sahaja untuk mengubah suai atau menetapkan storan
+`slot [0]`. Dalam kes ini, penyimpanan `slot [0]` ialah `fibonacciLibrary`
+alamat. Oleh itu, penyerang boleh membuat kontrak yang berniat jahat, menukar alamat itu kepada `mengikat &#39;(ini boleh
+dilakukan secara Python dengan mudah menggunakan `int (&#39; <address> &#39;, 16) `), dan kemudian panggil
+`setStart ( <attack_contract_address_as_uint> ) `. Ini akan berubah
+`fibonacciLibrary` ke alamat kontrak serangan. Kemudian, bila-bila masa
+pengguna memanggil `menarik &#39;atau fungsi sandaran, yang berniat jahat
+kontrak akan dijalankan (yang boleh mencuri keseluruhan baki kontrak)
+kerana kami telah mengubah suai alamat sebenar untuk `fibonacciLibrary`. An
+contoh kontrak serangan seperti:
+
+[sumber, ketumpatan, lekukan]
+----
+kontrak Serangan {
+penyimpanan uSlot0; // sepadan dengan fibonacciLibrary
+penyimpanSlot1; / / sesuai dengan yang dihitungFibNumber
+
+// fallback - ini akan berjalan jika fungsi tertentu tidak dijumpai
+    function() public {
+storageSlot1 = 0; // kami tetapkan dihitungFibNumber kepada 0, jadi jika menarik diri
+// dipanggil kita tidak menghantar mana-mana eter
+<attacker_address> .transfer (this.balance); // kami mengambil semua eter
+}
+}
+----
+
+Perhatikan bahawa kontrak serangan ini mengubah `dihitungFibNumber` oleh
+menukar `slot` penyimpanan [1]`. Pada dasarnya, penyerang boleh memodifikasi mana-mana
+slot penyimpanan lain yang mereka pilih, untuk melakukan semua jenis serangan terhadap perkara ini
+kontrak. Kami menggalakkan anda untuk memasukkan kontrak ini ke https://remix.ethereum.org [Remix] dan bereksperimen dengan kontrak serangan yang berbeza dan perubahan keadaan melalui fungsi `delegatecall` ini. (((Range =&quot; endofrange &quot;, startref =&quot; ix_09smart- kontrak-keselamatan-asciidoc19 &quot;)))
+
+Ia juga penting untuk perhatikan bahawa apabila kita mengatakan bahawa `delegatecall` adalah
+memelihara negeri, kita tidak bercakap tentang nama-nama pembolehubah
+kontrak, tetapi sebaliknya slot penyimpanan sebenar yang mana nama-nama tersebut menunjukkan. Sebagai
+anda dapat lihat dari contoh ini, kesilapan mudah boleh membawa kepada penyerang
+merampas keseluruhan kontrak dan eternya. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc18&quot;)))
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;Ancaman keselamatan opcode DELEGATECALL&quot;, &quot;teknik pencegahan&quot;))) Pepejal menyediakan kata kunci `pustaka &#39;untuk melaksanakan pustaka
+kontrak (lihat http://bit.ly/2zjD8TI[docs] untuk maklumat lanjut). Ini memastikan kontrak perpustakaan adalah
+tanpa kerakyatan dan tidak boleh dimusnahkan sendiri. Memaksa perpustakaan menjadi tidak mempunyai kerakyatan
+mengurangkan kerumitan konteks penyimpanan yang ditunjukkan dalam ini
+seksyen. Perpustakaan stateless juga menghalang serangan di mana penyerang
+ubah keadaan perpustakaan secara langsung untuk menjejaskan
+kontrak yang bergantung pada kod perpustakaan. Sebagai peraturan umum,
+apabila menggunakan `DELEGATECALL` memberi perhatian yang teliti terhadap panggilan yang mungkin
+konteks kedua-dua kontrak perpustakaan dan kontrak panggilan, dan
+bilamana mungkin membina pas tanpa statik: [ <span class="keep-together">perpustakaan</span> ].
+
+[[multisig_secondhack]]
+==== Contoh Dunia Sebenar: Pariti Multisig Wallet (Hack Kedua)
+
+(((&quot;DELEGATECALL opcode keselamatan ancaman&quot;, &quot;contoh dunia sebenar: hack Parity Multisig Wallet&quot;, id = &quot;ix_09smart-contracts-security-asciidoc20&quot;, range = &quot;startofrange&quot;))) (((&quot;Parity Multisig Wallet&quot; , &quot;hack kedua&quot;, id = &quot;ix_09smart-contracts-security-asciidoc21&quot;, range = &quot;startofrange&quot;))) (((&quot;wallets&quot;, &quot;hacks Wallet Parity Multisig&quot;, id = &quot;ix_09smart-contracts-security-asciidoc22 &quot;, range =&quot; startofrange &quot;))) Hack Kedua Pariti Multisig Wallet adalah contoh bagaimana kod perpustakaan yang ditulis dengan baik dapat dieksploitasi jika dijalankan di luar yang dimaksudkan
+konteks. Terdapat beberapa penjelasan yang baik tentang hack ini, seperti
+http://bit.ly/2Dg7GtW[&quot;Parity Multisig hacked. Sekali lagi &quot;] dan http://bit.ly/2Of06B9[&quot; In-Depth Lihatlah Parity Multisig Bug&quot;].
+
+Untuk menambah rujukan ini, mari kita pelajari kontrak yang ada
+dieksploitasi. Kontrak perpustakaan dan dompet boleh didapati http://bit.ly/2OgnXQC[on GitHub].
+
+Kontrak perpustakaan adalah seperti berikut:
+
+[sumber, ketumpatan, lekukan]
+----
+contract WalletLibrary is WalletEvents {
+
+...
+
+// melempar kecuali kontrak belum dimulakan.
+  modifier only_uninitialized { if (m_numOwners > 0) throw; _; }
+
+// konstruktor - hanya lulus pada array pemilik untuk multiowned dan
+// had kepada daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit)
+      only_uninitialized {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+}
+
+// membunuh kontrak menghantar segalanya ke `_to`.
+  function kill(address _to) onlymanyowners(sha3(msg.data)) external {
+    suicide(_to);
+}
+
+...
+
+}
+----
+
+Dan inilah kontrak dompet:
+
+[sumber, ketumpatan, lekukan]
+----
+contract Wallet is WalletEvents {
+
+...
+
+// METODE
+
+// akan dipanggil apabila tiada fungsi lain sepadan
+  function() payable {
+// hanya dihantar wang tunai?
+    if (msg.value > 0)
+      Deposit(msg.sender, msg.value);
+    else if (msg.data.length > 0)
+      _walletLibrary.delegatecall(msg.data);
+}
+
+...
+
+// FIELDS
+  address constant _walletLibrary =
+    0xcafecafecafecafecafecafecafecafecafecafe;
+}
+----
+
+Perhatikan bahawa kontrak `Wallet` dasarnya melepasi semua panggilan ke
+`WalletLibrary` melalui kontrak perwakilan. Pemalar
+`_walletLibrary` alamat dalam coretan kod ini bertindak sebagai pemegang tempat untuk
+kontrak sebenarnya `WalletLibrary` yang digunakan (yang berada di
+`0x863DF6BFa4469f3ead0bE8f9F2AAE51c91A907b4`).
+
+Operasi yang dimaksudkan untuk kontrak ini adalah dengan kos rendah yang sederhana
+kontrak `Wallet` yang boleh dikomputasi yang asasnya dan fungsi utamanya
+dalam kontrak `WalletLibrary`. Malangnya, `WalletLibrary`
+kontrak itu sendiri adalah kontrak dan mengekalkan keadaannya sendiri. Anda nampak tak
+mengapa ini mungkin satu isu?
+
+Anda boleh menghantar panggilan ke pas: <code><span class="keep-together">WalletLibrary</span></code> [ <code><span class="keep-together">WalletLibrary</span></code> ] itu sendiri.
+Khususnya, lulus: kontrak [ <code><span class="keep-together">WalletLibrary</span></code> ] boleh dimulakan dan
+dimiliki. Malah, pengguna melakukan ini, memanggil fungsi `initWallet` pada
+Kontrak &#39;WalletLibrary` dan menjadi pemilik kontrak perpustakaan. The
+pengguna yang sama kemudiannya memanggil fungsi `membunuh &#39;. Kerana pengguna
+adalah pemilik kontrak perpustakaan, pengubah yang diluluskan dan
+kontrak perpustakaan merosakkan diri sendiri. Kerana semua kontrak `Wallet` wujud merujuk
+untuk kontrak perpustakaan ini dan tidak mengandungi kaedah untuk menukar rujukan ini,
+semua fungsi mereka, termasuk keupayaan untuk mengeluarkan eter, adalah
+hilang bersama kontrak `WalletLibrary`. Akibatnya, semua eter
+dalam semua dompet Paris multisig jenis ini serta-merta menjadi hilang atau
+permanently unrecoverable(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc22")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc21")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc20"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc17")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc16")))
+
+=== Kekosongan lalai
+
+((("default visibility specifier security problem", id="ix_09smart-contracts-security-asciidoc23", range="startofrange")))((("security (smart contracts)","default visibility specifier threat", id="ix_09smart-contracts-security-asciidoc24", range="startofrange")))((("Solidity","default visibility specifier problem", id="ix_09smart-contracts-security-asciidoc25", range="startofrange")))((("visibility specifiers", id="ix_09smart-contracts-security-asciidoc26", range="startofrange")))Functions in Solidity have visibility specifiers that dictate how
+mereka boleh dipanggil. Penglihatan menentukan sama ada a
+fungsi boleh dipanggil secara luaran oleh pengguna, oleh kontrak lain yang diperoleh,
+hanya secara dalaman, atau hanya luaran. Terdapat empat penglihatan
+pembezaan, yang diterangkan dengan terperinci dalam http://bit.ly/2ABiv7j[Solidity docs]. Fungsi lalai ke `awam`, membolehkan pengguna memanggilnya
+luaran. Sekarang kita akan melihat betapa penggunaan penunjuk jarak penglihatan yang tidak tepat boleh membawa kepada beberapa kelemahan yang merosakkan dalam kontrak pintar.
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;masalah keselamatan pengesan kebolehlihatan lalai&quot;, &quot;kelemahan&quot;))) Penglihatan lalai untuk fungsi adalah `awam`, jadi fungsi
+yang tidak menentukan jarak penglihatan mereka akan dipanggil oleh pengguna luaran.
+Isu ini berlaku apabila pemaju tersilap menghilangkan penunjuk jarak penglihatan
+pada fungsi yang sepatutnya menjadi peribadi (atau hanya boleh dipanggil dalam
+kontrak itu sendiri).
+
+Mari kita cepat meneroka contoh remeh:
+
+[sumber, ketumpatan, lekukan]
+----
+contract HashForEther {
+
+    function withdrawWinnings() {
+        // Winner if the last 8 hex characters of the address are 0
+        require(uint32(msg.sender) == 0);
+        _sendWinnings();
+     }
+
+     function _sendWinnings() {
+         msg.sender.transfer(this.balance);
+     }
+}
+----
+
+Kontrak sederhana ini direka bentuk untuk bertindak sebagai karunia alamat-menebak
+permainan. Untuk memenangi imbangan kontrak, pengguna mesti menghasilkan
+Alamat Ethereum yang mempunyai 8 hex aksara terakhir ialah +0+. Setelah dicapai, mereka
+boleh memanggil fungsi `withdrawWinnings` untuk mendapatkan karunia mereka.
+
+Malangnya, keterlihatan fungsi tidak dinyatakan.
+Khususnya, fungsi `_sendWinnings` adalah` awam` (lalai), dan dengan itu apa-apa
+alamat boleh memanggil fungsi ini untuk mencuri kurniaan.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;masalah keselamatan pendefinisian lalai lalai&quot;, &quot;teknik pencegahan&quot;))) Ini adalah amalan yang baik untuk sentiasa menentukan keterlihatan semua fungsi dalam
+kontrak, walaupun mereka sengaja `awam &#39;. Versi terkini
++ solc + tunjukkan amaran untuk fungsi itu
+tidak mempunyai set penglihatan yang jelas, untuk menggalakkan amalan ini.
+
+==== Contoh Dunia Nyata: Wallet Parity Multisig (Hack Pertama)
+
+(&quot;(&quot; (contoh: &quot;dunia nyata contoh: hacking Parity Multisig Wallet&quot;))) ((&quot;Parity Multisig Wallet&quot;, &quot;hack pertama&quot;)) Hacks dompet &quot;))) Dalam hack Pariti multisig yang pertama, kira-kira $ 31 juta Eter telah dicuri,
+kebanyakannya dari tiga dompet. Rekap yang baik tentang bagaimana ia dilakukan
+diberikan oleh https://bit.ly/2vHiuJQ[Haseeb Qureshi].
+
+Pada asasnya, dompet multisig
+dibina dari kontrak `Wallet` asas, yang memanggil perpustakaan
+kontrak yang mengandungi fungsi teras (seperti yang diterangkan dalam
+<<multisig_secondhack>>).
+Kontrak perpustakaan mengandungi kod untuk menginisialkan dompet, sebagaimana yang boleh
+dilihat dari coretan berikut:
+
+[sumber, ketumpatan, lekukan]
+----
+contract WalletLibrary is WalletEvents {
+
+...
+
+// METODE
+
+...
+
+/ // pembina diberi bilangan sigs yang diperlukan untuk melakukan perlindungan
+// transaksi &quot;pelanggan hanya&quot; dan juga pemilihan alamat
+// mampu mengesahkan mereka
+  function initMultiowned(address[] _owners, uint _required) {
+    m_numOwners = _owners.length + 1;
+    m_owners[1] = uint(msg.sender);
+    m_ownerIndex[uint(msg.sender)] = 1;
+    for (uint i = 0; i < _owners.length; ++i)
+    {
+      m_owners[2 + i] = uint(_owners[i]);
+      m_ownerIndex[uint(_owners[i])] = 2 + i;
+}
+    m_required = _required;
+}
+
+...
+
+// konstruktor - hanya lulus pada array pemilik untuk multiowned dan
+// had kepada daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit) {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+}
+}
+----
+
+Perhatikan bahawa tidak ada fungsi yang menentukan mereka
+keterlihatan, jadi kedua lalai ke `awam`. `InitWallet`
+Fungsi dipanggil dalam pembina dompet, dan menetapkan pemilik untuk
+dompet multisig seperti yang dapat dilihat dalam fungsi `initMultiown`.
+Oleh kerana fungsi-fungsi ini secara tidak sengaja ditinggalkan `awam`, penyerang adalah
+dapat memanggil fungsi ini pada kontrak yang digunakan, menetapkan semula
+pemilikan kepada alamat penyerang. Sebagai pemilik, penyerang itu kemudian
+drained the wallets of all their ether.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc26")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc25")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc24")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc23")))
+
+[[entropyillusion_security]]
+=== Illusion Entropy
+
+((&quot;ancaman keselamatan ilusi entropi&quot;))) (((&quot;keselamatan (kontrak pintar)&quot;, &quot;ancaman ilusi entropi&quot;))) Semua urus niaga di blok ethereum adalah keadaan deterministik
+operasi peralihan. Ini bermakna setiap urus niaga mengubahsuaikan
+keadaan ekosistem Ethereum global dalam pengiraan
+cara, tanpa sebarang ketidakpastian. Ini mempunyai implikasi asasnya
+tiada sumber entropi atau rawak di Ethereum.
+Mencapai entropi yang terdesentralisasi
+(kekangan) adalah masalah yang terkenal di mana banyak penyelesaian dicadangkan, termasuk https://github.com/randao/randao[RANDAO], atau menggunakan rantai hash, sebagai
+digambarkan oleh Vitalik Buterin dalam catatan blog
+https://vitalik.ca/files/randomness.html[&quot; Ordering and Randomness in PoS &quot;].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;ancaman keselamatan ilusi entropi&quot;, &quot;kelemahan&quot;))) Beberapa kontrak pertama yang dibina di atas platform Ethereum adalah berdasarkan
+sekitar perjudian. Pada asasnya, perjudian memerlukan ketidakpastian (sesuatu
+untuk bertaruh), yang menjadikan sistem perjudian di blokchain (a
+sistem deterministik) agak sukar. Adalah jelas bahawa ketidakpastian itu
+mesti datang dari sumber luar kepada blokchain. Ini boleh dilakukan
+pertaruhan antara pemain (lihat contoh teknik http://bit.ly/2CUh2KS[commit-reveal]); Walau bagaimanapun, ia adalah lebih sukar jika anda mahu
+melaksanakan kontrak untuk bertindak sebagai &quot;rumah&quot; (seperti dalam blackjack atau
+rolet). Perangkap umum adalah menggunakan pemboleh ubah blok masa depan-iaitu,
+pembolehubah yang mengandungi maklumat mengenai blok transaksi yang nilainya belum diketahui, seperti
+had, cap waktu, nombor blok, atau had gas. Masalah dengan ini adalah
+bahawa mereka dikawal oleh pelombong yang melombong blok itu, dan oleh itu
+tidak benar-benar rawak. Sebagai contoh, pertimbangkan kontrak pintar rolet
+dengan logik yang mengembalikan nombor hitam jika hash blok seterusnya akan berakhir
+nombor genap. Seorang penambang (atau kolam penambang) boleh bertaruh $ 1 juta pada hitam. Jika mereka
+menyelesaikan blok seterusnya dan mencari hash berakhir dengan nombor ganjil, mereka boleh
+dengan gembira tidak menerbitkan blok mereka dan yang lain, sehingga mereka dapati
+penyelesaian dengan hash blok menjadi nombor yang sama (dengan asumsi blok tersebut
+ganjaran dan bayaran adalah kurang daripada $ 1 juta). Menggunakan pembolehubah masa lalu atau sekarang boleh
+menjadi lebih dahsyat, seperti yang ditunjukkan oleh Martin Swende di http://martin.swende.se/blog/Breaking_the_house.html.html post blognya yang sangat baik.
+Selain itu, menggunakan pemboleh ubah semata-mata bermakna pseudorandom itu
+nombor akan sama untuk semua transaksi dalam satu blok, jadi penyerang
+boleh melipatgandakan kemenangan mereka dengan melakukan banyak transaksi dalam satu blok
+(sekiranya terdapat pertaruhan maksimum).
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ancaman keselamatan ilusi entropi&quot;, &quot;teknik pencegahan&quot;))) Sumber entropi (rawak) mesti berada di luar blok.
+Ini boleh dilakukan di kalangan rakan sebaya dengan sistem seperti
+http://bit.ly/2CUh2KS[commit-reveal],
+atau melalui menukar model amanah kepada sekumpulan peserta (seperti dalam
+https://github.com/randao/randao[RandDAO]). Ini juga boleh dilakukan melalui a
+entiti berpusat yang bertindak sebagai oracle rawak. Blok pembolehubah
+(secara umum, terdapat beberapa pengecualian) tidak boleh digunakan untuk sumber
+entropi, kerana ia boleh dimanipulasi oleh pelombong.
+
+==== Contoh Dunia Sebenar: Kontrak PRNG
+
+(&quot;ancaman keselamatan ilusi entropi&quot;, &quot;contoh sebenar dunia: kontrak PRNG&quot;))) ((&quot;kontrak penjana nombor pseudorandom (PRNG)&quot;) ) Pada bulan Februari 2018 Arseny Reutov
+http://bit.ly/2Q589lx[blogged] mengenai analisisnya tentang 3,649 kontrak pintar hidup yang menggunakan beberapa
+jenis penjana nombor pseudorandom (PRNG); dia mendapati 43 kontrak
+yang boleh dimanfaatkan.
+
+[[external_contract_referencing]]
+=== Rujukan Kontrak Luaran
+
+(&quot;(kontrak luaran merujuk kepada ancaman keselamatan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc27&quot;, range = &quot;startofrange&quot;))) (((&quot; = &quot;ix_09smart-contracts-security-asciidoc28&quot;, range = &quot;startofrange&quot;))) Salah satu manfaat &quot;komputer dunia&quot; Ethereum adalah keupayaan untuk
+kod guna semula dan berinteraksi dengan kontrak yang telah digunakan di rangkaian.
+Akibatnya, sebilangan besar kontrak merujuk kontrak luaran,
+biasanya melalui panggilan mesej luaran.
+Panggilan mesej luaran ini boleh menanggalkan pelakon berbahaya &#39;
+niat dalam beberapa cara yang tidak jelas, yang akan kita periksa sekarang.
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(&quot;(kontrak luar yang merujuk kepada ancaman keselamatan&quot;, &quot;kelemahan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc29&quot;, range = &quot;startofrange&quot;))) Dalam Ketumpukan, sebarang alamat boleh dihantar ke kontrak,
+kod di alamat mewakili jenis kontrak yang dibuang. Ini
+boleh menyebabkan masalah, terutamanya apabila penulis kontrak sedang cuba
+untuk menyembunyikan kod jahat. Mari kita gambarkan ini dengan contoh.
+
+Pertimbangkan sekeping kod seperti &lt; <rot13_security> &gt;, yang secara rudimentarily dilaksanakan
+https://en.wikipedia.org/wiki/ROT13[ROT13 cipher].
+
+[[rot13_security]]
+.Rot13Encryption.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+/ // kontrak penyulitan
+kontrak Rot13Encryption {
+
+   event Result(string convertedString);
+
+// rot13-menyulitkan rentetan
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+// perhimpunan inline untuk mengubah suai rentetan
+            assembly {
+// dapatkan bait pertama
+                char := byte(0,char)
+// jika wataknya berada di [n, z], iaitu pembalut
+                if and(gt(char,0x6D), lt(char,0x7B))
+// kurang daripada nombor ASCII &#39;a&#39;,
+// perbezaan antara watak <char> dan &#39;z&#39;
+                { char:= sub(0x60, sub(0x7A,char)) }
+                if iszero(eq(char, 0x20)) // ignore spaces
+// tambah 13 ke char
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,13))}
+            }
+        }
+        emit Result(text);
+}
+
+// rot13-menyahsulit tali
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,13))}
+            }
+        }
+        emit Result(text);
+}
+}
+----
+====
+
+Kod ini hanya mengambil rentetan (huruf ++ a ++ - ++ z ++, tanpa pengesahan) dan
+_encrypts_ dengan mengalihkan setiap aksara 13 tempat ke kanan (membungkus
+sekitar `z`); ie, `a` bergeser ke` n` dan `x` beralih ke` k`. Perhimpunan itu
+dalam kontrak terdahulu tidak perlu difahamkan untuk menghargai isu tersebut
+sedang dibincangkan, jadi pembaca yang tidak dikenali dengan perhimpunan boleh mengabaikannya.
+
+Sekarang pertimbangkan kontrak berikut, yang menggunakan kod ini untuk penyulitannya:
+
+[sumber, ketumpatan, lekukan]
+----
+import "Rot13Encryption.sol";
+
+// menyulitkan maklumat sulit rahsia anda
+contract EncryptionContract {
+// perpustakaan untuk penyulitan
+    Rot13Encryption encryptionLibrary;
+
+// pembina - menginisialisasi perpustakaan
+    constructor(Rot13Encryption _encryptionLibrary) {
+        encryptionLibrary = _encryptionLibrary;
+}
+
+    function encryptPrivateData(string privateInfo) {
+// berpotensi melakukan beberapa operasi di sini
+        encryptionLibrary.rot13Encrypt(privateInfo);
+     }
+}
+----
+
+Isu dengan kontrak ini ialah alamat &#39;penyulitanLibrary` adalah
+tidak awam atau berterusan. Oleh itu, pengangkut kontrak boleh memberikan alamat dalam pembina yang menandakan kontrak ini:
+
+[sumber, ketumpatan, lekukan]
+----
+/ // kontrak penyulitan
+kontrak Rot26Encryption {
+
+   event Result(string convertedString);
+
+// rot13-menyulitkan rentetan
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+// perhimpunan inline untuk mengubah suai rentetan
+            assembly {
+// dapatkan bait pertama
+                char := byte(0,char)
+// jika wataknya berada di [n, z], iaitu pembalut
+                if and(gt(char,0x6D), lt(char,0x7B))
+// kurang daripada nombor ASCII &#39;a&#39;,
+// perbezaan antara watak <char> dan &#39;z&#39;
+                { char:= sub(0x60, sub(0x7A,char)) }
+// mengabaikan ruang
+                if iszero(eq(char, 0x20))
+// tambah 26 untuk char!
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,26))}
+            }
+        }
+        emit Result(text);
+}
+
+// rot13-menyahsulit tali
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,26))}
+            }
+        }
+        emit Result(text);
+}
+}
+----
+
+Kontrak ini menerapkan cip ROT26, yang mengalihkan setiap watak dengan 26 tempat
+(iaitu tidak melakukan apa-apa). Sekali lagi, tidak perlu memahami perhimpunan dalam perkara ini
+kontrak. Lebih mudah, penyerang boleh mengaitkan perkara berikut
+kontrak dengan kesan yang sama:
+
+[sumber, ketumpatan, lekukan]
+----
+contract Print{
+    event Print(string text);
+
+    function rot13Encrypt(string text) public {
+        emit Print(text);
+}
+}
+----
+
+Sekiranya alamat salah satu daripada kontrak ini diberikan di
+pembina, fungsi `encryptPrivateData` hanya akan menghasilkan
+peristiwa yang mencetak data peribadi yang tidak disulitkan.
+
+Walaupun dalam hal ini
+contoh kontrak seperti perpustakaan yang ditetapkan dalam pembina, sering kali
+kes yang pengguna istimewa (seperti pemilik) boleh menukar perpustakaan
+alamat kontrak. Jika kontrak yang dikaitkan tidak mengandungi fungsi tersebut
+dipanggil, fungsi sandaran akan dilaksanakan. Sebagai contoh, dengan
+line pass:[<code>encryptionLibrary.rot13&#x200b;Encrypt()</code>], if the contract specified by
+`penyulitanLibrary` ialah:
+
+[sumber, ketumpatan, lekukan]
+----
+ contract Blank {
+     event Print(string text);
+     function () {
+         emit Print("Here");
+// Masukkan kod jahat di sini dan ia akan berjalan
+     }
+}
+----
+
+maka peristiwa dengan teks `Berikut` akan dipancarkan. Oleh itu, jika pengguna boleh
+mengubah kontrak perpustakaan, mereka pada dasarnya boleh mendapatkan pengguna lain tanpa sadar
+jalankan kod sewenang-wenangnya.
+
+[AMARAN]
+====
+Kontrak yang diwakili di sini adalah untuk tujuan demonstrasi sahaja dan
+tidak mewakili penyulitan yang betul. Mereka tidak boleh digunakan
+penyulitan. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc29&quot;)))
+====
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+((&quot;kontrak luar merujuk ancaman keselamatan&quot;, &quot;teknik pencegahan&quot;))) Seperti yang ditunjukkan sebelum ini, kontrak yang selamat boleh (dalam beberapa kes)
+digerakkan sedemikian rupa sehingga mereka berkelakuan dengan niat jahat. Seorang juruaudit boleh
+mengesahkan secara terbuka kontrak dan mempunyai pemiliknya menggunakannya secara berniat jahat
+cara, mengakibatkan kontrak yang diaudit oleh publik yang mempunyai kelemahan
+atau niat jahat.
+
+Terdapat beberapa teknik yang menghalang senario ini.
+
+Satu teknik adalah menggunakan kata kunci `baru` untuk membuat kontrak. Di dalam
+Contoh sebelumnya, pembina boleh ditulis sebagai:
+
+[source,solidity]
+----
+constructor() {
+    encryptionLibrary = new Rot13Encryption();
+}
+----
+
+Dengan cara ini, contoh kontrak yang dirujuk dibuat semasa penggunaan
+masa, dan penyerang tidak dapat menggantikan kontrak `Rot13Encryption`
+tanpa mengubahnya.
+
+Satu lagi penyelesaian adalah untuk alamat kontrak luar keras.
+
+Secara umum, kod yang memanggil kontrak luaran hendaklah selalu
+diaudit dengan teliti. Sebagai pemaju, apabila menentukan kontrak luaran, ia boleh
+menjadi idea yang baik untuk membuat alamat kontrak awam (yang bukan
+kes dalam contoh periuk madu di bahagian yang berikut) untuk membolehkan pengguna memeriksa dengan mudah
+kod yang dirujuk oleh kontrak. Sebaliknya, jika kontrak mempunyai
+alamat kontrak peribadi berubah, ia boleh menjadi tanda seseorang berkelakuan
+jahat (seperti ditunjukkan dalam contoh dunia nyata). Sekiranya pengguna boleh berubah
+alamat kontrak yang digunakan untuk
+memanggil fungsi luaran, ia boleh menjadi penting (dalam sistem yang terdesentralisasi
+konteks) untuk melaksanakan mekanisme kunci dan / atau pengundian untuk membenarkan pengguna
+lihat kod apa yang sedang diubah, atau memberi peserta peluang untuk memilih
+masuk / keluar dengan alamat kontrak baru.
+
+==== Contoh Dunia Sebenar: Potong Permulaan
+
+(&quot;kontrak luar yang merujuk kepada ancaman keselamatan&quot;, &quot;contoh dunia nyata: pancang madu&quot;, id = &quot;ix_09smart-contracts-security-asciidoc30&quot;, range = &quot;startofrange&quot; id = &quot;ix_09smart-contracts-security-asciidoc31&quot;, range = &quot;startofrange&quot;))) (((&quot; ) Beberapa periuk madu baru-baru ini telah dikeluarkan di mainnet. Ini
+kontrak cuba mengalahkan penggodam Ethereum yang cuba mengeksploitasi
+kontrak, tetapi yang akhirnya kehilangan kontrak dengan kontrak
+mereka mengharapkan untuk mengeksploitasi. Satu contoh menggunakan serangan ini oleh
+menggantikan kontrak yang dijangkakan dengan yang berniat jahat dalam pembina.
+Kod boleh didapati
+http://bit.ly/2JtdqRi[here]:
+
+[sumber, ketumpatan, lekukan]
+----
+pragma solidity ^0.4.19;
+
+contract Private_Bank
+{
+    mapping (address => uint) public balances;
+    uint public MinDeposit = 1 ether;
+    Log TransferLog;
+
+    function Private_Bank(address _log)
+    {
+        TransferLog = Log(_log);
+}
+
+    function Deposit()
+    public
+    payable
+    {
+        if(msg.value >= MinDeposit)
+        {
+            balances[msg.sender]+=msg.value;
+            TransferLog.AddMessage(msg.sender,msg.value,"Deposit");
+        }
+}
+
+    function CashOut(uint _am)
+    {
+        if(_am<=balances[msg.sender])
+        {
+            if(msg.sender.call.value(_am)())
+            {
+                balances[msg.sender]-=_am;
+                TransferLog.AddMessage(msg.sender,_am,"CashOut");
+            }
+        }
+}
+
+    function() external payable{}
+
+}
+
+contract Log
+{
+    struct Message
+    {
+        address Sender;
+        string  Data;
+        uint Val;
+        uint  Time;
+}
+
+    Message[] public History;
+    Message LastMsg;
+
+    function AddMessage(address _adr,uint _val,string _data)
+    public
+    {
+        LastMsg.Sender = _adr;
+        LastMsg.Time = now;
+        LastMsg.Val = _val;
+        LastMsg.Data = _data;
+        History.push(LastMsg);
+}
+}
+----
+
+Ini
+http://bit.ly/2Q58VyX[post]
+oleh satu pengguna reddit menerangkan bagaimana mereka kehilangan 1 eter ke kontrak ini
+dengan cuba untuk mengeksploitasi bug pertambahan yang mereka harapkan hadir di
+kontrak (&quot;(iv_09smart-contracts-security-asciidoc31&quot;))) ((( (= (range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc30&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc27 &quot;)))
+
+=== Alamat Pendek / Serangan Parameter
+
+(&quot;(keselamatan (kontrak pintar)&quot;, &quot;serangan alamat / parameter pendek&quot;))) (((&quot;serangan alamat / parameter pendek&quot;)))
+sendiri, tetapi pada aplikasi pihak ketiga yang mungkin berinteraksi dengan mereka. Ini
+seksyen ditambah untuk kesempurnaan dan memberi pembaca kesedaran tentang bagaimana parameter boleh
+dimanipulasi dalam kontrak.
+
+Untuk bacaan selanjutnya, lihat
+http://bit.ly/2yKme14[&#x201c;The ERC20
+Serangan Alamat Pendek Dijelaskan &quot;],
+http://bit.ly/2yFOGRQ[&#x201c;ICO
+Kerentanan Kontrak Pintar: Serangan Alamat Pendek &quot;], atau ini
+http://bit.ly/2CQjBhc[Reddit
+post].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;serangan pendek / parameter serangan&quot;, &quot;kelemahan&quot;))) Apabila lulus parameter untuk kontrak pintar, parameter dikodkan
+mengikut
+http://bit.ly/2Q5VIG9[ABI
+spesifikasi]. Ia adalah mungkin untuk menghantar parameter yang dikodkan
+lebih pendek daripada panjang parameter yang dijangka (contohnya, menghantar satu
+alamat yang hanya 38 hex chars (19 bait) dan bukannya standard 40
+hex chars (20 bait)). Dalam senario sedemikian, EVM akan menambah nol kepada
+akhir parameter yang dikodkan untuk membuat jangka masa yang diharapkan.
+
+Ini menjadi isu apabila aplikasi pihak ketiga tidak sahkan
+input. Contoh yang jelas adalah pertukaran yang tidak mengesahkannya
+alamat a
+ERC20 token
+apabila pengguna meminta pengeluaran. Contoh ini dibincangkan lebih lanjut
+terperinci dalam jawatan Peter Vessenes,
+http://bit.ly/2Q1ybpQ[&#x201c;The ERC20
+Serangan Alamat Pendek Dijelaskan &quot;].
+
+Pertimbangkan piawai
+http://bit.ly/2CUf7WG[ERC20]
++ antara muka fungsi pemindahan +, dengan memerhatikan susunan parameter:
+
+[source,solidity]
+----
+pemindahan fungsi (alamat kepada, token token) pulangan awam (kejayaan bool);
+----
+
+Sekarang pertimbangkan pertukaran memegang sejumlah besar token (katakanlah
+`REP`) dan pengguna yang ingin menarik balik bahagian mereka sebanyak 100 token. Pengguna
+akan menghantar alamat mereka, `0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead`,
+dan bilangan token, `100`. Pertukaran itu akan mengkodekan ini
+parameter mengikut susunan yang ditentukan oleh lulus: fungsi [ <code><span class="keep-together">transfer</span></code> ]; itu dia,
+`alamat` lalu` token &#39;. Keputusan yang dikodkan adalah:
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeaddead0000000000000
+000000000000000000000000000000000056bc75e2d63100000
+----
+
+Yang pertama 4
+bait (`a9059cbb`) adalah` pemindahan`
+http://bit.ly/2RmueMP[function
+tandatangan / pemilih], 32 bait seterusnya ialah alamat, dan
+akhir 32 byte mewakili bilangan token `uint256`.
+Perhatikan bahawa hex `56bc75e2d63100000` pada akhir sepadan dengan 100
+token (dengan 18 tempat perpuluhan, seperti yang ditentukan oleh token `REP`
+lulus: [ <span class="keep-together">kontrak</span> ]).
+
+Marilah kita lihat apa yang akan berlaku jika seseorang menghantar alamat itu
+telah hilang 1 bait (2 digit hex). Khususnya, katakan penyerang
+sends `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde` as an address (missing
+dua digit terakhir) dan token `100` sama untuk menarik diri. Sekiranya
+pertukaran tidak mengesahkan input ini, ia akan dikodkan sebagai:
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeadde00000000000000
+00000000000000000000000000000000056bc75e2d6310000000
+----
+
+Perbezaan
+adalah halus. Ambil perhatian bahawa `00` telah ditambahkan pada akhir pengekodan, kepada
+buat alamat pendek yang dihantar. Apabila ini akan dihantar kepada
+kontrak pintar, parameter `alamat` akan dibaca sebagai
+`0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde00` dan nilai akan dibaca
+sebagai `56bc75e2d6310000000` (perhatikan dua tambahan ++ 0 ++ s). Nilai ini ialah
+kini token `25600` (nilai telah didarabkan dengan` 256`). Di dalam ini
+Contohnya, jika bursa memegang banyak token ini, pengguna akan menarik diri
+`25600` token (sementara pertukaran berpendapat pengguna hanya menarik diri
+`100`) ke alamat yang diubah suai. Sudah tentu penyerang tidak akan memiliki
+alamat diubah suai dalam contoh ini, tetapi jika penyerang itu menjana
+sebarang alamat yang berakhir pada ++ 0 ++ s (yang boleh dengan mudah dibenci-paksa) dan
+menggunakan alamat yang dijana ini, mereka boleh mencuri token daripada
+pertukaran tidak curiga.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;serangan pendek / parameter serangan&quot;, &quot;teknik pencegahan&quot;))) Semua parameter input dalam aplikasi luaran hendaklah disahkan sebelum
+menghantar mereka ke blockchain. Sepatutnya
+juga diperhatikan bahawa pesanan pesanan memainkan peranan penting di sini. Sebagai padding
+hanya berlaku pada akhir, pesanan pesanan yang teliti dalam kontrak pintar
+boleh mengurangkan beberapa bentuk serangan ini.
+
+=== CALL tidak dikembalikan CALL Return Values
+
+(((&quot;panggilan, luaran&quot;, id = &quot;ix_09smart-contracts-security-asciidoc33&quot;, range = &quot;startofrange&quot;))) (((&quot;panggilan luaran&quot;, id = &quot;ix_09smart-contracts-security-asciidoc34&quot; = &quot;permulaan&quot;))) (((&quot;keselamatan (kontrak cerdas)&quot;, &quot;ancaman nilai CALL yang tidak tercatat&quot;, id = &quot;ix_09smart-contracts-security-asciidoc35&quot;, range = &quot;startofrange&quot; tidak diketahui CALL kembali nilai ancaman keselamatan &quot;, id =&quot; ix_09smart-contracts-security-asciidoc36 &quot;, range =&quot; startofrange &quot;))) Terdapat beberapa cara untuk melaksanakan panggilan luar dalam Kekumpuhan. Menghantar
+eter ke akaun luar biasa dilakukan melalui kaedah `pemindahan`.
+Walau bagaimanapun, fungsi `send` juga boleh digunakan, dan untuk lebih serba boleh
+panggilan luar `opcode` CALL` boleh digunakan secara langsung dalam Ketumpukan.
+Fungsi `panggilan` dan` hantar` kembali Boolean yang menunjukkan sama ada
+panggilan berjaya atau gagal. Oleh itu, fungsi ini mempunyai kaveat mudah, di
+bahawa transaksi yang melaksanakan fungsi-fungsi ini tidak akan dikembalikan jika
+panggilan luaran (digali oleh `call` atau` send`) gagal; sebaliknya
+fungsi hanya akan mengembalikan `false`. Kesalahan biasa ialah
+bahawa pemaju menjangkakan akan kembali berlaku jika panggilan luaran gagal, dan tidak memeriksa nilai pulangan.
+
+Untuk bacaan lanjut, lihat # 4 di http://www.dasp.co/#item-4[DASP 10 Terbaik tahun 2018] dan
+http://bit.ly/2RnS1vA[&quot;Scanning
+Kontrak Ethereum Live untuk Bug &#39;Tidak Disemak&#39; &quot;].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;ancaman keselamatan nilai CALL pulangan yang tidak tercatat&quot;, &quot;kelemahan&quot;))) Perhatikan contoh berikut:
+
+[sumber, ketumpatan, lekukan]
+----
+contract Lotto {
+
+    bool public payedOut = false;
+    address public winner;
+    uint public winAmount;
+
+// ... fungsi tambahan di sini
+
+    function sendToWinner() public {
+        require(!payedOut);
+        winner.send(winAmount);
+        payedOut = true;
+}
+
+    function withdrawLeftOver() public {
+        require(payedOut);
+        msg.sender.send(this.balance);
+}
+}
+----
+
+Ini mewakili kontrak seperti Lotto, di mana `pemenang`
+menerima `winAmount` eter, yang biasanya meninggalkan sedikit kiri
+untuk sesiapa sahaja untuk menarik diri.
+
+Kerentanan wujud pada baris 11, di mana `send` digunakan tanpa pemeriksaan
+maklumbalas. Dalam contoh remeh ini, pemenang `yang urus niaga
+gagal (sama ada dengan kehabisan gas atau dengan menjadi kontrak yang sengaja
+melemparkan dalam fungsi sandaran) membenarkan `payedOut` disetkan ke` true` tanpa mengira
+sama ada eter dihantar atau tidak. Dalam kes ini, sesiapa sahaja boleh menarik diri
+kemenangan `pemenang` melalui fungsi` withdrawLeftOver`.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ancaman keselamatan nilai CALL pulangan yang tidak tercatat&quot;, &quot;teknik pencegahan&quot;)))) Sekiranya mungkin, gunakan fungsi `pemindahan` dan bukan` hantar`,
+`transfer` akan dikembalikan jika transaksi luaran kembali. Jika
+`hantar` diperlukan, selalu periksa nilai pulangan.
+
+Lebih kuat
+http://bit.ly/2CSdF7y[recommendation]
+adalah untuk mengguna pakai pola _keluaran. Dalam penyelesaian ini, setiap pengguna mesti
+memanggil + fungsi + menarik balik + terpencil
+yang mengendalikan penghantaran eter daripada kontrak dan
+menangani akibat daripada gagal menghantar transaksi.
+Idea ini adalah untuk secara logik mengasingkan fungsi menghantar luaran dari
+sisa dasar, dan meletakkan beban yang berpotensi gagal
+urus niaga pada pengguna akhir yang memanggil fungsi + menarik balik +.
+
+==== Contoh Dunia Sebenar: Eterpot dan Raja Eter
+
+http://bit.ly/2OfHalK[Etherpot] adalah (((&quot;Etherpot loter kontrak pintar&quot;))) ((&quot;Raja Ether&quot;))) (((&quot; contoh dunia sebenar: Etherpot dan Raja Eter &quot;))) loteri kontrak pintar, tidak
+terlalu berbeza dengan kontrak contoh yang disebut tadi.
+Kejatuhan kontrak ini disebabkan terutamanya oleh penggunaan tidak betul
+hash blok (hanya hash blok 256 terakhir yang boleh digunakan; lihat Aakil
+Fernandes’s
+http://bit.ly/2Jpzf4x[post]
+tentang bagaimana Etherpot gagal untuk mengambil kira perkara ini dengan betul). Walau bagaimanapun, ini
+kontrak juga mengalami nilai panggilan tidak tercatat. Pertimbangkan
+function `cash` in <<lotto_security>>.
+
+[[lotto_security]]
+.lotto.sol: Code snippet
+====
+[sumber, ketumpatan, lekukan]
+----
+...
+  function cash(uint roundIndex, uint subpotIndex){
+
+        var subpotsCount = getSubpotsCount(roundIndex);
+
+        if(subpotIndex>=subpotsCount)
+            return;
+
+        var decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
+
+        if(decisionBlockNumber>block.number)
+            return;
+
+        if(rounds[roundIndex].isCashed[subpotIndex])
+            return;
+/ / Subpot hanya boleh ditunaikan sekali. Ini adalah untuk mengelakkan bayaran ganda
+
+        var winner = calculateWinner(roundIndex,subpotIndex);
+        var subpot = getSubpot(roundIndex);
+
+        winner.send(subpot);
+
+        rounds[roundIndex].isCashed[subpotIndex] = true;
+// Tandakan putaran sebagai ditebus
+}
+...
+----
+====
+
+Perhatikan bahawa pada baris 21 nilai pulangan fungsi `send` tidak
+ditandakan, dan baris berikut kemudian menetapkan Boolean yang menunjukkan bahawa
+pemenang telah menghantar dana mereka. Bug ini boleh membenarkan keadaan di mana
+pemenang tidak menerima eter mereka, tetapi keadaan kontrak boleh
+menunjukkan bahawa pemenang telah dibayar.
+
+Versi bug yang lebih serius berlaku di
+http://bit.ly/2ACsfi1[King of
+Ether]. Cemerlang
+http://bit.ly/2ESoaub[post-mortem] ini
+kontrak telah ditulis bahawa butiran bagaimana yang tidak terkawal gagal `hantar`
+could be used to attack the pass:[<span class="keep-together">contract</span>].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc36")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc35")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc34")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc33")))
+
+[[frontrunning_security]]
+=== Keadaan Perlumbaan / Running Muka
+
+((("front-running attacks", id="ix_09smart-contracts-security-asciidoc37", range="startofrange")))((("security (smart contracts)","race conditions/front running threat", id="ix_09smart-contracts-security-asciidoc38", range="startofrange")))The ((("race conditions", seealso="front-running security threat; reentrancy attack")))combination of external calls to other contracts and the multiuser
+sifat blockchain yang mendasari menimbulkan pelbagai potensi
+Perangkap pepejal di mana pengguna _race_ pelaksanaan kod untuk mendapatkan
+negeri yang tidak dijangka. Peningkatan (dibincangkan lebih awal dalam bab ini) adalah satu contohnya
+keadaan perlumbaan. Dalam seksyen ini kita akan membincangkan
+jenis lain keadaan perlumbaan yang boleh berlaku di Ethereum
+blockchain. Terdapat pelbagai jawatan yang baik mengenai subjek ini, termasuk
+&quot;Syarat Pertandingan&quot; di http://bit.ly/2yFesFF[Ethereum
+Wiki], http://www.dasp.co/#item-7[#7 pada DASP Top10 tahun 2018], dan
+http://bit.ly/2Q6E4lP[Equeeum Best Practices Kontrak Pintar].
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+((&quot;serangan&quot;, &quot;kerentanan&quot;))) Seperti halnya kebanyakan rantaian kosong, urus niaga nod Ethereum dan membentuknya
+ke blok. Urus niaga hanya dianggap sah apabila pelombong mempunyai
+menyelesaikan mekanisme konsensus (pada masa ini
+http://bit.ly/2yI5Dv7[Ethash] PoW for Ethereum).
+Miner yang menyelesaikan blok tersebut juga memilih transaksi yang mana dari
+kolam akan dimasukkan ke dalam blok, biasanya diperintahkan oleh
+`gasPrice` setiap transaksi. Berikut adalah vektor serangan berpotensi. An
+penyerang boleh menonton kolam transaksi untuk transaksi yang mungkin
+mengandungi penyelesaian kepada masalah, dan mengubah atau membatalkan pemecah
+kebenaran atau perubahan keadaan dalam kontrak yang menjejaskan ke
+solver. Penyerang kemudian boleh mendapatkan data dari transaksi ini dan
+buat transaksi sendiri dengan `gasPrice` yang lebih tinggi jadi mereka
+urus niaga dimasukkan dalam blok sebelum asal.
+
+Mari lihat bagaimana ini boleh berfungsi dengan contoh mudah. Pertimbangkan
+kontrak yang ditunjukkan dalam &lt; <findthishash_security> &gt;.
+
+[[findthishash_security]]
+.FindThisHash.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+contract FindThisHash {
+    bytes32 constant public hash =
+      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
+
+    constructor() external payable {} // load with ether
+
+    function solve(string solution) public {
+// Jika anda dapat mencari pra-imej hash, terima 1000 eter
+        require(hash == sha3(solution));
+        msg.sender.transfer(1000 ether);
+}
+}
+----
+====
+
+Katakan kontrak ini mengandungi 1,000 eter. Pengguna yang boleh mencari
+preimage dari hash SHA-3 berikut:
+
+----
+0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a
+----
+
+boleh mengemukakan penyelesaian dan mendapatkan 1,000 eter. Katakan satu pengguna
+angka penyelesaian ialah `Ethereum!`. Mereka memanggil `menyelesaikan` dengan
+`Ethereum! &#39;Sebagai parameter. Malangnya, penyerang telah pandai
+cukup untuk menyaksikan kolam transaksi bagi siapa saja yang mengemukakan penyelesaian.
+Mereka melihat penyelesaian ini, memeriksa kesahihannya, dan kemudian menyerahkannya
+transaksi bersamaan dengan `gasPrice` yang lebih tinggi daripada yang asal
+transaksi. Pelombong yang menyelesaikan blok itu mungkin akan memberikannya
+pilihan penyerang kerana `gasPrice` yang lebih tinggi, dan lombong mereka
+urus niaga sebelum pemecah asal. Penyerang akan mengambil 1,000 orang
+eter, dan pengguna yang menyelesaikan masalah akan mendapat apa-apa. Perlu diingat bahawa dalam kelemahan seperti ini &quot;pelari depan&quot;, para pelombong secara unik terinspirasi untuk menjalankan serangan itu sendiri (atau boleh disogram untuk menjalankan serangan ini dengan bayaran yang melampau). Kemungkinan penyerang sebagai pelombong sendiri tidak boleh dipandang rendah.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+((&quot;serangan berlari depan&quot;, &quot;teknik pencegahan&quot;))) Terdapat dua golongan pelakon yang boleh melakukan jenis ini
+serangan berlari depan: pengguna (yang memodifikasi `gasPrice` mereka
+urus niaga) dan penambang sendiri (siapa yang boleh menyusun semula transaksi
+dalam satu blok yang mereka lihat patut). Satu kontrak yang terdedah kepada yang pertama
+kelas (pengguna) jauh lebih teruk daripada yang terdedah kepada
+kedua (pelombong), kerana pelombong hanya boleh melakukan serangan apabila mereka menyelesaikan a
+blok, yang tidak mungkin untuk mana-mana pelombong individu mensasarkan spesifik
+blok. Di sini, kami akan menyenaraikan beberapa langkah pengurangan berbanding kedua-duanya
+kelas penyerang.
+
+Satu kaedah adalah untuk meletakkan batas atas pada `gasPrice`.
+Ini menghalang pengguna daripada
+meningkatkan `gasPrice` dan membuat pesanan transaksi keutamaan
+di luar batas atas. Langkah ini hanya pengawal terhadap
+kelas pertama penyerang (pengguna sewenang-wenangnya). Penambang dalam senario ini boleh
+masih menyerang kontrak, kerana mereka boleh memerintahkan transaksi di dalamnya
+blok tetapi mereka suka, tanpa mengira harga gas.
+
+Kaedah yang lebih teguh ialah menggunakan a
+http://bit.ly/2CUh2KS[commit–reveal]
+skim. Skim sedemikian menentukan bahawa pengguna menghantar
+transaksi dengan maklumat tersembunyi (biasanya hash). Selepas
+transaksi telah dimasukkan dalam satu blok, pengguna menghantar transaksi
+mendedahkan data yang dihantar (fasa mendedahkan). Kaedah ini
+menghalang kedua-dua pelombong dan pengguna daripada urus niaga hadapan, kerana mereka
+tidak dapat menentukan kandungan transaksi. Walau bagaimanapun, kaedah ini,
+tidak dapat menyembunyikan nilai transaksi (yang dalam beberapa kes adalah
+maklumat berharga yang perlu disembunyikan). The
+https://ens.domains/[ENS] kontrak pintar yang membolehkan pengguna menghantar
+urus niaga yang data komited termasuk jumlah eter mereka
+sanggup berbelanja. Pengguna kemudian boleh menghantar transaksi sewenang-wenangnya
+nilai. Semasa fasa mendedahkan, pengguna dikembalikan perbezaannya
+antara amaun yang dihantar dalam urus niaga dan amaunnya
+sanggup berbelanja.
+
+Cadangan selanjutnya oleh (((&quot;menghantar kapal selam&quot;))) Lorenz Breidenbach, Phil Daian, Ari Juels, dan Florian Tramèr adalah untuk menggunakan
+http://bit.ly/2SygqQx[&#x201c;submarine
+menghantar &quot;]. Pelaksanaan idea yang cekap memerlukan `CREATE2`
+opcode, yang pada masa ini belum diguna pakai tetapi nampaknya mungkin masuk
+garpu keras yang akan datang.
+
+==== Contoh Dunia Nyata: ERC20 dan Bancor
+
+(&quot;(Standard token ERC20&quot;, &quot;kerentanan yang berjalan di hadapan&quot;))) (((&quot;serangan di hadapan&quot;, &quot;contoh dunia sebenar: ERC 20 dan Bancor&quot;))) http://bit.ly / 2CUf7WG [ERC20
+standard] agak terkenal untuk token bangunan pada Ethereum. Ini
+piawai mempunyai kerentanan yang berpanjangan di hadapan yang berlaku
+disebabkan fungsi `meluluskan`. http://bit.ly/2DbvQpJ[Mikhail Vladimirov dan Dmitry Khovratovich] telah menulis penjelasan yang baik tentang ini
+kelemahan (dan cara untuk mengurangkan serangan).
+
+Piawaian tersebut menentukan fungsi `meluluskan` sebagai:
+
+[source,solidity]
+----
+fungsi meluluskan (alamat _spender, uint256 _value) pulangan (kejayaan bool)
+----
+
+Fungsi ini membolehkan pengguna membenarkan pengguna lain untuk memindahkan token
+bagi pihak mereka. Kerentanan yang berjalan di hadapan berlaku dalam senario di mana
+seorang pengguna Alice _approves_ kawannya Bob untuk menghabiskan 100 token. Alice
+kemudian memutuskan bahawa dia mahu membatalkan kelulusan Bob untuk dibelanjakan, katakan,
+100 token, jadi dia membuat transaksi yang menetapkan peruntukan Bob
+kepada 50 token. Bob, yang telah menonton rantai dengan teliti, melihat
+urus niaga ini dan membina transaksi perbelanjaannya sendiri
+100 token. Dia meletakkan `gasPrice` lebih tinggi daripada urus niaganya daripada
+Alice, jadi mendapat urus niaga keutamaannya. Beberapa
+pelaksanaan `meluluskan` akan membolehkan Bob memindahkannya
+100 token dan kemudian, apabila transaksi Alice dilakukan, ditetapkan semula
+Kelulusan Bob kepada 50 token, sebenarnya memberikan akses kepada Bob
+150 tokens.
+
+(((&quot;Bancor&quot;))) Satu lagi contoh dunia nyata yang terkenal ialah
+https://www.bancor.network/[Bancor]. Ivan Bogatyy dan pasukannya
+mendokumenkan serangan menguntungkan terhadap pelaksanaan Bancor awal. Nya
+http://bit.ly/2EUlLzb[blog
+post] and http://bit.ly/2yHgkhs[DevCon3 talk]
+berbincang secara terperinci bagaimana ini dilakukan. Pada dasarnya, harga token adalah
+ditentukan berdasarkan nilai transaksi; pengguna boleh menonton transaksi
+Kolam renang untuk urus niaga Bancor dan lari depan mereka untuk keuntungan dari harga
+perbezaan. Serangan ini telah ditangani oleh pasukan Bancor. (((Range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc38&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart- -asciidoc37 &quot;)))
+
+=== Penafian Perkhidmatan (DoS)
+
+(&quot;(serangan penolakan perkhidmatan (DoS)&quot;, id = &quot;ix_09smart-contracts-security-asciidoc39&quot;, range = &quot;startofrange&quot;))) (((&quot;security (smart contracts) , id = &quot;ix_09smart-contracts-security-asciidoc40&quot;, range = &quot;startofrange&quot;))) Kategori ini sangat luas, tetapi pada asasnya terdiri daripada serangan di mana
+pengguna boleh membuat kontrak tidak boleh digunakan untuk tempoh masa, atau
+dalam sesetengah kes secara kekal. Ini boleh menjerat eter dalam kontrak ini
+selama-lamanya, seperti halnya di &lt; <multisig_secondhack> &gt;.
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+((&quot;serangan penafian perkhidmatan (DoS)&quot;, &quot;kelemahan&quot;))) Terdapat pelbagai cara kontrak boleh menjadi tidak boleh digunakan. Di sini kita
+sorot hanya beberapa kekurangan yang jelas
+corak pengekodan yang boleh menyebabkan kelemahan DoS:
+
+Loop melalui pemetaan luaran atau arrays yang luaran ::
+Corak ini biasanya muncul apabila pemilik ingin mengedarkan token
+kepada para pelabur dengan fungsi seperti `mengedarkan`,
+seperti contoh kontrak:
++
+[sumber, ketumpatan, lekukan]
+----
+contract DistributeTokens {
+alamat pemilik awam; / / mendapat tempat di mana-mana
+alamat [] pelabur; // pelbagai pelabur
+uint [] investorTokens; // jumlah token yang setiap pelabur mendapat
+
+// ... fungsi tambahan, termasuk transfertoken ()
+
+    function invest() external payable {
+        investors.push(msg.sender);
+investorTokens.push (msg.value * 5); // 5 kali yang dihantar
+        }
+
+    function distribute() public {
+        require(msg.sender == owner); // only owner
+        for(uint i = 0; i < investors.length; i++) {
+// di sini transferToken (kepada, jumlah) memindahkan &quot;jumlah&quot; dari
+// token ke alamat &quot;ke&quot;
+            transferToken(investors[i],investorTokens[i]);
+        }
+}
+}
+----
++
+Perhatikan bahawa gelung dalam kontrak ini berjalan pada array yang boleh
+buatan secara meluas. Penyerang boleh membuat banyak akaun pengguna, membuat
+array `pelabur` besar. Pada dasarnya ini boleh dilakukan sedemikian rupa sehingga
+gas yang diperlukan untuk melaksanakan + untuk + gelung melebihi had gas blok,
+pada dasarnya menjadikan fungsi `mengedarkan` tidak boleh digunakan.
+
+Operasi pemilik ::
+(((&quot;Tawaran Syiling Permulaan (ICOs)&quot;, &quot;serangan DoS dan&quot;))) Satu lagi corak yang sama adalah di mana pemilik mempunyai
+keistimewaan tertentu dalam kontrak dan mesti melakukan beberapa tugas dalam rangka untuk
+kontrak untuk meneruskan ke negeri seterusnya. Contohnya ialah Tawaran Syiling Permulaan (ICO)
+kontrak yang memerlukan pemilik untuk `memuktamadkan` kontrak, yang kemudiannya
+membenarkan token boleh dipindah milik. Sebagai contoh:
++
+[sumber, ketumpatan, lekukan]
+----
+bool public isFinalized = false;
+alamat pemilik awam; / / mendapat tempat di mana-mana
+
+function finalize() public {
+    require(msg.sender == owner);
+    isFinalized == true;
+}
+
+// ... fungsi ICO tambahan
+
+/ // fungsi pemindahan beban
+pemindahan fungsi (alamat _to, uint _value) pulangan (bool) {
+    require(isFinalized);
+    super.transfer(_to,_value)
+}
+
+...
+----
++
+Dalam kes sedemikian, jika pengguna istimewa kehilangan kunci peribadi mereka atau menjadi
+tidak aktif, keseluruhan kontrak token menjadi tidak boleh digunakan. Dalam kes ini, jika
+pemilik tidak boleh memanggil pas: [ <span class="keep-together"><code>finalize</code></span> ] tiada token yang boleh dipindahkan;
+keseluruhan operasi ekosistem token bergantung pada satu
+alamat.
+
+Negeri maju berdasarkan panggilan luaran :: Kontrak kadang kala ditulis
+sehingga kemajuan ke negara baru memerlukan menghantar eter ke
+alamat, atau menunggu beberapa input daripada sumber luaran. Corak ini boleh
+membawa kepada serangan DoS apabila panggilan luaran gagal atau dicegah untuk luaran
+sebab. Dalam contoh menghantar eter, pengguna boleh membuat kontrak itu
+tidak menerima eter. Sekiranya kontrak memerlukan ether ditarik balik untuk maju ke negeri baru (pertimbangkan a
+kontrak penguncian masa yang memerlukan semua eter ditarik balik sebelum menjadi
+boleh digunakan semula), kontrak itu tidak akan pernah berlaku
+mencapai keadaan baru, kerana eter tidak boleh dihantar ke kontrak pengguna itu
+tidak menerima eter.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+((&quot;penafian serangan perkhidmatan (DoS)&quot;, &quot;teknik pencegahan&quot;))) Dalam contoh pertama, kontrak tidak boleh dilengkapkan melalui struktur data
+yang boleh dimanipulasi secara buatan oleh pengguna luar. Pengunduran
+corak disyorkan, di mana setiap pelabur memanggil + menarik balik +
+berfungsi untuk menuntut token secara bebas.
+
+Dalam contoh kedua, pengguna istimewa diminta untuk mengubah keadaan
+daripada kontrak. Dalam contoh sedemikian failsafe boleh
+digunakan sekiranya pemilik menjadi tidak berupaya. Satu penyelesaian
+adalah untuk menjadikan pemilik kontrak multisig. Penyelesaian lain
+adalah menggunakan kunci masa: dalam contoh yang diberikan + memerlukan + pada baris 5 boleh memasukkan a
+mekanisme berasaskan masa, seperti
+`memerlukan (msg.sender == pemilik || sekarang&gt; unlockTime)`, yang membolehkan pengguna apa pun
+untuk dimuktamadkan selepas tempoh masa ditentukan oleh `unlockTime`. Jenis ini
+teknik mitigasi boleh digunakan dalam contoh ketiga juga. Jika
+panggilan luaran diperlukan untuk maju ke keadaan baru, untuk akaun
+kegagalan mereka mungkin dan berpotensi menambah keadaan berasaskan masa
+perkembangan dalam hal panggilan yang diingini tidak pernah datang.
+
+[NOTE]
+====
+Sudah tentu, terdapat alternatif terpusat kepada cadangan-cadangan ini:
+seseorang boleh menambah `maintenanceUser` yang boleh datang dan menetapkan
+masalah dengan vektor serangan berasaskan DoS jika perlu. Biasanya jenis ini
+kontrak mempunyai isu amanah, kerana kuasa entiti sedemikian.
+====
+
+==== Contoh-contoh Dunia Nyata: GovernMental
+
+http://governmental.github.io/GovernMental/[GovernMental] (&quot;(serangan penolakan perkhidmatan (DoS)&quot;, &quot;contoh dunia nyata: Kerajaan&quot;))) (((&quot;Skim Ponzi Kerajaan&quot;, &quot;DoS kerentanan &quot;))) sudah lama
+Skim Ponzi yang terkumpul cukup banyak eter (1,100 eter, pada satu titik). Malangnya, ia adalah
+terdedah kepada kerentanan DoS yang disebut dalam bahagian ini. A http://bit.ly/2DcgvFc[Reddit post] oleh etherik menerangkan bagaimana kontrak memerlukan penghapusan besar
+pemetaan untuk mengeluarkan eter. Pemadaman pemetaan ini ada
+kos gas yang melebihi had gas blok pada masa itu, dan dengan itu ia
+tidak mungkin menarik balik 1,100 eter. Alamat kontrak ialah
+http://bit.ly/2Oh8j7R[+0xF45717552f12Ef7cb65e95476F217Ea008167Ae3+],
+dan anda boleh melihat dari transaksi http://bit.ly/2Ogzrnn[+0x0d80d67202bd9cb6773df8dd2020e719 0a1b0793e8ec4fc105257e8128f0506b +] bahawa 1,100 eter akhirnya diperoleh dengan urus niaga yang digunakan
+Gas 2.5M (apabila batasan gas blok telah meningkat cukup untuk membenarkan transaksi sedemikian). (((Range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc40&quot;))) (((range = &quot;endofrange&quot; , startref = &quot;ix_09smart-contracts-security-asciidoc39&quot;)))
+
+=== Blokan Manipulasi Timestamp
+
+(&quot;(ancaman sekuriti manipulasi timestamp&quot;), id = &quot;ix_09smart-contracts-security-asciidoc41&quot;, range = &quot;startofrange&quot; = &quot;ix_09smart-contracts-security-asciidoc42&quot;, range = &quot;startofrange&quot;))) Sekat cap masa telah digunakan untuk pelbagai
+aplikasi, seperti entropi untuk nombor rawak (lihat
+&lt; <entropyillusion_security> &gt; untuk maklumat lanjut), mengunci
+dana untuk tempoh masa, dan pelbagai perubahan keadaan bersyarat
+pernyataan yang bergantung kepada masa. Penambang mempunyai keupayaan untuk menyesuaikan diri
+cap waktu sedikit, yang boleh membuktikan berbahaya jika blok
+cap waktu digunakan dengan betul dalam kontrak pintar.
+
+Rujukan berguna untuk ini termasuk
+http://bit.ly/2OdUC9C[the
+Solidity docs] and http://bit.ly/2CQ8gh4[Joris Bontje's Ethereum Stack
+Pertukaran soalan] pada topik.
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;ancaman keselamatan manipulasi cap waktu&quot;, &quot;kerentanan&quot;))) `block.timestamp` dan alias` sekarang` boleh dimanipulasi oleh penambang jika
+mereka mempunyai insentif untuk berbuat demikian. Mari kita buat permainan mudah, ditunjukkan dalam &lt; <roulette_security> &gt;, itu
+akan terdedah kepada eksploitasi pelombong.
+
+[[roulette_security]]
+.roulette.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+kontrak rolet {
+masa lalu awamBlockTime; // memaksa satu taruhan setiap blok
+
+pembina () luar hutang {} / / awalnya dana kontrak
+
+// Fungsi fallback digunakan untuk membuat taruhan
+    function () external payable {
+memerlukan (msg.value == 10 eter); // mesti hantar 10 eter untuk bermain
+memerlukan (sekarang! = pastBlockTime); // hanya 1 transaksi setiap blok
+        pastBlockTime = now;
+        if(now % 15 == 0) { // winner
+            msg.sender.transfer(this.balance);
+        }
+}
+}
+----
+====
+
+Kontrak ini berkelakuan seperti loteri yang mudah. Satu transaksi setiap blok
+boleh bertaruh 10 eter untuk peluang untuk memenangi imbangan kontrak. The
+andaian di sini ialah dua digit terakhir `block.timestamp` diedarkan secara seragam. Jika itu berlaku, akan ada 1 dalam 15
+peluang untuk memenangi loteri ini.
+
+Walau bagaimanapun, seperti yang kita tahu, pelombong boleh menyesuaikan timestamp sekiranya diperlukan
+kepada. Dalam kes ini, sekiranya terdapat kolam yang cukup dalam kontrak, a
+pelombong yang menyelesaikan satu blok adalah insentif untuk memilih timestamp seperti itu
+`block.timestamp` atau` sekarang` modulo 15 ialah `0`. Dengan berbuat demikian mereka boleh menang
+eter dikunci dalam kontrak ini bersama dengan ganjaran blok. Seperti di sana
+hanya satu orang yang dibenarkan bertaruh setiap blok, ini juga terdedah kepada
+serangan ke hadapan (lihat &lt; <frontrunning_security> &gt; untuk maklumat lanjut).
+
+Dalam amalan, cap waktu sempadan meningkat secara monoton dan jadi penambang
+tidak dapat memilih cap waktu blok sewenang-wenangnya (mereka mesti lewat daripada mereka
+pendahulu). Mereka juga terhad kepada menetapkan masa blok tidak terlalu jauh
+pada masa akan datang, kerana blok ini kemungkinan akan ditolak oleh rangkaian
+(nod tidak akan mengesahkan blok yang timestampnya berada di masa hadapan).
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ancaman keselamatan manipulasi cap waktu&quot;, &quot;teknik pencegahan&quot;))) Sekat tanda masa tidak boleh digunakan untuk entropi atau menjana rawak
+nombor-iaitu, mereka tidak sepatutnya menjadi faktor penentu (sama ada secara langsung
+atau melalui beberapa derivasi) untuk memenangi permainan atau mengubah sesuatu yang penting
+negeri.
+
+Logik sensitif masa kadang-kadang diperlukan; contohnya, untuk kontrak membuka kunci
+(penguncian masa), melengkapkan ICO selepas beberapa minggu, atau menguatkuasakan tamat tempoh
+tarikh. Kadangkala disyorkan untuk menggunakan http://bit.ly/2OdUC9C [`block.number`] dan masa blok purata untuk menganggarkan masa; dengan
+Masa blok `10 saat`,` 1 minggu` menyamakan kira-kira, `60480 blok`.
+Oleh itu, menyatakan nombor blok di mana untuk menukar keadaan kontrak boleh
+menjadi lebih selamat, kerana pelombong tidak dapat memanipulasi nombor blok dengan mudah. The
+http://bit.ly/2AAebFr[BAT
+Kontrak ICO] menggunakan strategi ini.
+
+Ini tidak perlu jika kontrak tidak begitu penting
+manipulasi pelombong timestamp blok, tetapi ia adalah sesuatu yang harus
+sedar apabila membangunkan kontrak.
+
+==== Contoh Dunia Nyata: Pemerintahan
+
+http://governmental.github.io/GovernMental/[GovernMental], ((&quot;ancaman keselamatan manipulasi cap waktu&quot;, &quot;contoh dunia sebenar: Kerajaan&quot;))) (((&quot;Skim Ponzi Kerajaan&quot;, &quot;cap masa berasaskan serangan &quot;))) Skim Ponzi lama yang disebutkan di atas, juga
+terdedah kepada serangan berasaskan cap waktu. Kontrak yang dibayar kepada
+pemain yang merupakan pemain terakhir untuk menyertai (sekurang-kurangnya satu minit) dalam a
+pusingan. Oleh itu, pelombong yang pemain boleh menyesuaikan timestamp (kepada a
+masa depan, supaya kelihatan seperti satu minit telah berlalu) untuk menjadikannya
+nampak bahawa mereka adalah pemain terakhir untuk menyertai lebih satu minit (walaupun
+walaupun ini tidak benar dalam realiti). Lebih terperinci mengenai ini boleh didapati di
+yang
+http://bit.ly/2Q1AMA6[&#x201c;History
+dari Ethereum Security Vulnerabilities, Hacks dan Fixes mereka &quot;post] by Tanya pass: [ <span class="keep-together">Bahrynovska</span> ]. (((range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc42 &quot;))) (((range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc41 &quot;)))
+
+=== Pembina dengan Penjagaan
+
+(&quot;(fungsi pembina&quot;, &quot;nama kontrak pengubahsuaian ancaman keselamatan&quot;))) (((&quot;keselamatan (kontrak pintar)&quot;, &quot;pembina dan ancaman perubahan nama kontrak&quot;))) Konstruktor adalah fungsi khas yang sering melakukan kritikal,
+tugas istimewa apabila memulakan kontrak. Sebelum Pepejal v0.4.22,
+konstruktor telah ditakrifkan sebagai fungsi yang mempunyai nama yang sama dengan
+kontrak yang mengandungi mereka. Dalam kes sedemikian, apabila nama kontrak diubah dalam
+pembangunan, jika nama konstruktor tidak berubah juga menjadi normal,
+fungsi yang boleh dipanggil. Seperti yang anda boleh bayangkan, ini boleh membawa (dan mempunyai) kepada beberapa orang
+hacks kontrak yang menarik.
+
+Untuk wawasan selanjutnya, pembaca mungkin berminat untuk mencuba
+https://github.com/OpenZeppelin/ethernaut[Ethernaut challenges] (in
+particular the Fallout level).
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(&quot;(pengubahsuaian nama pengubahsuaian / ancaman keselamatan pembina&quot;, &quot;kerentanan&quot;))) Jika nama kontrak diubah suai, atau terdapat kesilapan menaip di dalam
+nama pembina supaya ia tidak sepadan dengan nama
+kontrak, pembina akan berkelakuan seperti fungsi normal. Ini boleh
+membawa kepada akibat buruk, terutamanya jika pembina melaksanakan
+operasi istimewa. Pertimbangkan kontrak berikut:
+
+[sumber, ketumpatan, lekukan]
+----
+contract OwnerWallet {
+    address public owner;
+
+/ pembina
+    function ownerWallet(address _owner) public {
+        owner = _owner;
+}
+
+// Fallback. Kumpul eter.
+    function () payable {}
+
+    function withdraw() public {
+        require(msg.sender == owner);
+        msg.sender.transfer(this.balance);
+}
+}
+----
+
+Kontrak ini mengumpul eter dan hanya membenarkan pemilik menarik diri,
+dengan memanggil fungsi `menarik balik`. Isu ini timbul kerana pembina tidak dinamakan sama seperti kontrak:
+huruf pertama adalah berbeza! Oleh itu, apa-apa
+pengguna boleh memanggil fungsi &#39;ownerWallet`, menetapkan diri mereka sebagai pemilik,
+dan kemudian ambil semua eter dalam kontrak dengan memanggil `menarik balik`.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(&quot;(pengubahsuaian nama kontrak / ancaman keselamatan pembina&quot;, &quot;teknik pencegahan&quot;))) Isu ini telah dialamatkan dalam versi 0.4.22 daripada pengkomputeran Solidity. Versi ini memperkenalkan kata kunci `pembina` itu
+menentukan pembina, dan bukannya memerlukan nama
+berfungsi untuk memadankan nama kontrak. Menggunakan kata kunci ini untuk ditentukan
+pembina adalah disyorkan untuk menghalang isu penamaan.
+
+==== Contoh Dunia Sebenar: Rubixi
+
+http://bit.ly/2ESWG7t[Rubixi] (((&quot;pengubahsuaian / nama kontrak pengubahsuaian ancaman keselamatan&quot;, &quot;contoh dunia sebenar: Rubixi&quot;))) (((&quot;pengubahsuaian nama kontrak / ancaman keselamatan pembina&quot; contoh dunia nyata: Rubixi &quot;))) ((&quot; skema piramid Rubixi &quot;))) adalah satu lagi skim piramid yang mempamerkan jenis ini
+kerentanan. Ia pada mulanya dipanggil `DynamicPyramid`, tetapi yang
+Nama kontrak telah diubah sebelum penempatan kepada `Rubixi`. The
+nama konstruktor tidak berubah, membenarkan mana-mana pengguna untuk menjadi
+pencipta. Beberapa perbincangan menarik yang berkaitan dengan bug ini boleh didapati
+pada http://bit.ly/2P0TRWw[Bitcointalk]. Pada akhirnya, ia membolehkan pengguna untuk berjuang untuk status pencipta untuk
+menuntut yuran dari skim piramid. Lebih terperinci mengenai perkara ini
+bug boleh didapati di http://bit.ly/2Q1AMA6[&quot;History of Ethereum Security Vulnerabilities, Hacks and Fixes mereka &quot;].
+
+=== Penunjuk Penyimpanan yang tidak dikenali
+
+(&quot;(keselamatan&quot; (kontrak cerdas) &quot;,&quot; ancaman penunjuk penyimpanan yang tidak diminati &quot;, id =&quot; ix_09smart-contracts-security-asciidoc43 &quot;, range =&quot; startofrange &quot; &quot;(ix_09smart-contracts-security-asciidoc45&quot;, range = &quot;startofrange&quot;))) EVM menyimpan data sama ada sebagai simpanan atau memori. Memahami
+betul-betul bagaimana ini dilakukan dan jenis lalai untuk pembolehubah tempatan
+Fungsi sangat disyorkan apabila membangunkan kontrak. Ini adalah
+kerana ia mungkin menghasilkan kontrak terdedah oleh
+pembolehubah penyolakan yang tidak sesuai.
+
+Untuk membaca lebih lanjut tentang penyimpanan dan ingatan di EVM, lihat dokumentasi Solidity di http://bit.ly/2OdUU0l[data lokasi], http://bit.ly/2JslDWf[layout pembolehubah negeri dalam storan], dan http : //bit.ly/2Dch2Hc [susunatur dalam memori].
+
+[NOTE]
+====
+Bahagian ini berdasarkan kepada yang sangat baik
+http://bit.ly/2ERI0pb[post
+oleh Stefan Beyer]. Bacaan lanjut mengenai topik ini, yang diilhamkan oleh Stefan, boleh didapati dalam perkara ini
+http://bit.ly/2OgxPtG[Reddit
+benang].
+====
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(&quot;pengawal keselamatan yang tidak dikenali&quot;, &quot;kerentanan&quot;, id = &quot;ix_09smart-contracts-security-asciidoc46&quot;, range = &quot;startofrange&quot;))) Pembolehubah tempatan dalam fungsi lalai untuk penyimpanan atau memori
+bergantung pada jenis mereka. Pemboleh ubah storan tempatan yang tidak diminati boleh
+mengandungi nilai pembolehubah storan lain dalam kontrak; fakta ini
+boleh menyebabkan kelemahan yang tidak disengajakan, atau dimanfaatkan secara sengaja.
+
+Mari kita pertimbangkan kontrak pendaftar nama yang agak mudah di &lt; <nameregistrar_security> &gt;.
+
+[[nameregistrar_security]]
+.NameRegistrar.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+// Pendaftar nama terkunci
+Nama kontrakRegistrar {
+
+bool awam dikunci = palsu; // pendaftar terkunci, tiada kemas kini nama
+
+struct NameRecord {// map hashes to addresses
+bytes32 name;
+        address mappedAddress;
+}
+
+// rekod yang nama berdaftar
+pemetaan (alamat =&gt; NameRecord) public registeredNameRecord;
+// menyelesaikan hash ke alamat
+    mapping(bytes32 => address) public resolve;
+
+    function register(bytes32 _name, address _mappedAddress) public {
+/ / setkan NameRecord baru
+        NameRecord newRecord;
+        newRecord.name = _name;
+        newRecord.mappedAddress = _mappedAddress;
+
+        resolve[_name] = _mappedAddress;
+        registeredNameRecord[msg.sender] = newRecord;
+
+memerlukan (dikunci); // hanya membenarkan pendaftaran jika kontrak dikunci
+}
+}
+----
+====
+
+Pendaftar nama mudah ini hanya mempunyai satu fungsi. Apabila kontrak itu berlaku
+`dikunci`, ia membolehkan sesiapa sahaja untuk mendaftarkan nama (sebagai hash` bytes32`)
+dan peta nama itu ke alamat. Pendaftar adalah
+pada mulanya terkunci, dan `menghendaki` pada baris 25 menghalang` daftar`
+daripada menambah rekod nama. Nampaknya kontrak itu tidak boleh digunakan, sebagai
+tidak ada cara untuk membuka kunci pendaftaran! Walau bagaimanapun, terdapat kelemahan
+yang membolehkan pendaftaran nama tanpa mengira pembolehubah `dikunci &#39;.
+
+// TODO: Andreas untuk memeriksa apakah pengenalan ini diperlukan sebagai bahagian lain
+// dalam buku itu boleh dirujuk. Bahasa juga mungkin perlu
+// diselaraskan.
+
+Untuk membincangkan kelemahan ini, terlebih dahulu kita perlu memahami bagaimana storan
+bekerja dalam kepantasan. Sebagai gambaran keseluruhan peringkat tinggi (tanpa apa-apa yang betul
+terperinci teknikal-kami cadangkan membaca dokumentasi Soliditi untuk yang betul
+kajian semula), pembolehubah negeri disimpan secara berurutan dalam _slots_ kerana mereka
+muncul dalam kontrak (mereka boleh dikumpulkan bersama tetapi tidak dalam hal ini
+contohnya, jadi kami tidak akan risau tentang itu). Oleh itu, `unlocked` wujud dalam
+`slot [0]`, `registeredNameRecord` dalam` slot [1] `, dan` resolve` dalam
+`slot [2]`, dan lain-lain. Setiap slot ini adalah 32 bait dalam ukuran (ada tambahan
+kerumitan dengan pemetaan, yang akan kita abaikan sekarang). The Boolean
+`unlocked` akan kelihatan seperti` 0x000 ... 0` (64 ++ 0 ++ s, tidak termasuk `0x`) untuk
+`false` atau` 0x000 ... 1` (63 ++ 0 ++ s) untuk `true`. Seperti yang anda boleh lihat, ada satu
+sisa penyimpanan yang ketara dalam contoh khusus ini.
+
+Sekeping teka-teki seterusnya adalah bahawa Solidity secara lalai meletakkan
+jenis data yang kompleks, seperti ++ struct ++ s, dalam storan ketika memulakan
+mereka sebagai pembolehubah tempatan. Oleh itu, lulus: [ <span class="keep-together"><code>newRecord</code></span> ] pada baris 18 lalai untuk penyimpanan. Kerentanan ini disebabkan oleh fakta bahawa lulus: [ <span class="keep-together"><code>newRecord</code></span> ] adalah
+tidak dimulakan. Kerana ia mungkir untuk penyimpanan, ia dipetakan kepada
+slot + penyimpanan [0] +, yang pada masa ini mengandungi penunjuk untuk `dikunci &#39;.
+Perhatikan bahawa pada baris 19 dan 20 kita
+kemudian tetapkan `newRecord.name` ke` _name` dan `newRecord.mappedAddress` untuk lulus: [ <span class="keep-together"><code>_mappedAddress</code></span> ]; ini mengemas kini lokasi storan + slot [0] +
+dan + slot [1] +, yang mengubah kedua-dua `dikunci` dan slot storan
+dikaitkan dengan `registeredNameRecord`.
+
+Ini bermakna `dikunci` boleh diubah suai secara langsung, hanya dengan
+`bytes32 _name` fungsi` register`. Oleh itu, jika
+bait terakhir `_name` adalah nonzero, ia akan mengubah bait terakhir
+penyimpanan `slot [0]` dan terus menukar `dikunci &#39;kepada` true`. Nama `_name` tersebut
+nilai akan menyebabkan panggilan `memerlukan` pada baris 25 untuk berjaya, seperti yang telah kami tetapkan
+`dikunci &#39;ke` true`. Cuba ini dalam Remix. Perhatikan fungsi itu akan lulus
+jika anda menggunakan `_name` borang: (((range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc46 &quot;)))
+
+----
+0x0000000000000000000000000000000000000000000000000000000000000001
+----
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ancaman keselamatan penunjuk tanpa petunjuk&quot;, &quot;teknik pencegahan&quot;))) Pengkompilasi Soliditi menunjukkan amaran untuk pembolehubah storan yang tidak difahami;
+pemaju perlu memberi perhatian dengan teliti kepada amaran ini apabila
+membina kontrak pintar. Versi Mist (0.10) sekarang tidak
+membenarkan kontrak-kontrak ini disusun. Ia sering menjadi amalan yang baik
+secara eksplisit menggunakan penunjuk `memori` atau` storan` dengan jelas apabila berurusan dengan jenis kompleks,
+untuk memastikan mereka berkelakuan seperti yang diharapkan.
+
+==== Contoh Dunia Nyata: OpenAddressLottery dan CryptoRoulette Honey Pots
+
+((&quot;OpenAddressLottery honey pot&quot;))) (((&quot;ancaman keselamatan yang tidak diintifikasikan sebagai ancaman keselamatan&quot;, &quot;contoh dunia nyata: OpenAddressLottery dan CryptoRoulette honey pot&quot;))) Sebuah periuk madu bernama http://bit.ly/2AAVnWD [+ OpenAddressLottery +] telah digunakan yang menggunakan kuantiti pembolehubah penyimpanan yang tidak diminati ini
+untuk mengumpul eter daripada beberapa penggodam yang akan menjadi. Kontrak agak
+terlibat, jadi kami akan meninggalkan analisis ke http://bit.ly/2OgxPtG[Reddit
+thread] di mana serangan itu jelas dijelaskan.
+
+((&quot;CryptoRoulette honey pot&quot;))) Satu lagi periuk madu, http://bit.ly/2OfNGJ2[+CryptoRoulette+], juga menggunakan lintasan helah ini: [ <span class="keep-together">untuk mencuba</span> ] dan mengumpul beberapa eter. Jika awak
+tidak dapat memikirkan bagaimana serangan itu berfungsi, lihat
+http://bit.ly/2OVkSL4[&#x201c;An
+Analisis Pasangan Kontrak Ethereum Honeypot &quot;] untuk gambaran keseluruhan
+kontrak ini dan lain-lain. (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc45&quot;))) () (range = &quot;endofrange&quot;, startref = &quot;ix_09smart- contracts-security-asciidoc44&quot; ) (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc43&quot;)))
+
+=== Terapung Titik dan Ketepatan
+
+(&quot;risiko keselamatan perwakilan terapung&quot;, id = &quot;ix_09smart-contracts-security-asciidoc47&quot;, range = &quot;startofrange&quot;))) (((&quot;keselamatan (kontrak pintar)&quot;, &quot;masalah titik terapung&quot; id = &quot;ix_09smart-contracts-security-asciidoc48&quot;, range = &quot;startofrange&quot;))) Pada penulisan ini (v0.4.24), Solidity tidak menyokong titik tetap dan terapung
+nombor. Ini bermakna titik terapung
+perwakilan mesti dibina dengan jenis integer dalam Ketumpukan. Ini
+boleh membawa kepada kesilapan dan kelemahan jika tidak dilaksanakan dengan betul.
+
+[NOTE]
+====
+Untuk bacaan selanjutnya, lihat
+http://bit.ly/2Ogp2Ia[Ethereum
+Teknik dan Tips Keselamatan Kontrak wiki].
+====
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;risiko keselamatan perwakilan terapung&quot;, &quot;kelemahan&quot;))) Oleh kerana tiada jenis titik tetap dalam Soliditi, pemaju dikehendaki
+melaksanakan sendiri menggunakan jenis data integer standard. Terdapat a
+bilangan pengembang perangkap boleh berjalan semasa proses ini. Kami akan
+cuba untuk menyerlahkan sebahagian daripada ini dalam bahagian ini.
+
+Mari kita mulakan dengan contoh kod (kita akan mengabaikan isu-isu / aliran yang dibincangkan, dibahas lebih awal dalam bab ini, untuk kesederhanaan):
+
+[sumber, ketumpatan, lekukan]
+----
+contract FunWithNumbers {
+    uint constant public tokensPerEth = 10;
+    uint constant public weiPerEth = 1e18;
+    mapping(address => uint) public balances;
+
+    function buyTokens() external payable {
+/ convert wei to eth, kemudian darab dengan kadar token
+        uint tokens = msg.value/weiPerEth*tokensPerEth;
+        balances[msg.sender] += tokens;
+}
+
+    function sellTokens(uint tokens) public {
+        require(balances[msg.sender] >= tokens);
+        uint eth = tokens/tokensPerEth;
+        balances[msg.sender] -= tokens;
+msg.sender.transfer (eth * weiPerEth);
+}
+}
+----
+
+Kontrak membeli / menjual mudah ini mempunyai beberapa masalah yang jelas. Walaupun pengiraan matematik
+untuk membeli dan menjual token adalah betul, kekurangan mata terapung
+nombor akan memberi keputusan yang salah. Sebagai contoh, semasa membeli token
+baris 8, jika nilai kurang daripada `1 eter &#39;, pembahagian awal akan
+mengakibatkan `0`, meninggalkan hasil pendaraban akhir sebagai` 0` (misalnya, `200 wei`
+dibahagikan dengan `1e18`` weiPerEth` sama dengan` 0`). Begitu juga, apabila menjual
+token, sebarang bilangan token yang kurang daripada `10` juga akan menyebabkan` 0 eter`. In
+fakta, pembundaran di sini selalu turun, jadi menjual `29 token` akan menghasilkan
+dalam `2 ether`.
+
+Isu dengan kontrak ini adalah bahawa ketepatan hanya untuk
+eter terdekat (iaitu, 1e18 wei). Ini boleh menjadi sukar apabila
+berurusan dengan perpuluhan dalam
+https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20]
+token apabila anda memerlukan ketepatan yang lebih tinggi.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;risiko keselamatan perwakilan terapung&quot;, &quot;teknik pencegahan&quot;))) Memastikan ketepatan yang betul dalam kontrak pintar anda adalah sangat penting,
+terutamanya apabila berurusan dengan nisbah dan kadar yang mencerminkan ekonomi
+keputusan.
+
+Anda harus memastikan bahawa mana-mana nisbah atau kadar yang anda gunakan membolehkan besar
+pengangka dalam pecahan. Sebagai contoh, kami menggunakan kadar `tokensPerEth` dalam
+contoh kami. Ia lebih baik menggunakan `weiPerTokens`, yang akan
+menjadi sebilangan besar. Untuk mengira bilangan token yang sepadan yang boleh kita lakukan
+`msg.value / weiPerTokens`. Ini akan memberikan hasil yang lebih tepat.
+
+Satu lagi taktik yang perlu diingat adalah untuk menyedari susunan operasi.
+Dalam contoh kami, pengiraan untuk membeli token adalah
+`msg.value / weiPerEth * tokenPerEth`. Perhatikan bahawa pembahagian berlaku
+sebelum pendaraban. (Kekukuhan, tidak seperti beberapa bahasa, menjamin untuk melaksanakan operasi dalam susunan di mana ia ditulis.) Contoh ini akan mencapai lebih besar
+ketepatan jika pengiraan dilakukan pendaraban pertama dan kemudian
+bahagian; iaitu, `msg.value * tokenPerEth / weiPerEth`.
+
+Akhirnya, apabila menentukan ketepatan sewenang-wenangnya untuk nombor, ia boleh menjadi baik
+idea untuk menukar nilai kepada ketepatan yang lebih tinggi, melakukan semua
+operasi matematik, kemudian akhirnya tukar balik ke
+ketepatan yang diperlukan untuk keluaran. Biasanya ++ uint256 ++ s digunakan (kerana mereka
+optimum untuk kegunaan gas); ini memberi kira-kira 60 pesanan magnitud
+dalam julat mereka, sebahagian daripadanya boleh didedikasikan untuk ketepatan
+operasi matematik. Ia mungkin kes yang lebih baik untuk disimpan
+semua pembolehubah dalam ketepatan tinggi dalam Ketumpatan dan menukar semula ke bawah
+precisi dalam aplikasi luaran (ini pada asasnya bagaimana `perpuluhan &#39;
+pemboleh ubah berfungsi dalam token ERC20
+kontrak). Untuk melihat contoh bagaimana ini dapat dilakukan, kami mencadangkan melihat https://github.com/dapphub/ds-math[DS-Math]. Ia menggunakan beberapa
+penamaan funky (&quot;wads&quot; dan &quot;sinar&quot;), tetapi konsep ini berguna.
+
+==== Contoh Dunia Sebenar: Etik
+
+((&quot;Kontrak etiket&quot;))) (((&quot;risiko keselamatan perwakilan terapung&quot;, &quot;contoh dunia sebenar: Etiket&quot;))) http://bit.ly/2Qb7PSB[+Ethstick + kontrak] menggunakan ketepatan yang diperpanjang; Walau bagaimanapun, ia berkaitan dengan wei. Jadi,
+kontrak ini akan mempunyai masalah pembundaran, tetapi hanya pada tahap wei
+ketepatan. Ia mempunyai kelemahan yang lebih serius, tetapi ini berkaitan
+kembali kepada kesukaran mendapatkan entropi di blokchain (lihat
+&lt; <entropyillusion_security> &gt;). Untuk perbincangan lanjut mengenai
+kontrak + Ethstick +, kami akan merujuk anda kepada jawatan lain oleh Peter Vessenes,
+http://bit.ly/2SwDnE0[&quot;Ethereum
+Kontrak Akan Menjadi Gula-Gula untuk Hacker &quot;]. (((Range =&quot; endofrange &quot;, startref =&quot; ix_09smart-contracts-security-asciidoc48 &quot;))) (((range =&quot; endofrange &quot; keselamatan-asciidoc47 &quot;)))
+
+=== Tx.Origin Authentication
+
+, (&quot;(keselamatan (kontrak cerdas)&quot;, &quot;ancaman pengesahan tx.origin&quot;, id = &quot;ix_09smart-contracts-security-asciidoc49&quot;, range = &quot;startofrange&quot;)) , yang melintasi keseluruhannya
+memanggil timbunan dan mengandungi alamat akaun yang asalnya dihantar
+panggilan (atau transaksi). Menggunakan pemboleh ubah ini untuk pengesahan dalam kontrak pintar meninggalkan kontrak terdedah kepada phishing-like
+serang.
+
+[NOTE]
+====
+Untuk bacaan lanjut, lihat Ethereum dbryson http://bit.ly/2PxU1UM[Stack
+Pertukaran soalan],
+http://bit.ly/2qm7ocJ[&quot;Tx.Origin dan Ethereum Oh My! &quot;] oleh Peter Vessenes, dan
+http://bit.ly/2P3KVA4[&quot;Solidity: Tx Origin Attacks &quot;] oleh Chris Coverdale.
+====
+
+[role = &quot;notoc&quot;]
+==== Kerentanan
+
+(((&quot;ancaman keselamatan pengesahan tx.origin&quot;, &quot;kerentanan&quot;))) Kontrak yang membenarkan pengguna menggunakan pembolehubah `tx.origin &#39;adalah
+biasanya terdedah kepada serangan pancingan data yang boleh menipu pengguna
+melakukan tindakan yang disahkan pada kontrak rentan.
+
+Pertimbangkan kontrak mudah di &lt; <phishable_security> &gt;.
+
+[[phishable_security]]
+.Phishable.sol
+====
+[sumber, ketumpatan, lekukan]
+----
+contract Phishable {
+    address public owner;
+
+    constructor (address _owner) {
+        owner = _owner;
+}
+
+    function () external payable {} // collect ether
+
+    function withdrawAll(address _recipient) public {
+        require(tx.origin == owner);
+        _recipient.transfer(this.balance);
+}
+}
+----
+====
+
+Perhatikan bahawa pada baris 11, kontrak itu membenarkan &#39;tarik balik&#39;
+fungsi menggunakan `tx.origin`. Kontrak ini membolehkan penyerang untuk
+membuat kontrak menyerang bentuk:
+
+[sumber, ketumpatan, lekukan]
+----
+import "Phishable.sol";
+
+contract AttackContract {
+
+    Phishable phishableContract;
+penyerang alamat; // Alamat penyerang untuk menerima dana
+
+    constructor (Phishable _phishableContract, address _attackerAddress) {
+        phishableContract = _phishableContract;
+        attacker = _attackerAddress;
+}
+
+    function () payable {
+        phishableContract.withdrawAll(attacker);
+}
+}
+----
+
+Penyerang mungkin menyembunyikan kontrak ini sebagai alamat peribadi mereka sendiri dan jurutera secara sosial kepada mangsa (pemilik + + kontrak Phishable) untuk menghantar beberapa bentuk urus niaga ke alamat-mungkin menghantar kontrak ini sejumlah eter. Mangsa, kecuali berhati-hati, tidak dapat melihatnya
+ada kod di alamat penyerang, atau penyerang mungkin lulus
+sebagai dompet multisignature atau beberapa dompet simpanan lanjutan (ingat
+bahawa kod sumber kontrak awam tidak tersedia secara lalai).
+
+Walau apa pun, jika mangsa menghantar transaksi dengan gas yang cukup kepada
+`AttackContract` alamat, ia akan memanggil fungsi fallback, yang di
+putar panggilan `withdrawAll` fungsi` Phishable` kontrak
+dengan parameter `attacker`. Ini akan menyebabkan penarikan semua
+dana dari kontrak `Phishable` ke alamat` penyerang`. Ini adalah
+kerana alamat yang mula-mula memulakan panggilan adalah mangsa
+(iaitu, pemilik kontrak `Phishable`). Oleh itu, `tx.origin`
+akan sama dengan `pemilik` dan` memerlukan` pada baris 11 dari
+`Phishable` kontrak akan lulus.
+
+[role = &quot;notoc&quot;]
+==== Teknik pencegahan
+
+(((&quot;ancaman keselamatan pengesahan tx.origin&quot;, &quot;teknik pencegahan&quot;))) `tx.origin` tidak boleh digunakan untuk kebenaran dalam kontrak pintar.
+Ini tidak bermakna bahawa pembolehubah `tx.origin &#39;tidak boleh digunakan. Ia
+mempunyai beberapa kes penggunaan sah dalam kontrak pintar. Sebagai contoh, jika
+seseorang mahu menafikan kontrak luaran daripada memanggil kontrak semasa,
+seseorang boleh melaksanakan `menghendaki &#39;borang tersebut
+`memerlukan (tx.origin == msg.sender)`. Ini menghalang kontrak perantaraan
+digunakan untuk memanggil kontrak semasa, mengehadkan kontrak kepada
+alamat tanpa kod biasa (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc49&quot;
+
+[[contract_libraries_sec]]
+=== Perpustakaan Kontrak
+
+(&quot;(kontrak&quot; keselamatan (kontrak pintar) &quot;,&quot; perpustakaan kontrak untuk &quot;))) ((&quot; kontrak pintar &quot;,&quot; perpustakaan atas platform &quot;))) Terdapat banyak kod sedia ada yang sedia untuk diguna semula, -chain sebagai perpustakaan yang boleh dipanggil dan di luar rangkaian sebagai perpustakaan templat kod. Perpustakaan pada platform, yang telah dikerahkan, wujud sebagai kontrak pintar bytecode, sangat perlu diambil perhatian sebelum menggunakannya dalam pengeluaran. Walau bagaimanapun, menggunakan perpustakaan berasaskan platform yang sedia ada mempunyai banyak kelebihan, seperti mendapat manfaat daripada peningkatan terkini, dan menjimatkan wang dan memberi manfaat kepada ekosistem Ethereum dengan mengurangkan jumlah bilangan kontrak langsung dalam Ethereum.
+
+(&quot;(kerangka&quot;, &quot;OpenZeppelin suite&quot;))) ((&quot;OpenZeppelin&quot;))) Di Ethereum, sumber yang paling banyak digunakan ialah https://openzeppelin.org/[OpenZeppelin suite] kontrak dari pelaksanaan ERC20 dan token ERC721, kepada banyak perisa model crowdsale, kepada tingkah laku mudah yang biasa dijumpai dalam kontrak, seperti `Dimiliki`,` Pausable`, atau `LimitBalance`. Kontrak dalam repositori ini telah diuji secara meluas dan dalam beberapa kes bahkan berfungsi sebagai pelaksanaan standard _de facto_. Mereka bebas untuk digunakan, dan dibina dan diselenggarakan oleh https://zeppelin.solutions [Zeppelin] bersama dengan senarai penyumbang luar yang terus berkembang.
+
+(((&quot;kerangka&quot;, &quot;ZeppelinOS&quot;))) ((&quot;ZeppelinOS&quot;))) Juga dari Zeppelin ialah https://zeppelinos.org/[ZeppelinOS], platform perkhidmatan terbuka dan alat untuk membangun dan mengurus aplikasi kontrak pintar dengan selamat. ZeppelinOS menyediakan lapisan di atas EVM yang menjadikannya mudah bagi pemaju untuk melancarkan DApps yang boleh dinaikkan dipautkan ke perpustakaan rangkaian di dalam kontrak yang diuji dengan baik yang dapat ditingkatkan. Versi berbeza dari perpustakaan ini boleh wujud bersama pada platform Ethereum, dan sistem vouching membolehkan pengguna mencadangkan atau menolak penambahbaikan dalam arah yang berbeza. Satu set alat off-chain untuk menyahpepijat, menguji, menyebarkan, dan memantau aplikasi terdesentralkan juga disediakan oleh platform.
+
+(((&quot;projek ethpm&quot;))) Projek + ethpm + bertujuan untuk mengatur pelbagai sumber yang sedang dibangunkan dalam ekosistem dengan menyediakan sistem pengurusan pakej. Oleh itu, pendaftaran mereka menyediakan lebih banyak contoh untuk anda menyemak imbas:
+
+* Website: https://www.ethpm.com/
+* Repository link: https://www.ethpm.com/registry
+* GitHub link: https://github.com/ethpm
+* Documentation: https://www.ethpm.com/docs/integration-guide
+
+=== Kesimpulan
+
+Terdapat banyak pemaju yang bekerja di domain kontrak pintar untuk mengetahui dan memahami. Dengan mengikuti amalan terbaik dalam reka bentuk kontrak pintar dan penulisan kod, anda akan mengelakkan banyak perangkap dan perangkap yang teruk.
+
+Mungkin prinsip keselamatan perisian yang paling asas adalah memaksimumkan penggunaan semula kod yang dipercayai. Dalam kriptografi, ini sangat penting ia telah dipeluwap menjadi pepatah: &quot;Jangan gulungkan crypto anda sendiri.&quot; Dalam kes kontrak pintar, jumlah ini dapat memperoleh sebanyak mungkin dari perpustakaan yang tersedia secara bebas yang telah diselidiki secara menyeluruh oleh masyarakat. () (Jawapan = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc1&quot;)) ) (((range = &quot;endofrange&quot;, startref = &quot;ix_09smart-contracts-security-asciidoc0&quot;)))

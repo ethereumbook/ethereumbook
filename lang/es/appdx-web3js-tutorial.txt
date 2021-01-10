@@ -1,0 +1,249 @@
+[appendix]
+[[web3js_tutorial]]
+== Tutorial de web3.js
+
+=== Descripción
+((("web3.js","tutorial", id="ix_appdx-web3js-tutorial-asciidoc0", range="startofrange")))Este tutorial se basa en web3.js versión web3@1.0.0-beta.29 y está pensado como una introducción a web3.js.
+
+La biblioteca JavaScript web3.js es una colección de módulos que contienen funciones específicas para el ecosistema Ethereum, junto con una API JavaScript compatible con Ethereum que implementa la especificación RPC de JSON genérico.
+
+Para ejecutar este script no es necesario que tenga ejecutando su propio nodo local, ya que utiliza https://infura.io[lo servicios de Infura].
+
+=== Interacción Básica de web3.js con Contratos Al Margen de una Cadena de Bloques (Asincrónica)
+
+((("web3.js","interacción básica con contratos al margen de una cadena de bloques (Asincrónica)")))Compruebe que tiene una versión +npm+ válida:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+Si no lo ha hecho, inicialice +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+</pre>
+++++
+
+Instale dependencias básicas:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm i command-line-args</strong>
+$ <strong>npm i web3</strong>
+$ <strong>npm i node-rest-client-promise</strong>
+</pre>
+++++
+
+Esto actualizará su archivo de configuración _package.json_ con sus nuevas dependencias.
+
+==== Ejecución de Scripts de Node.js
+
+((("web3.js","ejecución de scripts de node.js")))Ejecución básica:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js</strong>
+</pre>
+++++
+
+Use su propio token de Infura (regístrese en https://infura.io/[] y almacene la clave api en un archivo local llamado __infura_token__):
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  --infuraFileToken /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+o:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+Esto leerá el archivo con su propio token y lo pasará como un argumento de línea de comando al comando real.
+
+=== Revisión del Script de Demostración
+
+((("web3.js","revisión del script de demostración")))A continuación, revisemos nuestro script de demostración, _web3-contract-basic-interaction_.
+
+Usamos el objeto +Web3+ para obtener un proveedor web3 básico:
+
+[source,solidity]
+----
+var web3 = new Web3(infura_host);
+----
+
+Luego podemos interactuar con web3 y probar algunas funciones básicas. Veamos la versión del protocolo:
+
+[source,solidity]
+----
+web3.eth.getProtocolVersion().then(function(protocolVersion) {
+      console.log(`Version de Protocolo: ${protocolVersion}`);
+  })
+----
+
+Ahora veamos el precio actual del gas:
+
+[source,solidity]
+----
+web3.eth.getGasPrice().then(function(gasPrice) {
+      console.log(`Precio del Gas: ${gasPrice}`);
+  })
+----
+
+¿Cuál es el último bloque minado en la cadena actual?
+
+[source,solidity]
+----
+web3.eth.getBlockNumber().then(function(blockNumber) {
+      console.log(`Numero de Bloque: ${blockNumber}`);
+  })
+----
+
+=== Interacción con Contratos
+
+((("web3.js","interacción con contratos", id="ix_appdx-web3js-tutorial-asciidoc1", range="startofrange")))Ahora intentaremos algunas interacciones básicas con un contrato. Para estos ejemplos, usaremos el contrato https://bit.ly/2MPZZLx[+WETH9_+] de la red de prueba de Kovan.
+
+[role="pagebreak-before"]
+Primero, inicializaremos nuestra dirección de contrato:
+
+[source,solidity]
+----
+var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
+----
+
+Luego podemos consultar su saldo:
+
+[source,solidity]
+----
+web3.eth.getBalance(our_contract_address).then(function(balance) {
+      console.log(`Saldo de ${our_contract_address}: ${balance}`);
+})
+----
+
+y ver su código binario:
+
+[source,solidity]
+----
+web3.eth.getCode(our_contract_address).then(function(code) {
+      console.log(code);
+})
+----
+
+A continuación, prepararemos nuestro entorno para interactuar con la API del explorador de Etherscan.
+
+Vamos a Inicializar la URL de nuestro contrato en la API del explorador de Etherscan para la cadena Kovan:
+
+[source,solidity]
+----
+var etherscan_url =
+  "https://kovan.etherscan.io/api?module=contract&action=getabi&
+  address=${our_contract_address}"
+----
+
+Luego inicializamos un cliente REST para interactuar con la API de Etherscan:
+
+[source,solidity]
+----
+var client = require('node-rest-client-promise').Client();
+----
+
+y obtenemos una promesa del nodo cliente:
+
+[source,solidity]
+----
+client.getPromise(etherscan_url)
+----
+
+Una vez que tenemos una promesa válida para el cliente, podemos obtener nuestro ABI de contrato de la API de Etherscan:
+
+[source,solidity]
+----
+.then((client_promise) => {
+  our_contract_abi = JSON.parse(client_promise.data.result);
+----
+
+Y ahora podemos crear nuestro objeto de contrato como una promesa para consumir más tarde:
+
+[source,solidity]
+----
+  return new Promise((resolve, reject) => {
+      var our_contract = new web3.eth.Contract(our_contract_abi,
+                                               our_contract_address);
+      try {
+        // si todo sale bien
+        resolve(our_contract);
+      } catch (ex) {
+        // Si algo sale mal
+        reject(ex);
+      }
+    });
+})
+----
+
+Si nuestra promesa para el contrato retorna con éxito, podemos comenzar a interactuar con éste:
+
+[source,solidity]
+----
+.then((our_contract) => {
+----
+
+Veamos nuestra dirección de contrato:
+
+[source,solidity]
+----
+console.log(`Direccion de nuestro Contrato:
+            ${our_contract._address}`);
+----
+
+o alternativamente:
+
+[source,solidity]
+----
+console.log(`Direccion de nuestro Contrato de otro modo:
+            ${our_contract.options.address}`);
+----
+
+Ahora consultemos el ABI de nuestro contrato:
+
+[source,solidity]
+----
+console.log("El abi de nuestro contrato: " +
+            JSON.stringify(our_contract.options.jsonInterface));
+----
+
+Podemos ver el suministro total de nuestro contrato mediante una callback:
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call(function(err, totalSupply) {
+    if (!err) {
+        console.log(`Suministro total con un callback:  ${totalSupply}`);
+    } else {
+        console.log(err);
+    }
+});
+----
+
+O podemos usar la promesa devuelta en lugar de pasar el callback:(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc1")))
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call().then(function(totalSupply){
+    console.log(`Suministro total via promesa:  ${totalSupply}`);
+}).catch(function(err) {
+    console.log(err);
+});
+----
+
+=== Operación Asincrónica vía Await
+
+((("constructo await")))((("web3.js","operación asincrónica vía await")))Ahora que hemos visto el tutorial básico, podemos probar las mismas interacciones usando una construcción asincrónica +await+. Revisamos el script _web3-contract-basic-interactive-async-await.js_ en http://bit.ly/2ABrFkl[_code/web3js_] y lo compramos con este tutorial para ver en qué se diferencian. Async-await es más fácil de leer, ya que hace que la interacción asincrónica se comporte más como una secuencia de invocaciones de bloques.(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc0")))

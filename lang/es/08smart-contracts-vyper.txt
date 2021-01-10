@@ -1,0 +1,319 @@
+[[vyper_chap]]
+== Contratos Inteligentes y Vyper
+
+((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper es un lenguaje de programación experimental orientado a contratos para la Máquina Virtual de Ethereum que se esfuerza por proporcionar un nivel superior de auditabilidad, al hacerle más fácil a los desarrolladores la producción de código inteligible. De hecho, uno de los principios de Vyper es hacer que sea prácticamente imposible para los desarrolladores escribir código engañoso.
+
+En este capítulo veremos los problemas más comunes en relación a los contratos inteligentes, presentaremos el lenguaje de programación de contratos Vyper y lo compararemos con Solidity, demostrando las diferencias.
+
+=== Vulnerabilidades y Vyper
+
+https://arxiv.org/pdf/1802.06038.pdf[Un estudio reciente] ((("vulnerabilidades", seealso="seguridad; ataques/vulnerabilidades específicos")))((("Vyper","vulnerabilidades de contratos y")))analizó casi un millón de contratos inteligentes de Ethereum desplegados y descubrió que muchos de estos contratos contenían vulnerabilidades graves. Durante su análisis, los investigadores describieron tres categorías básicas de vulnerabilidades rastreadas:
+
+Contratos suicidas:: Contratos inteligentes que pueden ser eliminados por direcciones arbitrarias
+
+Contratos codiciosos:: Contratos inteligentes que pueden alcanzar un estado en el que no pueden liberar éter
+
+Contratos dadivosos:: Contratos inteligentes que se pueden configurar para liberar éter a direcciones arbitrarias
+
+Las vulnerabilidades se introducen en los contratos inteligentes mediante su código. Se puede argumentar fuertemente que estas y otras vulnerabilidades no se introducen intencionalmente, pero indistintamente, el código indeseable de los contratos inteligente resulta evidentemente en la pérdida inesperada de fondos para los usuarios de Ethereum, y esto no es ideal. Vyper está diseñado para facilitar la escritura de código seguro, o igualmente para dificultar la escritura accidental de código engañoso o vulnerable.
+
+[[comparison_to_solidity_sec]]
+=== Comparación con Solidity
+
+((("Solidity","Vyper comparado con", id="ix_08smart-contracts-vyper-asciidoc1", range="startofrange")))((("Vyper","Solidity comparado con", id="ix_08smart-contracts-vyper-asciidoc2", range="startofrange")))Una de las formas en que Vyper intenta hacer que el código inseguro sea más difícil de escribir es _omitiendo_ deliberadamente algunas de las características de Solidity. Es importante que quienes estén considerando desarrollar contratos inteligentes en Vyper comprendan qué características _no_ posee Vyper y por qué. Por lo tanto, en esta sección, exploraremos esas características y brindaremos una justificación de por qué se han omitido.
+
+==== Modificadores
+
+((("modificadores")))((("Solidity","modificadores")))((("Vyper","modificadores")))Como vimos en el capítulo anterior, en Solidity podemos escribir una función usando modificadores. Por ejemplo, la siguiente función, `changeOwner`, ejecutará su código dentro de un modificador llamado `onlyBy` como parte de sus procedimientos:
+
+[source,javascript]
+----
+function changeOwner(address _newOwner)
+    public
+    onlyBy(owner)
+{
+    owner = _newOwner;
+}
+----
+
+Este modificador impone una regla en relación con la titularidad. Como puede verse, este modificador en particular actúa como un mecanismo para realizar una verificación previa en nombre de la función `changeOwner`:
+
+[source,javascript]
+----
+modifier onlyBy(address _account)
+{
+    require(msg.sender == _account);
+    _;
+}
+----
+
+Pero los modificadores no solo sirven para realizar verificaciones, como se muestra aquí. De hecho, como modificadores, pueden cambiar significativamente el entorno de un contrato inteligente, en el contexto de la función que los invoca. En pocas palabras, los modificadores son _invasivos_.
+
+Veamos otro ejemplo de estilo en Solidity:
+
+[source, javascript]
+----
+enum Stages {
+    SafeStage,
+    DangerStage,
+    FinalStage
+}
+
+uint public creationTime = now;
+Stages public stage = Stages.SafeStage;
+
+function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+}
+
+modifier stageTimeConfirmation() {
+    if (stage == Stages.SafeStage &&
+                now >= creationTime + 10 days)
+        nextStage();
+    _;
+}
+
+function a()
+    public
+    stageTimeConfirmation
+    // Aquí va más código
+{
+}
+----
+
+Por un lado, los desarrolladores siempre deben verificar cualquier otro código al que su propio código esté invocando. Sin embargo, es posible que en ciertas situaciones (como cuando las limitaciones de tiempo o el agotamiento resultan en falta de concentración) un desarrollador pueda pasar por alto una sola línea de código. Esto es incluso más probable si el desarrollador tiene que sumergirse dentro de un archivo grande mientras realiza un seguimiento mental de la jerarquía de invocaciones de funciones y encomendando el estado de las variables de un contrato inteligente a la memoria.
+
+Veamos el ejemplo anterior con un poco más de profundidad. Imagine que un desarrollador está escribiendo una función pública llamada `a`. El desarrollador es nuevo en este contrato y está utilizando un modificador escrito por otra persona. A primera vista, parece que el modificador `stageTimeConfirmation` simplemente está realizando algunas verificaciones con respecto a la antigüedad del contrato en relación con la función que le invoca. Lo que el desarrollador puede _no_ darse cuenta es que el modificador también está invocando a otra función, `nextStage`. En este escenario de demostración simplista, simplemente invocar a la función pública `a` da como resultado que la variable `stage` del contrato inteligente se mueva de` SafeStage` a `DangerStage`.
+
+Vyper ha eliminado los modificadores por completo. Las recomendaciones de Vyper son las siguientes: si solo realiza afirmaciones con modificadores, simplemente use comprobaciones en línea y afirmaciones como parte de la función; Si modifica el estado del contrato inteligente, etc., vuelva a hacer estos cambios explícitamente como parte de la función. Hacer esto mejora la auditabilidad y la legibilidad, ya que el lector no tiene que "empaquetar" mental o manualmente el código modificador dentro de la función para ver qué hace.
+
+==== Herencia de Clases
+
+((("herencia de clases")))((("herencia")))((("Solidity","herencia de clases")))((("Vyper","herencia de clases")))La herencia permite a los programadores aprovechar el poder del código previamente escrito mediante la adquisición de funciones, propiedades y comportamientos preexistentes de las bibliotecas de software existentes. La herencia es poderosa y promueve la reutilización del código. Solidity admite tanto la herencia múltiple como el polimorfismo, pero aunque estas son características clave de la programación orientada a objetos, Vyper no las admite. Vyper sostiene que la implementación de la herencia requiere que los codificadores y auditores salten entre varios archivos para comprender qué está haciendo el programa. Vyper también considera que la herencia múltiple puede hacer que el código sea demasiado complicado de entender&#x2014;una opinión admitida tácitamente por la http://bit.ly/2Q6Azvo[documentación] de Solidity, que da un ejemplo de cómo la herencia múltiple puede ser problemática.
+
+==== Código Ensamblador en Línea
+
+((("código ensamblador en línea")))((("código ensamblador en línea","Solidity comparado con Vyper")))((("código ensamblador en línea en Solidity")))El código ensamblador en línea brinda a los desarrolladores acceso de bajo nivel a la Máquina Virtual de Ethereum, permitiendo que los programas de Solidity realicen operaciones accediendo directamente a las instrucciones de la EVM. Por ejemplo, el siguiente código de ensamblaje en línea agrega 3 a la ubicación de memoria +0x80+:
+
+----
+3 0x80 mload add 0x80 mstore
+----
+
+Vyper considera que la pérdida de legibilidad es un precio demasiado alto a pagar por la potencia adicional y, por lo tanto, no admite el código de ensamblaje en línea.
+
+==== Sobrecarga de Funciones
+
+((("sobrecarga de funciones")))((("Solidity","sobrecarga de funciones")))((("Vyper","sobrecarga de funciones")))La sobrecarga de función permite a los desarrolladores describir varias funciones diferentes, con el mismo nombre. La función que se utilice en una ocasión determinada depende de los tipos de argumentos proporcionados. Tómense las siguientes dos funciones, por ejemplo:
+
+[source,javascript]
+----
+function f(uint _in) public pure returns (uint out) {
+    out = 1;
+}
+
+function f(uint _in, bytes32 _key) public pure returns (uint out) {
+    out = 2;
+}
+----
+
+La primera función (llamada +f+) acepta un solo argumento de entrada de tipo +uint+; la segunda función (también denominada +f+) acepta dos argumentos, uno de tipo +uint+ y otro de tipo +bytes32+. Tener varias definiciones de función con el mismo nombre que toman diferentes argumentos puede resultar confuso, por lo que Vyper no admite la sobrecarga de funciones.
+
+==== Conversión de Tipos de Datos
+
+((("Solidity","conversión de tipos de variables")))((("conversión de tipos")))((("Vyper","conversión de tipos de variables")))Existen dos clases de conversión de tipos de datos: _implícita_ y _explícita_
+
+((("conversión implícita de tipos")))La conversión implícita de tipos de datos a menudo se realiza en tiempo de compilación. Por ejemplo, si una conversión de tipos es semánticamente sólida y no es probable que se pierda información, el compilador puede realizar una conversión implícita, como convertir una variable de tipo +uint8+ a +uint16+. Las primeras versiones de Vyper permitían la conversión implícita de variables, pero las versiones recientes no lo permiten.
+
+((("conversión explícita de tipos")))Se pueden insertar conversiones explícitas de tipos de datos en Solidity. Desafortunadamente, pueden provocar un comportamiento inesperado. Por ejemplo, convertir un parámetro +uint32+ a un tipo más pequeño +uint16+ simplemente elimina los bits de orden superior, como se demuestra a continuación:
+
+[source,javascript]
+----
+uint32 a = 0x12345678;
+uint16 b = uint16(a);
+// Ahora, la variable b vale 0x5678
+----
+
+((("función convert (Vyper)")))Vyper en cambio tiene una función +convert+ para realizar conversiones explícitas. La siguiente, es la función convert (que se encuentra en la línea 82 de http://bit.ly/2P36ZKT[_convert.py_]):
+
+[source,python]
+----
+def convert(expr, context):
+    output_type = expr.args[1].s
+    if output_type in conversion_table:
+        return conversion_table[output_type](expr, context)
+    else:
+        raise Exception("Conversion to {} is invalid.".format(output_type))
+----
+
+Téngase en cuenta el uso de +conversion_table+ (que se encuentra en la línea 90 del mismo archivo), que se ve así:
+
+[source,python]
+----
+conversion_table = {
+    'int128': to_int128,
+    'uint256': to_unint256,
+    'decimal': to_decimal,
+    'bytes32': to_bytes32,
+}
+----
+
+Cuando un desarrollador invoca a la función +convert+, hace referencia a la tabla +conversion_table+, garantizando así que se realice la conversión adecuada. Por ejemplo, si un desarrollador pasa un parámetro +int128+ a la función +convert+, se ejecutará la función +to_int128+ en la línea 26 del mismo archivo (_convert.py_). La función +to_int128+ es la siguiente:
+
+[source,python]
+----
+@signature(('int128', 'uint256', 'bytes32', 'bytes'), 'str_literal')
+def to_int128(expr, args, kwargs, context):
+    in_node = args[0]
+    typ, len = get_type(in_node)
+    if typ in ('int128', 'uint256', 'bytes32'):
+        if in_node.typ.is_literal 
+            and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+            raise InvalidLiteralException(
+                "Number out of range: {}".format(in_node.value), expr
+            )
+        return LLLnode.from_list(
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node,
+            ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'),
+            pos=getpos(expr)
+        )
+    else:
+        return byte_array_to_num(in_node, expr, 'int128')
+----
+
+Como puede verse, el proceso de conversión garantiza que no se pierda información; si pudiera darse el caso, se responde con una excepción. El código de conversión evita el truncamiento, así como otras anomalías que normalmente se permitirían mediante las conversiones implícitas.
+
+Elegir un tipo de conversión explícita por sobre la implícita significa que el desarrollador es responsable de realizar todas las denominaciones. Si bien este enfoque produce un código más verboso, también mejora la seguridad y la auditabilidad de los contratos inteligentes.
+
+
+==== Pre-Condicionado y Post-Condicionado
+
+((("Vyper","pre-condiciones/post-condiciones")))Vyper maneja pre-condiciones, post-condiciones y cambios de estado explícitamente. Si bien esto produce código redundante, también permite la máxima legibilidad y seguridad. Al escribir un contrato inteligente en Vyper, un desarrollador debe observar los siguientes tres puntos:
+
+Condición::
+¿Cuál es el estado/condición actual de las variables de estado de Ethereum?
+Efectos::
+¿Qué efectos tendrá este código de contrato inteligente sobre la condición de las variables de estado en la ejecución? Es decir, ¿qué _se verá_ afectado y qué _no se verá_ afectado? ¿Son estos efectos congruentes con las intenciones del contrato inteligente?
+Interacción::
+Una vez que se hayan abordado exhaustivamente las dos primeras consideraciones, es hora de ejecutar el código. Antes del despliegue, es necesario un recorrido lógico del código, considerando todos los posibles resultados permanentes, consecuencias y escenarios de la ejecución del código, incluidas las interacciones con otros contratos.
+
+Idealmente, cada uno de estos puntos debe ser considerado cuidadosamente y luego documentado a fondo en el código. Hacerlo mejorará el diseño del código, haciéndolo en última instancia más legible y auditable.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
+
+[[decorators_sec]]
+=== Decoradores
+((("decoradores, Vyper")))((("Vyper","decoradores")))Los siguientes decoradores se pueden utilizar al comienzo de cada función:
+
++@private+::  El decorador `@private` hace que la función sea inaccesible desde fuera del contrato.
+
++@public+:: El decorador `@public` hace que la función sea visible y ejecutable públicamente. Por ejemplo, incluso la cartera de Ethereum mostrará tales funciones al ver el contrato.
+
++@constant+:: Las funciones con el decorador `@constant` no pueden cambiar las variables de estado. De hecho, el compilador rechazará todo el programa (con un error apropiado) si la función intenta cambiar una variable de estado.
+
++@payable+:: Solo las funciones con el decorador `@payable` pueden transferir valor.
+
+Vyper implementa http://bit.ly/2P14RDq[la lógica de los decoradores] explícitamente. Por ejemplo, el proceso de compilación de Vyper fallará si una función tiene un decorador `@payable` y un decorador `@constant`. Esto tiene sentido porque una función que transfiere valor, por definición, ha modificado el estado, por lo que no puede ser `@constant`. Cada función de Vyper debe estar decorada o con `@public` o con `@private` (¡pero no con ambos!).
+
+[[order_of_functions_sec]]
+=== Disposición Ordenada de Funciones y Variables
+
+((("declaración de funciones, disposición ordenada en la")))((("Solidity","disposición de funciones")))((("Solidity","disposición de variables")))((("declaración de variables, disposición ordenada en la")))((("Vyper","disposición de funciones")))((("Vyper","disposición de variables")))Cada contrato inteligente individual de Vyper estará contenido en un único archivo de Vyper. En otras palabras, todo el código de un contrato inteligente de Vyper dado, incluidas todas las funciones, variables, etc., existe en un solo lugar. Vyper requiere que la declaración de funciones así como la declaración de variables de cada contrato inteligente, estén escritas físicamente en un orden particular. Solidity no tiene este requisito en absoluto. Echemos un vistazo rápido a un ejemplo de Solidity:
+
+[source,javascript]
+----
+pragma solidity ^0.4.0;
+
+contract ordering {
+
+    function topFunction()
+    external
+    returns (bool) {
+        initiatizedBelowTopFunction = this.lowerFunction();
+        return initiatizedBelowTopFunction;
+    }
+
+    bool initiatizedBelowTopFunction;
+    bool lowerFunctionVar;
+
+    function lowerFunction()
+    external
+    returns (bool) {
+        lowerFunctionVar = true;
+        return lowerFunctionVar;
+    }
+
+}
+----
+
+En este ejemplo, la función llamada +topFunction+ está llamando a otra función, +lowerFunction+. +topFunction+ también está asignando un valor a una variable llamada +initiatizedBelowTopFunction+. Como puede verse, Solidity no requiere que estas funciones y variables se declaren físicamente antes de ser invocadas por el código en ejecución. Este es un código de Solidity válido que se compilará correctamente.
+
+Los requisitos de disposición ordenada en Vyper no son nada nuevo; de hecho, estos requisitos de ordenación siempre han estado presentes en la programación de Python. El orden requerido por Vyper es sencillo y lógico, como se ilustra en el siguiente ejemplo:
+
+[source,python]
+----
+# Declaración de una variable llamada theBool
+theBool: public(bool)
+
+# Declaración de una función llamada topFunction
+@public
+def topFunction() -> bool:
+    # Se asigna un valor a la variable ya declarada llamada theBool
+    self.theBool = True
+    return self.theBool
+
+# Declaración de una función llamada lowerFunction
+@public
+def lowerFunction():
+    # Invocación de la ya declarada función denominada topFunction
+    assert self.topFunction()
+----
+
+Esto muestra el orden correcto de funciones y variables en un contrato inteligente de Vyper. Obsérvese cómo la variable +theBool+ y la función +topFunction+ se declaran antes de que se les asigne un valor y se les invoque, respectivamente. Si +theBool+ se declarase debajo de +topFunction+ o si +topFunction+ se declarase debajo de +lowerFunction+, este contrato no se compilaría.
+
+[[online_code_editor_and_compiler_sec]]
+=== Compilación
+((("compilando","Vyper")))((("Vyper","compilación")))Vyper tiene su propio https://vyper.online[editor y compilador de código en línea], que nos permite escribir y luego compilar nuestros contratos inteligentes en código binario, ABI y LLL usando solo nuestro navegador web. El compilador en línea de Vyper tiene una variedad de contratos inteligentes pre-escritos para nuestra conveniencia, incluidos contratos para una subasta abierta simple, compras remotas seguras, tokens ERC20 y más. Esta herramienta ofrece solo una versión del software de compilación. Se actualiza periódicamente, pero no siempre garantiza la última versión. Etherscan tiene un https://etherscan.io/vyper[compilador de Vyper en línea] que nos permite seleccionar la versión del compilador. También https://remix.ethereum.org[Remix], originalmente diseñado para contratos inteligentes en Solidity, ahora tiene un complemento Vyper disponible en la pestaña de configuración.
+
+[NOTE]
+====
+((("estándar de token ERC20","implementación en Vyper de")))Vyper implementa ERC20 como un contrato pre-compilado, lo que permite que estos contratos inteligentes se utilicen fácilmente desde el primer momento. Los contratos en Vyper deben declararse como variables globales. Un ejemplo para declarar una variable para un ERC20, es el siguiente:
+
+[source,javascript]
+----
+token: address(ERC20)
+----
+====
+
+También podemos compilar un contrato usando la línea de comandos. Cada contrato de Vyper se guarda en un solo archivo con la extensión _.vy_.
+Una vez instalado, puede compilar un contrato con Vyper ejecutando el siguiente comando:
+
+----
+vyper ~/hello_world.vy
+----
+
+La descripción en ABI, legible por humanos (en formato JSON) se puede obtener ejecutando el siguiente comando:
+
+----
+vyper -f json ~/hello_world.v.py
+----
+
+[[protecting_against_overflows_sec]]
+=== Protección Contra errores de Desbordamiento a Nivel del Compilador
+
+((("compilando","protección contra errores de desbordamiento a nivel del compilador")))((("desbordamiento","protección en contra del")))((("Vyper","protección contra el desbordamiento")))Los errores de desbordamiento en software pueden ser catastróficos cuando se manejan activos reales. Por ejemplo, una http://bit.ly/2yHfvoF[transacción de mediados de abril de 2018] muestra la  pass:[<span class="keep-together">transferencia maliciosa de más de 57.896.044.618.658.100.000.000.000.000.000.000.000.000,&thinsp;</span>]000.000.000.000.000.000 tokens BEC. Esta transacción fue el resultado de un problema de desbordamiento de enteros en el contrato de un token ERC20 llamado BeautyChain (_BecToken.sol_). Los desarrolladores de Solidity tienen acceso a bibliotecas como http://bit.ly/2ABhb4l[+SafeMath+], así como a herramientas de análisis de seguridad de contratos inteligentes de Ethereum como http://bit.ly/2CQRoGU[Mythril OSS]. Sin embargo, los desarrolladores no están obligados a utilizar las herramientas de seguridad. En pocas palabras, si el lenguaje no aplica la seguridad, los desarrolladores pueden escribir código inseguro que se compilará con éxito y luego se ejecutará "exitosamente".
+
+Vyper tiene una protección contra desbordamiento incorporada, implementada en un enfoque de dos puntas. En primer lugar, Vyper proporciona http://bit.ly/2PuDfpB[un equivalente a +SafeMath+] que incluye los casos de excepción necesarios para la aritmética de enteros. En segundo lugar, Vyper usa "abrazaderas" cada vez que se carga una constante literal, se pasa un valor a una función o se asigna una variable. Las abrazaderas se implementan mediante funciones personalizadas en el compilador de lenguaje similar a Lisp de bajo nivel (LLL) y no se pueden desactivar. (El compilador de Vyper genera código LLL en lugar de código binario para la EVM; esto simplifica el desarrollo de Vyper en sí).
+
+
+[[reading_and_writing_data_sec]]
+=== Leyendo y Escribiendo Datos
+((("Vyper","leyendo/escribiendo data")))Si bien es costoso almacenar, leer y modificar datos, estas operaciones de almacenamiento son un componente necesario de la mayoría de los contratos inteligentes. Los contratos inteligentes pueden escribir datos en dos lugares:
+
+Estado Global:: ((("árbol de estado global")))Las variables de estado en un contrato inteligente dado, se almacenan en el árbol de estado global de Ethereum; un contrato inteligente solo puede almacenar, leer y modificar datos en relación con la dirección de ese contrato en particular (es decir, los contratos inteligentes no pueden leer ni escribir en otros contratos inteligentes).
+
+Logs:: ((("logs, Vyper")))Un contrato inteligente también puede escribir en los datos de la cadena de Ethereum a través de eventos de registro, o "logs". Si bien Vyper inicialmente empleó la sintaxis pass:[<code>__log__</code>] para declarar estos eventos, se ha realizado una actualización que trae su declaración de eventos más en línea con la sintaxis original de Solidity. Por ejemplo, la declaración de Vyper de un evento llamado `MyLog` era originalmente `MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes[3])})`. La sintaxis ahora se ha convertido en `MyLog: event({arg1: indexed(bytes[3])})`. Es importante notar que la ejecución del evento de registro en Vyper fue, y sigue siendo, como sigue: `log.MyLog("123")`.
+
+Si bien los contratos inteligentes pueden escribir en los datos de la cadena de bloques de Ethereum (a través de eventos de registro), no pueden leer los eventos de registro en cadena que han creado. No obstante, una de las ventajas de escribir en los datos de la cadena de Ethereum a través de eventos de registro es que los clientes ligeros pueden descubrir y leer los registros en la cadena pública. Por ejemplo, el valor +logsBloom+ en un bloque minado puede indicar si un evento de registro está presente o no. Una vez que se ha establecido la existencia de eventos de registro, los datos de registro se pueden obtener de un recibo de transacción determinado.
+
+
+=== Conclusiones
+
+Vyper es un nuevo lenguaje de programación orientado a contratos, potente e interesante. Su diseño está sesgado hacia la "correctitud", a expensas de cierta flexibilidad. Esto puede permitir a los programadores escribir mejores contratos inteligentes y evitar ciertos escollos que provocan la aparición de vulnerabilidades graves. A continuación, analizaremos la seguridad de los contratos inteligentes con más detalle. Algunos de los matices del diseño de Vyper pueden volverse más evidentes una vez que lea sobre todos los posibles problemas de seguridad que pueden surgir en los contratos inteligentes.(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc0")))

@@ -1,0 +1,685 @@
+[[evm_chapter]]
+==以太坊虚拟机
+
+((("EVM (Ethereum Virtual Machine)", id="ix_13evm-asciidoc0", range="startofrange"))) 以太坊协议和操作的核心是以太坊虚拟机，简称EVM。正如你可能从名称中猜测的那样，它是一个计算引擎，与Microsoft的.NET Framework的虚拟机或与其他字节码编译的编程语言（例如Java）的解释器没有很大的不同。在本章中，我们详细介绍了以太坊状态更新范围内的EVM，包括其指令集，结构和操作。
+
+[[evm_description]]
+===什么是EVM？
+((("EVM (Ethereum Virtual Machine)","about"))) EVM是以太坊的一部分，用于处理智能合约的部署和执行。实际上，从一个EOA到另一个EOA的简单的价值转移交易不需要涉及它，但是其他所有事情都将涉及由EVM计算的状态更新。从较高的角度来看，以太坊区块链上运行的EVM可以看作是一个全球分布的计算机，其中包含数百万个可执行对象，每个对象都有自己的永久数据存储。
+
+(("Turing completeness","EVM and"))) EVM是一个准图灵完备的– Turing-complete状态机； “准”是因为所有执行过程都受任何给定智能合约执行可用的燃料gas量限制为有限的计算步骤。这样，暂停问题得到了“解决”（所有程序执行都将停止），并且避免了执行可能（偶然或恶意）永远运行，从而使以太坊平台整体停止的情况。
+
+EVM具有基于堆栈的体系结构，可将所有内存中的值存储在堆栈中。它的字长为256位（主要是为了促进本机哈希和椭圆曲线操作），并且具有几个可寻址的数据组件：
+
+[role =“ pagebreak-before”]
+*不可改变的_程序代码ROM_，装载有要执行的智能合约的字节码
+*动态内存_memory_，每个位置都确定初始化为零
+*永久存储，作为以太坊状态的一部分，也是初始化为零的
+
+执行期间还有一组环境变量和数据可用。我们将在本章后面详细介绍这些内容。
+
+<<evm_architecture>>显示了EVM架构和执行内容。
+
+[[evm_architecture]]
+以太坊虚拟机（EVM）架构和执行内容
+image::images/evm-architecture.png["The Ethereum Virtual Machine (EVM) Architecture and Execution Context"]
+
+[[evm_comparison]]
+====与现有技术的比较
+
+((("EVM (Ethereum Virtual Machine)","comparison with existing technology"))) “虚拟机”一词通常用于真实计算机的虚拟化，通常是由“管理程序”（例如VirtualBox或QEMU）来实现的，或整个操作系统实例（例如Linux的KVM）。这些必须分别提供实际硬件，系统调用和其他内核功能的软件抽象。
+
+EVM在一个更为有限的域中运行：它只是一个计算引擎，因此仅提供了计算和存储的抽象，类似于Java虚拟机（JVM）规范。从高级的角度来看，JVM旨在提供与底层主机OS或硬件无关的运行环境，从而实现跨多种系统的兼容性。诸如Java或Scala（使用JVM）或C＃（使用.NET）之类的高级编程语言被编译为它们各自虚拟机的字节码指令集。以同样的方式，EVM执行自己的字节码指令集（在下一节中介绍），这些高级指令集编程语言（例如LLL，Serpent，Mutan或Solidity）将被编译到其中。
+
+因此，EVM不具有调度功能，因为执行顺序是在其外部组织的—以太坊客户端运行经过验证的区块交易，以确定哪些智能合约需要执行以及执行顺序。从这个意义上讲，以太坊世界计算机是单线程的，就像JavaScript。 EVM没有任何“系统接口”处理或“硬件支持”，也没有与之交互的物理计算机。以太坊世界计算机是完全虚拟的。
+
+[[evm_bytecode_overview]]
+==== EVM指令集（字节码操作）
+
+((("bytecode operations", id="ix_13evm-asciidoc1", range="startofrange")))((("EVM (Ethereum Virtual Machine)","instruction set (bytecode operations)", id="ix_13evm-asciidoc2", range="startofrange")))((("EVM bytecode","instruction set", id="ix_13evm-asciidoc3", range="startofrange"))) EVM指令集提供了大多数你可能期望的操作，包括：
+
+*算术和按位逻辑运算
+*执行上下文查询
+*堆栈，内存和存储访问
+*控制流程操作
+*记录，调用和其他操作符
+
+除了典型的字节码操作外，EVM还可以访问帐户信息（例如地址和余额）和区块信息（例如区块编号和当前燃料gas价格）。
+
+让我们通过查看可用的操作码及其作用来更详细地探讨EVM。如你所料，所有操作数都是从堆栈中取出的，结果（如果适用）通常是
+放回堆栈顶部。
+
+[NOTE]
+====
+操作码的完整列表及其相应的燃料消耗量可在<<evm_opcodes>>中看到。
+====
+
+可用的操作码可以分为以下几类：
+
+[[arithmetic_opcodes]]
+算术运算：：算术操作码指令：
++
+----
+ADD        //Add the top two stack items
+MUL        //Multiply the top two stack items
+SUB        //Subtract the top two stack items
+DIV        //Integer division
+SDIV       //Signed integer division
+MOD        //Modulo (remainder) operation
+SMOD       //Signed modulo operation
+ADDMOD     //Addition modulo any number
+MULMOD     //Multiplication modulo any number
+EXP        //Exponential operation
+SIGNEXTEND //Extend the length of a two's complement signed integer
+SHA3       //Compute the Keccak-256 hash of a block of memory
+----
++
+注意，所有算术均以2 ^ 256 ^为模（除非另有说明），并且零的零次幂0 ^ 0 ^取为1。
+
+
+[[stack_opcodes]]
+堆栈操作：：堆栈，内存和存储管理指令：
++
+----
+POP     //Remove the top item from the stack
+MLOAD   //Load a word from memory
+MSTORE  //Save a word to memory
+MSTORE8 //Save a byte to memory
+SLOAD   //Load a word from storage
+SSTORE  //Save a word to storage
+MSIZE   //Get the size of the active memory in bytes
+PUSHx   //Place x byte item on the stack, where x can be any integer from
+        // 1 to 32 (full word) inclusive
+DUPx    //Duplicate the x-th stack item, where x can be any integer from
+        // 1 to 16 inclusive
+SWAPx   //Exchange 1st and (x+1)-th stack items, where x can be any
+        // integer from 1 to 16 inclusive
+----
+
+
+[[flow_opcodes]]
+流程操作：：控制流程说明：
++
+----
+STOP      //Halt execution
+JUMP      //Set the program counter to any value
+JUMPI     //Conditionally alter the program counter
+PC        //Get the value of the program counter (prior to the increment
+          //corresponding to this instruction)
+JUMPDEST  //Mark a valid destination for jumps
+----
+
+[[system_opcodes]]
+系统操作：：执行程序的系统的操作码：
++
+----
+LOGx          //Append a log record with x topics, where x is any integer
+              //from 0 to 4 inclusive
+CREATE        //Create a new account with associated code
+CALL          //Message-call into another account, i.e. run another
+              //account's code
+CALLCODE      //Message-call into this account with another
+              //account's code
+RETURN        //Halt execution and return output data
+DELEGATECALL  //Message-call into this account with an alternative
+              //account's code, but persisting the current values for
+              //sender and value
+STATICCALL    //Static message-call into an account
+REVERT        //Halt execution, reverting state changes but returning
+              //data and remaining gas
+INVALID       //The designated invalid instruction
+SELFDESTRUCT  //Halt execution and register account for deletion
+----
+
+[[logic_opcides]]
+逻辑运算：：用于比较和按位逻辑的操作码：
++
+----
+LT     //Less-than comparison
+GT     //Greater-than comparison
+SLT    //Signed less-than comparison
+SGT    //Signed greater-than comparison
+EQ     //Equality comparison
+ISZERO //Simple NOT operator
+AND    //Bitwise AND operation
+OR     //Bitwise OR operation
+XOR    //Bitwise XOR operation
+NOT    //Bitwise NOT operation
+BYTE   //Retrieve a single byte from a full-width 256-bit word
+----
+
+[[environment_opcodes]]
+环境操作：：处理执行环境信息的操作码：
++
+----
+GAS            //Get the amount of available gas (after the reduction for
+               //this instruction)
+ADDRESS        //Get the address of the currently executing account
+BALANCE        //Get the account balance of any given account
+ORIGIN         //Get the address of the EOA that initiated this EVM
+               //execution
+CALLER         //Get the address of the caller immediately responsible
+               //for this execution
+CALLVALUE      //Get the ether amount deposited by the caller responsible
+               //for this execution
+CALLDATALOAD   //Get the input data sent by the caller responsible for
+               //this execution
+CALLDATASIZE   //Get the size of the input data
+CALLDATACOPY   //Copy the input data to memory
+CODESIZE       //Get the size of code running in the current environment
+CODECOPY       //Copy the code running in the current environment to
+               //memory
+GASPRICE       //Get the gas price specified by the originating
+               //transaction
+EXTCODESIZE    //Get the size of any account's code
+EXTCODECOPY    //Copy any account's code to memory
+RETURNDATASIZE //Get the size of the output data from the previous call
+               //in the current environment
+RETURNDATACOPY //Copy data output from the previous call to memory
+----
+
+[[block_opcodes]]
+区块操作：：用于访问当前区块信息的操作码：(((range="endofrange", startref="ix_13evm-asciidoc3")))(((range="endofrange", startref="ix_13evm-asciidoc2")))(((range="endofrange", startref="ix_13evm-asciidoc1")))
++
+----
+BLOCKHASH  //Get the hash of one of the 256 most recently completed
+           //blocks
+COINBASE   //Get the block's beneficiary address for the block reward
+TIMESTAMP  //Get the block's timestamp
+NUMBER     //Get the block's number
+DIFFICULTY //Get the block's difficulty
+GASLIMIT   //Get the block's gas limit
+----
+
+[[evm_state_descriptions]]
+====以太坊状态
+
+((("EVM (Ethereum Virtual Machine)","Ethereum state updating"))) EVM的工作是通过计算由于执行智能合约代码而产生的有效状态转换来更新以太坊状态，以太坊定义协议。这方面导致以太坊被描述为“基于交易的状态机”，这反映了以下事实：外部参与者（即帐户持有人和矿工）通过创建，接受和订购交易来发起状态转换。这时考虑一下以太坊状态的构成是有用的。
+
+((("world state")))At the top level, we have the Ethereum _world state_. The world state is a mapping of Ethereum addresses (160-bit values) to ((("account","world state and")))_accounts_. ((("balance, world state and")))((("nonces","world state and"))) 在较低级别，每个以太坊地址代表一个包含以太币余额_balance_（存储为wei数的账户）该帐户拥有的），交易计数_ nonce_（如果是EOA，则表示从该帐户成功发送的交易数量；如果是合约帐户，则表示由该帐户创建的合约数量），该帐户的存储_storage_（这是永久数据的存储，仅由智能合约使用）和帐户的_程序代码_（同样，仅当该帐户是智能合约帐户时）。一个EOA将始终没有代码，并且存储空间为空。
+
+////
+TODO：基本图，显示全局状态映射的结构和帐户结构
+////
+
+当通过交易执行智能合约代码时，将使用与创建当前区块和正在处理的特定交易有关的所有所需信息实例化EVM。特别是，将EVM的程序代码ROM装入被调用的合约帐户的代码，将程序计数器设置为零，从合约帐户的存储器中装入存储，将存储器设置为全零，并将所有区块和环境变量设置好。一个关键变量是执行此操作所需的燃料量，该变量设置为发送方在交易开始时支付的燃料量（请参见<<gas>>了解更多信息）。随着代码执行的进行，根据所执行操作的燃料成本减少燃料供应量。如果在任何时候燃料供应量减少到零，我们都会收到“ Out of Gas”（OOG）异常；执行立即停止，交易被放弃。以太坊状态不做任何改变，除了增加发送者的交易计数nonce，并且将其以太币余额扣除向区块的受益者支付执行代码到暂停点的资源量。此时，你可以考虑在以太坊全局状态的沙盒副本上运行EVM，如果由于某种原因执行无法完成，则将完全丢弃此沙盒版本。但是，如果执行确实成功完成，则将更新实际状态以匹配沙盒版本，包括对被调用合约的存储数据的任何更改，创建的任何新合约以及已启动的任何以太币余额转移。
+
+请注意，由于智能合约本身可以有效地启动交易，因此代码执行是一个递归过程。合约可以调用其他合约，每次调用都会导致在调用的新目标周围实例化另一个EVM。每个实例的沙盒世界状态都是从上述级别的EVM的沙盒初始化的。每次实例化还为其提供了一定数量的燃料供应（当然，不超过上述水平上剩余的燃料量），因此自身可能会由于没有得到足够的燃料而停止执行的情况而停止运行。同样，在这种情况下，沙盒状态将被丢弃，执行将返回上一级的EVM。
+
+[[compiling_solidity_to_evm]]
+====将Solidity编译为EVM字节码
+
+[[solc_help]]
+((("EVM (Ethereum Virtual Machine)","compiling Solidity to EVM bytecode", id="ix_13evm-asciidoc4", range="startofrange")))((("EVM bytecode","compiling source file to", id="ix_13evm-asciidoc5", range="startofrange")))((("Solidity","compiling source file to EVM bytecode", id="ix_13evm-asciidoc6", range="startofrange"))) 将Solidity源文件编译为EVM字节码可以有多种方式。在<<intro_chapter>>我们使用了在线Remix编译器。在本章中，我们将在命令行中使用+ solc +可执行文件。有关选项列表，请运行以下过程：[ <span class="keep-together">command</span> ]：
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --help</strong>
+</pre>
+++++
+
+[[solc_opcodes_option]]
+使用+-opcodes +命令行选项可以轻松实现生成Solidity源文件的原始操作码流。该操作码流省略了一些信息（+-asm +选项产生了完整的信息），但是对于此讨论而言已足够。例如，使用以下命令来完成示例Solidity文件_Example.sol_的编译并将操作码输出发送到名为_BytecodeDir_的目录中：
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --opcodes Example.sol</strong>
+</pre>
+++++
+
+或者：
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --asm Example.sol</strong>
+</pre>
+++++
+
+[[solc_bin_option]]
+以下命令将为我们的示例程序生成字节码的二进制文件：
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --bin Example.sol</strong>
+</pre>
+++++
+
+生成的输出操作码文件将取决于Solidity源文件中包含的特定合约。我们简单的Solidity文件_Example.sol_只有一个合约，名为+ example +：
+
+[[simple_solidity_example]]
+[source,solidity]
+----
+pragma solidity ^0.4.19;
+
+contract example {
+
+  address contractOwner;
+
+  function example() {
+    contractOwner = msg.sender;
+  }
+}
+----
+
+如你所见，此合约仅执行一个永久状态变量，该变量设置为运行该合约的最后一个帐户的地址。
+
+如果查看_BytecodeDir_目录，你将看到操作码文件_example.opcode_，其中包含+ example +合约的EVM操作码指令。在文本编辑器中打开_example.opcode_文件将显示以下内容：
+
+[[opcode_output]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1
+REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1
+0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1
+0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP
+0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5
+0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27
+EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
+----
+
+使用+-asm +选项编译示例会在_BytecodeDir_目录中生成一个名为_example.evm_的文件。这包含对EVM字节码指令的更高层次的描述，以及一些有用的注释：
+
+[[asm_output]]
+[source,solidity]
+----
+/* "Example.sol":26:132  contract example {... */
+  mstore(0x40, 0x60)
+    /* "Example.sol":74:130  function example() {... */
+  jumpi(tag_1, iszero(callvalue))
+  0x0
+  dup1
+  revert
+tag_1:
+    /* "Example.sol":115:125  msg.sender */
+  caller
+    /* "Example.sol":99:112  contractOwner */
+  0x0
+  dup1
+    /* "Example.sol":99:125  contractOwner = msg.sender */
+  0x100
+  exp
+  dup2
+  sload
+  dup2
+  0xffffffffffffffffffffffffffffffffffffffff
+  mul
+  not
+  and
+  swap1
+  dup4
+  0xffffffffffffffffffffffffffffffffffffffff
+  and
+  mul
+  or
+  swap1
+  sstore
+  pop
+    /* "Example.sol":26:132  contract example {... */
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x0
+  codecopy
+  0x0
+  return
+stop
+
+sub_0: assembly {
+        /* "Example.sol":26:132  contract example {... */
+      mstore(0x40, 0x60)
+      0x0
+      dup1
+      revert
+
+    auxdata: 0xa165627a7a7230582056b99dcb1edd3eece01f27c9649c5abcc14a435efe3b...
+}
+----
+
++-bin-runtime +选项产生机器可读的十六进制字节码：
+
+[[bin_output]]
+----
+60606040523415600e57600080fd5b336000806101000a81548173
+ffffffffffffffffffffffffffffffffffffffff
+021916908373
+ffffffffffffffffffffffffffffffffffffffff
+160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b...
+----
+
+你可以使用<<evm_bytecode_overview>>中给出的操作码列表来详细调查这里发生的问题。但是，这是一项艰巨的任务，所以让我们从检查前四个指令开始：
+
+[[opcode_analysis_1]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE
+----
+
+在这里，我们有+ PUSH1 +，后跟一个原始值+0x60+。此EVM指令将程序代码中操作码后的单个字节（作为文字值）放入堆栈中。可以将最大为32个字节的大小的值压入堆栈，如下所示：
+
+----
+PUSH32 0x436f6e67726174756c6174696f6e732120536f6f6e20746f206d617374657221
+----
+
+_example.opcode_中的第二个+ PUSH1 +操作码将+0x40+存储到堆栈的顶部（将已经存在的+0x60+推入下面一个位置）。
+
+接下来是+ MSTORE +，这是一种内存存储操作，可将值保存到EVM的内存中。它需要两个参数，并且像大多数EVM操作一样，从堆栈中获取它们。对于每个参数，堆栈通过：[“ popped”;]，即，将堆栈上的最高值取走，并将堆栈上的所有其他值上移一个位置。 + MSTORE +的第一个参数是内存中要存储值的词的地址。对于此程序，我们在堆栈顶部有+0x40+，因此将其从堆栈中删除并用作内存地址。第二个参数是要保存的值，此处为+0x60+。执行+ MSTORE +操作后，我们的堆栈再次为空，但是在内存位置+0x40+处我们有值+0x60+（十进制+96+）。
+
+下一个操作码是+ CALLVALUE +，这是一个环境操作码，它将随启动此执行的消息调用发送的以太币（以wei为单位）推入堆栈的顶部。
+
+我们可以继续以这种方式逐步执行该程序，直到我们完全理解此代码所导致的低级状态更改，但是在此阶段没有帮助。我们将在本章后面再讨论它。 (((range="endofrange", startref="ix_13evm-asciidoc6")))(((range="endofrange", startref="ix_13evm-asciidoc5")))(((range="endofrange", startref="ix_13evm-asciidoc4")))
+
+[[contract_deployment_code]]
+====合约的部署代码
+
+((("EVM (Ethereum Virtual Machine)","contract deployment code", id="ix_13evm-asciidoc7", range="startofrange")))((("EVM bytecode","contract deployment code", id="ix_13evm-asciidoc8", range="startofrange"))) 在以太坊平台上创建和部署新合约时使用的代码与合约本身的代码之间存在重要但微妙的区别。为了创建新合约，需要一个特殊的交易，该交易的+ to +字段设置为特殊的+0x0+地址，其+ data +字段设置为合约的_initiation code_。处理此类创建合约交易时，新合约帐户的代码不是该交易的+ data +字段中的代码。取而代之的是，EVM会使用加载到其程序代码ROM中的交易的+ data +字段中的代码实例化，然后将该部署代码的执行输出作为新合约帐户的代码。这样一来，可以在部署时使用以太坊全局状态以编程方式初始化新合约，在合约存储中设置值，甚至发送以太币或创建其他新合约。
+
+脱机编译合约时（例如，在命令行上使用+ solc +），您可以获取部署用_deployment字节码_或运行用_runtime字节码_。
+
+((("deployment bytecode"))) 部署字节码用于新合约帐户初始化的每个方面，包括当交易调用该新合约时最终将最终执行的字节码（即运行时字节码）以及根据合约的构造函数初始化所有内容的代码。
+
+((("runtime bytecode"))) 另一方面，运行时字节码是在调用新协定时最终被执行的字节码，仅此而已；它不包括部署期间初始化合约所需的字节码。
+
+让我们以前面创建的简单_Faucet.sol_合约为例：
+
+[[faucet_example]]
+[source,solidity]
+----
+// Version of Solidity compiler this program was written for
+pragma solidity ^0.4.19;
+
+// Our first contract is a faucet!
+contract Faucet {
+
+  // Give out ether to anyone who asks
+  function withdraw(uint withdraw_amount) public {
+
+      // Limit withdrawal amount
+      require(withdraw_amount <= 100000000000000000);
+
+      // Send the amount to the address that requested it
+      msg.sender.transfer(withdraw_amount);
+    }
+
+  // Accept any incoming amount
+  function () external payable {}
+
+}
+----
+
+为了获得部署的二进制字节码，我们将运行`solc --bin Faucet.sol`。如果只需要运行时字节码，则可以运行pass：[ <code>solc --bin-runtime <span class="keep-together">Faucet.sol</span></code> ]。
+
+如果比较这些命令的输出，你将看到运行时字节码是部署字节码的子集。换句话说，运行时字节码完全包含在部署字节码中。(((range="endofrange", startref="ix_13evm-asciidoc8")))(((range="endofrange", startref="ix_13evm-asciidoc7")))
+
+[[disassembling_the_bytecode]]
+====反汇编字节码
+
+((("EVM (Ethereum Virtual Machine)","disassembling bytecode", id="ix_13evm-asciidoc9", range="startofrange")))((("EVM bytecode","disassembling", id="ix_13evm-asciidoc10", range="startofrange"))) 反汇编EVM字节码是了解高级Solidity如何在EVM中起作用的好方法。你可以使用一些反汇编程序来执行此操作：
+
+- https://github.com/comaeio/porosity[_Porosity_] 是一个流行的开源反编译工具.
+-https://github.com/trailofbits/ethersplay[_Ethersplay_] 是反汇编程序Binary Ninja的EVM插件。
+-https://github.com/trailofbits/ida-evm[_IDA-Evm_] 是另一个反汇编程序IDA的EVM插件。
+
+在本节中，我们将使用Binary Ninja的Ethersplay插件并启动<<Faucet_disassembled>>。在获得_Faucet.sol_的运行时字节码后，我们可以将其输入Binary Ninja（在加载Ethersplay插件之后），以查看EVM指令的外观。
+
+[[Faucet_disassembled]]
+.反汇编运行水龙头合约的字节码
+image::images/Faucet_disassembled.png["Faucet.sol runtime bytecode disassembled"]
+
+当你将交易发送到兼容ABI的智能合约（您可以假定所有合约都是）时，交易首先会与该智能合约的_dispatcher_进行交互。调度程序读取交易的+ data +字段，并将相关部分发送到适当的功能。在反汇编的_Faucet.sol_运行时字节码的开头，我们可以看到调度程序的示例。在熟悉的+ MSTORE +指令之后，我们看到以下指令：
+
+[[faucet_instructions]]
+----
+PUSH1 0x4
+CALLDATASIZE
+LT
+PUSH1 0x3f
+JUMPI
+----
+
+如我们所见，+ PUSH1 0x4 +将+0x4+放到栈顶，否则为空。 + CALLDATASIZE +获取随交易发送的数据的字节大小（称为_calldata_），并将该数字压入堆栈。执行完这些操作后，堆栈如下所示：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<length of calldata from tx>
+|+0x4+
+|======================
+
+下一条指令是+ LT +，是“小于”的缩写。 + LT +指令检查堆栈中的第一项是否小于堆栈中的下一项。在我们的例子中，它检查+ CALLDATASIZE +的结果是否小于4个字节。
+
+为什么EVM会检查交易的调用数据至少为4个字节？由于功能标识符的工作方式。每个函数由其Keccak-256哈希的前4个字节标识。通过在+ keccak256 +散列函数中放置函数的名称及其需要的参数，我们可以推导出其函数标识符。就我们而言，我们有：
+
+[[faucet_function_identifier]]
+```
+keccak256("withdraw(uint256)") = 0x2e1a7d4d...
+```
+
+因此，+ withdraw（uint256）+函数的函数标识符为+0x2e1a7d4d+，因为它们是结果哈希的前4个字节。函数标识符的长度始终为4个字节，因此，如果发送给合约的交易的整个+ data +字段小于4个字节，那么除非定义了后备函数_fallback function_，否则没有函数可以与交易进行通信。因为我们在_Faucet.sol_中实现了这种后备功能，所以当calldata的长度小于4个字节时，EVM会跳转到该函数。
+
++ LT +从堆栈中弹出前两个值，如果交易的+ data +字段小于4个字节，则将+1+压入堆栈。否则，按+0+。在我们的示例中，假设发送到合约_was_的交易的+ data +字段小于4个字节。
+
++ PUSH1 0x3f +指令将字节+0x3f +压入堆栈。完成此指令后，堆栈如下所示：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x3f+
+|+1+
+|======================
+
+下一条指令是+ JUMPI +，代表“jump if”。它的工作原理如下：
+
+[[faucet_jump_instruction_text]]
+----
+jumpi(label, cond) // Jump to "label" if "cond" is true
+----
+
+在我们的案例中，+ label +是+0x3f +，这是我们的后备函数存在于我们的智能合约中的地方。 + cond +参数为+1+，这是先前+ LT +指令的结果。为了将整个序列写成文字，如果交易数据少于4个字节，则合约跳至后备功能。
+
+在+0x3f+处，仅跟随+ STOP +指令，因为尽管我们声明了后备函数，但仍将其保留为空。如你在<<Faucet_jumpi_instruction>>所见，如果我们未实现后备函数，则合约将抛出异常。
+
+[[Faucet_jumpi_instruction]]
+.JUMPI指令指向后备函数
+image::images/Faucet_jumpi_instruction.png["JUMPI instruction leading to fallback function"]
+
+让我们检查调度程序的中央模块。假设我们收到的调用数据长度大于4个字节，那么+ JUMPI +指令将不会跳转到后备函数。而是，代码执行将继续执行以下指令：
+
+[[faucet_instructions2]]
+----
+PUSH1 0x0
+CALLDATALOAD
+PUSH29 0x1000000...
+SWAP1
+DIV
+PUSH4 0xffffffff
+AND
+DUP1
+PUSH4 0x2e1a7d4d
+EQ
+PUSH1 0x41
+JUMPI
+----
+
++ PUSH1 0x0 +将+0+压入堆栈，否则堆栈将再次为空。 + CALLDATALOAD +接受发送到智能合约的调用数据中的索引作为参数，并从该索引中读取32个字节，如下所示：
+
+[[faucet_calldataload_instruction_text]]
+----
+calldataload(p) //load 32 bytes of calldata starting from byte position p
+----
+
+由于+0+是+ PUSH1 0x0 +命令传递给它的索引，因此+ CALLDATALOAD +读取从字节0开始的32个字节的调用数据，然后将其推入堆栈的顶部（在弹出原始+ 0x0 +之后）。在++ PUSH29 0x1000000 ++ ...指令之后，堆栈为：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|++0x1000000++... (29 bytes in length)
+|<32 bytes of calldata starting at byte 0>
+|======================
+
++ SWAP1 +切换堆栈中的顶部元素，其后是第__i__个元素。在这种情况下，它将++0x1000000 ++ ...与调用数据交换。新的堆栈是：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<32 bytes of calldata starting at byte 0>
+|++0x1000000++... (29 bytes in length)
+|======================
+
+下一条指令是+ DIV +，其工作方式如下：
+
+[[faucet_div_instruction_text]]
+----
+div(x, y) // integer division x / y
+----
+
+在这种情况下，+ x + =从字节0开始的调用数据的32个字节，而+ y + = ++0x100000000 ++ ...（总共29个字节）。你能想到调度程序为什么要进行划分吗？这是一个提示：我们较早地从calldata读取了32个字节，从索引0开始。该calldata的前4个字节是函数标识符。
+
+
+我们之前推送的++0x100000000 ++ ...长29个字节，开头是+1+，后面是所有++0 ++。用这个值除以我们的32个字节的calldata字节将只剩下我们调用数据加载的_toptop 4个bytes_（从索引0开始）。这4个字节（即从索引0开始的calldata中的前4个字节）是函数标识符，是EVM提取该字段的方式。
+
+如果你不清楚此部分，请这样想：以10为底，1234000/1000 =1234。以16为底，这没什么不同。并非每个位置都是10的倍数，而是16的倍数。就像在我们较小的示例中被10 ^ 3 ^（1000）除以仅保留最高位一样，我们将32字节基数16的值除以16 ^ 29 ^也一样。
+
++ DIV +（函数标识符）的结果被压入堆栈，我们的堆栈现在为：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<function identifier sent in +data+>
+|======================
+
+由于+ PUSH4 0xffffffff +和+ AND +指令是多余的，因此我们可以完全忽略它们，因为完成后堆栈将保持不变。 + DUP1 +指令复制堆栈上的第一项，即功能标识符。下一条指令+ PUSH4 0x2e1a7d4d +将pass：[ <code><span class="keep-together">withdraw</span> (uint256)</code> ]函数的预先计算的函数标识符<code><span class="keep-together">withdraw</span> (uint256)</code>入堆栈。现在的堆栈是：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x2e1a7d4d+
+|<function identifier sent in +data+>
+|<function identifier sent in +data+>
+|======================
+
+下一条指令，+EQ+弹出堆栈的前两个项并进行比较。这是调度程序执行其主要工作的地方：它比较交易的+ msg.data +字段中发送的函数标识符是否与pass：[ <code><span class="keep-together">withdraw</span> (uint256)</code> ]的函数标识符匹配。如果它们相等，则+ EQ +将+1+压入堆栈，这将最终用于跳转到提现函数。否则，+ EQ +将+0+压入堆栈。
+
+假设发送给我们合约的交易确实以+ withdraw（uint256）+的功能标识符开头，我们的堆栈就变成了：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+1+
+|<function identifier sent in +data+> (now known to be +0x2e1a7d4d+)
+|======================
+
+接下来，我们有+ PUSH1 0x41 +，这是+ withdraw（uint256）+函数存在于合约中的地址。完成此指令后，堆栈如下所示：
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x41+
+|+1+
+|在+ msg.data +中发送的函数标识符
+|======================
+
+接下来是+ JUMPI +指令，它再次接受堆栈中的前两个元素作为参数。在这种情况下，我们有+ jumpi（0x41，1）+，它告诉EVM执行到+ withdraw（uint256）+函数位置的跳转，然后可以继续执行该函数的代码。(((range="endofrange", startref="ix_13evm-asciidoc10")))(((range="endofrange", startref="ix_13evm-asciidoc9")))
+
+[[turing_completeness_and_gas]]
+===图灵完整性和燃料
+
+((("EVM (Ethereum Virtual Machine)","Turing completeness and Gas")))((("Turing completeness","EVM and"))) 我们已经简单地谈到了系统或如果可以运行任何程序，则编程语言为图灵完备_Turing complete_。但是，此功能有一个非常重要的警告：一些程序会永远运行。其中一个重要方面是，仅通过查看程序并无法确定它是否将永远执行。我们实际上必须完成程序的执行，并等待其完成才能找到答案。((("halting problem"))) 当然，如果要花很长时间才能执行，我们将不得不永远等待找出答案。这被称为“暂停问题”，如果不解决的话，对以太坊将是一个巨大的问题。
+
+由于停止问题，以太坊世界计算机有被要求执行永不停止的程序的风险。这可能是偶然的或恶意的。我们已经讨论过，以太坊的行为就像没有任何调度程序的单线程机器一样，因此如果它陷入死循环，这将意味着它将变得不可用。
+
+但是，使用燃料就可以做出一个解决方案：如果在执行了预定的最大数量的计算之后，执行尚未结束，则EVM将停止程序的执行。这使EVM成为一台“准”车床：它可以运行你输入到其中的任何程序，但前提是该程序在特定的计算量内终止。该限制在以太坊中不是固定的，你可以付费将其增加到最大（称为“区块燃料限制”），每个人都可以同意随时间增加该最大限制。但是，在任何时候都存在一个限制，并且在执行时消耗过多燃料的交易会通过：[<span class="keep-together">停止</span>]。
+
+在以下各节中，我们将研究燃料gas并详细研究其工作原理。
+
+[[gas]]
+=== 燃料Gas
+
+((("EVM (Ethereum Virtual Machine)","gas and", id="ix_13evm-asciidoc11", range="startofrange")))((("gas","EVM and", id="ix_13evm-asciidoc12", range="startofrange"))) 燃料_ Gas_是用于衡量在以太坊区块链上执行操作所需的计算和存储资源的单位。与比特币不同，比特币的交易费用仅考虑了交易以千字节为单位的大小，以太坊必须考虑到交易和智能合约代码执行所执行的每个计算步骤。
+
+交易或合约执行的每个操作都消耗固定量的燃料。以太坊黄皮书中的一些示例：
+
+*两个数字相加将花费3个gas
+*计算Keccak-256哈希的费用为30个燃料+6个燃料每个要哈希的每256位数据
+*发送交易需要花费21,000个gas
+
+燃料是以太坊的重要组成部分，具有双重作用：作为以太坊（波动）价格与矿工获得的报酬之间的缓冲，以及防御拒绝服务攻击。为了防止网络中意外或恶意的无限循环或其他计算浪费，要求每个交易的发起者为他们愿意支付的计算量设置一个限制。燃料系统因此使攻击者无法发送“垃圾”交易，因为他们必须按比例支付他们消耗的计算，带宽和存储资源。
+
+[[gas_accounting_execution]]
+====执行期间的燃料计算
+((("EVM (Ethereum Virtual Machine)","gas accounting during execution")))((("gas","accounting during execution"))) 首先需要EVM来完成交易时所提供的燃料供应量等于交易中的燃料限制所指定的数量。每个执行的操作码都需要花费大量的燃料，因此，随着EVM逐步执行该程序，EVM的燃料供应将减少。在执行每个操作之前，EVM会检查是否有足够的燃料来支付操作的执行费用。如果没有足够的燃料，将停止执行并还原交易。
+
+如果EVM成功达到执行结束而又没有用尽燃料，则将所用的燃料成本作为交易费用支付给矿工，并根据交易中指定的燃料价格转换为以太币：
+
+----
+miner fee = gas cost * gas price
+----
+
+
+供气中剩余的燃料将退还给发送方，并根据交易中指定的燃料价格再次转换为以太币：
+
+----
+remaining gas = gas limit - gas cost
+refunded ether = remaining gas * gas price
+----
+
+如果在执行过程中交易“用完了”燃料，则操作将立即终止，从而引发“用完”异常。交易将还原，并且对状态的所有更改都将回滚。
+
+尽管交易未成功，但将向发送方收取交易费，因为矿工在该点之前已经执行了计算工作，因此必须为此付费。
+
+====燃料计算注意事项
+
+((("EVM (Ethereum Virtual Machine)","gas accounting considerations")))((("gas","accounting considerations"))) EVM可以执行的各种操作的相对燃料成本是精心设计过的，以最好地保护以太坊区块链免受攻击。你可以在<<evm_opcodes_table>>中看到一个燃料费用的详细列表。
+
+计算量更大的操作会消耗更多的燃料。例如，执行+ SHA3 +功能（+30 gas）的成本是+ ADD +操作（+3 gas）的10倍。更重要的是，某些操作（例如+ EXP +）需要根据操作数的大小进行额外支付。使用EVM内存以及将数据存储在合约的链上存储中也会产生巨大的燃料成本。
+
+2016年，当攻击者发现并利用成本不匹配时，证明了将燃料成本与实际资源成本相匹配的重要性。攻击产生的交易在计算上非常昂贵，并使以太坊主网几乎停滞不前。这种不匹配问题通过硬分叉（代号为“ Tangerine Whistle”）得以解决，该分叉调整了相对的燃料成本。
+
+====燃料成本与燃料价格
+((("EVM (Ethereum Virtual Machine)","gas cost vs. gas price")))((("gas","cost vs. price")))((("gas cost, gas price vs."))) 尽管燃料成本是EVM中使用的计算和存储量度，但燃料本身也具有以以太币为单位的价格。在进行交易时，发送方指定他们愿意为每种单位燃料支付的燃料价格（以以太币为单位），从而允许市场决定以太币价格与计算操作成本（以燃料为单位）之间的关系。 ：
+
+----
+交易费用=使用的燃料总量*支付的燃料价格（以以太币计算）
+----
+
+当建造一个新区块时，以太坊网络上的矿工可以通过选择愿意支付更高燃料价格的交易来选择未决交易。因此，提供更高的燃料价格将激励矿工加入你的交易并更快地确认交易。
+
+实际上，交易的发送者将设置一个燃料限制，该限制高于或等于预期使用的燃料量。如果将燃料限制设置为高于所消耗的燃料量，则发件人将获得超出部分的退款，因为矿工仅对其实际执行的工作得到补偿。
+
+重要的是要清楚燃料成本_gas cost_和燃料价格_gas price_之间的区别。回顾一下：
+
+*燃料成本是执行特定操作所需的燃料单位数。
+
+*燃料价格是你将交易发送到以太坊网络时愿意为每单位燃料支付的以太币数量。
+
+[TIP]
+====
+尽管燃料有价格，但它不能“拥有”或“消耗”。燃料仅存在于EVM内部，这是要执行多少计算工作的数量。向发送方收取以太币的交易费，然后将其转换为用于EVM记帐的燃料，然后又作为支付给矿工的交易费转回以太币。
+====
+
+
+=====燃料的负成本
+
+((("gas","negative costs"))) 以太坊通过退还合约执行过程中使用的一些燃料来鼓励删除用过的存储变量和帐户。
+
+EVM中有两项操作具有负的燃料成本：
+
+*销毁合约（+ SELFDESTRUCT +）可以退款24,000燃料。
+*将存储地址从非零值更改为零（+ SSTORE [x] = 0+）可获得15,000燃料的退款。
+
+为避免滥用退款机制，每次交易的最大退款应设置为所用燃料总量的一半（四舍五入）。
+
+====区块的燃料上限
+
+((("block gas limit")))((("EVM (Ethereum Virtual Machine)","block gas limit")))((("gas","block gas limit"))) 区块的燃料限制是一个区块中所有交易可能消耗的最大燃料量，并且限制了一个区块中可以容纳的交易数量。
+
+例如，假设我们有5个交易的燃料上限已设置为30,000、30,000、40,000、50,000和50,000。如果区块燃料限制为180,000，则这些交易中的任何四笔交易都可以进入一个区块，而第五笔交易则必须等待将来的区块才能进入。如前所述，矿工决定将哪些交易包括在区块中。不同的矿工可能会选择不同的组合，主要是因为它们以不同的顺序从网络接收交易。
+
+如果矿工试图包括需要比当前区块燃料上限多的燃料的交易，则该区块将被网络拒绝。大多数以太坊客户会通过发出“交易超出燃料上限”的警告来阻止你进行此类交易。根据 https://etherscan.io 的数据，在撰写本文时，以太坊主网上的区块燃料上限为800万个燃料gas，这意味着一个区块可以容纳大约380个基本交易（每个交易消耗21,000个燃料）。
+
+=====谁来决定区块的燃料上限？
+
+网络上的矿工共同决定区块燃料限制。想要在以太坊网络上进行挖掘的个人使用诸如Ethminer之类的挖掘程序，该程序可连接到Geth或Parity以太坊客户端。以太坊协议具有内置的机制，矿工可以对燃料限制进行投票，因此可以在后续区块中增加或减少容量。一个区块的矿工可以投票决定在任一方向上以1/1/024（0.0976％）的比例来调整区块的燃料限制。其结果是根据当时网络的需要来调整块大小。该机制与默认的采矿策略结合在一起，在默认的采矿策略中，矿工对至少470万燃料的燃料限制进行投票，但其目标是每个区块最近平均总燃料使用量的150％（使用1,024区块的指数移动平均）。(((range="endofrange", startref="ix_13evm-asciidoc12")))(((range="endofrange", startref="ix_13evm-asciidoc11")))
+
+===本章小结
+
+在本章中，我们带领大家一起学习了以太坊虚拟机，展示了各种智能合约的执行过程，并研究了EVM如何执行二进制码。我们还研究了EVM的燃料gas计费机制，并了解了它如何解决暂停问题并保护以太坊免受拒绝服务攻击。接下来，在<<consensus>>，我们将研究以太坊用于实现分布式共识的机制。(((range="endofrange", startref="ix_13evm-asciidoc0")))

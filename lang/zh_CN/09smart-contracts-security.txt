@@ -1,0 +1,2574 @@
+[[smart_contract_security]]
+==智能合约的安全问题
+
+((("security (smart contracts)", id="ix_09smart-contracts-security-asciidoc0", range="startofrange")))((("smart contracts","security", id="ix_09smart-contracts-security-asciidoc1", range="startofrange"))) 安全是编写智能合约时最重要的考虑因素之一。在智能合约编程领域，错误代价高昂且容易被利用。在本章中，我们将研究安全的最佳实践和设计模式，以及“不安全模式”，这些实践和模式会在我们的智能合约中引入漏洞。
+
+与其他程序一样，智能合约将完全执行所编写的内容，而这并不总是程序员想要的。此外，所有智能合约都是公开的，任何用户都可以通过创建交易轻松地操作它们。这也会导致任何漏洞都会被发现，并且几乎总是无法挽回损失。因此，遵循最佳实践并使用经过良好测试的设计模式至关重要。
+
+===安全的最佳实践
+
+((("defensive programming")))((("security (smart contracts)","best practices")))_Defensive programming是一种非常适合于智能合约的编程方式。它强调以下所有最佳实践：
+
+极简/简单：：复杂性是安全的大敌。代码越简单，作用越少，发生错误或无法预料的影响的机会就越小。刚开始进行智能合约编程时，开发人员通常会尝试编写大量代码。相反，你应该浏览智能合约代码，并尝试找到减少代码行数，减少复杂性和减少“函数”的方法。如果有人告诉你他们的项目已经为他们的智能合约生成了“数千行代码”，那么你应该质疑该项目的安全性。越简单越安全。
+
+代码重用:: 尽量不要重新发明轮子。如果已经存在满足你大部分需求的库或合约，请重新使用它。在你自己的代码中，遵循DRY原则：不要重复自己。如果你看到任何重复的代码片段都不止一次，请问自己是否可以将其编写为函数或库并重新使用。经过广泛使用和测试的代码可能比你编写的任何新代码更安全。谨防“此处未发明”综合症，在这种情况下，你很容易通过从头开始构建来“改进”功能或组件。安全风险通常大于改进的价值。
+
+代码质量：：智能合约代码一旦部署是不可撤回的。每个错误都可能导致金钱损失。你不应将智能合约编程与通用编程一样对待。以Solidity编写DApp不同于使用JavaScript创建Web小部件。相反，你应该应用严格的工程和软件开发方法，就像在航空工程或任何类似的无情学科中一样。一旦“启动”你的代码，你几乎无法解决任何问题。
+
+可读性/可审计性：：你的代码应清晰易懂。越容易阅读，越容易审核。智能合约是公开的，因为每个人都可以读取字节码，任何人都可以对其进行逆向编译。因此，使用协作和开放源代码方法在公共环境下开发你的工作，利用开发人员社区的集体智慧并受益于开放源代码开发的最高共同点是有益的。你应该遵循以太坊社区中的样式和命名约定，编写有据可查且易于阅读的代码。
+
+测试范围：：尽可能测试所有内容。智能合约在公共执行环境中运行，任何人都可以在任何需要的输入下执行它们。你永远不要以为输入（例如函数参数）格式正确，有界或有良性目的。在允许继续执行代码之前，请测试所有参数以确保它们在预期范围内并且格式正确。
+
+===安全风险和反制模式
+
+((("security (smart contracts)","risks and antipatterns", id="ix_09smart-contracts-security-asciidoc2", range="startofrange"))) 作为智能合约程序员，你应该最熟悉常见的安全风险，以便能够检测和避免使你的合约面临这些风险的编程模式。在接下来的几节中，我们将研究不同的安全风险，漏洞如何产生的示例以及可以用来解决这些漏洞的对策或预防性解决方案。
+
+[[reentrancy_security]]
+===再入式攻击
+
+((("reentrancy attacks", id="ix_09smart-contracts-security-asciidoc3", range="startofrange")))((("security (smart contracts)","reentrancy attacks", id="ix_09smart-contracts-security-asciidoc4", range="startofrange"))) 以太坊智能合约的功能之一是它们的调用
+和利用其他外部合约中的代码。合约通常
+处理以太币，因此经常将以太币发送给各种外部用户
+地址。这些操作需要合约提交外部呼叫。这些
+外部调用可以被攻击者劫持，然后可以强迫
+合约执行其他代码（通过后备函数），
+包括回调攻击者自己。这种攻击被用于
+臭名昭著的DAO攻击 http://bit.ly/2DamSZT[DAO hack]。
+
+有关再入攻击的更多信息，请参阅Gus Guimareas关于该主题的博客 http://bit.ly/2zaqSEY[blog post] 和以太坊智能合约最佳实践 http://bit.ly/2ERDMxV[Ethereum Smart Contract Best Practices]。
+
+[role="notoc"]
+====漏洞
+////
+编者注
+本章中的标题“漏洞”和“预防技术”已从标题更改为粗体格式，以免用重复的措辞使目录混乱。
+////
+
+((("reentrancy attacks","vulnerability", id="ix_09smart-contracts-security-asciidoc5", range="startofrange"))) 当合约将以太币发送至未知地址时，会发生这种类型的攻击。
+攻击者可以在外部地址精心构建合约
+在后备函数中包含恶意代码。因此，当合约将以太币发送到该地址时，它将
+调用恶意代码。通常，恶意代码会执行
+在易受攻击的合约上起作用，无法执行预期的操作
+由开发商。术语“再入”来自以下事实：
+外部恶意合约对易受攻击者调用功能
+合约和代码执行路径“ __reenters__”。
+
+为了澄清这一点，请考虑<<etherstore_vulnerable>>，用作
+以太坊保险库，使存款人每人只能提取1个以太币
+每周。
+
+[[etherstore_vulnerable]]
+.EtherStore.sol
+====
+[source,solidity,linenums]
+----
+contract EtherStore {
+
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address => uint256) public lastWithdrawTime;
+    mapping(address => uint256) public balances;
+
+    function depositFunds() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(balances[msg.sender] >= _weiToWithdraw);
+        // limit the withdrawal
+        require(_weiToWithdraw <= withdrawalLimit);
+        // limit the time allowed to withdraw
+        require(now >= lastWithdrawTime[msg.sender] + 1 weeks);
+        require(msg.sender.call.value(_weiToWithdraw)());
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+    }
+ }
+----
+====
+
+该合约具有两个公共函数，即“ depositFunds”和
+`withdrawFunds`。 `depositFunds`函数只是增加
+发件人的余额。 `withdrawFunds`函数使发送者能够
+指定提款额。此函数的设计是
+仅在要求的提款金额少于1个以太币且提款
+未在上周发生时才会成功。
+
+该漏洞在第17行中，合约将用户发送给他们
+要求的以太币量。考虑一个攻击者创建了一个在<<etherstore_attack>>中的合约。
+
+[[etherstore_attack]]
+.Attack.sol
+====
+[source,solidity,linenums]
+----
+import "EtherStore.sol";
+
+contract Attack {
+  EtherStore public etherStore;
+
+  // intialize the etherStore variable with the contract address
+  constructor(address _etherStoreAddress) {
+      etherStore = EtherStore(_etherStoreAddress);
+  }
+
+  function attackEtherStore() external payable {
+      // attack to the nearest ether
+      require(msg.value >= 1 ether);
+      // send eth to the depositFunds() function
+      etherStore.depositFunds.value(1 ether)();
+      // start the magic
+      etherStore.withdrawFunds(1 ether);
+  }
+
+  function collectEther() public {
+      msg.sender.transfer(this.balance);
+  }
+
+  // fallback function - where the magic happens
+  function () payable {
+      if (etherStore.balance > 1 ether) {
+          etherStore.withdrawFunds(1 ether);
+      }
+  }
+}
+----
+====
+
+漏洞如何发生？首先，攻击者会创建恶意合约（例如，
+在地址“ 0x0 ... 123”），其中使用作为‘EtherStore’的合约地址为唯一的
+构建函数的地址。这样会初始化并将公开
+变量“ etherStore”添加到要攻击的合约中。
+
+然后，攻击者将调用ʻattackEtherStore`函数，其中包含一些
+大于或等于1的以太币。目前暂时假设“ 1以太”。
+在此示例中，我们还将假设许多其他用户
+已经将以太币存入该合约，比如其当前余额为
+‘10个以太币’。然后将发生以下情况：
+
+1. _Attack.sol_，第15行：`EtherStore`合约的`depositFunds`函数
+会按照1个以太币的msg.value参数值（和大量燃料）被调用。
+发起者（msg.sender）将是恶意合约（`0x0...123`）。从而导致，
+       `balances[0x0..123] = 1 ether`.
+
+2. _Attack.sol_，第17行：恶意合约将调用
+`EtherStore`合约的`withdrawFunds`函数，输入参数为1
+以太币。这将通过所有的要求
+“ EtherStore”合约的12-16行），因为之前没有提现过。
+
+3. _EtherStore.sol_，第17行：合约会将“ 1 ether”发送回给
+恶意：[<span class="keep-together">合约</span>]。
+
+4. _Attack.sol_，第25行：向恶意合约付款
+会导致执行后备功能。
+
+5. _Attack.sol_，第26行：+ EtherStore +合约的总余额之前为
+'10 ether' 现在是 '9 ether'，因此+ if +语句通过。
+
+6. _Attack.sol_，第27行：后备函数再次调用ʻEtherStore`
+`withdrawFunds`函数，使得再次进入`EtherStore`
+合约。
+
+7. _EtherStore.sol_，第11行：在对`withdrawFunds`的第二次调用中，
+由于第18行尚未执行，攻击合约的余额仍为“ 1 ether”。因此，我们
+仍然符合`balances[0x0..123] = 1 ether`的条件。这对于
+`lastWithdrawTime`变量也成立。同样，我们通过了所有要求。
+
+8. _EtherStore.sol_，第17行：攻击合约提取了另外的“ 1 ether”。
+
+9.重复步骤4至8，直到不再出现“ EtherStore.balance > 1”，如_Attack.sol_中的第26行所指示。
+
+10. _Attack.sol_，第26行：一旦`EtherStore`合约中剩下1（或更少）个以太币，此`if`语句将失败。然后，这将允许执行“ EtherStore”合约的第18行和第19行（对于每次对“ withdrawFunds”函数的调用）。
+
+11. _EtherStore.sol_，第18和19行：`balances`和
+`lastWithdrawTime`将建立映射，执行将结束。
+
+最终结果是攻击者提取了除1个ether以外的所有以太币，
+而仅仅通过一次交易从`EtherStore`合约中获取的。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc5")))
+
+[role="notoc"]
+====预防技术
+
+((("reentrancy attacks","preventative techniques"))) 有许多常见的技术可以帮助避免潜在的
+智能合约中的可重入漏洞。 ((("transfer function","to reduce reentrancy vulnerabilities"))) 首先是（尽可能）使用内置的transfer
+http://bit.ly/2Ogvnng[+transfer+]
+函数来向外部合约发送ether。+transfer+ 函数
+仅发送2300个gas，不够支撑目的
+地址/合约来调用另一个合约（比如重新进入一个发送
+合约）。
+
+((("checks-effects-interactions pattern"))) 第二种技术是确保所有更改状态的逻辑
+变量在以太币被发送出合约之前发生（或任何其他
+外部调用）。在“ EtherStore”示例中，第18行和第19行
+_EtherStore.sol_应该放在第17行之前。一个好习惯是对于任何执行对未知地址的外部调用的代码，
+都将其作为本地函数或一段代码执行中的最后一个操作。这个
+被称为
+http://bit.ly/2EVo70v[checks-effects-interactions
+pattern].
+
+((("mutex"))) 第三种技术是引入互斥量-即添加状态
+在代码执行期间锁定合约的变量，防止
+重入调用。
+
+应用所有这些技术（不需要全部使用三种，但是我们这里
+是出于说明目的）到_EtherStore.sol_，就是下面这个可以
+避免再入的合约：
+
+[source,solidity,linenums]
+----
+contract EtherStore {
+
+    // initialize the mutex
+    bool reEntrancyMutex = false;
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address => uint256) public lastWithdrawTime;
+    mapping(address => uint256) public balances;
+
+    function depositFunds() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(!reEntrancyMutex);
+        require(balances[msg.sender] >= _weiToWithdraw);
+        // limit the withdrawal
+        require(_weiToWithdraw <= withdrawalLimit);
+        // limit the time allowed to withdraw
+        require(now >= lastWithdrawTime[msg.sender] + 1 weeks);
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+        // set the reEntrancy mutex before the external call
+        reEntrancyMutex = true;
+        msg.sender.transfer(_weiToWithdraw);
+        // release the mutex after the external call
+        reEntrancyMutex = false;
+    }
+ }
+----
+
+[[real_world_example_the_dao]]
+====实际示例：DAO
+
+((("DAO (Decentralized Autonomous Organization)","reentrancy attack")))((("reentrancy attacks","real-world example: DAO attack"))) DAO（去中心化自治组织）攻击是一个主要的骇客攻击事件
+发生在以太坊的早期发展时期。当时，合约
+中持有超过1.5亿美元。重入式在攻击中起到了主要作用，
+最终导致以太坊的硬分叉
+产生了以太坊经典（ETC）。有关DAO漏洞的仔细分析，请参见
+http://bit.ly/2EQaLCI 。有关以太坊分叉历史，DAO hack时间轴以及ETC在硬分叉中诞生的更多信息，请参见<<ethereum_standards>>.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc4")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc3")))
+
+===数学运算中的上限/下限溢出
+
+((("arithmetic over/underflows", id="ix_09smart-contracts-security-asciidoc6", range="startofrange")))((("overflow", id="ix_09smart-contracts-security-asciidoc7", range="startofrange")))((("security (smart contracts)","arithmetic over/underflow threat", id="ix_09smart-contracts-security-asciidoc8", range="startofrange")))((("underflow", id="ix_09smart-contracts-security-asciidoc9", range="startofrange")))以太坊虚拟机为整数指定固定大小的数据类型
+这意味着整数变量只能代表一定范围内
+的数字。例如，“ uint8”只能存储
+[0,255]范围内的数字。如果试图将256存储到uint8中
+得到的结果为0。如果不注意，Solidity中的变量可以变成
+漏洞，比如当用户输入没有检查而执行计算，
+而导致结果数字超出数据类型的
+存储范围。
+
+有关算术上限溢出/下限溢出的更多信息，请参见如何保护智能合约 https://bit.ly/2nNLuOr[&#x201c;How to Secure Your Smart Contracts&#x201d;]，
+以太坊智能合约最佳实用指南 https://bit.ly/2MOfBPv[Ethereum Smart Contract Best Practices], 和
+https://bit.ly/2xvbx1M[&#x201c;Ethereum, Solidity and integer overflows: programming blockchains like 1970&#x201d;].
+
+[role="notoc"]
+====漏洞
+
+((("arithmetic over/underflows","vulnerability", id="ix_09smart-contracts-security-asciidoc10", range="startofrange"))) 上限溢出/下限溢出错误在执行以下操作时发生，
+一个固定大小的变量存储的数字（或数据）超出了
+变量的数据类型范围。
+
+((("underflow"))) 例如，从值为0的uint8（8位无符号整数；即非负数）变量中减去1。
+会导致结果为255。这是一个下限溢出错误_underflow_。我们定义了一个数字
+低于ʻuint8`的范围，因此结果导致了回转并给出了
+uint8可以存储的最大数量。类似地，将'2 ^ 8 = 256' 添加到
+'uint8'的变量将使变量值保持不变，因为我们已经转回
+uint的整个长度。两个简单类比的情况是
+汽车中用于测量行进距离的里程表（里程表达到最大值后会重置为000000
+，即最大数超过999999）和数学中的周期函数
+（在+ sin +的参数上加上+2π+会使值保持不变）。
+
+((("overflow","defined"))) 添加大于数据类型范围的数字称为溢出_overflow_。
+比如，将257添加到当前值为0的uint8中，
+结果是数字“ 1”。固定大小的变量可以被视为
+是循环的，如果在最大的变量值上方加上数字，我们将回到零
+，如果从零做递减，则回到最大数字。对于带符号的“ int”类型，即可以有负数的整型变量，一旦达到最大的负值，我们将再次开始；例如，如果我们尝试从值为-128的int8中减去1，则会得到127。
+
+这些数字陷阱可以被攻击者滥用代码并创建
+意外的逻辑流程。例如，请考虑以下内容中的+ TimeLock +合约：
+<<timelock_sol_security>>.
+
+[[timelock_sol_security]]
+.TimeLock.sol
+====
+[source,solidity,linenums]
+----
+contract TimeLock {
+
+    mapping(address => uint) public balances;
+    mapping(address => uint) public lockTime;
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+        lockTime[msg.sender] = now + 1 weeks;
+    }
+
+    function increaseLockTime(uint _secondsToIncrease) public {
+        lockTime[msg.sender] += _secondsToIncrease;
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}
+----
+====
+
+该合约设计为一个时间保险库：用户可以
+将以太币存入合约，它将至少被锁定在合约中
+一周。用户可以选择将等待时间延长至1周以上，
+但是一旦存入，用户可以确保其以太币被安全锁定
+至少持续一周-或按合约中的约定时间。
+
+如果用户被迫交出其私钥，则诸如这样的合约
+可能会便于确保在短时间内无法获得合约的以太币。但是如果
+用户在该合约中锁定了“ 100以太币”，并将其密钥移交给了
+攻击者，那么攻击者可以使用溢出方式来盗取以太币，
+而跳过“锁定时间”的限制。
+
+攻击者可以指定当前的“ lockTime”到他们的地址，
+即所掌握的公钥（这是一个公共变量）。我们称之为
+`userLockTime`。然后，他们可以调用ʻincreaseLockTime`函数，然后
+将数字2 ^ 256-userLockTime作为参数传递。这个数字会
+被加到到当前ʻuserLockTime`值并导致溢出，重置
+lockTime [msg.sender]的值为0。然后，攻击者可以简单地调用
+`withdraw`函数获得他们的奖励。
+
+让我们看另一个例子（<<underflow_vulnerability_example_from_ethernaut_challenge>>），该内容来自Ethernaut挑战 https://github.com/OpenZeppelin/ethernaut[Ethernaut challenges]。
+
+* SPOILER ALERT：* _如果你尚未完成Ethernaut挑战，这里
+提供一个解决方案之一。
+
+[[underflow_vulnerability_example_from_ethernaut_challenge]]
+.Ethernaut挑战的.underflow漏洞示例
+====
+[source,solidity,linenums]
+----
+pragma solidity ^0.4.18;
+
+contract Token {
+
+  mapping(address => uint) balances;
+  uint public totalSupply;
+
+  function Token(uint _initialSupply) {
+    balances[msg.sender] = totalSupply = _initialSupply;
+  }
+
+  function transfer(address _to, uint _value) public returns (bool) {
+    require(balances[msg.sender] - _value >= 0);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+  }
+
+  function balanceOf(address _owner) public constant returns (uint balance) {
+    return balances[_owner];
+  }
+}
+----
+====
+
+这是一个简单的通证合约，包含了“transfer”函数，
+允许拥有者转移通证。你看到这个合约里面
+的错误了吗？
+
+问题来自“transfer”函数。在第13行的+ require +语句
+可能产生下限溢出。考虑一个用户只有零
+的余额。他们可以用调用`transfer`函数
+使用非零的参数'value'并在第13行通过+ require +语句。这是因为
+`balances [msg.sender]`是+0+（变量类型为`uint256`），因此减去
+正值（不包括“ 2 ^ 256”）将产生一个正数，如前所述。第14行也是如此
+余额将记入正数。因此，在这个
+例子中，由于下限溢出漏洞，攻击者可以获得免费通证。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc10")))
+
+[role="notoc"]
+====预防技术
+
+((("arithmetic over/underflows","preventative techniques", id="ix_09smart-contracts-security-asciidoc11", range="startofrange"))) 当前用于防止下限/上限溢出错误的常规技术
+是使用或建立数学库来替代
+标准数学运算的加法，减法和乘法
+（除法不会导致上限/下限溢出，EVM的操作
+会在除数为0时回退）。
+
+((("OpenZeppelin")))((("SafeMath library")))https://github.com/OpenZeppelin/openzeppelin-solidity[OpenZeppelin]
+项目在为以太坊社区构建和审核安全库方面做得非常出色。特别是，它的+SafeMath+库 http://bit.ly/2ABhb4l[+SafeMath+ library] 可用于避免溢出漏洞。
+
+为了演示如何在Solidity中使用这些库，让我们使用SafeMath库更正TimeLock合约。合约的无溢出版本为：
+
+[source,solidity,linenums]
+----
+library SafeMath {
+
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automatically throws when dividing by 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // This holds in all cases
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+contract TimeLock {
+    using SafeMath for uint; // use the library for uint type
+    mapping(address => uint256) public balances;
+    mapping(address => uint256) public lockTime;
+
+    function deposit() external payable {
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        lockTime[msg.sender] = now.add(1 weeks);
+    }
+
+    function increaseLockTime(uint256 _secondsToIncrease) public {
+        lockTime[msg.sender] = lockTime[msg.sender].add(_secondsToIncrease);
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}
+----
+
+请注意，所有标准数学运算已被替换为那些
+在“ SafeMath”库中定义的运算。 `TimeLock`合约不再
+执行任何可能导致溢出的操作。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc11")))
+
+====实际示例：PoWHC和批量传输溢出（CVE-2018–10299）
+
+((("arithmetic over/underflows","real-world examples: PoWHC and batch transfer overflow")))((("batchTransfer function")))((("Proof of Weak Hands Coin (PoWHC)"))) 最初被设计为开玩笑的弱手币（PoWHC）是
+由一群互联网用户编写的庞氏骗局。不幸的是，合约的编写者似乎
+之前从未见过溢出问题，因此有866个以太币
+被从合约中盗走。 Eric Banisadr在他的博客中很好地概述了下限溢出是如何发生的
+（与之前描述的Ethernaut挑战不一样） https://bit.ly/2wrxIFJ[blog post]。
+
+http://bit.ly/2CUf7WG[Another example] 另一个示例]来自将`batchTransfer（）`函数实现到一组ERC20通证合约中。该实现包含一个溢出漏洞；你可以在https://bit.ly/2HDlIs8[PeckShield's account] 中了解详细信息。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc9")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc8")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc7")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc6")))
+
+===意外的以太币
+
+((("ether (generally)","unexpected ether security threat", id="ix_09smart-contracts-security-asciidoc12", range="startofrange")))((("security (smart contracts)","unexpected ether threat", id="ix_09smart-contracts-security-asciidoc13", range="startofrange")))((("unexpected ether","security threat from", id="ix_09smart-contracts-security-asciidoc14", range="startofrange"))) 通常，将以太币发送至合约时，必须执行
+后备函数或合约中定义的其他函数。
+这里面有两个例外，即以太币可以存在于合约中，
+但没有执行任何代码。依赖代码执行的合约
+发送给它们的所有以太币都可能容易受到攻击，
+导致其中的以太币会强行发送到攻击地址。
+
+有关此内容的更多信息，请参见“如何保护您的智能合约” https://bit.ly/2MR8Gp0[&#x201c;How to Secure Your Smart Contracts&#x201d;]  和“Solidity安全模式-强制以太签定合约” http://bit.ly/2RjXmUWl[&#x201c;Solidity Security Patterns - Forcing Ether to a Contract&#x201d;]。
+
+[role="notoc"]
+====漏洞
+
+((("unexpected ether","vulnerability", id="ix_09smart-contracts-security-asciidoc15", range="startofrange"))) 一个((("invariant checking")))常见的防御性编程技术，可以被用来确保
+正确的状态转换或验证操作，称为
+_不变检查_。此技术涉及定义一组
+非变量（不应更改的指标或参数）并检查
+在一次（或多次）操作后，它们的值保持不变。
+这通常是好的设计，即要检查非变量
+实际上的值不变。非变量的一个例子是用于
+固定发行量的ERC20通证的总数
+http://bit.ly/2CUf7WG[ERC20 token]。由于没有函数可以修改此不变式，因此可以添加一个
+检查确保“transfer”函数的运行保证“ totalSupply”的值
+保持不变，以确保函数按预期运行。
+
+特别是，有一个明显的非变量可能看起来非常好用
+但这实际上可以由外部用户操纵（无论合约中所设置的规则如何
+实现）。这就是当前存储在
+合约中的以太币。当开发人员第一次学习Solidity时，他们通常会
+误认为合约如果要接受或获取以太币的话，必须通过应付款
+函数。这种误解可能导致合约做出具有错误的假设，
+比如说合约的以太币余额，这可能导致一系列
+漏洞。此漏洞主要是对合约余额的（错误）用法，
+即变量`this.balance`.
+
+可以通过两种方式（强制）将以太币发送到合约中
+而无需使用支付函数或通过合约执行任何代码
+：
+
+自毁/自杀：
+
+((("selfdestruct function"))) 任何合约都可以实施自毁函数
+http://bit.ly/2RovrDf[`selfdestruct`
+function]，从合约地址中删除所有字节码并将
+所有存储的以太币发送到参数指定的地址。如果这
+个地址也是合约，其中没有函数（包括
+后备函数）被调用。因此，`selfdestruct`函数可以是
+用来强行将以太币发送给任何合约，无论
+合约中是否存在代码，甚至合约中没有
+应付函数。这意味着任何攻击者都可以产生一个
+带有`selfdestruct`函数的合约，向其发送以太币，调用`selfdestruct（target）`
+函数并强制将以太币发送至“目标”合约。马丁·斯文德（Martin Swende）
+在他的博客 http://bit.ly/2OfLukM[blog post] 中描述了自毁操作码的一些怪异（Quirk＃2）情况以及
+关于客户端节点如何检查错误的不正确的常量说明，
+这可能导致以太坊网络的灾难性崩溃。
+
+预先发送以太币：:
+
+将以太币发送到合约的另一种方法是预加载含有以太币的合约地址
+合约地址是确定性的；实际上，该地址是
+根据Keccak-256（通常也称为SHA-3）的哈希算法对
+创建合约的地址和创建合约时的交易计数而得出的。
+具体来说，其格式为“地址= sha3（rlp.encode（[account_address，transaction_nonce]））”
+（有关此功能的一些有趣用例，请参见Adrian Manning对http://bit.ly/2EPj5Tq[“Keyless Ether”]的讨论）。这
+意味着任何人都可以计算出合约的地址并在其
+创建之前发送以太币到该地址。当合约
+创建后它将具有非零的以太币余额。
+
+让我们看看在掌握这些知识后可能会出现的一些陷阱。考虑一下<<etherGame_security>>中的简单合约。
+
+[[etherGame_security]]
+.EtherGame.sol
+====
+[source,solidity,linenums]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+
+    mapping(address => uint) redeemableEther;
+    // Users pay 0.5 ether. At specific milestones, credit their accounts.
+    function play() external payable {
+        require(msg.value == 0.5 ether); // each play is 0.5 ether
+        uint currentBalance = this.balance + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance <= finalMileStone);
+        // if at a milestone, credit the player's account
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        return;
+    }
+
+    function claimReward() public {
+//确保游戏完成
+        require(this.balance == finalMileStone);
+//确保可以分发奖励
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }
+----
+====
+
+该合约代表一个简单的游戏（自然会涉及
+比赛条件）玩家向合约发送0.5的以太币，希望成为达到以下
+三个里程碑里的第一名。里程碑以以太币结算。首先
+达到里程碑可以会在游戏结束后，获取一部分以太币。
+游戏当最后的里程碑（10个以太币）达到时
+结束；然后，玩家可以获取他们的奖励。
+
+“ EtherGame”合约的问题来自对游戏的不当使用
+第14行（以及关联16）和32中的“ this.balance”变量。
+一个捣蛋的攻击者可以通过“ selfdestruct”函数（前面讨论过）将少量的以太币（例如0.1以太币）强行发送到合约
+而阻止任何未来的玩家达成里程碑。由于这0.1个以太币，`this.balance`永远不会是0.5的倍数
+因为所有合法玩家只能发送0.5个以太币增量。这样可以阻止第18、21行的所有+ if +条件，
+以及24行的条件为真。
+
+更糟糕的是，一个错过里程碑的攻击者可能会强行
+发送10个以太币（或足量的以太币可以使得
+合约的余额高于“ finalMileStone”），这将会永远锁定所有
+合约中的奖励。这是因为`claimReward`
+函数将永远重置，原因是第32行上的+ require +条件无法满足（即，因为
+“ this.balance”的值大于“ finalMileStone”）。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc15")))
+
+[role="notoc"]
+====预防技术
+
+((("unexpected ether","preventative techniques"))) 这种漏洞通常是由于不恰当使用`this.balance`引起的。
+如果可能，合约中的逻辑应避免依赖于确切
+合约余额的价值，因为它可以人为地
+被操纵。如果基于`this.balance`应用逻辑，则必须考虑
+处理意外的余额。
+
+如果需要精确的以太币余额值，则可以使用一个自定义变量
+其值可以在应付款函数中递增使用，以确保安全
+跟踪存入的以太币。此变量将不受
+通过`selfdestruct`调用强制发送到合约的以太币影响。
+
+考虑到这一点，`EtherGame`合约的更正版本可以
+像下面这样：
+
+[source,solidity,linenums]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+    uint public depositedWei;
+
+    mapping (address => uint) redeemableEther;
+
+    function play() external payable {
+        require(msg.value == 0.5 ether);
+        uint currentBalance = depositedWei + msg.value;
+        // ensure no players after the game has finished
+        require(currentBalance <= finalMileStone);
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        depositedWei += msg.value;
+        return;
+    }
+
+    function claimReward() public {
+//确保游戏完成
+        require(depositedWei == finalMileStone);
+//确保可以分发奖励
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }
+----
+
+在这里，我们创建了一个新变量`depositedWei`，用以
+跟踪已知的以太币存款，这个变量就可以被
+用于我们的测试。请注意，我们不再有任何
+变量指向“ this.balance”。
+
+====其他示例
+
+下面的资料中给出了一些有问题合约的例子。
+https://github.com/Arachnid/uscc/tree/master/submissions-2017/[Underhanded
+Solidity Coding Contest]，其中还提供了许多
+本节提出的陷阱的例子。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc14")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc13")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc12")))
+
+=== DELEGATECALL
+
+((("DELEGATECALL opcode security threat", id="ix_09smart-contracts-security-asciidoc16", range="startofrange")))((("security (smart contracts)","DELEGATECALL opcode threat", id="ix_09smart-contracts-security-asciidoc17", range="startofrange"))) `CALL`和`DELEGATECALL`操作码对于以太坊开发者
+将其代码模块化非常有用。 ((("CALL opcode")))标准外部消息调用
+合约由“ CALL”操作码处理，相应调用代码在
+外部合约/函数的范围内运行。 `DELEGATECALL`操作码与其
+几乎相同，除了在目标地址执行的代码是
+在调用合约的范围中运行，而msg.sender和msg.value保持不变。这个
+特征启用_libraries_的实现，从而使开发人员能够
+只需部署一次可重复使用的代码，并从将来的合约中调用它。
+
+尽管这两个操作码之间的区别很简单和
+直观，但使用DELEGATECALL可能会导致意外代码
+的执行结果。
+
+有关这方面的更多资料，请参阅Loi.Luu的
+http://bit.ly/2AAElb8[Ethereum
+Stack Exchange question on this topic] 和
+http://bit.ly/2Oi7UlH[Solidity 文档]。
+
+[role="notoc"]
+====漏洞
+
+((("DELEGATECALL opcode security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc18", range="startofrange"))) 由于“ DELEGATECALL”具有范围内的保留特性，创建
+没有漏洞的自定义库并不像人们想象的那么容易。
+库中的代码本身可以是安全的并且没有漏洞。
+但是，在另一个应用程序的范围中运行时，新的
+漏洞可能会出现。 ((("Fibonacci sequences", id="ix_09smart-contracts-security-asciidoc19", range="startofrange"))) 让我们来看一个相当复杂的例子，
+比如使用斐波那契数列。
+
+考虑<<fibonacci_security>>中的软件库，可以生成斐波那契数列
+和类似形式的序列。 （注意：此代码为
+从 https://bit.ly/2MReuii[] 修改而来。）
+
+[[fibonacci_security]]
+.FibonacciLib.sol
+====
+[source,solidity,linenums]
+----
+// library contract - calculates Fibonacci-like numbers
+contract FibonacciLib {
+    // initializing the standard Fibonacci sequence
+    uint public start;
+    uint public calculatedFibNumber;
+
+    // modify the zeroth number in the sequence
+    function setStart(uint _start) public {
+        start = _start;
+    }
+
+    function setFibonacci(uint n) public {
+        calculatedFibNumber = fibonacci(n);
+    }
+
+    function fibonacci(uint n) internal returns (uint) {
+        if (n == 0) return start;
+        else if (n == 1) return start + 1;
+        else return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+----
+====
+
+该合约库提供了可以生成第_n_个斐波纳契
+序列中的数字的函数。它允许用户更改
+序列（`start`）并在这个新的序列中计算第_n_个类斐波那契数
+字。
+
+现在让我们考虑一个利用该库的合约，如<<fib_balance_security>>。
+
+[[fib_balance_security]]
+.FibonacciBalance.sol
+====
+[source,solidity,linenums]
+----
+contract FibonacciBalance {
+
+    address public fibonacciLibrary;
+    // the current Fibonacci number to withdraw
+    uint public calculatedFibNumber;
+    // the starting Fibonacci sequence number
+    uint public start = 3;
+    uint public withdrawalCounter;
+    // the Fibonancci function selector
+    bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
+
+    // constructor - loads the contract with ether
+    constructor(address _fibonacciLibrary) external payable {
+        fibonacciLibrary = _fibonacciLibrary;
+    }
+
+    function withdraw() {
+        withdrawalCounter += 1;
+        // calculate the Fibonacci number for the current withdrawal user-
+        // this sets calculatedFibNumber
+        require(fibonacciLibrary.delegatecall(fibSig, withdrawalCounter));
+        msg.sender.transfer(calculatedFibNumber * 1 ether);
+    }
+
+    // allow users to call Fibonacci library functions
+    function() public {
+        require(fibonacciLibrary.delegatecall(msg.data));
+    }
+}
+----
+====
+
+该合约允许参与者从合约中提取以太币，
+条件是以太币的数量等于一个斐波那契数
+并对应于参与者的提款顺序；即，第一个
+参与者得到1个以太币，第二个也得到1，第三个得到2，
+第四得到3，第五得到5，依此类推（直到合约余额
+小于要提取的斐波那契数）。
+
+// TODO: Andreas to decide if this intro is necessary, or to simply refer to
+// another section of the book.
+
+该合约中有许多要素可能需要更多的
+说明。首先，有一个有趣的变量，
+“fibSig”。它保留了Keccak-256（SHA-3）散列的前4个字节，
+字符串`setFibonacci（uint256）`。这就是所谓的函数选择器
+http://bit.ly/2RmueMP[function
+selector]，并放入`calldata`中以指定
+智能合约将调用的函数。在`delegatecall`函数中使用
+即第21行，来指定我们希望运行`fibonacci（uint256）`
+函数。 `delegatecall`中的第二个参数是我们的参数
+传递到函数里面。其次，我们假设
+在构造函数中正确引用了FibonacciLib库
+（<<external_contract_referencing>>中讨论一些
+与此类合约参考初始化有关的潜在漏洞
+）。
+
+你能发现合约中有任何错误吗？如果要部署此合约，
+用以太币填充它，并调用`withdraw`，它可能会还原。
+
+你可能已经注意到，状态变量“ start”在两个
+软件库和主要的通话合约中。在合约库中，“start”
+用于指定斐波纳契数列的开始并将其设置为
+“ 0”，而在主合约中则设置为“ 3”。你
+可能还注意到，
+“ FibonacciBalance”合约中的后备函数允许将所有调用传递到
+合约库，允许使用库的setStart函数
+可以被调用。考虑到我们保留了
+合约的状态，此函数将允许你更改
+本地FibonnacciBalance合约中start变量的状态。
+如果是这样，这将允许用户提取更多的以太币，因为
+`calculatedFibNumber`取决于`start`变量（如
+合约库中所见）。实际上，`setStart`函数
+没有（也不能）修改FibonacciBalance合约中的start变量
+该合约的潜在漏洞远远
+比修改`start`变量更糟糕。
+
+// TODO: Andreas to decide if this intro is necessary, or to simply refer to
+// another section of the book.
+
+在讨论实际问题之前，让我们快速回顾一下
+状态变量实际上是如何
+存储在合约中的。状态或存储变量（变量值
+在单个交易中不变）放入_slots_
+是按合约中的顺序进行。 （这里有些复杂；请参阅http://bit.ly/2JslDWf[Solidity docs]以获取更全面的了解。）
+
+作为示例，让我们看一下合约库。它有两个状态
+变量，“ start”和“ calculatedFibNumber”。第一个变量
+“start”存储在合约的存储区中的“slot[0]”处
+（即第一个slot）。第二个变量“ calculatedFibNumber”是
+放置在下一个可用的存储位置“ slot [1]”中。
+函数`setStart`接受输入并将`start`设置为任何
+输入值。因此，该函数将`slot [0]`设置为任何
+我们在setStart函数中提供的输入值。同样，
+setFibonacci函数将calculatedFibNumber设置为
+fibonacci（n）的结果。同样，这只是将存储空间“ slot [1]”设置为
+fibonacci（n）的值。
+
+现在让我们看一下“ FibonacciBalance”合约。现在存储`slot [0]`
+对应于fibonacciLibrary地址，而slot [1]对应于
+`calculatedFibNumber`。正是在这种不正确的映射中发生了漏洞。
+`delegatecall` _保留合约范围_。这意味着该代码
+通过`delegatecall`执行将作用于（即存储）
+调用合约的状态。
+
+现在注意在第21行的`withdraw`中，我们执行
+`fibonacciLibrary.delegatecall（fibSig，withdrawalCounter）`。这个
+调用setFibonacci函数，正如我们所讨论的，它修改了存储
+`slot [1]`，在我们当前的范围中是`calculatedFibNumber`。这个
+是符合预期（即执行后，“ calculatedFibNumber”被
+修改了）。但是，请注意`start` 变量
+在“ FibonacciLib”合约中的存储是位于“ slot [0]”中，即
+当前合约中的“ fibonacciLibrary”地址。这意味着
+`fibonacci`函数会产生意外结果。这是因为
+它引用的位置是`start`（`slot [0]`），在当前调用范围中
+是`fibonacciLibrary`地址（通常，当
+按照“ uint”类似存储时会很大）。因此，很可能`withdraw`
+函数将回退，因为它将不包含ʻuint（fibonacciLibrary）`
+以太币的数量，即calculatedFibNumber将返回的值。
+
+更糟糕的是，`FibonacciBalance`合约允许用户调用所有
+“ fibonacciLibrary”中的函数，这个是通过第26行的后备函数来实现的。
+正如我们前面所讨论的，这包括`setStart`函数。我们
+讨论该函数允许任何人修改或设置在
+`slot [0]`中的内容。在这种情况下，存储区“ slot [0]”是“ fibonacciLibrary”
+地址。因此，攻击者可能会创建恶意合约，将地址转换为“ uint”（可以是
+使用在Python中轻松完成`int（'<address>'，16）`），然后调用
+`setStart（<attack_contract_address_as_uint> ）`函数。这将把
+`fibonacciLibrary`的地址改到攻击合约的地址。然后，每当
+一个用户调用`withdraw`或后备函数，恶意
+合约将执行（可以窃取合约的全部余额）
+因为我们已经修改了fibonacciLibrary的实际地址。一个
+此类攻击合约的示例为：
+
+[source,solidity,linenums]
+----
+contract Attack {
+    uint storageSlot0; // corresponds to fibonacciLibrary
+    uint storageSlot1; // corresponds to calculatedFibNumber
+
+    // fallback - this will run if a specified function is not found
+    function() public {
+        storageSlot1 = 0; // we set calculatedFibNumber to 0, so if withdraw
+        // is called we don't send out any ether
+        <attacker_address>.transfer(this.balance); // we take all the ether
+    }
+ }
+----
+
+注意，该攻击合约通过以下方式修改了“ calculatedFibNumber”：
+更改存储空间“ slot [1]”。原则上，攻击者可以修改任何
+他们选择的其他存储插槽，以对此合约进行各种攻击。
+我们建议你将这些合约放入 https://remix.ethereum.org[Remix] ，并通过这些`delegatecall`函数尝试不同的攻击合约和状态更改。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc19")))
+
+同样重要的是要注意，当我们说`delegatecall`是
+保持状态，我们不是在谈论合约中变量的名称，
+而是这些名称指向的实际存储插槽。如
+你可以从此示例中看到，一个简单的错误可能导致攻击者
+劫持整个合约及其以太币。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc18")))
+
+[role="notoc"]
+====预防技术
+
+((("DELEGATECALL opcode security threat","preventative techniques"))) Solidity提供`library`关键字用于实现
+合约库（有关更多详细信息，请参见http://bit.ly/2zjD8TI[docs]）。这样可以确保合约库是
+无状态且无自毁函数。将合约库强制设为无状态
+降低了本节所展示的存储环境的复杂性
+问题。无状态库还可以防止攻击者
+直接修改合约库的状态以影响
+其它依赖库合约代码的合约。根据一般经验，
+当使用`DELEGATECALL`时要特别注意可能的调用
+范围，包括库合约和调用合约，以及
+尽可能建立无状态的传递：[<span class="keep-together">库</span>]。
+
+[[multisig_secondhack]]
+====实际示例：Pairty Multisig钱包（Second Hack）
+
+((("DELEGATECALL opcode security threat","real-world example: Parity Multisig Wallet hack", id="ix_09smart-contracts-security-asciidoc20", range="startofrange")))((("Parity Multisig Wallet","second hack", id="ix_09smart-contracts-security-asciidoc21", range="startofrange")))((("wallets","Parity Multisig Wallet hacks", id="ix_09smart-contracts-security-asciidoc22", range="startofrange"))) 第二个Parity Multisig Wallet黑客程序是一个用于说明运行编写良好的库代码如果运行在预期的范围之外会导致问题的例子。
+有很多关于这次黑客攻击的很好的解释，例如
+http://bit.ly/2Dg7GtW[&#x201c;Parity Multisig Hacked. Again&#x201d;] 和 http://bit.ly/2Of06B9[&#x201c;An In-Depth Look at the Parity Multisig Bug&#x201d;].
+
+为了增加理解这些资料，让我们了解一下出现问题的
+合约。相应的库文件合钱包合约可以在http://bit.ly/2OgnXQC[on GitHub]上找到。
+
+库合约如下：
+
+[source,solidity,linenums]
+----
+contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // throw unless the contract is not yet initialized.
+  modifier only_uninitialized { if (m_numOwners > 0) throw; _; }
+
+  // constructor - just pass on the owner array to multiowned and
+  // the limit to daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit)
+      only_uninitialized {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+
+  // kills the contract sending everything to `_to`.
+  function kill(address _to) onlymanyowners(sha3(msg.data)) external {
+    suicide(_to);
+  }
+
+  ...
+
+}
+----
+
+下面是钱包合约：
+
+[source,solidity,linenums]
+----
+contract Wallet is WalletEvents {
+
+  ...
+
+  // METHODS
+
+  // gets called when no other function matches
+  function() payable {
+    // just being sent some cash?
+    if (msg.value > 0)
+      Deposit(msg.sender, msg.value);
+    else if (msg.data.length > 0)
+      _walletLibrary.delegatecall(msg.data);
+  }
+
+  ...
+
+  // FIELDS
+  address constant _walletLibrary =
+    0xcafecafecafecafecafecafecafecafecafecafe;
+}
+----
+
+请注意，“ Wallet”合约实质上使用委托调用将所有调用传递给
+WaltLibrary合约。常数
+`_walletLibrary`的合约地址用作以下内容的占位符：
+实际部署的“ WalletLibrary”合约（位于
+`0x863DF6BFa4469f3ead0bE8f9F2AAE51c91A907b4`).
+
+这些合约的预期操作是产生一个简单的低成本
+可部署的“钱包”合约，其代码库和主要功能在
+在“ WalletLibrary”合约中。问题是，`WalletLibrary`
+合约本身就是合约而且保持自己的状态。你知道
+为什么这可能是个问题？
+
+用户可以通过pass：[ <code><span class="keep-together">WalletLibrary</span></code> ]调用合约本身。
+具体来说，pass：[ <code><span class="keep-together">WalletLibrary</span></code> ]合约可以被初始化，
+并被拥有。实际上，一个用户这样做了，他调用了ʻinitWallet`函数并成为了
+“ WalletLibrary”库合约的所有者。
+同一用户随后调用了“ kill”函数。因为用户
+是库合约的所有者，修改通过，然后
+库合约自毁了。所有现有的“Wallet”合约，如果是
+使用了这个库合约，并且没有包含可以更改此引用的方法，
+那么它们所有的功能，包括提取以太坊的能力，
+就会与“ WalletLibrary”合约一起丢失。结果，所有的
+存在此类Parity multisig钱包中的以太币，它们立即丢失或
+永久不可恢复(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc22")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc21")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc20"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc17")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc16")))
+
+===默认的可见性
+
+((("default visibility specifier security problem", id="ix_09smart-contracts-security-asciidoc23", range="startofrange")))((("security (smart contracts)","default visibility specifier threat", id="ix_09smart-contracts-security-asciidoc24", range="startofrange")))((("Solidity","default visibility specifier problem", id="ix_09smart-contracts-security-asciidoc25", range="startofrange")))((("visibility specifiers", id="ix_09smart-contracts-security-asciidoc26", range="startofrange"))) Solidity中的函数具有可见性说明符，这些说明符指示了
+这些函数可以被调用。可见性是用以确定
+一个函数可以由用户，其他衍生合约在外部调用，
+仅在内部调用，或仅在外部调用。总共有四个可见性
+说明符，在http://bit.ly/2ABiv7j[Solidity docs]中有详细说明。函数默认为`public`，即允许用户从外部调用它们
+现在，我们将看到对可见性说明符的错误使用将如何导致智能合约中的一些破坏性漏洞。
+
+[role="notoc"]
+====漏洞
+
+((("default visibility specifier security problem","vulnerability"))) 函数的默认可见性是`public`，因此函数如果
+未指定其可见性，则默认可以被外部用户调用。
+问题出现在当开发人员错误地忽略可见性说明符时，
+比如没有设置应该是私有的（或只能在
+合约内部调用）函数。
+
+让我们快速浏览一个简单的示例：
+
+[source,solidity,linenums]
+----
+contract HashForEther {
+
+    function withdrawWinnings() {
+        // Winner if the last 8 hex characters of the address are 0
+        require(uint32(msg.sender) == 0);
+        _sendWinnings();
+     }
+
+     function _sendWinnings() {
+         msg.sender.transfer(this.balance);
+     }
+}
+----
+
+这个简单的合约旨在完成一个猜测地址的赏金
+游戏。为了赢得合约的余额，用户必须生成一个
+以太坊地址，其后8个十六进制字符为+0+。一旦实现，他们
+可以调用`withdrawWinnings`函数来获取赏金。
+
+不幸的是，其中未指定获取赏金函数的可见性。
+特别是，_sendWinnings函数是public（默认值），因此任何
+地址可以调用此函数以窃取赏金。
+
+[role="notoc"]
+====预防技术
+
+((("default visibility specifier security problem","preventative techniques"))) 始终指定合约中所有函数的可见性是一个好习惯
+，即使它们都是“公开”的。最新版本的
++ solc +会警告
+没有明确的可见性设置的函数，以鼓励这种做法。
+
+====实际示例：Parity Multisig钱包（首次入侵）
+
+((("default visibility specifier security problem","real world example: Parity Multisig Wallet hack")))((("Parity Multisig Wallet","first hack")))((("wallets","Parity Multisig Wallet hacks"))) 在第一个Parity multisig钱包黑客事件中，价值约3100万美元的以太币被盗，
+大部分来自于三个钱包。下面的这篇文章很好地回顾了这次攻击的情况
+ https://bit.ly/2vHiuJQ[Haseeb Qureshi].
+
+本质上，multisig钱包
+由基本的“Wallet”合约构建而来，该合约调用一个
+包含核心功能的库合约（如
+<<multisig_secondhack>>中所示）。
+库合约包含初始化钱包的代码，可以
+从以下代码片段中看到：
+
+[source,solidity,linenums]
+----
+contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // METHODS
+
+  ...
+
+  // constructor is given number of sigs required to do protected
+  // "onlymanyowners" transactionsas well as the selection of addresses
+  // capable of confirming them
+  function initMultiowned(address[] _owners, uint _required) {
+    m_numOwners = _owners.length + 1;
+    m_owners[1] = uint(msg.sender);
+    m_ownerIndex[uint(msg.sender)] = 1;
+    for (uint i = 0; i < _owners.length; ++i)
+    {
+      m_owners[2 + i] = uint(_owners[i]);
+      m_ownerIndex[uint(_owners[i])] = 2 + i;
+    }
+    m_required = _required;
+  }
+
+  ...
+
+  // constructor - just pass on the owner array to multiowned and
+  // the limit to daylimit
+  function initWallet(address[] _owners, uint _required, uint _daylimit) {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+}
+----
+
+请注意，两个函数均未指定其
+可见性，因此都默认为`public`。 `initWallet`
+函数在钱包的构造函数中调用，并为
+在“ initMultiowned”函数中为多重签名钱包设定所有者。
+由于这些功能被意外地保留为“公开”状态，因此攻击者
+能够根据已部署的合约调用这些功能，从而重置
+攻击者地址的所有权。作为所有者，攻击者就可以随后
+耗尽所有钱包中的以太币。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc26")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc25")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc24")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc23")))
+
+[[entropyillusion_security]]
+===熵幻像
+
+((("entropy illusion security threat")))((("security (smart contracts)","entropy illusion threat"))) 以太坊区块链上的所有交易都是确定性状态
+过渡操作。这意味着每笔交易都会修改
+以太坊生态系统的全局状态，修改的结果是可以通过计算
+得到的，没有不确定性。这具意味着
+以太坊没有熵或随机性的来源。
+获取分布式的熵
+（随机性）是一个众所周知的问题，目前已经提出了许多解决方案，包括 https://github.com/randao/randao[RANDAO] 或使用哈希链，例如
+由Vitalik Buterin在博客文章中描述
+https://vitalik.ca/files/randomness.html[&#x201c;Validator Ordering and Randomness in PoS&#x201d;].
+
+[role="notoc"]
+====漏洞
+
+((("entropy illusion security threat","vulnerability"))) 以太坊平台上最先建立的一些合约是基于
+赌博游戏。从根本上讲，赌博需要不确定性（某些可以
+打赌的东西），这使得在区块链上构建赌博系统（
+确定性系统）相当困难。显然，不确定性
+必须来自区块链外部的来源。这对于
+玩家之间的下注（例如，参见http://bit.ly/2CUh2KS [提交-披露技术]）是可能实现的；不过难度将大大提高，如果你想要
+编写一个合约可以充当“house”（例如二十一点或
+轮盘赌）的游戏。一个常见的陷阱是使用将来的区块变量-即，
+变量包含有关尚不知道其值的交易区块的信息，例如
+哈希值，时间戳记，区块编号或燃料限制。这些信息的问题是
+它们是由开采该区块的矿工控制的，因此
+不是真正随机的。考虑例如轮盘赌智能合约
+中的逻辑为，如果下一个区块哈希以偶数数字结尾则返回一个黑色
+数字。一名矿工（或矿工池）可能会下注100万美元。如果他们
+挖出来下一个区块并发现是以奇数结尾的哈希，他们可以
+选择不发布他们的区块而继续挖掘，除非他们找到一个
+区块哈希为偶数的解决方案（假设区块
+奖励和费用少于100万美元）。使用过去或现在的变量可能
+会导致更具破坏性的问题，就像马丁·斯文德（Martin Swende）在其博客http://martin.swende.se/blog/Breaking_the_house.html[blog post]中所展示的那样。
+此外，如果仅使用区块变量意味着伪随机
+数在一个区块中所有的交易中将相同，因此攻击者
+可以通过在一个区块内完成许多交易来增加胜利的次数
+（如果有最大下注）。
+
+[role="notoc"]
+====预防技术
+
+((("entropy illusion security threat","preventative techniques"))) 熵的源（随机性）必须在区块链外部。
+这可以在类似以下系统的参与方之间完成：
+http://bit.ly/2CUh2KS[commit–reveal],
+或通过将信任模型更改为一组参与者（如
+https://github.com/randao/randao[RandDAO] ）。也可以通过
+中心化实体用作随机性预言机。区块变量
+（一般来说，有一些例外）不应用作
+熵的来源，因为矿工可以操纵它们。
+
+====实际示例：PRNG合约
+
+((("entropy illusion security threat","real world example: PRNG contracts")))((("PRNG (pseudorandom number generator) contracts")))((("pseudorandom number generator (PRNG) contracts"))) 2018年2月，阿森尼·罗伊托夫（Arseny Reutov）在他的博客
+http://bit.ly/2Q589lx[blogged] 中发表了对3,649个实时智能合约的分析，这些智能合约都使用了
+伪随机数生成器（PRNG）；他找到了43份合约
+可以被攻击。
+
+[[external_contract_referencing]]
+===外部合约参考
+
+((("external contract referencing security threat", id="ix_09smart-contracts-security-asciidoc27", range="startofrange")))((("security (smart contracts)","external contract referencing threat", id="ix_09smart-contracts-security-asciidoc28", range="startofrange"))) 以太坊“世界计算机”的好处之一是能够
+重用代码并操作网络上已部署的合约。
+这个结果就是，大量合约引用了外部合约，
+通常通过外部信息调用。
+这些外部信息调用可以掩盖恶意行为者的
+意图，我们现在将对这些不明显的方式进行研究。
+
+[role="notoc"]
+====漏洞
+
+((("external contract referencing security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc29", range="startofrange"))) 在Solidity中，任何一个地址都可以代表一个合约，而不会考虑
+地址上的代码是否能代表正在投放的合约类型。这种情况
+可能会导致问题，尤其是在合约的作者尝试
+隐藏恶意代码。让我们用一个例子来说明。
+
+考虑一段类似<<rot13_security>>中的代码，这基本实现了
+https://en.wikipedia.org/wiki/ROT13[ROT13 cipher].
+
+[[rot13_security]]
+.Rot13Encryption.sol
+====
+[source,solidity,linenums]
+----
+// encryption contract
+contract Rot13Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-encrypt a string
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            // inline assembly to modify the string
+            assembly {
+                // get the first byte
+                char := byte(0,char)
+                // if the character is in [n,z], i.e. wrapping
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // subtract from the ASCII number 'a',
+                // the difference between character <char> and 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                if iszero(eq(char, 0x20)) // ignore spaces
+                // add 13 to char
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-decrypt a string
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+}
+----
+====
+
+此代码只是获取一个字符串（字母++ a ++ – ++ z ++，无需验证），然后
+通过将每个字符向右移动13个位置来进行加密（在
+`z`之后回转）;即，“ a”移至“ n”，而“ x”移至“ k”。如果不理解这个基于先前合约的汇编
+过程也没关系，不影响要讨论的问题
+正在讨论中，因此不熟悉汇编的读者可以简单地忽略它。
+
+现在考虑以下合约，该合约使用此代码进行加密：
+
+[source,solidity,linenums]
+----
+import "Rot13Encryption.sol";
+
+// encrypt your top-secret info
+contract EncryptionContract {
+    // library for encryption
+    Rot13Encryption encryptionLibrary;
+
+    // constructor - initialize the library
+    constructor(Rot13Encryption _encryptionLibrary) {
+        encryptionLibrary = _encryptionLibrary;
+    }
+
+    function encryptPrivateData(string privateInfo) {
+        // potentially do some operations here
+        encryptionLibrary.rot13Encrypt(privateInfo);
+     }
+ }
+----
+
+该合约的问题在于，“ encryptionLibrary”地址
+并不是公开或固定的。因此，合约的部署者可以在构造函数中提供指向该合约的地址：
+
+[source,solidity,linenums]
+----
+// encryption contract
+contract Rot26Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-encrypt a string
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            // inline assembly to modify the string
+            assembly {
+                // get the first byte
+                char := byte(0,char)
+                // if the character is in [n,z], i.e. wrapping
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // subtract from the ASCII number 'a',
+                // the difference between character <char> and 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                // ignore spaces
+                if iszero(eq(char, 0x20))
+                // add 26 to char!
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-decrypt a string
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+}
+----
+
+该合合约实现了ROT26密码，该密码将每个字符移位26位
+（即不执行任何操作）。同样，在此不需要了解合约程序中的汇编
+过程。更简单地说，攻击者可以将以下合约链接
+起来并具有相同的效力：
+
+[source,solidity,linenums]
+----
+contract Print{
+    event Print(string text);
+
+    function rot13Encrypt(string text) public {
+        emit Print(text);
+    }
+ }
+----
+
+如果将任何一个这两个合约的地址输入
+合约的构造函数，ʻencryptPrivateData`函数只会产生一个
+打印出未加密的私有数据的事件。
+
+虽然在这个
+示例里面，在构造函数中设置了一个类似库的合约，通常
+特权用户（例如所有者）可以更改库
+合约地址。如果链接合约不包含被调用的函数
+那么后备函数将被执行。例如，
+在这行：[ <code>encryptionLibrary.rot13​Encrypt()</code> ]，如果合约指定的
+`encryptionLibrary` 是:
+
+[source,solidity,linenums]
+----
+ contract Blank {
+     event Print(string text);
+     function () {
+         emit Print("Here");
+//将恶意代码放在此处，它将运行
+     }
+ }
+----
+
+然后会发出带有“Here”文本的事件。因此，如果用户可以
+更改合约库，原则上他们可以在不知不觉中使得其他用户
+运行任意代码。
+
+[WARNING]
+====
+此处的合约仅用于说明目的，并且
+不代表适当的加密。它们不应该用于
+加密。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc29")))
+====
+
+[role="notoc"]
+====预防技术
+
+((("external contract referencing security threat","preventative techniques"))) 如前所述，安全的合约可以（在某些情况下）
+通过恶意方式进行部署。审核员可以
+公开验证合约，并允许其所有者以恶意方式将其部署
+，这将导致经过公开审核的合约仍存在漏洞
+或恶意意图。
+
+有许多技术可以防止出现这些情况。
+
+一种技术是使用“ new”关键字创建合约。在
+前面的示例中，构造函数可以写为：
+
+[source,solidity]
+----
+constructor() {
+    encryptionLibrary = new Rot13Encryption();
+}
+----
+
+这样，在部署时就可以创建引用合约的实例
+时间，并且部署者无法替换`Rot13Encryption`合约
+而不更改它。
+
+另一种解决方案是对外部合约地址进行硬编码。
+
+通常，调用外部合约的代码应始终为
+经过仔细审核的。作为开发人员，在定义外部合约时，考虑
+将合约地址公开是一个好主意（未发生
+在下一节的蜜罐示例中），以便用户轻松检查
+合约所引用的代码。相反，如果合约包含
+私有变量的合约地址，可能表示这里面的行为
+包含恶意（如真实示例所示）。如果用户可以更改
+一个用于调用外部函数的合约地址
+，那么很重要的（在分布式系统中
+范围）是需要实施时间锁定和/或投票机制，以允许用户
+查看被更改的代码，或让参与者有机会选择
+使用/不使用新合约地址。
+
+====实际示例：可再入的蜜罐
+
+((("external contract referencing security threat","real-world example: reentrancy honey pot", id="ix_09smart-contracts-security-asciidoc30", range="startofrange")))((("honey pots", id="ix_09smart-contracts-security-asciidoc31", range="startofrange")))((("reentrancy honey pot security threat", id="ix_09smart-contracts-security-asciidoc32", range="startofrange"))) 主网上已发布了许多最新的蜜罐（Honey Pot）合约。这些
+合约试图诱使以太坊黑客来攻击
+合约，但最终导致他们在合约中输掉以太币
+而不是所预期的获利。一个例子就是通过
+用恶意合约替换构造函数中的预期的合约。
+这段代码可以在下面找到
+http://bit.ly/2JtdqRi[here]:
+
+[source,solidity,linenums]
+----
+pragma solidity ^0.4.19;
+
+contract Private_Bank
+{
+    mapping (address => uint) public balances;
+    uint public MinDeposit = 1 ether;
+    Log TransferLog;
+
+    function Private_Bank(address _log)
+    {
+        TransferLog = Log(_log);
+    }
+
+    function Deposit()
+    public
+    payable
+    {
+        if(msg.value >= MinDeposit)
+        {
+            balances[msg.sender]+=msg.value;
+            TransferLog.AddMessage(msg.sender,msg.value,"Deposit");
+        }
+    }
+
+    function CashOut(uint _am)
+    {
+        if(_am<=balances[msg.sender])
+        {
+            if(msg.sender.call.value(_am)())
+            {
+                balances[msg.sender]-=_am;
+                TransferLog.AddMessage(msg.sender,_am,"CashOut");
+            }
+        }
+    }
+
+    function() external payable{}
+
+}
+
+contract Log
+{
+    struct Message
+    {
+        address Sender;
+        string  Data;
+        uint Val;
+        uint  Time;
+    }
+
+    Message[] public History;
+    Message LastMsg;
+
+    function AddMessage(address _adr,uint _val,string _data)
+    public
+    {
+        LastMsg.Sender = _adr;
+        LastMsg.Time = now;
+        LastMsg.Val = _val;
+        LastMsg.Data = _data;
+        History.push(LastMsg);
+    }
+}
+----
+
+这个
+http://bit.ly/2Q58VyX[post]
+由一位reddit用户发布的帖子解释了他们如何在该合约中损失了1个以太币
+通过尝试利用预期会出现在合约中的重入攻击缺陷
+(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc32")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc31")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc30"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc28")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc27")))
+
+===短地址/参数攻击
+
+((("security (smart contracts)","short address/parameter attack")))((("short address/parameter attack"))) 此攻击并对不对Solidity合约
+本身进行攻击，但是攻击可能与它们交互的第三方应用程序上。本
+节为了完整起见，添加了此部分，以使读者了解参数设置如何
+可以被合约操纵。
+
+有关的更多示例，请参阅
+http://bit.ly/2yKme14[&#x201c;The ERC20
+Short Address Attack Explained&#x201d;],
+http://bit.ly/2yFOGRQ[&#x201c;ICO
+Smart Contract Vulnerability: Short Address Attack&#x201d;], 或者
+http://bit.ly/2CQjBhc[Reddit
+post].
+
+[role="notoc"]
+====漏洞
+
+((("short address/parameter attack","vulnerability"))) 当将参数传递给智能合约时，参数的编码需要
+根据
+ABI规范 http://bit.ly/2Q5VIG9[ABI
+specification] 进行。这里可以发送参数编码
+短于预期的参数长度（例如，发送
+地址仅为38个十六进制字符（19个字节），而不是标准的40个
+十六进制字符（20个字节）。在这种情况下，EVM会将零添加到
+编码参数的末尾以组成预期的长度。
+
+这将成为一个问题，特别是当第三方应用程序未验证
+输入时。最明显的例子是一个交易所不验证
+那些
+ERC20通证的地址
+而完成用户的提款请求时。该示例的更多内容
+Peter Vessenes的帖子中有详细介绍，
+http://bit.ly/2Q1ybpQ[&#x201c;The ERC20
+Short Address Attack Explained&#x201d;].
+
+考虑标准
+http://bit.ly/2CUf7WG[ERC20]
+的 +transfer+ 函数界面，注意参数顺序：
+
+[source,solidity]
+----
+function transfer(address to, uint tokens) public returns (bool success);
+----
+
+现在考虑一个持有大量通证的交易所（比方说
+REP）和希望提取其100个通证份额的用户。用户
+将提交其账户地址“ 0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead”，
+和要提取通证的数量100。交易所将对这些信息进行编码
+其中参数的顺序是pass：[ <code><span class="keep-together">transfer</span></code> ]函数指定；即，先是
+“地址”然后是“通证”。编码结果为：
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeaddead0000000000000
+000000000000000000000000000000000056bc75e2d63100000
+----
+
+开头的4
+个字节（“ a9059cbb”）是“transfer”
+http://bit.ly/2RmueMP[function
+签名/选择器]，接下来的32个字节是地址，而
+最后的32个字节是格式为uint256的变量，代表通证的数量。
+请注意，最后的十六进制“ 56bc75e2d63100000”对应于100
+通证（小数点后18位，由REP通证指定）
+pass:[<span class="keep-together">contract</span>]).
+
+现在让我们看看如果发送一个地址
+缺少1个字节（2个十六进制数字）。具体来说，假设攻击者
+发送`0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde`作为地址（丢失
+最后两位数字）和相同的`100`通证要提取。如果
+交易所不验证此输入，它将被编码为：
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeadde00000000000000
+00000000000000000000000000000000056bc75e2d6310000000
+----
+
+这里的区别
+很微妙。请注意，编码末尾已经添加了“ 00”，以
+弥补发送地址的短缺部分。当这被发送到
+智能合约时，“address”参数将被读取为
+`0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde00`，而该值将被读成
+如`56bc75e2d6310000000`（注意两个额外的 ++0++）。这个值是
+现在变成了25600个通证（该值已乘以256）。在这个
+例子，如果交易所持有这么多通证，那么用户将撤回
+25600个通证（交易所认为用户只是在提取
+100”）到修改后的地址。显然，攻击者不会拥有
+在此示例中的修改后的地址，但如果攻击者要生成
+任何以++0++结尾的地址（可以很容易地用暴力破解）并
+使用这个生成的地址，他们可以从
+毫无防护的交易所里面盗取通证。
+
+[role="notoc"]
+====预防技术
+
+((("short address/parameter attack","preventative techniques"))) 外部应用程序中的所有输入参数都应先经过验证
+再将它们发送到区块链上。我们需要
+注意，参数的排序在这里起着重要作用。填充过程
+仅在最后发生，对智能合约中的参数进行仔细排序
+可以降低这种形式的攻击。
+
+===未检查的调用返回值
+
+((("calls, external", id="ix_09smart-contracts-security-asciidoc33", range="startofrange")))((("external calls", id="ix_09smart-contracts-security-asciidoc34", range="startofrange")))((("security (smart contracts)","unchecked CALL return value threat", id="ix_09smart-contracts-security-asciidoc35", range="startofrange")))((("unchecked CALL return value security threat", id="ix_09smart-contracts-security-asciidoc36", range="startofrange"))) 在Solidity中有多种执行外部调用的方法。发送
+以太坊到外部账户通常是通过“transfer”方法执行的。
+但是，也可以使用“send”函数，并且更多用途的
+外部调用`CALL`操作码可以直接在Solidity中使用。
+ `call` 和 `send`函数返回一个逻辑值，表明是否
+调用成功或失败。因此，这些函数有一个简单的警告，
+如果执行这些函数的交易将不会恢复
+外部调用（通过“call”或“send”初始化）失败；而是
+函数仅返回“ false”。一个常见的错误是
+如果外部调用失败，开发人员希望交易将发生还原过程，并且不检查返回值。
+
+有关更多信息，请参见http://www.dasp.co/#item-4[DASP Top 10 of 2018]上的＃4和
+http://bit.ly/2RnS1vA[&#x201c;Scanning
+Live Ethereum Contracts for the &lsquo;Unchecked-Send&rsquo; Bug&#x201d;].
+
+[role="notoc"]
+====漏洞
+
+((("unchecked CALL return value security threat","vulnerability"))) 考虑以下示例：
+
+[source,solidity,linenums]
+----
+contract Lotto {
+
+    bool public payedOut = false;
+    address public winner;
+    uint public winAmount;
+
+    // ... extra functionality here
+
+    function sendToWinner() public {
+        require(!payedOut);
+        winner.send(winAmount);
+        payedOut = true;
+    }
+
+    function withdrawLeftOver() public {
+        require(payedOut);
+        msg.sender.send(this.balance);
+    }
+}
+----
+
+这代表了类似于乐透的合约，其中“winner”
+接收以太币的“ winAmount”，通常还会剩下一点
+让任何人提现。
+
+该漏洞存在于第11行，其中使用了“ send”而不检查
+函数的响应。在这个简单的例子中，一个“winner”的交易
+失败（由于用尽燃料或合约故意失败并
+调用后备函数）允许将payedOut设置为true
+而不管是否发送了以太币。在这种情况下，任何人都可以
+通过`withdrawLeftOver`函数获得`winner`的奖金。
+
+[role="notoc"]
+====预防技术
+
+((("unchecked CALL return value security threat","preventative techniques"))) 只要有可能，应该使用`transfer`函数而不是`send`，因为
+如果外部交易还原，则“ transfer”将还原。如果
+需要`send`，需要总是检查返回值。
+
+一个更好的解决方案
+http://bit.ly/2CSdF7y[recommendation]
+是采用_提款方式_。在此解决方案中，每个用户必须
+调用一个独立的+ withdraw +函数
+处理发送合约中的以太币并
+处理发送交易失败的后果。
+这个想法是在逻辑上将外部发送功能与
+其余的代码库，并将潜在失败的负担
+放在最终用户调用+ withdraw +函数进行的交易。
+
+====实际示例：Etherpot 和 King of the Ether
+
+Etherpot http://bit.ly/2OfHalK[Etherpot] ((("Etherpot smart contract lottery")))((("King of the Ether")))((("unchecked CALL return value security threat","real-world example: Etherpot and King of the Ether"))) 是一个智能合约彩票项目，
+与前面提到的示例合约类似。
+该合约的问题主要是由于不当使用
+区块哈希（仅可使用最后的256个块哈希；请参阅Aakil
+Fernandes 的文章
+http://bit.ly/2Jpzf4x[post]
+关于Etherpot如何无法正确使用区块哈希）。但是这个
+合约还有未经检查的调用返回值问题。考虑一下
+<<lotto_security>>中的函数`cash` 。
+
+[[lotto_security]]
+.lotto.sol: Code snippet
+====
+[source,solidity,linenums]
+----
+...
+  function cash(uint roundIndex, uint subpotIndex){
+
+        var subpotsCount = getSubpotsCount(roundIndex);
+
+        if(subpotIndex>=subpotsCount)
+            return;
+
+        var decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
+
+        if(decisionBlockNumber>block.number)
+            return;
+
+        if(rounds[roundIndex].isCashed[subpotIndex])
+            return;
+        //Subpots can only be cashed once. This is to prevent double payouts
+
+        var winner = calculateWinner(roundIndex,subpotIndex);
+        var subpot = getSubpot(roundIndex);
+
+        winner.send(subpot);
+
+        rounds[roundIndex].isCashed[subpotIndex] = true;
+        //Mark the round as cashed
+}
+...
+----
+====
+
+请注意，在第21行，`send`函数的返回值没有
+检测，然后在下一行设置了一个逻辑值，用于判断
+奖金已经发送给了获胜者。此错误可能会导致
+中标者没有收到以太币，但是合约的状态
+表示中奖者已被支付。
+
+此错误的更严重版本发生在项目
+http://bit.ly/2ACsfi1[King of
+the Ether]。一个很好的例子
+http://bit.ly/2ESoaub[post-mortem] 是
+合约详细说明了未经检查的失败“send”如何
+可以被用来完成攻击 :[<span class="keep-together">contract</span>].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc36")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc35")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc34")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc33")))
+
+[[frontrunning_security]]
+===比赛条件/抢跑
+
+((("front-running attacks", id="ix_09smart-contracts-security-asciidoc37", range="startofrange")))((("security (smart contracts)","race conditions/front running threat", id="ix_09smart-contracts-security-asciidoc38", range="startofrange")))通过 ((("race conditions", seealso="front-running security threat; reentrancy attack")))外部调用其他合约和多用户
+的区块链基础性质带来了各种潜在
+Solidity中的陷阱，用户通过_race_代码执行来获取
+意外状态。重入攻击（本章前面已讨论过）就是这样的一个例子。
+通过比赛条件实施攻击。在本节中，我们将讨论
+以太坊区块链上可能发生的其他种类的比赛条件
+关于这个主题有很多好的文章，包括
+&#x201c;Race Conditions&#x201d; 还有http://bit.ly/2yFesFF[Ethereum
+Wiki], http://www.dasp.co/#item-7[#7 on the DASP Top10 of 2018], 和
+http://bit.ly/2Q6E4lP[Ethereum Smart Contract Best Practices]。
+
+[role="notoc"]
+====漏洞
+
+((("front-running attacks","vulnerability"))) 与其他大多数区块链一样，以太坊节点汇集交易并把交易打包
+进入区块。这些交易的有效性仅当矿工
+解决了共识问题（当前
+http://bit.ly/2yI5Dv7[Ethash] 以太坊的PoW）。
+挖出区块的矿工还可以从
+交易池中选择哪些交易将包含在区块中，通常根据
+每笔交易的“ gasPrice”排序。这是潜在的攻击媒介。一个
+攻击者可以监视交易池中可能存在的交易
+包含问题的解决方案，并修改或撤消方案解决者的
+许可或更改合约中的状态，不利于
+解决者。然后，攻击者可以从此交易中获取数据，并
+创建自己的交易，并使用更高的“ gasPrice”，因此他们的
+交易可以被包含在原始交易之前的一个区块中。
+
+让我们用一个简单的例子看看这是如何工作的。考虑一下
+<<findthishash_security>>中展示的合约。
+
+[[findthishash_security]]
+.FindThisHash.sol
+====
+[source,solidity,linenums]
+----
+contract FindThisHash {
+    bytes32 constant public hash =
+      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
+
+    constructor() external payable {} // load with ether
+
+    function solve(string solution) public {
+        // If you can find the pre-image of the hash, receive 1000 ether
+        require(hash == sha3(solution));
+        msg.sender.transfer(1000 ether);
+    }
+}
+----
+====
+
+假设该合约包含1,000个以太币。如果用户可以找到
+以下SHA-3哈希的原像：
+
+----
+0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a
+----
+
+就可以提交解决方案并提出1,000个以太币。假设有一位使用者
+找出解决方案是“Ethereum!”。他们调用`solve`函数
+并将“Ethereum!”作为参数提交。不幸的是，一个精明的攻击者
+一直在监视提交解决方案的交易池。
+他们看到此解决方案，检查其有效性，然后提交
+一个相同的交易，其“ gasPrice”比原始交易高得多
+的交易。挖出区块的矿工可能会
+由于攻击者的交易“ gasPrice”较高而先挖掘他们的
+交易，而不是原始解决者提交的交易。攻击者将拿走1,000
+以太币，而解决问题的用户将一无所获。请记住，在这种类型的“先行攻击”漏洞中，矿工被独特地激励自己进行攻击（或者被贿赂用昂贵的费用来运行这些攻击）。不应低估攻击者本身就是矿工的可能性。
+
+[role="notoc"]
+====预防技术
+
+((("front-running attacks","preventative techniques"))) 有两种类型的参与者可以执行以下类型的
+前端攻击：用户（可以修改其交易的“ gasPrice”的
+用户）和矿工本身（用户可以重新按照
+他们认为合适的顺序排列区块中的交易）。合约受到第一种攻击
+（用户）导致的问题要比合约受到第二种攻击（矿工）严重的多
+，因为矿工发起攻击只能在挖掘出一个
+区块时才能进行，这对于任何针对特定目标
+区块。在这里，我们将列出一些解决措施，可以缓解这两类
+的攻击者。
+
+一种方法是在“ gasPrice”上设置上限。
+这样可以防止用户
+超过上限提高`gasPrice`并获得优惠的交易订单。
+此措施只能防止
+第一类攻击者（特定用户）。在这种情况下，矿工可以
+仍然会攻击合约，因为他们可以对区块中的交易按他们喜欢的方式排序，
+而不管燃料价格如何。
+
+一种更可靠的方法是使用
+http://bit.ly/2CUh2KS[commit–reveal]
+方案。这样的方案要求用户发送
+具有隐藏信息（通常是哈希）的交易。等到
+交易已包含在一个区块中后，用户再发送交易
+显示已发送的数据（显示阶段）。这个方法
+可以防止矿工和用户进行抢跑交易，因为他们
+无法确定交易内容。但是，这种方法
+无法隐藏交易价值（在某些情况下是
+需要隐藏的宝贵信息）。而ENS
+https://ens.domains/[ENS] 智能合约允许用户发送
+交易，并在提交的数据中包含他们愿意支付的以太币数量。
+然后，用户可以发送一个交易包含任意
+金额。在显示阶段，用户可以收回
+在交易中发送的金额和他们愿意支付的金额之间
+的差异。
+
+另一个由 ((("submarine sends"))) Lorenz Breidenbach，Phil Daian，Ari Juels和FlorianTramèr提出的建议是使用潜水艇发送
+http://bit.ly/2SygqQx[&#x201c;submarine
+sends&#x201d;]。这个想法的有效实现需要`CREATE2`
+操作码，目前尚未被以太坊系统采用，但可能在
+未来的硬分叉中实现。
+
+====实际示例：ERC20和Bancor
+
+((("ERC20 token standard","front-running vulnerability")))((("front-running attacks","real-world examples: ERC 20 and Bancor"))) ERC20标准 http://bit.ly/2CUf7WG[ERC20
+standard]以在以太坊上构建通证而闻名。这个
+标准具有潜在的抢跑漏洞，
+具体是在“approve”函数之中。 http://bit.ly/2DbvQpJ[Mikhail Vladimirov和Dmitry Khovratovich]对此做了很好的解释，包括
+漏洞的详情和缓解攻击的方法。
+
+该标准将“approve”函数指定为：
+
+[source,solidity]
+----
+function approve(address _spender, uint256 _value) returns (bool success)
+----
+
+此功能允许用户批准其他用户代表自己传送通证
+。抢跑漏洞发生在以下情况中：
+用户Alice 批准，即_approves_她的朋友Bob可以支付100个通证。Alice
+后来决定她要撤消Bob的批准，例如说，
+100个通证，因此她创建了一个交易来设置Bob的额度
+到50个通证。Bob一直在仔细观察区块链，他发现了
+这项交易并自己建立了一个支付100通证的交易
+。并且他在交易中使用的“ gasPrice”高于
+Alice的交易，这样就可以覆盖她的交易。一些
+“approve”的实现版本将允许鲍勃转移他的
+100个通证，然后在Alice的交易完成后，会重置
+Bob的批准额度为50个通证，实际上使Bob可以使用
+150个通证。
+
+((("Bancor"))) 另一个突出的真实示例是
+https://www.bancor.network/[Bancor] 。伊万·博加蒂（Ivan Bogatyy）和他的团队
+记录了最初的Bancor实施获利的攻击。他的博客
+http://bit.ly/2EUlLzb[blog
+post] 和讲座 http://bit.ly/2yHgkhs[DevCon3 talk]
+详细讨论这个过程。实质上，通证的价格是
+根据交易额确定；用户可以通过查看
+Bancor交易的交易池并进行抢跑交易以从价格差别中获利
+。 Bancor团队已解决了此攻击。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc38")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc37")))
+
+===拒绝服务（DoS）
+
+((("denial of service (DoS) attacks", id="ix_09smart-contracts-security-asciidoc39", range="startofrange")))((("security (smart contracts)","denial of service attacks", id="ix_09smart-contracts-security-asciidoc40", range="startofrange"))) 此类别非常广泛，但从根本上讲包含的攻击是
+用户可以在一段时间内使合约无法执行，或者
+在某些情况下是永久的。某些极端情况可以永远将以太币困在这些合约中
+，就像<<multisig_secondhack>>。
+
+[role="notoc"]
+====漏洞
+
+((("denial of service (DoS) attacks","vulnerability"))) 合约可以通过多种方式失效。在这里，我们
+仅强调一些不太明显的Solidity中
+可能导致DoS漏洞的编码模式：
+
+由外部操作的映射或数组循环：
+通常此模式出现在当所有者希望分配通证
+给投资者时，类似“distribute”架构的函数，
+如本例合约所示：
++
+[source,solidity,linenums]
+----
+contract DistributeTokens {
+    address public owner; // gets set somewhere
+    address[] investors; // array of investors
+    uint[] investorTokens; // the amount of tokens each investor gets
+
+    // ... extra functionality, including transfertoken()
+
+    function invest() external payable {
+        investors.push(msg.sender);
+        investorTokens.push(msg.value * 5); // 5 times the wei sent
+        }
+
+    function distribute() public {
+        require(msg.sender == owner); // only owner
+        for(uint i = 0; i < investors.length; i++) {
+            // here transferToken(to,amount) transfers "amount" of 
+            // tokens to the address "to"
+            transferToken(investors[i],investorTokens[i]);
+        }
+    }
+}
+----
++
+请注意，此合约中的循环在一个数组上运行，该数组可以是
+人为扩展的。攻击者可以创建许多用户帐户，从而
+导致`investor`数组很大。原则上，可以这样做，以便
+执行+ for +循环所需的燃料值超出了区块燃料的上限值，
+实质上导致“distribute”函数无法使用。
+
+所有者操作：
+((("Initial Coin Offerings (ICOs)","DoS attacks and"))) 另一种常见模式是所有者拥有
+合约中的特定特权，并且必须执行某些任务才能
+推进合约进行到下一个状态。一个示例是初始通证发行（ICO）
+的合约要求所有者最终确定`finalize` 合约，然后
+才可以允许通证转让。例如：
++
+[source,solidity,linenums]
+----
+bool public isFinalized = false;
+address public owner; // gets set somewhere
+
+function finalize() public {
+    require(msg.sender == owner);
+    isFinalized == true;
+}
+
+// ... extra ICO functionality
+
+// overloaded transfer function
+function transfer(address _to, uint _value) returns (bool) {
+    require(isFinalized);
+    super.transfer(_to,_value)
+}
+
+...
+----
++
+在这种情况下，如果特权用户丢失其私钥或变成
+无效账户，整个通证合约将无法使用。在这种情况下
+所有者不能调用：[ <span class="keep-together"><code>finalize</code></span> ]通证不能被转让；
+通证生态系统的全部操作取决于一个
+账户地址。
+
+基于外部调用的进度状态:: 合约中有时会写
+这样，要发展到新状态，需要将以太币发送到
+地址，或等待来自外部源的某些输入。这些模式会在
+外部调用失败或由于外部因素阻止调用时，会导致DoS攻击
+成功。在发送以太币的示例中，用户可以创建合约
+不接受以太币。如果合约要求提取以太币以进入新的状态（请考虑
+一个限时合约，要求所有以太币在被提出之后，才能
+再次可用），合约将永远不会
+达到新的状态，因为永远无法将以太币发送到用户的
+不接受以太币的合约中。
+
+[role="notoc"]
+====预防技术
+
+((("denial of service (DoS) attacks","preventative techniques"))) 在第一个示例中，合约不应遍历
+可以由外部用户人为操纵的数据结构。
+建议采用提款的模式，即每个投资者可以调用+提款+
+函数来独立提取通证。
+
+在第二个示例中，需要特权用户才能更改
+合约的状态。在这样的例子中，故障保护可以在
+在合约所有者丧失管理能力时使用。一种解决方案
+是使所有者成为多重签名合约。另一种解决方案
+是使用时间锁定：在给出第5行+ require +的示例中，可以包含一个
+基于时间的机制，例如
+`require（msg.sender == owner || now&gt; unlockTime）`，允许任何用户
+在`unlockTime`指定的一段时间后完成。这类
+缓解技术的例子也可以在第三示例中使用。如果
+需要外部调用以进入新状态，以防止
+它们可能的故障并可能添加基于时间的状态变化，
+以防期望的调用永远不会到来。
+
+[注意]
+====
+当然，这些建议有一些中心化的替代方案：
+可以添加一个“ maintenanceUser”，该用户可以在
+必要的情况下，修复基于DoS的攻击数值可能会出现问题。通常这些种类
+的合约中，由于这样一个实体的权利，而导致信任问题。
+====
+
+====实际示例：GovernMental
+
+http://governmental.github.io/GovernMental/[GovernMental] ((("denial of service (DoS) attacks","real-world example: GovernMental")))((("GovernMental Ponzi scheme","DoS vulnerability"))) 是一个老的
+庞氏骗局，其中积累了大量的以太币（一次为1,100个以太币）。不幸的是，它
+容易受到本节中提到的DoS漏洞的影响。 etherik的帖子http://bit.ly/2DcgvFc[Reddit post]描述了合约如何要求删除大的
+映射以便提现以太币。删除该映射需要
+的燃料成本超过了区块燃料上限，因此
+不可能提取1,100以太币。合约地址是
+http://bit.ly/2Oh8j7R[+0xF45717552f12Ef7cb65e95476F217Ea008167Ae3+]，
+而且你可以从 http://bit.ly/2Ogzrnn[+0x0d80d67202bd9cb6773df8dd2020e719&thinsp;0a1b0793e8ec4fc105257e8128f0506b+] 中看到交易，最终1,100以太币是通过使用以下交易获得的
+2.5M燃料gas（当区块燃料限制已上升到足以允许此类交易时）。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc40")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc39")))
+
+===区块时间戳操作
+
+((("block timestamp manipulation security threat", id="ix_09smart-contracts-security-asciidoc41", range="startofrange")))((("security (smart contracts)","block timestamp manipulation threat", id="ix_09smart-contracts-security-asciidoc42", range="startofrange"))) 区块的时间戳在过去已用于多种
+应用程序中，例如随机数的熵（请参见
+<<entropyillusion_security>>了解更多信息），在
+一段时间内锁定资金，以及
+与时间相关的状态改变条件判断语句。矿工有一定能力对
+时间戳进行调整，这种能力可能会很危险，
+尤其是在合约中错误使用区块的时间戳的情况下。
+
+有用的参考资料包括
+http://bit.ly/2OdUC9C[the
+Solidity docs] 和 http://bit.ly/2CQ8gh4[Joris Bontje's Ethereum Stack
+Exchange question] 的问题解答。
+
+[role="notoc"]
+====漏洞
+
+((("block timestamp manipulation security threat","vulnerability")))`block.timestamp`及其别名“ now”可以由矿工操纵，如果
+他们有这样做的动力。让我们构建一个简单的游戏，如<<roulette_security>>，那么
+将很容易受到矿工的攻击。
+
+[[roulette_security]]
+.roulette.sol
+====
+[source,solidity,linenums]
+----
+contract Roulette {
+    uint public pastBlockTime; // forces one bet per block
+
+    constructor() external payable {} // initially fund contract
+
+    // fallback function used to make a bet
+    function () external payable {
+        require(msg.value == 10 ether); // must send 10 ether to play
+        require(now != pastBlockTime); // only 1 transaction per block
+        pastBlockTime = now;
+        if(now % 15 == 0) { // winner
+            msg.sender.transfer(this.balance);
+        }
+    }
+}
+----
+====
+
+这个合约的行为就像是简单的彩票。每个区块的一笔交易
+可以下注10以太币，就有机会赢得合约的余额。但
+这里的假设是`block.timestamp`的最后两位数字是均匀分布的。如果真是这样，那么就有1/15
+的机会赢得此彩票。
+
+但是，我们知道，矿工可以根据需要调整时间戳
+在这种情况下，如果合约中有足够的以太币，
+挖掘区块的矿工有动机选择时间戳，以使
+`block.timestamp` 或` `now` 对15取余数为0。这样可以使他们赢
+得锁定在该合约中的以太币和区块的奖励。因为
+每个区块只有一个人可以下注，这也容易受到
+抢跑攻击（请参阅&lt;<frontrunning_security> &gt;了解更多信息）。
+
+实际上，区块时间戳单向增加，因此矿工
+不能选择任意的区块时间戳（它们必须晚于它们之前的时间戳
+）。矿工也不能把区块的时间设定到太远
+的未来，否则这些区块会被网络所拒绝
+（节点将不会验证时间戳在未来的区块）。
+
+[role="notoc"]
+====预防技术
+
+((("block timestamp manipulation security threat","preventative techniques"))) 不应将区块时间戳用于熵或生成随机
+数字的过程-即，它们不应成为决定因素（直接
+或通过一些推导）来赢得游戏或更改重要
+的状态。
+
+有时需要对时间敏感的逻辑，例如，用于解锁合约
+（时间锁定），在几周后完成ICO，或确定终止
+日期。有时建议使用区块高度 http://bit.ly/2OdUC9C[`block.number`] 和平均区块时间来估计时间；如果
+是“ 10秒”的区块时间，“ 1周”大约等于“ 60480个区块”。
+因此，指定可以更改合约状态的区块编号可以
+更加安全，因为矿工无法轻松操纵区块编号。
+http://bit.ly/2AAebFr[BAT
+ICO] 合约采用了这种策略。
+
+这也许是不必要的，如果合约不是特别担心
+矿工对区块时间戳的操纵，但这是需要
+在合约开发中所了解的。
+
+====真实示例：GovernMental
+
+http://governmental.github.io/GovernMental/[GovernMental], ((("block timestamp manipulation security threat","real-world example: GovernMental")))((("GovernMental Ponzi scheme","block timestamp-based attack"))) 上面提到的旧庞氏骗局也
+容易受到基于时间戳的攻击。每一回合，合约会支付给
+最后一个加入（至少一分钟）的玩家。
+因此，作为矿工的玩家可以调整时间戳（到
+未来的时间，以使其看起来像过去了一分钟），从而
+使得他们开起来是最后一分钟加入比赛的玩家（
+虽然事实并非如此）。有关更多详细信息，请参见
+下面的资料：
+Tanya 撰写的 http://bit.ly/2Q1AMA6[&#x201c;History
+of Ethereum Security Vulnerabilities, Hacks and Their Fixes&#x201d; post] 以太坊安全漏洞，黑客及其修复》一文：[ <span class="keep-together">Bahrynovska</span> ]。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc42")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc41")))
+
+===仔细编写合约的构建函数
+
+security threat")))((("security (smart contracts)","constructors and contract name-change threat"))) 构造函数是一些特殊的函数，经常在初始化合同时执行关键，
+特殊的任务。在Solidity v0.4.22之前，
+构造函数被定义为和包含它们的合约具有相同名字的函数。
+在这种情况下，当合约名称在开发中被修改时，
+如果构造函数名称并未更改，那么它将变为普通的，
+可调用的函数。你可以想象，这可以导致（并具有）一些
+有趣的合约漏洞。
+
+为了进一步了解，读者可能有兴趣尝试
+https://github.com/OpenZeppelin/ethernaut[Ethernaut challenges]
+（特别是Fallout级别）。
+
+[role="notoc"]
+====漏洞
+
+((("constructor/contract name modification security threat","vulnerability")))((("contract name modification/constructor security threat","vulnerability"))) 如果合约名称被修改，或者有错字在
+构造函数的名称里面，使其与合约的名字不符，
+构造函数将表现得像一个正常的函数。这个可以
+导致糟糕的后果，特别是如果构造函数可以执行
+特权操作。考虑以下合约：
+
+[source,solidity,linenums]
+----
+contract OwnerWallet {
+    address public owner;
+
+    // constructor
+    function ownerWallet(address _owner) public {
+        owner = _owner;
+    }
+
+    // Fallback. Collect ether.
+    function () payable {}
+
+    function withdraw() public {
+        require(msg.sender == owner);
+        msg.sender.transfer(this.balance);
+    }
+}
+----
+
+该合约收集以太币，仅允许合约所有者
+通过调用`withdraw`函数提现。出现此问题是因为构造函数的名称与合约的名称不完全相同：
+第一个字母不一样！因此，任何
+用户可以调用ʻownerWallet`函数，将自己设置为所有者，
+然后通过调用`withdraw`提取合约中所有的以太币。
+
+[role="notoc"]
+====预防技术
+
+((("constructor/contract name modification security threat","preventative techniques")))((("contract name modification/constructor security threat","preventative techniques"))) 此问题已在Solidity编译器版本0.4.22中得到解决。这个版本引入了`constructor`关键字，
+可以指定构造函数，而不是要求
+函数匹配合约名称。推荐使用此关键字指定
+构造函数来防止命名问题。
+
+====真实示例：Rubixi
+
+http://bit.ly/2ESWG7t[Rubixi] ((("constructor/contract name modification security threat","real-world example: Rubixi")))((("contract name modification/constructor security threat","real-world example: Rubixi")))((("Rubixi pyramid scheme"))) 是另一种展示了这种
+漏洞的例子。它最初称为“动态金字塔”，但
+合约名称在部署到“ Rubixi”之前已更改。不过
+构造函数的名称未更改，可以允许任何用户成为
+创作者。与此错误相关的一些有趣的讨论可以在下面
+找到 http://bit.ly/2P0TRWw[Bitcointalk] 。最终，它允许用户为创建者身份而挑战并
+从金字塔骗局中获取费用。有关此特定漏洞的更多详细信息
+可以在 http://bit.ly/2Q1AMA6[&#x201c;History of Ethereum Security Vulnerabilities, Hacks and Their Fixes&#x201d;] 中找到。
+
+===未初始化的存储指针
+
+((("security (smart contracts)","uninitialized storage pointer threat", id="ix_09smart-contracts-security-asciidoc43", range="startofrange")))((("storage pointers, uninitialized", id="ix_09smart-contracts-security-asciidoc44", range="startofrange")))((("uninitialized storage pointers security threat", id="ix_09smart-contracts-security-asciidoc45", range="startofrange")))  EVM将数据存储为存储器或内存。准确理解
+这一实现方式以及函数本地变量的默认类型
+是在开发合约时，强烈建议你了解的。这是
+因为
+不适当地初始化变量，有可能产生有漏洞的合约。
+
+要了解有关EVM中存储和内存的更多信息，请参见Solidity文档，网址为 http://bit.ly/2OdUU0l[data location], http://bit.ly/2JslDWf[layout of state variables in storage], 和 http://bit.ly/2Dch2Hc[layout in memory]。
+
+[注意]
+====
+本节基于一个很好的博客文章
+http://bit.ly/2ERI0pb[post
+by Stefan Beyer]。在Stefan的启发下，可以在此找到关于此主题的更多资料
+http://bit.ly/2OgxPtG[Reddit
+thread]。
+====
+
+[role="notoc"]
+====漏洞
+
+((("uninitialized storage pointers security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc46", range="startofrange"))) 函数中的局部变量默认为存储或内存
+取决于它们的类型。未初始化的本地存储变量可能
+中包含合约中其他存储变量的值；这个情况
+可能会导致意外漏洞，或被蓄意利用。
+
+让我们考虑一下相当简单的名字注册合约<<nameregistrar_security>>。
+
+[[nameregistrar_security]]
+.NameRegistrar.sol
+====
+[source,solidity,linenums]
+----
+// A locked name registrar
+contract NameRegistrar {
+
+    bool public unlocked = false;  // registrar locked, no name updates
+
+    struct NameRecord { // map hashes to addresses
+        bytes32 name;
+        address mappedAddress;
+    }
+
+    // records who registered names
+    mapping(address => NameRecord) public registeredNameRecord;
+    // resolves hashes to addresses
+    mapping(bytes32 => address) public resolve;
+
+    function register(bytes32 _name, address _mappedAddress) public {
+        // set up the new NameRecord
+        NameRecord newRecord;
+        newRecord.name = _name;
+        newRecord.mappedAddress = _mappedAddress;
+
+        resolve[_name] = _mappedAddress;
+        registeredNameRecord[msg.sender] = newRecord;
+
+        require(unlocked); // only allow registrations if contract is unlocked
+    }
+}
+----
+====
+
+这个简单的名称注册合约只有一个函数。当合约是
+“unlocked”状态，它允许任何人注册一个名称（作为“ bytes32”哈希值）
+并将该名称映射到地址。注册合约
+最初被锁定，第25行上的“require”阻止了“register”
+函数添加名称记录。该合约看起来似乎无法使用，因为
+没有办法解锁注册表！但是，这里存在一个漏洞
+可以不管“ unlocked”变量如何，都可以进行名称注册。
+
+// TODO: Andreas to check if this introduction is required as another section
+// of the book may be able to be referenced. The language may also need to be
+// adjusted.
+
+要讨论此漏洞，首先我们需要了解存储方式
+是如何在Solidity中使用的。作为高级概述（没有任何适当的
+技术细节-我们建议阅读Solidity文档以获取适当信息
+内容），状态变量按它们在合约中出现的顺序存储在_slots_中
+（它们可以组合在一起，但是不在此
+例子中，因此我们不必为此担心）。因此，“unlocked”存在于
+slot [0]，slot [1]中存储的是registeredNameRecord，resolve
+存在`slot [2]`等。这些插槽的大小均为32个字节（添加了
+映射的复杂性，我们暂时将其忽略）。逻辑值
+`unlocked`为`false`的值时，存储内容为`0x000 ...0`（64 ++0++s，不包括`0x`）
+值为true时的存储内容为`0x000...1` (63 ++0++s)。如你所见，
+在此特定示例中，存在一个很大的存储浪费。
+
+下一个难题是默认情况下，Solidity把
+复杂的数据类型，例如++ struct ++，在存储时将它们初始化
+为局部变量。因此，第18行的pass：[ <span class="keep-together"><code>newRecord</code></span> ]默认为storage。该漏洞是由以下事实造成的：[ <span class="keep-together"><code>newRecord</code></span> ]并
+未初始化。由于默认为存储，因此将其映射到
+存储位置 + slot [0] +，当前包含指向“unlocked”的指针。
+请注意，在第19和20行，我们
+接着将newRecord.name设置为_name，将newRecord.mappedAddress设置为：[ <span class="keep-together"><code>_mappedAddress</code></span> ];这将更新位于+ slot [0] +
+和+ slot [1] +的存储内容，导致“unlocked”的内容和
+与`registeredNameRecord`相关联的存储内容被修改。
+
+这意味着变量“unlocked”可以被直接修改，只需通过
+register函数的bytes32 _name参数。因此，如果
+_name的最后一个字节非零，它将修改
+`slot [0]`位置的存储内容，即直接将“unlocked”更改为“ true”。这样的_name
+值将导致第25行的“ require”调用成功，因为我们已经设置了
+`unlocked` 的值为`true`。在Remix中尝试一下。注意该函数将被执行，
+如果你使用以下形式的“ _name”：(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc46")))
+
+----
+0x0000000000000000000000000000000000000000000000000000000000000001
+----
+
+[role="notoc"]
+====预防技术
+
+((("uninitialized storage pointers security threat","preventative techniques"))) Solidity编译器会显示未初始化的存储变量警告；
+开发人员在创建智能合约时应注意这些警告
+。当前版本的Mist（0.10）将不会
+允许编译这些合约。通常，在
+处理复杂类型时，建议显式使用“内存”或“存储”说明符，
+以确保它们的行为符合预期。
+
+====真实示例：OpenAddressLottery和CryptoRoulette Honey Pots
+
+((("OpenAddressLottery honey pot")))((("uninitialized storage pointers security threat","real-world examples: OpenAddressLottery and CryptoRoulette honey pots"))) 一个名为OpenAddressLottery的蜜罐合约http://bit.ly/2AAVnWD[+OpenAddressLottery+] ，在部署时使用了未初始化的存储变量
+从一些潜在的黑客那里收集以太币。合约本身相当
+复杂，我们将分析留给关于这个问题的讨论区 http://bit.ly/2OgxPtG[Reddit
+thread]，其中对攻击的解释很清楚。
+
+((("CryptoRoulette honey pot"))) 另一个蜜罐，http：//bit.ly/2OfNGJ2 [+ CryptoRoulette +]，也利用了这个技巧：[<span class="keep-together">尝试</span>]并收集一些以太币。如果你
+无法弄清楚攻击是如何进行的，请参阅
+http://bit.ly/2OVkSL4[&#x201c;An
+Analysis of a Couple Ethereum Honeypot Contracts&#x201d;] 中对
+这个合约和其他类似合约的概述。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc45")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc44")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc43")))
+
+===浮点数和精度
+
+((("floating-point representation security risk", id="ix_09smart-contracts-security-asciidoc47", range="startofrange")))((("security (smart contracts)","floating-point problem", id="ix_09smart-contracts-security-asciidoc48", range="startofrange"))) 在撰写本文时（v0.4.24），Solidity不支持定点和浮点
+数字。这意味着浮点数
+在Solidity中的表达必须使用整数类型。这个
+情况如果实施不正确，可能会导致错误和漏洞。
+
+[注意]
+====
+有关更多信息，请参阅
+http://bit.ly/2Ogp2Ia[Ethereum
+Contract Security Techniques and Tips wiki].
+====
+
+[role="notoc"]
+====漏洞
+
+((("floating-point representation security risk","vulnerability"))) 由于Solidity中没有定点数类型，因此开发人员必须
+使用标准整数数据类型实现自己定义的数据。这里有
+许多开发人员可能遇到的陷阱。我们会
+尝试在本节中重点介绍其中一些。
+
+让我们从一个代码示例开始（为简单起见，我们将忽略本章前面讨论的上下限溢出问题）：
+
+[source,solidity,linenums]
+----
+contract FunWithNumbers {
+    uint constant public tokensPerEth = 10;
+    uint constant public weiPerEth = 1e18;
+    mapping(address => uint) public balances;
+
+    function buyTokens() external payable {
+        // convert wei to eth, then multiply by token rate
+        uint tokens = msg.value/weiPerEth*tokensPerEth;
+        balances[msg.sender] += tokens;
+    }
+
+    function sellTokens(uint tokens) public {
+        require(balances[msg.sender] >= tokens);
+        uint eth = tokens/tokensPerEth;
+        balances[msg.sender] -= tokens;
+        msg.sender.transfer(eth*weiPerEth);
+    }
+}
+----
+
+这个简单的通证买卖合约存在一些明显的问题。虽然
+关于买卖通证的数学计算是正确的，但缺乏浮点
+数字会给出错误的结果。例如，在购买通证时
+第8行，如果该值小于1个以太币，则初始除法将导致
+结果为0，将最终乘法结果保留为0（例如200 wei
+除以“ 1e18”，“ weiPerEth”等于“ 0”）。同样，在计算卖出
+通证时，少于10个通证的任何数量也将导致0个以太币的结果。
+实际上，这里的舍入总是向下的，因此将出售29个通证的结果是
+2个以太币。
+
+该合约的问题在于精度仅适用于
+最近的以太币（即1e18 wei）。这可能会
+处理小数点时非常麻烦，比如ERC20
+https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20]
+通证中需要更高精度时。
+
+[role="notoc"]
+====预防技术
+
+((("floating-point representation security risk","preventative techniques"))) 在智能合约中保持正确的精度非常重要，
+特别是在计算比率和利率这些用于经济
+决策的变量时。
+
+你应确保所使用的任何比率或比率都允许较大
+分子的分数。例如，我们在示例中使用了“ tokensPerEth”比率
+。这里最好使用weiPerTokens，它将
+是一个大数。为了计算相应数量的通证，我们可以使用
+msg.value / weiPerTokens`。这将给出更精确的结果。
+
+另一种要记住的策略是注意操作顺序。
+在我们的示例中，购买通证的计算方式是
+msg.value / weiPerEth * tokenPerEth`。注意除法发生在
+乘法之前。 （与某些语言不同，Solicity保证可以按照编写的顺序执行操作。）本示例将有更高
+的精度，如果计算先执行乘法然后执行
+除法；即`msg.value * tokenPerEth / weiPerEth`。
+
+最后，在为数字定义精度时，最好首先
+将值转换为更高精度，执行所有
+数学运算，然后最终转换回
+输出所需的精度。通常使用++ uint256 ++（因为它们
+最适合gas使用）;这些变量的范围大约60个数量级
+，其中一些对于
+数学运算的精度而言足够精细了。这里可能最好在
+Solidity中保留所有精度较高的变量，然后转换回较低的
+外部应用程序的精度（本质上，这是“小数”
+变量在ERC20通证合约中的运算方式
+）。要查看如何完成此操作的示例，我们建议查看 https://github.com/dapphub/ds-math[DS-Math] 。它使用一些
+时髦的命名（“wads”和“rays”），但是这个概念很有用。
+
+====真实示例：Ethstick
+
+((("Ethstick contract")))((("floating-point representation security risk","real-world example: Ethstick"))) Ethstick合约http://bit.ly/2Qb7PSB[+Ethstick+ contract] 不使用扩展的精度；但是，它处理的是wei。所以，
+合约将有四舍五入的问题，但仅在wei级别
+的精度。它有一些更严重的缺陷，但是这些问题是
+之前讨论过的，在区块链上获取熵的困难性（请参阅
+<<entropyillusion_security>>）。关于+Ethstick+ 合约的进一步讨论
+我们建议你转到Peter Vessenes的另一篇文章，
+http://bit.ly/2SwDnE0[&#x201c;Ethereum
+Contracts Are Going to Be Candy for Hackers&#x201d;].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc48")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc47")))
+
+=== Tx.Origin身份验证
+
+((("security (smart contracts)","tx.origin authentication threat", id="ix_09smart-contracts-security-asciidoc49", range="startofrange"))) Solidity有全局变量`tx.origin` ，它遍历整个
+调用堆栈，其中的帐户的地址是最初发送
+调用（或交易）的账户。在智能合约中使用此变量进行身份验证会使合约容易受到网络钓鱼者的
+攻击。
+
+[注意]
+====
+有关的更多资料，请参阅dbryson的以太坊问题 http://bit.ly/2PxU1UM[Stack
+Exchange question]，
+Peter Vessenes 的http://bit.ly/2qm7ocJ[&#x201c;Tx.Origin and Ethereum Oh My!&#x201d;] ，和
+Chris Coverdale 的http://bit.ly/2P3KVA4[&#x201c;Solidity: Tx Origin Attacks&#x201d;] 。
+====
+
+[role="notoc"]
+====漏洞
+
+((("tx.origin authentication security threat","vulnerability"))) 合约中使用`tx.origin`变量对用户授权会
+通常容易受到网上诱骗攻击的侵害，诱骗用户
+对易受攻击的合约执行经过身份验证的操作。
+
+考虑<<phishable_security>>中的简单合约。
+
+[[phishable_security]]
+.Phishable.sol
+====
+[source,solidity,linenums]
+----
+contract Phishable {
+    address public owner;
+
+    constructor (address _owner) {
+        owner = _owner;
+    }
+
+    function () external payable {} // collect ether
+
+    function withdrawAll(address _recipient) public {
+        require(tx.origin == owner);
+        _recipient.transfer(this.balance);
+    }
+}
+----
+====
+
+注意，在第11行，合约通过`tx.origin`授权了`withdrawAll`
+函数。该合约允许攻击者
+可以创建以下形式的攻击合约：
+
+[source,solidity,linenums]
+----
+import "Phishable.sol";
+
+contract AttackContract {
+
+    Phishable phishableContract;
+    address attacker; // The attacker's address to receive funds
+
+    constructor (Phishable _phishableContract, address _attackerAddress) {
+        phishableContract = _phishableContract;
+        attacker = _attackerAddress;
+    }
+
+    function () payable {
+        phishableContract.withdrawAll(attacker);
+    }
+}
+----
+
+攻击者可能将此合约伪装成自己的私人地址，并对受害人（+ Phishable +合约的所有者）进行社交推广，以将某种形式的交易发送到该地址-也许向该合约发送了一定数量的以太币。除非小心，否则受害者可能不会注意到
+攻击者的地址上有代码，或者攻击者可能会将其伪装为
+为多签名钱包或某些高级存储钱包（请记住
+默认情况下，公共合约的源代码不会显示）。
+
+无论如何，如果受害人向 `AttackContract`的交易地址发送了足够的燃料
+，它将调用后备函数，该函数将
+依次调用“Phishable”合约的“ withdrawAll”函数，
+传入参数“attacker”。这将导致
+“Phishable”合约中的所有资金被提现到“attacker”地址。这是
+因为首先初始化调用的地址是受害者
+（即“Phishable”合约的所有者）。因此，`tx.origin`
+将等于`owner`，然后“Phishable”合约第11行上的`require`
+条件将被满足。
+
+[role="notoc"]
+====预防技术
+
+((("tx.origin authentication security threat","preventative techniques"))) `tx.origin`不应用于智能合约中的授权。
+这并不是说永远不要使用`tx.origin`变量。它
+在智能合约中确实有一些合法的用例。例如，如果
+开发者想拒绝外部合约调用当前合约，
+开发者可以设置“require”的条件为
+`require(tx.origin == msg.sender)`。这样可以防止中间合约
+被用于调用当前合约，将合约限制为
+常规的无代码地址(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc49")))。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc2")))
+
+[[contract_libraries_sec]]
+===合约库
+
+((("security (smart contracts)","contract libraries for")))((("smart contracts","on-platform libraries"))) 有很多可重复使用的现有代码，它们都部署在区块链上作为可调用库，而在链下作为代码模板库。平台上已部署的库以字节码智能合约形式存在，因此在生产中使用它们之前应格外小心。然而，使用完善的现有平台库具有许多优点，例如能够从最新升级中受益，并通过减少以太坊中的实时合约总数为你节省金钱并从以太坊生态系统中受益。
+
+((("frameworks","OpenZeppelin suite")))((("OpenZeppelin"))) 在以太坊中，使用最广泛的资源是https://openzeppelin.org/[OpenZeppelin suite]，其中合约的范围从ERC20和ERC721通证的实现到多种类型的众筹模型，再到合约中常见的简单行为，例如“拥有”，“可暂停”或“限制余额”。该存储库中的合约已经过广泛的测试，在某些情况下甚至可以作为事实上的标准实现。它们是免费使用的，由 https://zeppelin.solutions[Zeppelin] 以及越来越多的外部贡献者一起构建和维护。
+
+((("frameworks","ZeppelinOS")))((("ZeppelinOS"))) Zeppelin的人也是 https://zeppelinos.org/[ZeppelinOS] ，这是一个开源的平台，提供可用于安全地开发和使用智能合约应用程序的服务和工具。 ZeppelinOS在EVM之上提供了一层，使开发人员可以轻松地启动可升级的DApp，这些DApp链接到经过测试的，本身可以升级的合约的链上库。这些库的不同版本可以在以太坊平台上共存，凭证系统允许用户向不同方向提出或推动改进。该平台还提供了一组用于调试，测试，部署和监视分布式应用程序的链下工具。
+
+((("ethpm project"))) + ethpm +项目旨在通过提供程序包管理系统来组织生态系统中正在开发的各种资源。因此，其注册表提供了更多示例供你浏览：
+
+*网站：https://www.ethpm.com/
+*资料库链接：https://www.ethpm.com/registry
+* GitHub 链接: https://github.com/ethpm
+*文档：https://www.ethpm.com/docs/integration-guide
+
+===结论
+
+任何在智能合约领域工作的开发人员都需要了解和理解很多东西。通过遵循智能合约设计和代码编写中的最佳实践，你将避免许多严重的陷阱和陷阱。
+
+也许最基本的软件安全性原则是最大化可信代码的重用。在密码学中，这一点是如此重要，以至于它被浓缩成一句格言：“不要自行加密。”在智能合约的情况下，这等于从社区彻底审查过的免费可用库中获取了尽可能多的收益。(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc1")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc0")))

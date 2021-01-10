@@ -1,0 +1,634 @@
+[[keys_addresses]]
+== Kryptografie
+
+((("cryptography", id="ix_04keys-addresses-asciidoc0", range="startofrange")))Jednou ze základních technologií Etherea je  ((("cryptography","defined")))_kryptografie_, což je odvětví matematiky používané v počítačové bezpečnosti. Kryptografie znamená v řečtině „tajné psaní“, ale studium kryptografie zahrnuje více než jen tajné psaní, které se označuje jako _šifrování_. Kryptografie může být například také použita k prokázání znalosti tajemství bez odhalení tohoto tajemství (např. s digitálním podpisem) nebo k prokázání pravosti dat (např. s digitálními otisky, také známými jako „haš“). Tyto typy kryptografických důkazů jsou matematické nástroje kritické pro fungování platformy Ethereum (a ve skutečnosti všech bločenkových systémů) a jsou také široce používány v Ethereum aplikacích Ethereum. ((("encryption", seealso="keys and addresses")))
+
+Všimněte si, že v době napsání této knihy žádná část Ethereum protokolu nezahrnuje šifrování; to znamená, že veškerá komunikace s Ethereum platformou a mezi uzly (včetně transakčních dat) je nešifrovaná a může (dokonce je to nutné) ji přečíst kdokoli. To je tak, aby si každý mohl ověřit správnost aktualizací stavu a dosáhnout konsensu. V budoucnu budou k dispozici pokročilé kryptografické nástroje, jako jsou důkazy o nulových znalostech a homomorfní šifrování, které umožní, aby některé šifrované výpočty byly zaznamenány na bločence a přitom stále umožňovaly shodu; Přestože jsou již naplánovány, nejsou ještě nasazeny.
+
+V této kapitole představíme část kryptografie používané v Ethereum: kryptografii veřejných klíčů (PKC), která se používá k řízení vlastnictví finančních prostředků, ve formě soukromých klíčů a adres.
+
+[[keys_addresses_intro]]
+=== Klíče a adresy
+
+((("cryptography","keys and addresses")))((("EOA (Externally Owned Account)","keys and addresses")))((("keys and addresses")))Jak jsme viděli dříve v této knize, Ethereum má dva různé typy účtů: _externě vlastněné účty_ (EOA) a _kontrakty_. Vlastnictví etheru prostřednictvím EOA je řízeno prostřednictvím digitálních _soukromých klíčů_, _Ethereum addres_ a _digitálních podpisů_. ((("private keys", seealso="keys and addresses"))) Soukromé klíče jsou jádrem veškeré uživatelské interakce s Ethereum. Ve skutečnosti jsou adresy účtů odvozeny přímo ze soukromých klíčů: soukromý klíč jednoznačně určuje jednu Ethereum adresu , známou také jako _účet_.
+
+Soukromé klíče se v Ethereum systému nejsou přímo používány; nikdy nejsou přenášeny ani ukládány v Ethereu. To znamená, že soukromé klíče by měly zůstat soukromé a nikdy by se neměly objevovat ve zprávách předávaných do sítě, ani by neměly být ukládány v bločence; v systému Ethereum jsou vždy přenášeny a ukládány pouze adresy účtů a digitální podpisy. Další informace o tom, jak udržovat soukromé klíče v bezpečí, viz <<control_responsibility>> a <<wallets_chapter>>.
+
+((("digital signatures")))Přístup k finančním prostředkům a jejich ovládání se dosahuje pomocí digitálních podpisů, které se vytvářejí také pomocí soukromého klíče. Ethereum  Transakce  vyžadují, aby byl do bločenky zahrnut platný digitální podpis. Každý, kdo má kopii soukromého klíče, má kontrolu nad odpovídajícím účtem a jakýmkoli etherem, který má tento účet v držení. Za předpokladu, že uživatel udržuje svůj soukromý klíč v bezpečí, pprokazují digitální podpisy v Ethereum transakcích skutečného vlastníka prostředků, protože prokazují vlastnictví soukromého klíče.
+
+((("key pairs")))V systémech založených na kryptografii veřejného klíče, jako je Ethereum, jsou klíče v párech sestávajících ze soukromého (tajného) klíče a veřejného klíče. Veřejný klíč považujte za obdobu číslu bankovního účtu a soukromý klíč jako tajný PIN. Soukromý poskytuje kontrolu nad účtem a veřejný klíč ostatním lidem identifikuje účet. Samotné soukromé klíče jsou uživatele Etherea si velmi zřídka prohlížejí; z větší části jsou uloženy (v šifrované formě) ve speciálních souborech a spravovány softwarem Ethereum peněženky.
+
+V platební části Ethereum transakce  je zamýšlený příjemce představován adresou Ethereum, která se používá stejným způsobem jako údaje o účtu příjemce pro bankovní převod. Jak brzy uvidíme podrobněji, Ethereum adresa pro EOA je vytvořena z veřejného klíče a nepřímo z k němu odpovídajícímu soukromému klíči. Ne všechny adresy Ethereum však představují páry veřejného a soukromého klíče; mohou také představovat kontrakty, které, jak uvidíme v <<smart_contracts_chapter>> nejsou pokryty soukromými klíči.
+
+Ve zbývající části této kapitoly nejprve podrobněji prozkoumáme základní kryptografii a vysvětlíme matematiku používanou v Ethereu. Poté se podíváme na to, jak jsou generovány, ukládány a spravovány klíče. Nakonec přezkoumáme různé formáty kódování používané k reprezentaci soukromých klíčů, veřejných klíčů a adres.
+
+[[pkc]]
+=== Kryptografie veřejného klíče a kryptoměna
+
+((("cryptography","public key cryptography and cryptocurrency", id="ix_04keys-addresses-asciidoc1", range="startofrange")))((("public key cryptography", id="ix_04keys-addresses-asciidoc2", range="startofrange")))Kryptografie veřejného klíče (nazývaná „asymetrická kryptografie“ je základní součástí moderní informační bezpečnosti. ((("Diffie, Whitfield")))((("Hellman, Martin")))((("key exchange protocol")))((("Merkle, Ralph"))) Protokol výměny klíčů, prvně publikovali v 70. letech Martin Hellman, Whitfield Diffie a Ralph Merkle, byl to monumentální průlom, který podnítil první velkou vlnu veřejného zájmu v oblasti kryptografie. Před sedmdesátými léty, silné kryptografické znalosti byly drženy v tajnosti pass:[<span class="keep-together">vládami</span>].
+
+Kryptografie veřejného klíče používá jedinečné klíče k zabezpečení informací. Tyto klíče jsou založeny na matematických funkcích, které mají speciální vlastnost: je snadné je spočítat, ale je obtížné vypočítat jejich inverzi. Na základě těchto funkcí umožňuje kryptografie vytváření digitálních tajemství a nepadělatelné digitální podpisy, které jsou zabezpečeny zákony matematiky.
+
+Například vynásobení dvou velkých prvočísel dohromady je jednoduché. ((("prime factorization")))Ale k zadanému součinu dvou velkých prvočísel je velmi obtížné najít jeho rozklad na činitele (problém zvaný _prvočíselný rozklad_). Řekněme, že je zadáno číslo 8,018,009 a řekneme vám, že je to produkt dvou prvočísel. Nalezení těchto dvou prvočísel je pro vás mnohem těžší, než bylo pro mě, abych je vynásobil a vytvořil 8 018 009.
+
+((("trapdoor functions")))Některé z těchto matematických funkcí lze snadno převrátit, pokud znáte nějaké tajné informace. Pokud vám v předchozím příkladu řeknu, že jedním z činitelů je 2 003, můžete triviálně najít toho druhého pomocí jednoduchého dělení: 8 018 009 ÷ 2 003 = 4 003. Takové funkce se často nazývají _funkce se zadními vrátky_, protože je velmi obtížné je invertovat, pokud nedostanete kousek tajné informace, kterou lze použít jako zkratku pro obrácení funkce.
+
+((("elliptic curve cryptography")))Pokročilejší kategorie matematických funkcí, která je užitečná v kryptografii, je založena na aritmetických operacích na eliptické křivce. V aritmetice eliptické křivky je násobení následované zbytkem po dělení (modulo) prvočíslem jednoduché, ale inverzní funkce dělení je prakticky nemožná. ((("discrete logarithm problem"))) Tomu se říká _problém diskrétního logaritmu_ a momentálně neexistují žádné známá zadní vrátka. _Kryptografie eliptických křivek_ je široce používána v moderních počítačových systémech a je základem pro použití soukromých klíčů a digitálních podpisů v Ethereum (a dalších kryptoměnách).
+
+[NOTE]
+====
+Pokud se chcete dozvědět více o kryptografii a matematických funkcích používaných v moderní kryptografii, podívejte se na následující zdroje:
+
+* http://bit.ly/2DcwNhn[Kryptografie]
+
+* http://bit.ly/2zeZV3c[Funkce se zadními vrátky]
+
+* http://bit.ly/2ACJjnV[Prvočíselný rozklad]
+
+* http://bit.ly/2Q7mZYI[Diskrétní logaritmus]
+
+* http://bit.ly/2zfeKCP[Kryptografie eliptických křivek]
+====
+
+V Ethereum používáme kryptografii veřejného klíče (známou také jako asymetrická kryptografie) k vytvoření páru veřejného a soukromého klíče, o kterém jsme hovořili v této kapitole. Jsou považovány za „pár“, protože veřejný klíč je odvozen ze soukromého klíče. Společně představují Ethereum účet tím, že poskytují veřejně přístupný název účtu (adresa) a soukromou kontrolu nad přístupem k jakémukoli etheru na tomto účtu a ověření (autentizaci), kterou účet potřebuje při používání chytrých kontraktů. ((("digital signatures","private key and")))Soukromý klíč řídí přístup tím, že je jedinečnou informací potřebnou k vytvoření _ digitálních podpisů_, které jsou požadovány pro podpis transakce a pro možnost utrácet jakékoli prostředky na účtu. Digitální podpisy se používají také k ověření vlastníků nebo uživatelé chytrých kontraktů, jak uvidíme v <<smart_contracts_chapter> >.
+
+[TIP]
+====
+((("key pairs")))Ve většině implementací peněženek jsou pro větší pohodlí soukromé a veřejné klíče ukládány společně jako _pár klíčů_. Veřejný klíč však lze z soukromého klíče jednoduše vypočítat, takže je možné ukládat pouze soukromé klíče.
+====
+
+K jakékoli zprávě lze vytvořit její digitální podpis. U Ethereum transakcí  se jako zpráva použijí podrobnosti samotné transakce. Matematika kryptografie - v tomto případě kryptografie eliptických křivek - poskytuje způsob, jak lze zprávu (tj. podrobnosti transakce) zkombinovat se soukromým klíčem a vytvořit kód, který lze vyrobit pouze se znalostí soukromého klíče.
+Tento kód se nazývá digitální podpis. Všimněte si, že Ethereum transakce je v podstatě žádost o přístup k určitému účtu s konkrétní Ethereum adresou. Pokud je transakce odeslána do Ethereum sítě za účelem přesunu prostředků nebo interakce s chytrým kontraktem, musí být odeslána s digitálním podpisem vytvořeným soukromým klíčem odpovídajícímu dané Ethereum adrese. Matematika eliptické křivky znamená, že _kdokoli_ může ověřit, že transakce je platná, a to kontrolou, že digitální podpis odpovídá podrobnostem transakce a Ethereum adrese, ke které se požaduje přístup. Ověření vůbec nezahrnuje soukromý klíč; ten zůstává utajený. Proces ověření však zajišťuje, že nejsou pochybnosti o tom, že transakce mohla přijít pouze od někoho, kdo má soukromý klíč, který odpovídá veřejnému klíči pro danou Ethereum adresu. Toto je „magie“ kryptografie veřejného klíče.
+
+
+[TIP]
+====
+Součást Ethereum protokolu  není žádné šifrování - všechny zprávy, které jsou zasílány jako součást provozu Ethereum sítě, může přečíst kdokoli, dokonce je tato vlastnost nutná. Soukromé klíče se proto používají pouze k vytváření digitálních podpisů pro ověřování transakcí. (((range="endofrange", startref="ix_04keys-addresses-asciidoc2")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc1")))
+====
+
+[[private_keys]]
+=== Soukromé klíče
+
+((("private keys", id="ix_04keys-addresses-asciidoc3", range="startofrange")))Soukromý klíč je jednoduše číslo, které je náhodně vybráno. Vlastnictví a kontrola soukromého klíče je základ uživatelské kontroly nad všemi prostředky asociovanými s odpovídající Ethereum adresou a také přístupem ke kontraktům, ovládaných touto adresou. Soukromý klíč se používá k prokazováním vlastnictví prostředků použitých v transakci, k vytváření podpisů požadovaných pro utrácení etheru. ((("warnings and cautions","private key protection")))Soukromý klíč musí zůstat vždy v tajnosti, protože jeho odhalení třetím stranám je rovnocenné s tím, že jim poskytuje kontrolu nad etherem a kontrakty zajištěné tímto soukromým klíčem. Soukromý klíč musí být také zálohován a chráněn před náhodnou ztrátou. Pokud dojde ke ztrátě, nelze jej získat zpět a navždy ztratí i prostředky jím zajištěné.
+
+[TIP]
+====
+ Ethereum soukromý klíč je jen číslo. Jedním ze způsobů, jak náhodně vybrat soukromé klíče, je jednoduše použít minci, tužku a papír: hodit minci 256-krát a máte binární číslice náhodného soukromého klíče, který můžete použít v peněžence Ethereum (pravděpodobně - viz další část). Veřejný klíč a adresa pak mohou být vygenerovány ze soukromého klíče.
+====
+
+[[generating_private_key]]
+==== Tvorba soukromého klíče z náhodného čísla
+
+((("entropy","private key generation and")))((("private keys","generating from random number")))((("random numbers, private key generation from")))Prvním a nejdůležitějším krokem při generování klíčů je nalezení bezpečného zdroje entropie nebo náhodnosti. Vytvoření Ethereum soukromého klíče v podstatě zahrnuje výběr čísla mezi 1 a 2^256^. Přesná metoda, kterou použijete pro výběr tohoto čísla, není důležitá, pokud není předvídatelná nebo deterministická. Ethereum software  používá generátor náhodných čísel podkladového operačního systému k vytvoření 256 náhodných bitů. Generátor náhodných čísel operačního systému je obvykle inicializován lidským zdrojem náhodnosti, proto můžete být vyzváni, abyste několik vteřin pohybovali myší nebo stiskli náhodné klávesy na klávesnici. Alternativou by mohl být šum kosmického záření na mikrofonním kanálu počítače.
+
+Přesněji řečeno, soukromý klíč může být libovolné nenulové číslo až do velmi velkého čísla, o trochu menším než 2^256^ - obrovské 78-místné číslo, zhruba 1,158 * 10^77^. Přesné číslo sdílí prvních 38 číslic s 2^256^ a je definováno jako řád eliptické křivky použité v Ethereum (viz <<elliptic_curve>>). Pro vytvoření soukromého klíče náhodně vybereme 256-bitové číslo a zkontrolujeme, zda je v platném rozsahu. Z hlediska programování se toho obvykle dosáhne přidáním ještě většího řetězce náhodných bitů (shromážděných z kryptograficky bezpečného zdroje náhodnosti) do 256-bitového hašovacího algoritmu, jako je Keccak-256 nebo SHA-256, z nichž oba pohodlně vytvoří 256-bitové číslo. Pokud je výsledek v platném rozsahu, máme vhodný soukromý klíč. Jinak to zkusíme znovu s jiným náhodným číslem.
+
+[TIP]
+====
+2^256^ - velikost prostoru soukromých klíčů Etherea - je nepochopitelně velké číslo. Je to přibližně 10^77^ v desítkové soustavě; to je číslo se 77 číslicemi. Pro srovnání se odhaduje, že viditelný vesmír obsahuje 10^80^ atomů. Existuje tedy téměř dost soukromých klíčů, aby každý atom ve vesmíru mohl mít vlastní Ethereum účet. Pokud vyberete soukromý klíč náhodně, není myslitelné, že by ho někdo kdy uhádl nebo si ho sám vybral.
+====
+
+Proces generování soukromého klíče je offline. nevyžaduje žádnou komunikaci se sítí Ethereum nebo vůbec žádnou komunikaci s kýmkoli. Aby bylo možné vybrat číslo, které nikdo jiný nikdy nezvolí, musí být skutečně náhodné. Pokud zvolíte číslo sami, je šance, že to někdo zkusí (a poté uteče s vaším etherem) příliš vysoká. Použití generátoru chybných náhodných čísel (jako je pseudonáhodná funkce  +rand+ ve většině programovacích jazyků) je ještě horší, protože je výsledné číslo ještě zřetelnější a snadněji replikovatelné. Stejně jako u hesel pro online účty musí být soukromý klíč neuhodnotelný. Naštěstí si nikdy nemusíte pamatovat svůj soukromý klíč, takže pro jeho výběr můžete použít nejlepší možný přístup: skutečnou náhodnost.
+
+[WARNING]
+====
+Nepište vlastní kód pro vytvoření náhodného čísla ani nepoužívejte „jednoduchý“ generátor náhodných čísel, který nabízí váš programovací jazyk. Je nezbytné, abyste používali kryptograficky bezpečný generátor pseudonáhodných čísel (například CSPRNG) se semenem ze zdroje dostatečné entropie. Prostudujte si dokumentaci vybrané knihovny generátorů náhodných čísel, abyste se ujistili, že je kryptograficky bezpečná. Správná implementace knihovny CSPRNG je rozhodující pro bezpečnost klíčů.
+====
+
+Následuje náhodně vygenerovaný soukromý klíč zobrazený v hexadecimálním formátu (256 bitů zobrazených jako 64 hexadecimálních číslic, každá číslice reprezentuje 4 bity): (((range="endofrange", startref="ix_04keys-addresses-asciidoc3")))
+
+[[prv_key_example]]
+----
+f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+
+[[pubkey]]
+=== Veřejné klíče
+
+((("cryptography","public keys", id="ix_04keys-addresses-asciidoc4", range="startofrange")))((("elliptic curve cryptography","public key generation", id="ix_04keys-addresses-asciidoc5", range="startofrange")))((("public keys", seealso="keys and addresses", id="ix_04keys-addresses-asciidoc6", range="startofrange")))Ethereum veřejný key je _bod_ na eliptické křivce, což znamená, že je to sada souřadnic _x_ a _y_, které splňují rovnici eliptické křivky.
+
+Zjednodušeně řečeno, Ethereum veřejný klíč  jsou dvě čísla spojená dohromady. Tato čísla jsou vytvářena ze soukromého klíče výpočtem, který _je jednosměrný_. To znamená, že je snadné vypočítat veřejný klíč, pokud máte soukromý klíč, ale soukromý klíč z veřejného klíče nelze vypočítat.
+
+[WARNING]
+====
+Bude následovat MATEMATIKA! Nepanikařte. Pokud se v následujících odstavcích začnete ztrácet, můžete přeskočit několik následujících sekcí. Existuje mnoho nástrojů a knihoven, které vám pomohou s matematikou.
+====
+
+Veřejný klíč se počítá ze soukromého klíče pomocí násobení budu na eliptické křivce,  které je prakticky nevratné: _K_ = _k_ * _G_, kde _k_ je soukromý klíč, _G_ je konstantní bod nazvaný ((("generator point"))) _generátorový bod_, _K_ je výsledný veřejný klíč a * je speciální operátor „násobení“ na eliptické křivce. Všimněte si, že násobení na eliptické křivce není jako normální násobení. Sdílí funkční atributy s normálním násobením, ale rozdíl je ve způsobu výpočtu. Například reverzní operace (která by byla dělením pro normální čísla), známá jako „nalezení diskrétního logaritmu“ - tj. výpočet _k_, pokud známe __K __ - je stejně obtížná jako vyzkoušení všech možných hodnot _k_ (hledání hrubou sílou) to bude pravděpodobně trvat déle, než to  umožní tento vesmír).
+
+Zjednodušeně řečeno: aritmetika na eliptické křivce se liší od „normální“ celočíselné aritmetiky. Bod (_G_) může být vynásoben celým číslem (_k_), čímž vznikne další bod (_K_). Neexistuje však nic jako _dělení_, takže není možné jednoduše „vydělit“ veřejný klíč _K_ bodem _G_ pro výpočet soukromého klíče _k_. Toto je jednosměrná matematická funkce popsaná v <<pkc>>.
+
+[NOTE]
+====
+((("one-way functions")))Násobení eliptické křivky je typ funkce, kterou kryptografové nazývají „jednosměrnou“ funkcí: je snadné provést v jednom směru (násobení) a nemožné provést v opačném směru (dělení). Vlastník soukromého klíče může snadno vytvořit veřejný klíč a poté jej sdílet se světem, protože ví, že nikdo nemůže vrátit funkci zpět a vypočítat soukromý klíč z veřejného klíče. Tento matematický trik se stává základem pro nepadělatelné a bezpečné digitální podpisy, které prokazují vlastnictví Ethereum finančních prostředků a kontrolu kontraktů.
+====
+
+Než ukážeme, jak vygenerovat veřejný klíč ze soukromého klíče, podívejme se na kryptografii eliptických křivek o něco podrobněji.
+
+
+[[elliptic_curve]]
+==== Vysvětlení kryptografie eliptických křivek
+
+((("elliptic curve cryptography","basics", id="ix_04keys-addresses-asciidoc7", range="startofrange")))Kryptografie ((("elliptic curve cryptography", id="ix_04keys-addresses-asciidoc8", range="startofrange")))((("public keys","elliptic curve cryptography and", id="ix_04keys-addresses-asciidoc9", range="startofrange")))kryptografie eliptických křivek je typ asymetrické kryptografie neboli kryptografie veřejného klíče založená na problému diskrétního logaritmu vyjádřeného sčítáním a násobením bodů eliptické křivky.
+
+<<ecc-curve>> je příklad eliptické křivky, podobné křivce používané Ethereem.
+
+[NOTE]
+====
+((("secp256k1 elliptic curve", id="ix_04keys-addresses-asciidoc10", range="startofrange")))Ethereum používá přesně stejnou eliptickou křivku nazvanou +secp256k1+ jako Bitcoin. To umožňuje opětovné použití mnoha knihoven eliptických křivek a nástrojů z Bitcoinu.
+====
+
+[[ecc-curve]]
+.Zobrazení eliptické křivky
+image::images/simple_elliptic_curve.png["ecc-curve"]
+
+Ethereum používá specifickou eliptickou křivku a sadu matematických konstant, jak je definováno ve standardu nazvaném +secp256k1+, vytvořeném Americkým národním institutem pro standardy a technologie (NIST). Křivka +secp256k1+ je definována následující funkcí, která vytváří eliptickou křivku:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <msup><mi>y</mi> <mn>2</mn> </msup>
+      <mo>=</mo>
+      <mrow>
+        <mo>(</mo>
+        <msup><mi>x</mi> <mn>3</mn> </msup>
+        <mo>+</mo>
+        <mn>7</mn>
+        <mo>)</mo>
+      </mrow>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mtext>over</mtext>
+    <mspace width="3.33333pt"/>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>&#x1d53d;</mi> <mi>p</mi> </msub>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+nebo:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <msup><mi>y</mi> <mn>2</mn> </msup>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+    <mo>=</mo>
+    <mrow>
+      <mo>(</mo>
+      <msup><mi>x</mi> <mn>3</mn> </msup>
+      <mo>+</mo>
+      <mn>7</mn>
+      <mo>)</mo>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+Operace zbytku po celočíselném dělení _mod p_ (modulo prvočíslo _p_) naznačuje, že tato křivka je nad celočíselným tělesem prvočíselného řádu _p_, také označovaného jako latexmath:[\( \mathbb{Z}_p \)], kde _p_ = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, což je velmi vysoké prvočíslo.
+
+Protože je tato křivka definována na konečném tělese prvočíselného řádu místo na reálných číslech, vypadá to jako vzor teček rozptýlené ve dvou rozměrech, což ztěžuje vizualizaci. Matematika je však totožná s matematickou eliptickou křivkou reálných čísel. Například <<ecc-over-F17-math>> ukazuje stejnou eliptickou křivku na mnohem menším konečném tělese prvořadého řádu 17 a ukazuje vzorek teček na mřížce. Ethereum  eliptickou křivku +secp256k1+ lze považovat za mnohem složitější vzor teček na nepochopitelně velké mřížce.
+
+[[ecc-over-F17-math]]
+[role="smallersixty"]
+.Kryptografie eliptických křivek: vizualizace eliptické křivky nad Z (p), kde p = 17
+image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
+
+Například uvádíme následuje bod _Q_ se souřadnicemi (_x_, _y_), což je bod na křivce +secp256k1+:
+
+[[coordinates_example]]
+----
+Q = 
+(49790390825249384486033144355916864607616083520101638681403973749255924539515,
+59574132161899900045862086493921015780032175291755807399284007721050341297360)
+----
+
+<<example_1>> ukazuje, jak si to můžete ověřit sami pomocí Pythonu. Proměnné +x+ a +y+ jsou souřadnice bodu _Q_, jako v předchozím příkladu. Proměnná +p+ je prvočíselný řád tělesa eliptické křivky (prvočíslo, které se používá pro všechny operace modulo). Poslední řádek Pythonu je rovnice eliptické křivky (operátor +%+ v Pythonu je operátor modulo). Pokud jsou +x+ a +y+ skutečně souřadnice bodu na eliptické křivce, splní rovnici a výsledek je nula (+0L+ je dlouhé celé číslo s hodnotou nula). Vyzkoušejte to sami zadáním ++**python**++ do příkazové řádky a zkopírováním každého řádku (po výzvě +>>>+) ze seznamu (((range="endofrange", startref="ix_04keys-addresses-asciidoc10"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc9")))
+
+++++
+<div data-type="example" id="example_1">
+<h5> Použití Pythonu k potvrzení, že tento bod je na eliptické křivce </h5>
+<pre data-type="programlisting">
+Python 3.4.0 (default, Mar 30 2014, 19:23:13)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.38)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <strong>p = 115792089237316195423570985008687907853269984665640564039457584007908834 \
+671663</strong>
+>>> <strong>x = 49790390825249384486033144355916864607616083520101638681403973749255924539515</strong>
+>>> <strong>y = 59574132161899900045862086493921015780032175291755807399284007721050341297360</strong>
+>>> <strong>(x ** 3 + 7 - y**2) % p</strong>
+0L
+</pre>
+</div>
+++++
+
+[[EC_math]]
+==== Aritmetické operace na eliptické křivce
+
+((("elliptic curve cryptography","arithmetic operations")))Hodně matematických operací na eliptické křivce vypadá a funguje velmi podobně jako celočíselná aritmetika, kterou jsme se naučili ve škole. Konkrétně můžeme definovat operátor sčítání, který místo skoku podél číselné čáry přeskočí na další body na křivce. Jakmile máme operátor sčítání, můžeme také definovat násobení bodu a celého čísla, což je ekvivalentní opakovanému sčítání.
+
+Sčítání na eliptické křivce je definováno tak, že vzhledem ke dvěma bodům _P_~1~ and _P_~2~  na eliptické křivce existuje třetí bod _P_~3~ = _P_~1~ + _P_~2~, také na eliptické křivce.
+
+Geometricky je tento třetí bod _P_~3~ vypočítán nakreslením čáry mezi _P_~1~ a  _P_~2~. Tato čára protíná eliptickou křivku přesně na jednom dalším místě (úžasně). Nazvěte tento bod _P_~3~' = (_x_, _y_). Poté získejte jeho obraz pomocí osové symetrie dle osy x a získejte _P_~3~ = (_x_, _–y_).
+
+Pokud jsou _P_~1~  a _P_~2~ stejné body, měla by se spojnice "mezi" _P_~1~ a _P_~2~ prodloužit tak, aby byla v tomto bodě _P_~1~ tečná k eliptické křivce. Tato tečna protne křivku přesně v jednom novém bodě. K určení sklonu tečné čáry můžete použít běžné matematické techniky. Je zajímavé, že tyto techniky fungují, i když omezujeme náš zájem na body na křivce se dvěma celočíselnými souřadnicemi!
+
+V matematice eliptických křivek také existuje bod nazvaný „bod v nekonečnu“, který zhruba odpovídá roli nulové hodnoty při sčítání. Na počítačích je někdy představován znakem _x_ = _y_ = 0 (který nesplňuje rovnici eliptické křivky, ale je to zvláštní případ, který jde samostatně zkontrolovat). Existuje několik zvláštních případů, které vysvětlují potřebu bodu v nekonečnu.
+
+V některých případech (např. pokud _P_~1~ a _P_~2~ mají stejné hodnoty _x_, ale různé hodnoty _y_), bude čára přesně svislá, v tomto případě _P_~3~ = bod v nekonečnu.
+
+Jestliže _P_~1~ je bod v nekonečnu, pak _P_~1~ + _P_~2~ = _P_~2~. Podobně, pokud _P_~2~ je bod v nekonečnu, pak __P_~1~ + _P_~2~ = _P_~1~. To ukazuje, že bod v nekonečnu hraje stejnou roli, kterou hraje nula v „normální“ aritmetice.
+
+Ukazuje se, že pass:[+] je asociativní, což znamená, že (_A_ pass:[+] _B_) pass:[+] _C_ = _A_ pass:[+] (_B_ pass:[+] _C_). To znamená, že můžeme napsat _A_ pass:[+] _B_ pass:[+] _C_ (bez závorek) aniž by tento zápis byl dvojznačný.
+
+Nyní, když jsme definovali sčítání, můžeme definovat násobení standardním způsobem, který rozšiřuje sčítání. Pro bod _P_ na eliptické křivce, pokud _k_ je celé číslo, pak _k_ pass:[*] _P_ = _P_ pass:[+] _P_ pass:[+] _P_ pass:[+] ... pass:[+] _P_ (_k_ -krát).  Všimněte si, že v tomto případě je _k_ někdy nazýván „exponent“ (což je matoucí) (((range="endofrange", startref="ix_04keys-addresses-asciidoc8")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc7")))
+
+[[public_key_derivation]]
+==== Vypočtení veřejného klíče
+
+((("elliptic curve cryptography","public key generation with")))((("generator point")))((("public keys","generating"))) Začneme se soukromým klíčem ve tvaru náhodně vygenerovaného čísla _k_, vynásobíme jej předem určeným bodem na křivce zvané _generátorový bod_ _G_, abychom vytvořili další bod někde jinde na křivce, což je odpovídající veřejný klíč _K_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mi>K</mi>
+    <mo>=</mo>
+    <mi>k</mi>
+    <mo>*</mo>
+    <mi>G</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+((("secp256k1 elliptic curve")))Generátorový bod je specifikován jako součást standardu +secp256k1+; je to stejné pro všechny implementace +secp256k1+ a všechny klíče odvozené z této křivky používají stejný bod _G_. Protože generátorový bod je vždy stejný pro všechny Ethereum uživatele, soukromý klíč _k_ vynásobený _G_ bude mít vždy vést ke stejnému veřejnému klíči _K_. Vztah mezi _k_ a _K_ je pevný, ale lze jej vypočítat pouze v jednom směru, od _k_ ke _K_. Z tohoto důvodu lze Ethereum adresu  (odvozenou z _K_) sdílet s kýmkoli a neodhaluje soukromý klíč uživatele (_k_).
+
+Jak jsme popsali v předchozí části, násobení _k_ * _G_ je ekvivalentní opakovanému sčítání, takže _G_ pass:[+] _G_ pass:[+] _G_ pass:[+] ... pass:[+] _G_, opakováno _k_-krát. Stručně řečeno, pro vytvoření veřejného klíče _K_ ze soukromého klíče _k_, přičteme _k_ -krát generátorový bod _G_  sám k sobě.
+
+[TIP]
+====
+Soukromý klíč lze převést na veřejný klíč, ale veřejný klíč nelze převést zpět na soukromý klíč, protože tato matematika funguje pouze jedním směrem.
+====
+
+Použijte tento výpočet a najděte veřejný klíč pro konkrétní soukromý klíč, který jsme vám ukázali v <<private_keys>>:
+
+
+[[example_privkey]]
+.Příklad výpočtu veřejného klíče ze soukromého klíče
+----
+K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
+----
+
+Kryptografická knihovna nám může pomoci vypočítat _K_ pomocí násobení eliptické křivky. Výsledný veřejný klíč _K_ je definován jako bod:
+
+----
+K = (x, y)
+----
+
+kde:
+
+----
+x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
+y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+((("SECG (Standards for Efficient Cryptography Group)")))((("Standards for Efficient Cryptography Group (SECG)"))) V Ethereu můžete vidět veřejné klíče reprezentované jako posloupnost 130 hexadecimálních znaků (65 bajtů). Toto je převzato ze standardního formátu pro reprezentaci navrženého průmyslovým konsorciem Standards for Efficient Cryptography Group (SECG), zdokumentováno v http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. Standard definuje čtyři možné předpony, které lze použít k identifikaci bodů na eliptické křivce, uvedené v <<EC_prefix_table>>.
+
+[[EC_prefix_table]]
+.Předpony reprezentace veřejných klíčů eliptických křivek
+[options="header"]
+|===
+| Předpona | Význam | Délka v bytech (včetně předpony)
+| +0x00+ | Bod v nekonečnu | 1
+| +0x04+ | Nekomprimovaný bod | 65
+| +0x02+ | Komprimovaný bod se sudým +y+ | 33
+| +0x03+ | Komprimovaný bod s lichými +y+ | 33
+|===
+
+Ethereum používá pouze nekomprimované veřejné klíče; proto je jedinou předponou, která je relevantní, (hex) +04+. Při reprezentaci se zřetězí souřadnice _x_ a _y_ veřejného klíče:
+
+[[concat_coordinates]]
+----
+04 + souřadnice x (32 bytů / 64 hex) + souřadnice y (32 bytů / 64 hex)
+----
+
+Veřejný klíč, který jsme vypočítali dříve, je proto reprezentován jako:
+
+[[serialized_pubkey]]
+----
+046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0 \
+c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+[[EC_lib]]
+==== Knihovny eliptických křivek
+
+((("elliptic curve cryptography","libraries")))((("secp256k1 elliptic curve")))Existuje několik implementací eliptické křivky +secp256k1+, které se používají v projektech souvisejících s kryptoměnami:
+
+((("OpenSSL cryptographic library")))https://www.openssl.org/[OpenSSL]:: Knihovna OpenSSL nabízí komplexní sadu kryptografických primitiv, včetně plné implementace +secp256k1+. Například pro odvození veřejného klíče lze použít funkci +EC_POINT_mul+.
+
+((("libsecp256k1 cryptographic library")))https://github.com/bitcoin-core/secp256k1[libsecp256k1]:: Bitcoin Core +libcop256k1+ je implementace eliptické křivky +secp256k1+ a dalších kryptografických primitivů v jazyce C. Bylo psáno od nuly a nahrazuje OpenSSL v softwaru Bitcoin Core, a je považováno za lepší v jak ve výkonu tak i v bezpečnosti. (((range="endofrange", startref="ix_04keys-addresses-asciidoc6")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc5")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc4")))
+
+[[hash_functions]]
+=== Kryptografické hashovací funkce
+
+((("cryptographic hash functions", id="ix_04keys-addresses-asciidoc11", range="startofrange")))((("cryptography","hash functions", id="ix_04keys-addresses-asciidoc12", range="startofrange")))((("hash functions", id="ix_04keys-addresses-asciidoc13", range="startofrange")))Kryptografické hašovací funkce se používají v celém Etherem. Ve skutečnosti jsou hašovací funkce hojně používány téměř ve všech kryptografických systémech - skutečnost, kterou zachytil ((("Schneier, Bruce")))pass:[<span class="keep-together">kryptograf</span>] http://bit.ly/2Q79qZp[Bruce Schneier], který řekl „Mnohem více než šifrovací algoritmy jsou jednosměrné hašovací funkce tažnými koňmi moderní kryptografie.“
+
+V této části si probereme hašovací funkce, prozkoumáme jejich základní vlastnosti a uvidíme, jak je tyto vlastnosti činí tak užitečnými v tolika oblastech moderní kryptografie. Řešíme hašovací funkce, protože jsou součástí transformace Ethereum veřejných klíčů na adresy. ((("digital fingerprint")))Mohou být také použity k vytvoření _digitálních otisků_, které pomáhají při ověřování údajů.
+
+((("one-way functions")))Jednoduše řečeno, http://bit.ly/2CR26gD[_hašovací funkce_]  je „jakákoli funkce, kterou lze použít k mapování dat libovolné velikosti na data pevné velikosti. “ ((("pre-image")))Vstup do hašovací funkce se nazývá _vzor_, _message_ nebo jednoduše _vstup_. Výstup se nazývá _haš_. http://bit.ly/2Jrn3jM[_Kryptografické hašovací funkce_] jsou speciální podkategorií, mají specifické vlastnosti, které jsou užitečné pro zabezpečené platformy, jako je Ethereum.
+
+Kryptografická hašovací funkce je hašovací funkce, která mapuje data libovolné velikosti na řetězec bitů s pevnou velikostí. „Jednosměrná“ povaha znamená, že je výpočetně nemožné znovu vytvořit vstupní data, pokud člověk zná pouze haš výstupu. Jediným způsobem, jak určit možný vstup, je provést hledání hrubou sílou a zkontrolovat každého kandidáta na odpovídající výstup; vzhledem k tomu, že hledaný prostor je prakticky nekonečný, je snadné pochopit praktickou nemožnost úkolu. I když najdete některá vstupní data, která vytvářejí odpovídající haš, nemusí to být původní vstupní data: haš funkce jsou funkce „nejsou prosté“. ((("hash collision"))) Nalezení dvou sad vstupních dat, které jsou hašovány na stejný výstup, se nazývá nalezení _hašovací kolize_. Zhruba řečeno, čím lepší je hašovací funkce, tím vzácnější hašovací kolize jsou. Pro Ethereum jsou skutečně nemožné.
+
+((("hash functions","main properties")))Podívejme se blíže na hlavní vlastnosti kryptografických hašovacích funkcí. Tyto zahrnují:
+
+Determinismus:: Daná vstupní zpráva vždy produkuje stejný výstup hašování.
+
+Ověřitelnost:: Výpočet haše zprávy je efektivní (lineární složitost).
+
+Nekorelace:: Malá změna zprávy (např. 1-bitová změna) by měla změnit výstup hašování tak rozsáhle, že nemůže být korelován s hašem původní zprávy.
+
+Nezvratitelnost:: Výpočet zprávy z haše je nemožný, ekvivalentní hledání brutální silou ve všech možných zprávách.
+
+Ochrana proti kolizi :: Mělo by být nemožné vypočítat dvě různé zprávy, které produkují stejný výstup hašování.
+
+Odolnost proti hašovacím kolizím je zvláště důležitá pro to, aby se zabránilo padělání digitálního podpisu v Ethereu.
+
+Kombinace těchto vlastností činí kryptografické hašovací funkce užitečné pro širokou škálu bezpečnostních aplikací, včetně:
+
+* Otisky dat
+* Integrita zprávy (detekce chyb)
+* Důkaz prací
+* Ověřování (hašování hesel a roztahování klíčů)
+* Pseudonáhodné generátory čísel
+* Utajený závazek (mechanismy odevzdání - odhalení)
+* Jedinečné identifikátory
+
+Mnoho z nich najdeme v Ethereu, jak postupujeme různými vrstvami systému.
+
+[[keccak256]]
+==== Ethereum kryptografická hašovací funkce: Keccak-256
+
+((("hash functions","Keccak-256")))((("Keccak-256 hash function")))((("SHA-3 Hash Function")))Ethereum používá kryptografickou hašovací funkci _Keccak-256_ na mnoha místech. Keccak-256 byl navržen jako kandidát do soutěže o nový standard kryptografické hašovací funkce SHA-3, kterou pořádal v roce 2007 ((("National Institute of Science and Technology (NIST)")))((("NIST (National Institute of Science and Technology)")))Národní vědecký a technologický institut (NIST). Keccak byl výherní algoritmus, který se v roce 2015 stal standardem označeným jako (((("Federal Information Processing Standard (FIPS)")))((("FIPS (Federal Information Processing Standard)")))((("FIPS-202")))Federal Information Processing Standard (FIPS) 202.
+
+V období, kdy bylo Ethereum vyvinuto, však standardizace NIST ještě nebyla dokončena. NIST upravil některé parametry Keccaku po dokončení standardizačního procesu, údajně ke zlepšení jeho účinnosti. K tomu došlo současně, když hrdinským oznamovatel ((„Snowden, Edward“)) Edward Snowden odhalil dokumenty, které naznačují, že NIST mohla být Národní agenturou pro bezpečnost úmyslně oslabena. Konkrétně ((("Dual_EC_DRBG"))) Generátor náhodných čísel Dual_EC_DRBG, by mohl mít umístěná zadní vrátka do standardního generátoru náhodných čísel. Výsledkem této diskuse byl odpor proti navrhovaným změnám a značné zpoždění ve standardizaci SHA-3. V té době se nadace Ethereum rozhodla implementovat původní algoritmus Keccak, jak navrhli jeho vynálezci, spíše než standard SHA-3 ve znění upraveném NIST.
+
+[WARNING]
+====
+I když můžete vidět, že v dokumentech a kódu Ethereum je uvedeno „SHA-3“, mnoho, pokud ne všechny tyto případy, ve skutečnosti odkazují na Keccak-256, nikoli na finalizovaný standard FIPS-202 SHA-3. Rozdíly v implementaci jsou malé, pouze v nastavené výplňkových parametrů, ale jsou významné v tom, že Keccak-256 produkuje jiné výstupy hašování než FIPS-202 SHA-3 pro stejný vstup.
+====
+
+[[which_hash]]
+==== Kterou hašovací funkci používám?
+
+((("hash functions","test vector for determining")))((("test vector, determining hash functions with")))Jak zjistíte, zda softwarová knihovna, kterou používáte, implementuje FIPS-202 SHA-3 nebo Keccak-256, pokud se oba mohou jmenovat „SHA-3“?
+
+Snadný způsob, jak to říct, je použít _testovací vektor_, očekávaný výstup pro daný vstup. ((("empty input test")))Nejběžnějším testem pro hašovací funkci je _prázdný vstup_. Pokud spustíte hašovací funkcis prázdným řetězcem jako vstupem, měli byste vidět následující výsledky:
+
+----
+Keccak256("") =
+  c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+SHA3("") =
+  a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
+----
+
+
+Bez ohledu na to, jak se tato funkce nazývá, můžete pomocí tohoto jednoduchého testu otestovat, zda se jedná o původní Keccak-256 nebo finální NIST standard FIPS-202 SHA-3. Pamatujte, že Ethereum používá Keccak-256, přestože se v kódu často nazývá SHA-3.
+
+[NOTE]
+====
+V důsledku zmatku vytvořeného rozdílem mezi hašovací funkcí používanou v Ethereum (Keccak-256) a finalizovaným standardem (FIP-202 SHA-3), probíhá úsilí o přejmenování všech instancí +sha3+ ve všech kódech, parametrech a knihovnách na +keccak256+. Podrobnosti viz https://github.com/ethereum/EIPs/issues/59[ERC59].
+====
+
+
+Dále se podívejme na první aplikaci Keccak-256 v Ethereu, která má vytvářet Ethereum adresy z veřejných klíčů. (((range="endofrange", startref="ix_04keys-addresses-asciidoc13")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc12")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc11")))
+
+[[eth_address]]
+=== Ethereum adresy 
+
+((("addresses", id="ix_04keys-addresses-asciidoc14", range="startofrange")))((("cryptography","Ethereum addresses and", id="ix_04keys-addresses-asciidoc15", range="startofrange")))Ethereum adresy jsou _jednoznačné_ identifikátory, které jsou odvozeny z veřejných klíčů nebo kontraktů pomocí jednosměrné hašovací funkce Keccak-256.
+
+V našich předchozích příkladech jsme začali soukromým klíčem a pro odvození veřejného klíče jsme použili násobení bodu na eliptické křivce:
+
+[role="pagebreak-before"]
+Private key _k_:
+
+----
+k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+[[concat_pubkey]]
+Veřejný klíč _K_ (souřadnice _x_ a _y_ zřetězené a zobrazené hexadecimálně):
+
+----
+K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e...
+----
+
+[NOTE]
+====
+Je třeba poznamenat, že veřejný klíč není při výpočtu adresy formátován s předponou (hex) +04+.
+====
+
+Keccak-256 používáme pro výpočet _haše_ tohoto veřejného klíče:
+
+[[calculate_hash]]
+----
+Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Pak si ponecháme pouze posledních 20 bytů (nejméně významných bytů), což je naše Ethereum adresa:
+
+[[keep_last_20]]
+----
+001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Nejčastěji uvidíte Ethereum adresy s předponou +0x+, což znamená, že jsou hexadecimálně kódované, například:
+
+[[hex_prefix]]
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+[[eth_address_format]]
+==== Formáty Ethereum adresy
+
+((("addresses","formats"))) Etereum adresy jsou hexadecimální čísla, identifikátory odvozené z posledních 20 bajtů Keccak-256 haše veřejného klíče.
+
+((("checksum","in Ethereum address formats")))Na rozdíl od Bitcoinových adres, které jsou zakódovány v uživatelském rozhraní všech klientů tak, aby obsahovaly vestavěný kontrolní součet pro ochranu před chybně zadanými adresami, jsou Ethereum adresy  uváděny jako hrubé hexadecimální číslo bez kontrolního součtu.
+
+Důvodem tohoto rozhodnutí bylo, že Ethereum adresy se mohou skrýt za abstrakcemi (jako jsou například jmenné služby) ve vyšších vrstvách systému a že kontrolní součty by se měly v případě potřeby přidat do vyšších vrstev.
+
+Ve skutečnosti byly tyto vyšší vrstvy vyvinuty příliš pomalu a tato volba návrhu vedla v prvních dnech ekosystému k řadě problémů, včetně ztráty finančních prostředků v důsledku chybně zadaných adres a chyb při ověřování vstupu. Navíc, protože služby Ethereum byly vyvíjeny pomaleji, než se původně očekávalo, vývojáři peněženek přijali alternativní kódování velmi pomalu. Dále se podíváme na několik možností kódování.
+
+[[ICAP]]
+==== Mezibankovní protokol klientských účtů
+
+((("addresses","ICAP encoding", id="ix_04keys-addresses-asciidoc16", range="startofrange")))((("ICAP (Inter-exchange Client Address Protocol)", id="ix_04keys-addresses-asciidoc17", range="startofrange")))((("Inter-exchange Client Address Protocol (ICAP)", id="ix_04keys-addresses-asciidoc18", range="startofrange"))) _Mezibankovní protokol klientských účtu_ (Inter exchange Client Address Protocol; ICAP) je kódování Ethereum adresy, které je částečně kompatibilní s ((("IBAN (International Bank Account Number)")))((("International Bank Account Number (IBAN)"))) mezinárodním formátem bankovních účtů (IBAN). ICAP nabízí univerzální, kontrolním součtem chráněné a a ke spolupráci vhodné kódování Ethereum adres. Adresy ICAP mohou kódovat Ethereum adresy nebo běžná jména registrovaná v Ethereum registru názvů. Další informace o ICAP si můžete přečíst na http://bit.ly/2JsZHKu[Ethereum Wiki].
+
+IBAN je mezinárodní standard pro identifikaci čísel bankovních účtů, většinou používaných pro bankovní převody. Je široce přijímán v Jednotném evropském platebním prostoru (SEPA) i mimo něj. IBAN je centralizovaná a silně regulovaná služba. ICAP je decentralizovaná, ale kompatibilní implementace pro Ethereum adresy.
+
+Číslo IBAN se skládá z řetězce až 34 alfanumerických znaků (nerozlišují se malá a velká písmena), která obsahují kód země, kontrolní součet a identifikátor bankovního účtu (který je specifický pro danou zemi).
+
+ICAP používá stejnou strukturu zavedením nestandardního kódu země, „XE“, což je zkratka pro „Ethereum“, následovaný dvoumístným kontrolním součtem a třemi možnými variantami identifikátoru účtu:
+
+Přímé (Direct):: Celé číslo v big-endian base-36 formátu složené z až 30 alfanumerických znaků představujících 155 nejméně významných bitů Ethereum adresy. Protože toto kódování  obsahuje méně než celých 160 bitů obecné adresy Ethereum, funguje pouze pro Ethereum adresy, které začínají jedním nebo více nulovými bajty. Výhodou je, že je kompatibilní s IBAN, pokud jde o délku pole a kontrolní součet. Příklad: + XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD + (33 znaků).
+
+Základní (Basic):: Stejné jako přímé kódování,  s tím rozdílem, že má 31 znaků. To mu umožňuje zakódovat jakoukoli adresu Ethereum, ale učiní ji nekompatibilní s ověřením pole IBAN. Příklad: + XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P + (dlouhý 35 znaků).
+
+Nepřímé (Indirect):: Kóduje identifikátor, který se překládá na adresu Ethereum prostřednictvím poskytovatele registru jmen. Používá 16 alfanumerických znaků, které obsahují identifikátor _aktivum_ (např. ETH), jmennou službu (např. XREG) a devítimístný lidsky čitelný název (např. KITTYCATS). Příklad: ++XEpass:[##]ETHXREGKITTYCATS+ (dlouhý 20 znaků), kde +##+ by měl být nahrazen dvěma vypočítanými znaky kontrolního součtu.
+
+((("EthereumJS helpeth")))((("helpeth command-line tool")))K vytvoření ICAP adres můžeme použít nástroj příkazového řádku +helpeth+.  Můžete ho nainstalovat následujícím příkazem:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g helpeth</strong>
+</pre>
+++++
+
+Pokud npm nemáte, možná budete muset nejprve nainstalovat nodeJS, což můžete provést podle pokynů na https://nodeJS.org.
+
+Nyní, když máme helpeth, zkusme vytvořit ICAP adresu pomocí našeho příkladu soukromého klíče (s předponou +0x+ a předaného jako parametr +helpeth+).
+
+++++
+<pre data-type="programlisting">
+$ <strong>helpeth keyDetails \
+  -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315</strong>
+
+Address: 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+ICAP: XE60 HAMI CDXS V5QX VJA7 TJW4 7Q9C HWKJ D
+Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b...
+</pre>
+++++
+
+Příkaz +helpeth+ pro nás vytvoří hexadecimální Ethereum adresu a ICAP adresu. Adresa ICAP pro náš příklad je:
+
+[[ICAP_example]]
+----
+XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
+----
+
+Protože náš příklad Ethereum adresy začíná nulovým bajtem, může být kódován pomocí metody přímého kódování ICAP, která je platným formátem IBAN. Můžete to říct, protože je dlouhý 33 znaků.
+
+Pokud by naše adresa nezačala nulou, byla by zakódována pomocí základního kódování, které by mělo délku 35 znaků a bylo by neplatné jako IBAN.
+
+[TIP]
+====
+Šance na jakoukoli Ethereum adresu začínající nulovým bajtem jsou 1 z 256. Vygenerování jedné takové bude trvat průměrně 256 pokusů, vygenerujeme 256 různých náhodných soukromých klíčů, než najdeme ten, který lze použít jako „přímé“ IBAN kompatibilní kódování ICAP Adresy.
+====
+
+V současné době je ICAP bohužel podporováno pouze několika peněženkami.(((range="endofrange", startref="ix_04keys-addresses-asciidoc18")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc17")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc16")))
+
+[[EIP55]]
+==== Hexadecimální kódování s kontrolním součtem pomocí velikostí písmen (EIP-55)
+
+((("addresses","hex encoding with checksum in capitalization (EIP-55)", id="ix_04keys-addresses-asciidoc19", range="startofrange")))((("checksum","EIP-55 and", id="ix_04keys-addresses-asciidoc20", range="startofrange")))((("EIP-55 (Ethereum Improvement Proposal 55)","checksum for addresses", id="ix_04keys-addresses-asciidoc21", range="startofrange")))Vzhledem k pomalému nasazení ICAP a jmenných služeb byl navržen  standard https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md [ Návrh na vylepšení Etherea 55 (EIP-55)]. EIP-55 nabízí zpětně kompatibilní kontrolní součet pro Ethereum adresy úpravou velikosti písmen hexadecimální adresy. Myšlenka je taková, že  Ethereum adresy nerozlišují velká a malá písmena a všechny peněženky by měly přijímat Ethereum adresy vyjádřené velkými nebo malými písmeny bez jakéhokoli rozdílu v interpretaci.
+
+Modifikováním velikosti abecedních znaků v adrese můžeme přidat informaci kontrolním součtu, který lze použít k ochraně integrity adresy před chybami při psaní nebo čtení. Peněženky, které nepodporují kontrolní součty dle EIP-55, jednoduše ignorují skutečnost, že adresa obsahuje smíšení malých a velkých písmen, ale ty, které ji podporují, ji mohou ověřit a detekovat chyby s přesností 99,986%.
+
+Kódování pomocí malých a velkých písmen je jemné a nemusíte si ho nejprve všimnout. Adresa z našeho příkladu je:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+S kontrolním součtem pomocí velikostí písmen EIP-55 se stává:
+
+[[mixed_capitalization]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Můžete rozeznat rozdíl? Některé z písmenných (A – F) znaků z hexadecimální kódovací abecedy jsou nyní velké, zatímco jiné malé.
+
+Implementace EIP-55 je poměrně jednoduchá. Vezmeme Keccak-256 haš hexadecimální adresy, která má všechna písmena malá. Tento haš funguje jako digitální otisk adresy, což nám poskytuje vhodný kontrolní součet. Jakákoli malá změna ve vstupu (adresa) by měla způsobit velkou změnu ve výsledném haši (kontrolní součet), což nám umožní efektivně detekovat chyby. Haš naší adresy je pak zakódován ve velikosti písmen samotné adresy. Pojďme to rozebrat, krok za krokem:
+
+1. Spočítejte haš adresy zapsané malými písmeny bez předpony +0x+:
+
+[[hash_lower_case_address]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9") =
+23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
+----
+
+[start=2]
+1. Písmeno v adrese změníme z malého na velké, pokud je odpovídající hexadecimální číslo haše větší nebo rovno +0x8+. Toto je snazší ukázat, pokud napíšeme jednotlivé znaky adresu a a jejího haše přímo pod sebe:
+
+[[capitalize_input]]
+----
+Addresa: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+Haš    : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+Naše adresa obsahuje na čtvrté pozici písmeno +d+. Čtvrtý znak haše je +6+, což je méně než +8+. Takže ponecháme malé písmeno +d+. Dalším písmenem v naší adrese je +f+, na šesté pozici. Šestý znak hexadecimálního haše je +c+, což je více než +8+. Proto změníme písmeno na velké +F+ v adrese atd. Jak vidíte, jako kontrolního součtu používáme pouze prvních 20 bajtů (40 hex znaků) haše, protože máme pouze 20 bajtů (40 hex znaků) v adrese, abychom správně použili velká písmena.
+
+Zkontrolujte si výslednou adresu s velkými a velkými písmeny a zjistěte, zda můžete zjistit, které znaky byly změněny na velká písmena a kterým znakům odpovídají v haši adresy:
+
+[[capitalize_output]]
+----
+Addresa: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+Haš    : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+[[EIP55_error]]
+===== Zjištění chyby v adrese zakódované EIP-55
+
+((("EIP-55 (Ethereum Improvement Proposal 55)","detecting an error in an encoded address")))Nyní se podívejme, jak nám adresy EIP-55 pomohou najít chybu. Předpokládejme, že jsme vytiskli Ethereum adresu, která je kódována EIP-55:
+
+[[correct_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Nyní udělejme základní chybu při čtení této adresy. Předposlední znak je velké +F+. V tomto příkladu předpokládejme, že jsme si to špatně přečetli jako Velké +E+ a do naší peněženky zadáme následující (nesprávnou) adresu:
+
+[[incorrect_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+----
+
+Naštěstí je naše peněženka kompatibilní s EIP-55! Všimne si smíšeného použití malých a velkých písmen a pokusí se ověřit adresu. Převede jej na malá písmena a vypočítá její haš, získá kontrolní součet:
+
+[[hash_demo]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9") =
+5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
+----
+
+Jak vidíte, i když se adresa změnila pouze o jeden znak (ve skutečnosti pouze jeden bit, protože +e+ a +f+ jsou jeden bit od sebe), haš adresy se radikálně změnil. To je vlastnost hašovacích funkcí, díky které jsou tak užitečné pro kontrolní součty!
+
+Nyní si napište pod sebe adresu a její haš a zkontrolujte velikost písmen v adrese:
+
+[[incorrect_capitalization]]
+----
+001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+5429b5d9460122fb4b11af9cb88b7bb76d892886...
+----
+
+Všechno je špatně! Několik písmen v adrese má nesprávnou velikost. Nezapomeňte, že velikost písmen je kódování _správného_ kontrolního součtu.
+
+Velikost písmen zadané adresy neodpovídá právě vypočítanému kontrolnímu součtu, což znamená, že se v adrese něco změnilo a byla pass:[<span class="keep-together">předána</span>] chybně. (((range="endofrange", startref="ix_04keys-addresses-asciidoc21")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc20")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc19"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc15")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc14")))
+
+
+[[keys-addresses-conclusions]]
+=== Závěry
+
+V této kapitole jsme provedli krátký přehled kryptografie veřejných klíčů a zaměřili se na použití veřejných a soukromých klíčů v Ethereu a použití kryptografických nástrojů, jako jsou hašovací funkce, při vytváření a ověřování Ethereum adres. Také jsme se podívali na digitální podpisy a na to, jak mohou prokázat vlastnictví soukromého klíče, aniž by tento soukromý klíč odhalili. V <<wallets_chapter>> spojíme tyto nápady a podíváme se, jak lze peněženky použít ke správě sbírek klíčů (((range="endofrange", startref="ix_04keys-addresses-asciidoc0")))

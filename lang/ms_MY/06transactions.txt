@@ -1,0 +1,795 @@
+[[bab_tx]]
+== Transaksi
+
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Urusniaga adalah wakalah ditandatangani oleh pemilik akaun luaran yang dipindahkan oleh rangkaian Ethereum, dan direkodkan pada rantai blok Ethereum. Takrifan asas ini menyembunyikan banyak butiran mengejutkan dan menarik. Satu lagi cara untuk melihat urusniaga adalah, ianya adalah satu-satunya perkara yang boleh mencetuskan perubahan keadaan, atau menyebabkan kontrak dilaksanakan di EVM. Ethereum adalah mesin gelagat global yang tunggal, dan urusniaga adalah apa yang membuatkan mesin tingkah laku "disemak," mengubahkan keadaannya. Kontrak tidak dijalankan sendiri. Ethereum tidak berfungsi secara bebas daripada kuasa lain (autonomi). Semuanya bermula dengan urusniaga.
+
+Dalam bab ini, kita akan membedah urusniaga, menunjukkan bagaimana ianya bekerja, dan memeriksa butirannya. Perhatikan bahawa bab ini ditujukan kepada mereka yang berminat untuk mengurus transaksi mereka sendiri pada tahap yang rendah, walaupun mereka yang menuliskan aplikasi dompet; anda tidak perlu bimbang tentang perkara ini jika anda suka menggunakan aplikasi dompet sedia ada, lagipun anda mungkin menemui butirannya, menarik hati!
+
+[[tx_struct]]
+=== Struktur Transaksi
+
+((("transactions","basic structure")))Mula-mula mari kita perhatikan struktur asas transaksi, kerana ia bersiri dan dihantar pada rangkaian Ethereum. Setiap pelanggan dan aplikasi yang menerima transaksi bersiri akan menyimpannya dalam memori menggunakan struktur data dalamannya sendiri, mungkin digabungkan dengan metadata yang tidak wujud dalam transaksi bersiri rangkaian itu sendiri. Serangkaian rangkaian ialah satu-satunya bentuk transaksi mengikut piawaian.
+
+Transaksi adalah mesej binari bersiri yang mengandungi data berikut:
+
+Nonce:: Nombor urutan, dikeluarkan oleh pengaslian EOA , yang digunakan untuk menghalang mesej berulang.
+
+Gas price:: harga gas (dalam jumlah wei) yang pemula sanggup membayar
+
+Gas limit:: Jumlah maksimum gas pemula yang bersedia untuk membeli bagi transaksi ini
+
+Recipient:: Destinasi alamat Ethereum
+
+Value:: Jumlah ether yang dikirim ke penerima
+
+Data:: Data pendua muatan bayar yang panjangnya boleh diubah
+
+v,r,s:: Tiga peralatan tandatangan digital ECDSA dari pengaslian EOA
+
+((("Recursive Length Prefix (RLP)")))((("RLP (Recursive Length Prefix)")))Struktur mesej urusniaga bersambung dengan menggunakan skema pengekodan Awalan Panjang Keluk (RLP), yang dibuat secara khusus dengan mudah, data bait sempurna oleh Ethereum. Semua nombor dalam Ethereum dikodkan sebagai integer besar endian, panjang dengan gandaan 8 bit.
+
+Perhatikan bahawa label medan (+to+, +gas limit+, dan sebagainya) ditunjukkan di sini untuk penjelasan, tetapi bukan sebahagian daripada data bersiri transaksi, yang mengandungi nilai medan RLP yang dikodkan. Secara umum, RLP tidak mengandungi sebarang pembatas medan atau label. Awalan panjang RLP digunakan untuk mengenal pasti panjang setiap bidang. Apa-apa yang melebihi panjang yang ditentukan adalah bidang dalam struktur yang seterusnya.
+
+Walaupun ini adalah struktur urusniaga sebenar yang dihantar, kebanyakan perwakilan dalaman dan visualisasi antara muka pengguna memperluaskan ini dengan maklumat tambahan, yang diperolehi daripada urus niaga atau dari rantai blok.
+
+Sebagai contoh, anda mungkin mendapati tidak ada&#x201c;from&#x201d;  data dalam alamat yang mengenal pasti EOA asal. Ini kerana kunci awam EOA boleh diperoleh dari komponen +v,r,s+ tandatangan ECDSA. Alamat itu pada gilirannya, boleh diperoleh daripada kunci awam. Apabila anda melihat transaksi yang menunjukkan"dari" medanitulah yang ditambahkan oleh perisian yang digunakan untuk memaparkan urusniaga. Metadata lain yang sering ditambah kepada urusniaga oleh perisian klien termasuk nombor blok (sebaik sahaja ia dilombong dan dimasukkan ke dalam rantai blok) dan ID transaksi (hash yang dikira). Sekali lagi, data ini diperoleh daripada urus niaga, dan tidak menjadi sebahagian daripada mesej transaksi itu sendiri.
+
+[[tx_nonce]]
+=== Transaksi Nons
+
+((("nonces", id="ix_06transactions-asciidoc1", range="startofrange")))((("transactions","nonces", id="ix_06transactions-asciidoc2", range="startofrange")))Nonce adalah salah satu daripada komponen transaksi yang paling penting dan paling tidak difahami. Takrifan dalam Kertas Kuning (lihat <<references>>) berbunyi:
+
+____
++nonce : Nilai halaju sama dengan bilangan urus niaga yang dihantar dari alamat ini atau, dalam hal di mana akaun dengan kod yang berkaitan, jumlah kontrak dibuat oleh akaun ini.
+____
+
+Sebenarnya, nons adalah sifat alamat asal; iaitu, ia hanya mempunyai makna dalam takrifan alamat penghantaran. Walau bagaimanapun, nons tidak disimpan secara nyata sebagai sebahagian daripada keadaan akaun pada rantai blok tersebut. Sebaliknya, ia dikira secara penyesuaian, dengan mengira bilangan urus niaga yang disahkan yang berasal dari alamat.
+
+Terdapat dua keadaan di mana kewujudan transaksi bukan pengiraan urus niaga nons adalah penting: ciri kebolehgunaan urus niaga dimasukkan dalam susunan penciptaan, dan ciri penting perlindungan pendua transaksi. Mari lihat contoh keadaan baginya:
+
+1. Bayangkan anda ingin membuat dua transaksi. Anda perlu membuat bayaran penting sebanyak 6 ether, dan juga pembayaran lain 8 ether. Anda menandatangani dan menyiarkan transaksi 6-ether terlebih dahulu, kerana ia lebih penting, dan kemudian anda menandatangani dan menyiarkan transaksi kedua, 8-ether. Malangnya, anda telah terlepas pandang bahawa akaun anda mengandungi hanya 10 ether, jadi rangkaian tidak dapat menerima kedua-dua transaksi: salah seorang daripada mereka. Kerana anda menghantar 6-ether terlebih dahulu, anda perlu tahu bahawa pembayaran 8 ether tadi akan ditolak. Walau bagaimanapun, dalam sistem yang bukan terpusat seperti Ethereum, nod boleh menerima urus niaga dalam sebarang pesanan; tidak ada jaminan bahawa nod tertentu akan mempunyai satu transaksi yang disebarkan kepadanya sebelum yang lain. Oleh itu, hampir pasti akan berlaku bahawa beberapa nod menerima transaksi 6-ether terlebih dahulu dan yang lain menerima transaksi 8-ether terlebih dahulu. Tanpa nons, penerimaan akan menjadi rawak sama ada diterima dan ditolak. Walau bagaimanapun, dengan kemampuan nons, urus niaga pertama yang anda hantar akan mempunyai nons, katakanlah, 3, sementara transaksi 8-ether mempunyai nilai nonce seterusnya (iaitu, 4). Oleh itu, urus niaga tersebut akan diabaikan sehingga urusniaga dengan nonces dari 0 hingga 3 telah diproses, walaupun ia diterima terlebih dahulu. Perghh!
+
+
+2. Sekarang bayangkan anda mempunyai akaun dengan 100 eter. Hebat! Anda mencari seseorang dalam talian yang akan menerima pembayaran dalam ether untuk widget mcguffin yang anda mahu beli. Anda menghantar mereka 2 ether dan mereka menghantar widget mcguffin. Cantik. Untuk membuat pembayaran 2-ether, anda menandatangani transaksi menghantar 2 ether dari akaun anda ke akaun penjual, dan kemudian menyiarkannya ke rangkaian Ethereum untuk disahkan dan disertakan pada rantai blok. Sekarang, dengan nilai nons dalam urus niaga, transaksi kali kedua menghantar 2 ether ke alamat yang sama untuk kali kedua akan kelihatan sama seperti transaksi pertama. Ini bermakna sesiapa sahaja yang melihat urus niaga anda di rangkaian Ethereum (yang bermaksud semua orang, termasuk penerima atau musuh anda) boleh "memutarbalikkan" urus niaga itu lagi dan lagi dan lagi sehingga semua ether anda hilang hanya dengan menyalin dan menampal transaksi asal anda dan mengembalikannya ke rangkaian. Walau bagaimanapun, dengan nilai nons yang termasuk dalam data urus niaga, maka _setiap urus niaga tunggal adalah unik_, walaupun menghantar jumlah ether yang sama ke alamat penerima yang sama berkali-kali sekali pun. Oleh itu, dengan memiliki nonce tambahan sebagai sebahagian daripada urus niaga, tidak semestinya seseorang untuk "membuat kembaran" pembayaran yang telah anda buat.
+
+Ringkasnya, adalah penting untuk diperhatikan bahawa penggunaan nons sebenarnya penting untuk protokol berasaskan akaun, berbeza dengan mekanisme Output&#x201d; (UTXO) protokol Bitcoin.
+
+[[tracking_nonce]]
+==== Mengikuti Jejak Nons
+
+((("nonces","keeping track of")))Secara praktikal, nons merupakan kiraan terkini untuk bilangan urus niaga _pasti_ (iaitu, pada rantaian) yang berasal dari akaun. Untuk mengetahui apakah nons, anda boleh menyiasat rantai blok, contohnya melalui antara muka web3. Buka konsol JavaScript di Geth (atau antara muka web3 pilihan anda) di testnet Ropsten, kemudian ketik:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")</strong>
+40
+</pre>
+++++
+
+[PETUA]
+====
+Nons adalah kaunter berasaskan sifar, yang bermakna urus niaga pertama tidak mempunyai 0. Dalam contoh ini, kita mempunyai kiraan urusniaga sebanyak 40, yang bermaksud nons-nons 0 hingga 39 telah dilihat. Nons transaksi seterusnya seharusnya menjadi ke 40.
+====
+
+Dompet anda akan menjejaki nons untuk setiap alamat yang dikendalikannya. Ia agak mudah untuk dilakukannya, selagi anda melakukan transaksi dari satu tempat sahaja. Katakan anda sedang menulis perisian dompet anda atau aplikasi lain yang memulakan transaksi. Bagaimana anda hendak menjejak nons?
+
+Apabila anda membuat urus niaga baharu, anda menyerahkan nons seterusnya dalam urutan. Tetapi sehingga disahkan, ia tidak akan mengira jumlah +getTransactionCount+
+
+[[get_tx_count_bug]]
+[AMARAN]
+====
+Berhati-hati apabila menggunakan fungsi +getTransactionCount+ untuk mengira urus niaga yang belum selesai, kerana anda mungkin mengalami masalah jika anda menghantar beberapa urusniaga berturut-turut.
+====
+
+Mari lihat contoh:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+40
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+</pre>
+++++
+[PETUA]
+====
+Sekiranya anda cuba mencipta semula contoh-contoh kod anda sendiri dalam konsol javascript Geth, anda harus menggunakan web3.toWei() dan bukannya web3.utils.toWei(). Ini kerana Geth menggunakan versi lama pustaka web3.
+====
+
+Seperti yang anda lihat, urus niaga pertama yang kita telah hantar, telah menambah kiraan urusniaga kepada 41, memaparkan urus niaga yang belum selesai. Tetapi apabila kita menghantar tiga lagi transaksi secara berturut-turut, panggilan +getTransactionCount+ tidak mengiranya. Ia hanya mengira satu, walaupun anda mungkin mengharapkan ada tiga dalam senarai menunggu dalam mempool. Sekiranya kita menunggu juga beberapa saat bagi membolehkan komunikasi rangkaian ditamatkan, panggilan +GetTransactionCount+ akan mengembalikan nombor yang diharapkan. Namun, sementara terdapat lebih daripada satu urus niaga yang sedang menunggu, ia mungkin tidak membantu.
+
+Apabila anda membina aplikasi yang membina urus niaga, ia tidak boleh bergantung pada pas: [ <span class="keep-together"><code>getTransactionCount</code></span>] untuk transaksi yang belum selesai. Hanya apabila tunggakan yang belum selesai dan disahkan yang mempunyai nilai sama (semua urus niaga yang belum disahkan disahkan) yang boleh anda mempercayai pada output +getTransactionCount+ untuk memulakan kaunter nons. Selepas itu, jejakilah nons dalam aplikasi anda sehingga setiap transaksi disahkan.
+
+((("Parity","nonce counting")))Antara muka JC RPC Parity menawarkan fungsi +parity_nextNonce+, yang mengembalikan nons berikutnya yang harus digunakan dalam transaksi. Fungsi +parity_nextNonce+ mengira nonsf dengan betul, walaupun anda membuat beberapa transaksi bertubi-tubi tanpa mengesahkannya:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl --data '{"method":"parity_nextNonce", \
+  "params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],\
+  "id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST \
+  localhost:8545</strong>
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+</pre>
+++++
+
+[[parity_curl]]
+[PETUA]
+====
+Pariti mempunyai konsol sesawang untuk memasuki antara muka JSON RPC, tetapi di sini kita menggunakan baris perintah klien HTTP untuk mengaksesnya.
+====
+
+[[gaps_nonce]]
+==== Jurang Nonces, Tanpa Pendua, dan Pengesahannya
+
+((("nonces","gaps in sequence of")))Adalah penting untuk mengesan nons jika anda membuat urus niaga secara terancang, terutamanya jika anda melakukannya dari pelbagai proses bebas: [<span class="keep-together">secara serentak</span>].
+
+Rangkaian Ethereum memproses urusniaga secara berurutan, berasaskan nons. Ini bermakna jika anda menghantar transaksi dengan nons 0 dan kemudian menghantar transaksi dengan nons 2, transaksi kedua tidak akan dimasukkan ke dalam mana-mana blok. Ia akan disimpan di dalam mempool, manakala rangkaian Ethereum menunggu untuk nons yang hilang untuk muncul semula. Semua nod akan mengandaikan bahawa nons yang hilang hanya ditunda dan transaksi dengan nons 2 diterima mengikut urutan.
+
+Jika anda kemudian menghantar transaksi dengan nons 1 yang tercicir, kedua-dua transaksi (nons 1 dan 2) akan diproses dan dimasukkan (seandainya sah). Sebaik sahaja anda mengisi kekosongan itu, rangkaian boleh mengendalikan urus niaga luar yang dipegangnya dalam mempool.
+
+Apa yang dimaksudkan ialah jika anda membuat beberapa urus niaga secara berturut-turut dan salah seorang daripadanya tidak dimasukkan secara rasmi dalam sebarang blok, semua urus niaga berikutnya akan "tersekat" menunggu giliran lain yang hilang. Transaksi boleh membuat "jurang" yang tidak disengaja dalam urutan bukan kerana tidak sah atau tidak mempunyai gas. Untuk bergerak semula, anda perlu menghantar transaksi yang sah dengan nons yang tercicir tadi. Anda harus berhati-hati kerana, apabila urus niaga dengan nons "keciciran" telah disahkan oleh rangkaian, semua transaksi penyiaran dengan nons berikutnya akan secara beransur-ansur menjadi sah; adalah tidak mungkin untuk "membatalkan semula" transaksi!
+
+((("nonces","confirmation")))((("nonces","duplicated")))Jika, sebaliknya, anda secara tidak sengaja membuat kembaran pada nons, sebagai contoh dengan menghantar dua transaksi dengan nons yang sama tetapi penerima atau nilai yang berbeza, maka salah seorang daripadanya akan disahkan dan yang mana satu akan ditolak. Yang telah disahkan itu pula akan ditentukan oleh urutan di mana ia mula-mula tiba di pengesahan nod yang menerimanya&#x2014;iaitu, prosesnya begitu rawak.
+
+Seperti yang anda dapat lihat, menjejaki nons itu amat diperlukan, dan jika aplikasi anda tidak mengurus proses itu dengan betul, anda akan menghadapi masalah. Malangnya, perkara menjadi lebih sukar jika anda cuba melakukan ini secara serentak, seperti yang akan kita lihat di bahagian seterusnya.
+
+[[concurrency]]
+==== Penjajaran, Pengenalan Transaksi, dan Nons
+
+((("concurrency, nonces and")))((("nonces","concurrency")))((("nonces","transaction origination")))Penjajaran adalah aspek rumit dalam sains komputer, terkadang ianya berlaku tanpa disangka-sangka, terutamanya dalam sistem masa nyata teragih dan yang bukan terpusat seperti pass:[<span class="keep-together">Ethereum</span>].
+
+Secara ringkas, penjajaran (konkurensi) adalah apabila anda mempunyai pengiraan secara serentak oleh pelbagai sistem bebas. Ini boleh dilakukan dalam program yang sama (misalnya, pelbagai unsur), pada CPU yang sama (contohnya, pelbagai proses), atau pada komputer yang berbeza (contohnya, pass:[<span class="keep-together">sistem</span>]) teragihan. Ethereum, secara huraiannya, adalah sistem yang membolehkan penjajaran operasi-operasi (nod, klien, DApps) tetapi melaksanakan tingkahlaku tunggal melalui kesepakatan (konsensus).
+
+Sekarang, bayangkan anda mempunyai banyak aplikasi dompet bebas yang menjana urus niaga dari alamat atau alamat yang lain. Satu contoh keadaan sedemikian akan menjadi pertukaran pemprosesan dari pengurupan dompet panas (iaitu dompet yang kekunci disimpan dalam talian, berbeza dengan dompet sejuk di mana kunci tidak disimpan di dalam talian). Sebaiknya, anda ingin mempunyai lebih daripada satu proses pengeluaran berkomputer, supaya ia tidak menjadi sesak atau menemui titik kegagalan. Walau bagaimanapun, cara mengundang masalah, kerana mempunyai lebih daripada satu komputer yang menghasilkan pengeluaran yang menyebabkan beberapa masalah penjajaran yang sukar, yang melibatkan pemilihan nons. Bagaimanakah komputer yang banyak itu menguruskan menjana, menandatangani dan menyiarkan transaksi daripada akaun dompet panas yang sama?
+
+Anda boleh menggunakan komputer tunggal untuk menugaskan nons, atas dasar, siapa sampai dulu-dia dilayan dulu, kepada komputer yang menandatangani transaksi. Walau bagaimanapun, komputer tersebut telah menjadi salah satu titik kegagalan. Lebih buruk lagi, jika beberapa nons ditugaskan dan salah satu daripadanya tidak pernah digunakan (kerana kegagalan dalam komputer memproses urusniaga dengan nons itu), semua urusniaga berikutnya terjsangkut.
+
+Satu lagi pendekatan adalah untuk menjana urus niaga, tetapi tidak memberikan nons kepadanya (dan membiarkan ia tidak ditandatangani-&#x2014;ingat bahawa nons adalah sebahagian daripada data urus niaga dan oleh itu perlu disertakan dalam tandatangan digital yang mengesahkan transaksi). Anda boleh menghantarkannya ke nod tunggal yang menandatangani mereka dan juga menjejaki nons. Sekali lagi, di dalam proses ianya akan menjadi titik tercekik: penandatanganan dan pengesanan nons adalah sebahagian daripada operasi anda yang mungkin menjadi sesak di bawah beban muatan, sedangkan penjanaan transaksi yang tidak ditandatangani adalah bahagian yang anda tidak benar perlu peduli. Anda akan mempunyai beberapa kesukaran, tetapi ia akan teruk di dalam bahagian proses penting ini.
+
+Akhirnya, masalah penjajaran ini, menjadi sukar mengesan baki akaun dan pengesahan transaksi dalam proses bebas, lalu memaksa pelaksanaan untuk mengelakkan kesulitan dan mewujudkan kesempitan umpamanya, hanya satu sahaja proses yang mengendalikan semua urus niaga pengeluaran dalam bursa, atau tetapan pelbagai dompet panas yang berfungsi sepenuhnya secara bebas bagi tujuan pengeluaran dan hanya perlu mengimbanginya semula. (((range="endofrange", startref="ix_06transactions-asciidoc2")))(((range="endofrange", startref="ix_06transactions-asciidoc1")))
+
+[[tx_gas]]
+=== Gas Transaksi
+
+((("gas","transactions and", id="ix_06transactions-asciidoc3", range="startofrange")))((("transactions","gas", id="ix_06transactions-asciidoc4", range="startofrange")))Kita menyentuh tentang gas dalam bab-bab sebelumnya, dan kita membincangkannya dengan lebih terperinci dalam <<gas>>. Walau bagaimanapun, mari sama-sama membahaskan beberapa asas mengenai peranan +gasPrice+ dan +gasLimit+ dalam komponen transaksi.
+
+Gas adalah bahan api Ethereum. Gas bukanlah eter&#x2014; ianya mata wang maya yang berasingan dengan kadar pertukaran sendiri terhadap ether. Ethereum menggunakan gas untuk mengawal jumlah sumber yang boleh digunakan oleh transaksi, kerana ia akan diproses pada ribuan komputer di seluruh dunia. Model komputasi terbuka (Turing-lengkap) memerlukan beberapa bentuk pemetaan bagi mengelakkan perkhidmatan serangan penafian (DDoS) atau akibat yang tidak disengajakan.
+
+Gas adalah berasingan daripada ether untuk melindungi sistem daripada ketidakstabilan yang mungkin timbul bersama dengan perubahan pantas dalam nilai ether, dan juga sebagai cara untuk menguruskan nisbah penting dan sensitif antara kos pelbagai sumber yang dibayar oleh gas (iaitu pengiraan, ingatan, dan penyimpanan).
+
+((("gasPrice field")))Bidang +gasPrice+ dalam transaksi membolehkan pemula transaksi untuk menetapkan harga yang mereka bersedia bayar sebagai pertukaran untuk gas. Harga diukur dalam wei perbagi setiap unit gas. Sebagai contoh, dalam transaksi sampel di <<intro_chapter>> dompet anda menetapkan +gasPrice+ hingga 3 gwei (3 gigawei atau 3 bilion wei).
+
+[PETUA]
+====
+Laman masyhur https://ethgasstation.info/[ETH Gas Station] menyediakan maklumat mengenai harga gas semasa dan metrik gas yang berkaitan untuk rangkaian utama Ethereum.
+====
+
+Dompet boleh menyesuaikan +gasPrice+ dalam transaksi yang mereka hasilkan untuk mencapai pengesahan transaksi yang lebih cepat. Semakin tinggi +gasPrice+, semakin cepat transaksi mungkin disahkan. Sebaliknya, urusniaga keutamaan yang lebih rendahyang tiada keutamaan diberikan, maka harga dikurangkan tetapi mengakibatkan pengesahan transaksi yang lebih perlahan. Nilai minimum yang +gasPrice+ boleh ditetapkan adalah sifar, yang bermaksud transaksi tanpa bayaran. Semasa tempoh bukan waktu kemuncak bagi pengisian ruang di blok, urusniaga tersebut mungkin sangat baik untuk dilombong.
+
+[NOTE]
+====
+Kadar terendah yang boleh diterima +gasPrice+ adalah sifar. Ini bermakna bahawa dompet boleh menjana urus niaga percuma sepenuhnya. Bergantung kepada kapasiti, mungkin ianya tidak akan disahkan pelombong, tetapi tiada apa-apa dalam protokol yang melarang transaksi percuma. Anda boleh menemui beberapa contoh transaksi sedemikian yang berjaya disertakan pada rantai blok Ethereum.
+====
+
+[[gas_price_suggestion]]
+Antara muka web3 menawarkan saranan +gasPrice+, dengan mengira harga median di beberapa blok (kita boleh menggunakan konsol truffle atau mana-mana konsol web3 JavaScript untuk melakukannya):
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(console.log)</strong>
+> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+</pre>
+++++
+
+[[calc_gas_price]]
+((("gasLimit field")))Bidang penting kedua yang berkaitan dengan gas ialah +gasLimit+. Secara ringkas, +gasLimit + memberikan bilangan tertinggi unit gas untuk orang yang memulakan transaksi itu bersedia untuk membeli bagi tujuan menyelesaikan transaksi. Untuk bayaran mudah, iaitu transaksi yang memindahkan hdari satu EOA ke EOA yang lain, jumlah gas yang diperlukan ditetapkan pada 21,000 unit gas. Untuk mengira berapa banyak ether yang akan dikenakan, 21,000 dikali dengan +gasPrice+ yang anda sanggup bayar. Sebagai contoh:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )</strong>
+> 210000000000000
+</pre>
+++++
+
+Jika alamat destinasi transaksi anda adalah kontrak, maka jumlah gas yang diperlukan dapat dianggarkan tetapi tidak dapat ditentukan dengan tepat. Ini kerana, kontrak boleh menilai keadaan yang berbeza yang membawa kepada laluan pelaksanaan yang berlainan, dengan kos gas yang berbeza. Kontrak ini boleh melaksanakan pengiraan yang mudah atau yang lebih rumit, bergantung kepada keadaan yang berada di luar kawalan anda dan tidak dapat diramalkan. Untuk menunjukkan ini, mari kita lihat contoh: kita boleh menulis kontrak pintar yang meningkatkan bilangan setiap kali ia dipanggil dan melaksanakan gelung tertentu bersamaan dengan kiraan panggilan. Mungkin pada panggilan ke-100 ia memberikan hadiah istimewa, seperti loteri, tetapi perlu membuat pengiraan tambahan untuk mengira hadiah. Jika anda memanggil kontrak 99 kali maka sebuah perkara berlaku, tetapi pada panggilan ke-100 sesuatu yang sangat berbeza berlaku. Jumlah gas yang akan anda bayar untuk itu bergantung pada berapa banyak urus niaga lain yang memanggil fungsi tersebut sebelum transaksi anda disertakan dalam satu blok. Mungkin perkiraan anda adalah berdasarkan pada transaksi ke-99, tetapi sebelum transaksi anda disahkan orang lain memanggil kontrak untuk kali ke-99. Kini anda adalah urus niaga ke-100 untuk panggilan, dan usaha pengiraan (dan kos gas) jauh lebih tinggi.
+
+Sebagai perumpamaannya yang biasa yang digunakan dalam Ethereum, anda boleh memikirkan +gasLimit+ sebagai kapasiti tangki bahan api di dalam kereta anda (kereta anda adalah transaksi). Anda mengisi tangki dengan banyak gas yang anda fikir ia memerlukan perjalanan (pengiraan yang diperlukan untuk mengesahkan transaksi anda). Anda boleh menganggarkan jumlahnya hingga tahap tertentu, tetapi mungkin terdapat perubahan yang tidak dijangka untuk perjalanan anda, seperti lencongan (laluan pelaksanaan yang lebih rumit), yang meningkatkan penggunaan bahan api.
+
+Walau bagaimanapun, analogi seperti ini agak menyesatkan. Ia sebenarnya lebih seperti akaun kredit untuk syarikat stesen minyak, di mana anda membayar selepas perjalanan selesai, berdasarkan berapa banyak gas yang anda gunakan. Apabila anda memindahkan urus niaga anda, salah satu langkah pengesahan pertama ialah untuk memastikan bahawa akaun itu berasal dari mempunyai ether yang cukup untuk membayar had +gasPrice * gas+. Tetapi jumlahnya sebenarnya tidak ditolak dari akaun anda sehingga transaksi selesai. Anda hanya dibilkan untuk gas yang sebenarnya digunakan oleh urus niaga anda, tetapi anda perlu mempunyai baki yang mencukupi untuk jumlah maksimum yang anda sanggup bayar sebelum anda menghantar transaksi anda. (((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+
+[[tx_recipient]]
+Penerima Transaksi ===
+
+((("transactions","recipient of")))Penerima urusniaga dinyatakan dalam +ke+ medan. Ini mengandungi alamat Ethereum 20-bait. Alamat boleh jadi EOA atau alamat kontrak.
+
+Ethereum tidak lagi mengesahkan medan ini. Mana-mana nilai 20-bait dianggap sah. Jika nilai 20-bait sepadan dengan alamat tanpa kunci persendirian yang sepadan, atau tanpa kontrak yang sepadan, urus niaga masih sah. Ethereum tidak mempunyai cara untuk mengetahui sama ada alamat telah diperolehi dengan betul dari kunci awam (bahkan dari kunci persendirian) yang wujud.
+
+[AMARAN]
+====
+Protokol Ethereum tidak mengesahkan alamat penerima dalam transaksi. Anda boleh menghantar ke alamat yang tidak mempunyai kunci peribadi atau kontrak yang bersesuaian, dengan itu ianya akan 'menghanguskan' ether, menjadikannya tidak boleh dibelanjakan selamanya. Pengesahan harus dilakukan pada tahap antara muka pengguna.
+====
+
+((("ether burn")))Menghantar transaksi ke alamat yang salah mungkin akan menghanguskan ether yang dihantar, menjadikannya selamanya tidak dapat diakses (tidak dapat dibelanjakan lagi), kerana kebanyakan alamat tidak mempunyai kunci persendirian yang diketahui dan tidak ada tanda tangan yang dapat dihasilkan bagi membelanjakannya. Adalah diandaikan bahawa pengesahan alamat berlaku di peringkat antara muka pengguna (lihat <<EIP55>>). Sebenarnya terdapat beberapa sebab yang sah untuk menghanguskan ether&#x2014;sebagai contoh, tindakan penipuan terhadap penipuan dalam aluran pembayaran dan kontrak pintar&#x2014;lain dan kerana jumlah ether adalah tidak terhingga, pembakaran ether secara teragihan nilai yang dihanguskan kepada semua pemegang ether (berkadaran dengan jumlah ether yang mereka pegang).
+
+[[tx_value_data]]
+=== Nilai dan Data Transaksi
+
+((("transactions","value and data fields", id="ix_06transactions-asciidoc5", range="startofrange")))The main "payload" of a transaction is contained in ((("data field", id="ix_06transactions-asciidoc6", range="startofrange")))((("value field", id="ix_06transactions-asciidoc7", range="startofrange")))dua bidang iaitu: +value+ and +data+. Transaksi boleh mempunyai nilai dan data, atau hanya nilai, hanya data, atau bukan nilai atau data. Semua empat serangkai ini adalah sah.
+
+((("invocation")))((("payment")))Transaksi dengan satu-satunya nilai ialah _payment_. Urusniaga dengan hanya data adalah pengumpulan maklumat. Transaksi dengan kedua-dua nilai dan data adalah kedua-dua pembayaran dan penyerahan. Transaksi dengansama ada tanpa nilai atau data&#x2014mungkin hanya pembaziran gas! Tetapi ia masih boleh dilakukan.
+
+Mari kita cuba semua kombinasi ini. Mula-mula kita akan menetapkan alamat sumber dan destinasi dari dompet kita,  untuk menjadikan pertunjukkan ini lebih mudah dibaca:
+
+[source,javascript]
+----
+src = web3.eth.accounts[0];
+dst = web3.eth.accounts[1];
+----
+
+Urusniaga pertama kita hanya mengandungi nilai (pembayaran), dan tiada muatan data:
+
+[[tx_value_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: ""});
+----
+
+Dompet kita menunjukkan skrin pengesahan yang menunjukkan nilai untuk dihantar, seperti yang ditunjukkan dalam <<parity_txdemo_value_nodata>>.
+
+[[parity_txdemo_value_nodata]]
+.Dompet Parity menunjukkan urus niaga dengan nilai, tetapi tiada data
+image :: images / parity_txdemo_value_nodata.png [&quot;Dompet Parity menunjukkan urus niaga dengan nilai, tetapi tiada data&quot;]
+
+
+Contoh seterusnya menentukan kedua-dua nilai dan muatan data:
+
+[[tx_value_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: "0x1234"});
+----
+
+Dompet kita menunjukkan skrin pengesahan yang menunjukkan nilai untuk dihantar serta muatan data, seperti ditunjukkan dalam <<parity_txdemo_value_data>>.
+
+[[parity_txdemo_value_data]]
+.Dompet Parity menunjukkan transaksi dengan nilai dan data
+image::images/parity_txdemo_value_data.png["Parity wallet showing a transaction with value and data"]
+
+Urusniaga seterusnya termasuk muatan data tetapi menentukan nilai sifar:
+
+[[tx_novalue_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
+----
+
+Dompet kita menunjukkan skrin pengesahan yang menunjukkan nilai sifar dan muatan data, seperti yang ditunjukkan dalam <<parity_txdemo_novalue_data>>.
+
+[[parity_txdemo_novalue_data]]
+.Dompet Parity menunjukkan urus niaga tanpa nilai, hanya data
+image::images/parity_txdemo_novalue_data.png["Dompet Pariti menunjukkan urus niaga tanpa nilai, hanya data"]
+
+[role="pagebreak-before"]
+Akhirnya, transaksi terakhir tidak termasuk nilai untuk menghantar atau muatan data:
+
+[[tx_novalue_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
+----
+
+Dompet ini menunjukkan skrin pengesahan yang menunjukkan nilai sifar, seperti yang ditunjukkan dalam <<parity_txdemo_novalue_nodata>>.
+
+[[parity_txdemo_novalue_nodata]]
+.Dompet Parity menunjukkan urus niaga tanpa nilai, dan tiada data
+image::images/parity_txdemo_novalue_nodata.png["Dompet pariti menunjukkan transaksi tanpa nilai, dan tiada data"]
+
+[[value_EOA_contracts]]
+==== Menghantar Nilai kepada EOA dan Kontrak
+
+((("EOA (Externally Owned Account)","transmitting value to")))((("smart contracts","transmitting value to")))((("transactions","transmitting value to EOAs and contract")))Apabila anda membuat transaksi Ethereum yang mengandungi nilai, ia bersamaan dengan _pembayaran_. Transaksi sedemikian berkelakuan berbeza bergantung kepada sama ada alamat destinasi adalah kontrak atau tidak.
+
+Untuk alamat EOA, atau sebaliknya untuk mana-mana alamat yang tidak ditandakan sebagai kontrak pada rantai blok, Ethereum akan merakamkan perubahan keadaan, menambahkan nilai yang anda hantar ke baki alamat. Sekiranya alamat tersebut tidak pernah dilihat sebelum ini, ia akan ditambah kepada perwakilan tingahlaku dalaman klien dan bakinya diisytiharkan kepada nilai pembayaran anda.
+
+Jika alamat destinasi (+to+) adalah kontrak, maka EVM akan melaksanakan kontrak dan akan cuba memanggil fungsi yang dinamakan dalam muatan data transaksi anda. Jika tiada data dalam urus niaga anda, EVM akan memanggil fungsi _fallback_ dan, jika fungsi itu dibayar, ia akan melaksanakannya untuk menentukan apa yang perlu dilakukan seterusnya. Sekiranya tiada kod dalam fungsi sandaran, maka kesan transaksi tersebut akan meningkatkan baki kontrak, sama seperti pembayaran kepada dompet. Sekiranya tiada fungsi sandaran atau fungsi sandaran balik, maka transaksi akan dikembalikan.
+
+Kontrak boleh menolak pembayaran masuk dengan membuang pengecualian segera apabila fungsi dipanggil, atau seperti yang ditentukan oleh syarat yang dikodkan dalam fungsi. Sekiranya fungsi itu berakhir dengan jayanya (tanpa pengecualian), maka keadaan kontrak dikemas kini untuk mencerminkan peningkatan dalam baki kontrak ether.(((range="endofrange", startref="ix_06transactions-asciidoc7")))(((range="endofrange", startref="ix_06transactions-asciidoc6")))
+
+[[data_EOA]]
+==== Menghantar Muatan Data ke EOA atau Kontrak
+
+((("data payload, transmitting to EOAs and contracts", id="ix_06transactions-asciidoc8", range="startofrange")))((("EOA (Externally Owned Account)","transmitting data payload to", id="ix_06transactions-asciidoc9", range="startofrange")))((("smart contracts","transmitting data payload to", id="ix_06transactions-asciidoc10", range="startofrange")))((("transactions","transmitting data payload to EOAs and contracts", id="ix_06transactions-asciidoc11", range="startofrange")))Apabila urus niaga anda mengandungi data, kemungkinan besarnya ianya alamat ke alamat kontrak. Itu tidak bermakna anda tidak boleh menghantar muatan data kepada EOA&#x2014;yang benar-benar sah dalam protokol Ethereum. Walau bagaimanapun, dalam kes itu, tafsiran data terpulang kepada dompet yang anda gunakan untuk mengakses EOA. Ia diabaikan oleh protokol Ethereum. Kebanyakan dompet juga mengabaikan sebarang data yang diterima dalam transaksi dengan EOA yang mereka kawal. Di masa hadapan, mungkin wujud piawaian yang membolehkan dompet untuk mentafsirkan data sebagaimana cara kontrak melakukannya, sehingga membolehkan transaksi untuk menggunakan fungsi yang berjalan di dalam dompet pengguna. Perbezaan kritikal adalah, sebarang tafsiran muatan data oleh EOA tidak tertakluk kepada peraturan kesepakatan Ethereum, tidak seperti kontrak pass:[<span class="keep-together">pelaksana</span>].
+
+Buat masa ini, mari kita anggapkan transaksi anda ini, menyampaikan data ke alamat kontrak. ((("contract invocation")))((("invocation")))Dalam kes itu, data akan ditafsirkan oleh EVM sebagai _penyerahan kontrak_.((("function invocation")))Kebanyakan kontrak menggunakan data ini secara lebih khusus sebagai pemanggilan fungsi, memanggil fungsi yang dinamakan dan mengalihkan sebarang hujahan yang dikodkan kepada fungsi.
+
+Muatan data (payload) yang dihantar ke kontrak yang bersesuaian dengan ABI (aanggaplah semua kontrak itu) ialah pengekodan bersiri hex:
+
+A function selector:: iaitu 4 bait pertama daripada Keccak-256. Ini membolehkan kontrak mengenal pasti fungsi mana yang anda ingin gunakan.
+
+The function arguments:: Hujah-hujah fungsi, dikodkan mengikut peraturan untuk pelbagai jenis asas yang ditakrifkan dalam spesifikasi ABI.
+
+Di dalam <<solidity_faucet_example>>, kami menetapkan fungsi untuk pengeluaran:
+
+[[withdraw_function_src]]
+[source,solidity]
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+((("prototype of a function")))suatu fungsi _prototaip_ ditakrifkan sebagai rentetan yang mengandungi nama fungsi, diikuti dengan jenis data setiap hujahnya, disertakan dalam kurungan dan dipisahkan oleh koma. Nama fungsi di sini ialah +withdraw+ dan memerlukan hujah tunggal iaitu +uint+ (yang merupakan nama samaran untuk +uint256+), jadi prototaip +withdraw+ ialah:
+
+[source,solidity]
+----
+withdraw(uint256)
+----
+
+Jom kira hash bagi Keccak-256melalui rangkai ini:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.utils.sha3("withdraw(uint256)");</strong>
+'0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
+</pre>
+++++
+
+4 bait pertama hash ialah +0x2e1a7d4d+. Itulah nilai "fungsi pemilih" kita, yang akan memberitahu kontrak manakah yang berfungsi untuk dipanggil.
+
+Seterusnya, mari kita menghitung nilai untuk lulus sebagai argumen +withdraw_amount+. Kita mahu mengeluarkan 0.01 ether. Marilah kita mengkodkannya ke integer 256-bit tanpa tanda endian besar bersiri hex, dalam bentuk wei:
+
+++++
+<pre data-type="programlisting">
+> <strong>withdraw_amount = web3.utils.toWei(0.01, "ether");</strong>
+'10000000000000000'
+> <strong>withdraw_amount_hex = web3.utils.toHex(withdraw_amount);</strong>
+'0x2386f26fc10000'
+</pre>
+++++
+
+Kini, kami menambah pemilih fungsi kepada jumlah (sebanyak hingga 32 bait):
+
+----
+2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000
+----
+
+Itulah muatan data untuk urus niaga kita, memohon fungsi +withdraw+ dan meminta 0.01 ether sebagai +withdraw_amount+(((range="endofrange", startref="ix_06transactions-asciidoc11")))(((range="endofrange", startref="ix_06transactions-asciidoc10")))(((range="endofrange", startref="ix_06transactions-asciidoc9")))(((range="endofrange", startref="ix_06transactions-asciidoc8"))).(((range="endofrange", startref="ix_06transactions-asciidoc5")))
+
+[[contract_reg]]
+=== Transaksi Khas: Penciptaan Kontrak
+
+((("contract creation transaction", id="ix_06transactions-asciidoc12", range="startofrange")))((("transactions","contract creation", id="ix_06transactions-asciidoc13", range="startofrange")))Satu kes khas yang perlu kami sebutkan ialah transaksi yang merangkumi kontrak baharu pada rantai blok, yang digunakan untuk kegunaan masa depan. ((("zero address","contract creation")))Urusniaga penciptaan kontrak dihantar ke alamat destinasi khas yang dipanggil _zero address_; Medan +to+ dalam transaksi pendaftaran kontrak mengandungi alamat +0x0+. Alamat ini tidak mewakili EOA (tiada sepasang kunci awam-peribadi yang sama) atau kontrak. Ia tidak boleh menghabiskan ether atau memulakan transaksi. Ia hanya digunakan sebagai destinasi, dengan maksud khusus "membuat kontrak ini."
+
+Walaupun alamat sifar hanya dimaksudkan untuk penciptaan kontrak, kadang-kadang menerima pembayaran dari pelbagai alamat. ((("ether burn")))Terdapat dua penjelasan untuk ini: sama ada secara tidak sengaja, mengakibatkan kehilangan ether, atau ia adalah sengaja _emnghasunguskan ethere_(sengaja memusnahkan ether dengan menghantarnya ke alamat yang mana ia tidak boleh dibelanjakan). Walau bagaimanapun, jika anda ingin melakukan pembakaran ether yang disengajakan, anda harus membuat niat anda jelas ke rangkaian dan menggunakan alamat pembakaran khusus yang ditetapkan:
+
+[[burn_address]]
+----
+0x000000000000000000000000000000000000dEaD
+----
+
+[AMARAN]
+====
+Sebarang ether yang dihantar ke alamat pembakaran yang ditetapkan tidak akan boleh dibelanjakan lagi dan akan hilang selama-lamanya.
+====
+
+Transaksi penciptaan kontrak hanya perlu mengandungi muatan data yang mengandungi kod bait yang disusun yang akan membuat kontrak. Satu-satunya kesan transaksi ini adalah untuk membuat kontrak. Anda boleh memasukkan jumlah ether di dalam medan +value+ jika anda ingin menetapkan kontrak baharu dengan baki permulaan, tetapi itu adalah pilihan sepenuhnya. Jika anda menghantar nilai (ether) ke alamat penciptaan kontrak tanpa muatan data (tidak ada kontrak), maka kesannya adalah sama seperti menghantar ke alamat pembakaran&#x2014;tidak ada kontrak untuk kredit, maka hilanglah ether itu.
+
+Contohnya, kami boleh membuat kontrak _Faucet.sol_ yang digunakan dalam <<intro_chapter>> dengan membuat transaksi ke alamat sifar secara manual dengan kontrak dalam muatan data. Kontrak perlu dikumpulkan ke dalam perwakilan kod bait. Ini boleh dilakukan dengan pengiraan Solidity:
+
+++++
+<pre data-type="programlisting" class="pagebreak-before">
+$ <strong>solc --bin Faucet.sol</strong>
+
+Binary:
+6060604052341561000f57600080fd5b60e58061001d6000396000f30060606040526004361060...
+</pre>
+++++
+
+Maklumat yang sama juga boleh didapati dari penyusun dalam talian, Remix.
+
+Sekarang, kita cipta transaksi:
+
+++++
+<pre data-type="programlisting">
+> <strong>src = web3.eth.accounts[0];</strong>
+> <strong>faucet_code = \
+  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606...f0029";</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, \
+  gas: 113558, gasPrice: 200000000000});</strong>
+
+"0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
+</pre>
+++++
+
+Amalan yang baik ialah selalu menentukan parameter +to+, walaupun dalam kes penciptaan kontrak alamat sifar, kerana kos secara tidak sengaja menghantar ether ke +0x0+ dan kehilangannya selamanya terlalu besar. Anda juga harus menentukan +gasPrice+ dan +gasLimit+.
+
+Apabila kontrak dilombong, kita dapat melihatnya di penjelajah blok Etherscan, seperti ditunjukkan di dalam <<publish_contract_from_web3>>.
+
+[[publish_contract_from_web3]]
+.Etherscan menunjukkan kontrak berjaya ditambang
+image::images/contract_published.png["Etherscan showing the contract successfully mined"]
+
+Kita boleh melihat penerimaan transaksi untuk mendapatkan maklumat mengenai kontrak:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getTransactionReceipt( \
+  "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");</strong>
+
+{
+  blockHash: "0x6fa7d8bf982490de6246875deb2c21e5f3665b4422089c060138fc3907a95bb2",
+  blockNumber: 3105256,
+  contractAddress: "0xb226270965b43373e98ffc6e2c7693c17e2cf40b",
+  cumulativeGasUsed: 113558,
+  from: "0x2a966a87db5913c1b22a59b0d8a11cc51c167a89",
+  gasUsed: 113558,
+  logs: [],
+  logsBloom: \
+    "0x00000000000000000000000000000000000000000000000000...00000",
+  status: "0x1",
+  to: null,
+  transactionHash: \
+    "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b",
+  transactionIndex: 0
+}
+</pre>
+++++
+
+Ini termasuk alamat kontrak, yang boleh kita gunakan untuk menghantar dana kepada dan menerima dana dari kontrak seperti yang ditunjukkan di bahagian sebelumnya:
+
+++++
+<pre data-type="programlisting">
+> <strong>contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, \
+  value: web3.utils.toWei(0.1, "ether"), data: ""});</strong>
+
+"0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
+
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: \
+  "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
+
+"0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
+</pre>
+++++
+
+Selepas beberapa ketika, kedua-dua urusniaga itu dapat dilihat pada Etherscan, seperti yang ditunjukkan dalam <<publish_contract_transactions>>.(((range="endofrange", startref="ix_06transactions-asciidoc13")))(((range="endofrange", startref="ix_06transactions-asciidoc12")))
+
+[[publish_contract_transactions]]
+.Etherscan menunjukkan urus niaga untuk menghantar dan menerima dana
+image::images/published_contract_transactions.png["Etherscan menunjukkan urus niaga untuk menghantar dan menerima dana"]
+
+
+[[digital_sign]]
+=== Tandatangan Digital
+
+((("digital signatures", id="ix_06transactions-asciidoc14", range="startofrange")))((("transactions","digital signatures and", id="ix_06transactions-asciidoc15", range="startofrange")))Setakat ini, kami tidak menyenaraikan sebarang tandatangan digital. Dalam bahagian ini, kita melihat bagaimana tandatangan digital berfungsi dan bagaimana ia dapat digunakan untuk membuktikan kepemilikan kunci peribadi tanpa mendedahkan kunci itu.
+
+[[ecdsa]]
+==== Algoritma Tandatangan Digital Keluk Elips (ECDSA)
+
+((("digital signatures","ECDSA and")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","about")))Algoritma Tandatangan Digital Keluk Elips (ECDSA) yang digunakan dalam Ethereum berasaskan kunci peribadi keluk eliptik, sebagaimana huraian di <<elliptic_curve>>.
+
+Tandatangan digital berfungsi tiga tujuan dalam Ethereum (lihat garis sebelah berikut). Pertama, tandatangan membuktikan bahawa pemilik kunci peribadi, dengan penglibatan pemilik akaun Ethereum, mempunyai _kuasa_ membelanjakan ether, atau pelaksanaan kontrak. ((("non-repudiation")))Kedua, ia menjamin _tanpa penolakan_: iaitu bukti kebenaran tidak dapat dinafikan. Ketiganya, tandatangan itu membuktikan bahawa data transaksi belum atau tidak diubah oleh siapa pun setelah transaksi telah ditandatangani.
+
+[[digital_signature_definition]]
+.Definisi Tanda Digital Wikipedia
+****
+((("digital signatures","Wikipedia definition")))Tanda tangan digital adalah skema matematik untuk membentangkan kesahihan mesej atau dokumen digital. Tandatangan digital yang sah memberikan asbab kepada penerima untuk mempercayai bahawa mesej tersebut dibuat oleh pengirim yang diketahui (pengesahan), bahawa pengirim tidak dapat menafikan telah menghantar mesej (tanpa penolakan) dan mesej itu tidak diubah dalam tempat asalnya (telus) .
+
+_Sumber: https://en.wikipedia.org/wiki/Digital_signature_
+****
+
+[[digital_sign_work]]
+==== Cara Kerja Tandatangan Digital
+
+((("digital signatures","mechanism of operation")))Tandatangan digital ialah skema matematik yang terdiri daripada dua bahagian. Bahagian pertama adalah algoritma untuk membuat tandatangan, menggunakan kunci peribadi (kunci tandatangan), dari mesej (yang dalam kes kita tadi adalah transaksi). Bahagian kedua adalah algoritma yang membolehkan sesiapa sahaja mengesahkan tandatangan dengan hanya menggunakan mesej dan kunci awam.
+
+[[digital_sign_create]]
+===== Mewujudkan tandatangan digital
+
+((("digital signatures","creating")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","signature creation")))Dalam pelaksanaan ECDSA Ethereum, "mesej" yang ditandatangani adalah urus niaga, atau lebih tepat, hash keccak-256 daripada data yang dikodkan RLP dari transaksi. Kunci tandatangan adalah kunci persendirian EOA. Hasilnya adalah tandatangan:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <msub><mi>F</mi> <mrow><mi>s</mi><mi>i</mi><mi>g</mi></mrow> </msub>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>F</mi> <mrow><mi>k</mi><mi>e</mi><mi>c</mi><mi>c</mi><mi>a</mi><mi>k</mi><mn>256</mn></mrow> </msub>
+      <mrow>
+        <mo>(</mo>
+        <mi>m</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>,</mo>
+      <mi>k</mi>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+di mana:
+
+* _k_ menandakan kunci peribadi.
+* _m_ adalah transaksi terkod dengan RLP.
+* _F_~_keccak256_~ adalah fungsi hash Keccak-256.
+* _F_~_sig_~ adalah penanda algorithm.
+* _Sig_ adalah keputusan tandatangan.
+
+[[sign_function]]
+Fungsi _F_~_sig_~ menghasilkan tandatangan __Sig__ yang terdiri daripada dua nilai, biasanya dirujuk sebagai _r_ dan _s_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <mo>(</mo>
+    <mi>r</mi>
+    <mo>,</mo>
+    <mi>s</mi>
+    <mo>)</mo>
+  </mrow>
+</math>
+</div>
+++++
+
+[[verify_sign]]
+====Pengesahan Tandatangan
+
+((("digital signatures","verifying")))Untuk mengesahkan tandatangan, seseorang mesti mempunyai tandatangan (_r_ dan _s_), transaksi bersiri, dan kunci awam yang sepadan dengan kunci perinbadi yang digunakan untuk membuat tandatangan. Pada asasnya, pengesahan tandatangan bermaksud "hanya pemilik kunci peribadi yang menjana kunci awam ini boleh menghasilkan tandatangan ini pada transaksi ini."
+
+Algoritma pengesahan tandatangan mengambil mesej (iaitu, hash urus niaga untuk kegunaan kita), kunci awam penandatangan dan tandatangannya (nilai _r_ dan _s), dan kembali +true+ jika tandatangan sah untuk mesej ini dan kunci awam .
+
+[[ecdsa_math]]
+==== Kiraan ECDSA
+
+((("digital signatures","ECDSA math", id="ix_06transactions-asciidoc16", range="startofrange")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","mathematics of", id="ix_06transactions-asciidoc17", range="startofrange")))Seperti yang disebutkan sebelumnya, tandatangan dicipta oleh fungsi matematik _F_~_sig_~ yang menghasilkan tandatangan yang terdiri daripada dua nilai, _r_ dan _s_. Dalam seksyen ini kita melihat fungsi _F_~_sig_~ dengan lebih terperinci.
+
+((("ephemeral private key")))Algoritma tandatangan pertama menghasilkan kunci peribadi _fana_ (ephemeral) dalam cara selamat kriptografi. Kekunci sementara ini digunakan dalam pengiraan nilai _r_ dan _s_ untuk memastikan bahawa penghantar kunci peribadi sebenar tidak dapat ditangani oleh penggodam yang melihat transaksi yang ditandatangani pada rangkaian Ethereum.
+
+Sebagaimana rujukan <<pubkey>>, kekunci peribadi fana digunakan untuk memperoleh kunci awam yang bersamaan (ephemeral), jadi kita mempunyai:
+
+* Nombor rawak kriptografi yang selamat _q_, yang digunakan sebagai kunci peribadi yang fana.
+* Kekunci awam awam yang bersamaan _Q_, yang dihasilkan dari _q_ dan titik penjana lengkung elips _G_
+
+Nilai tanda tandatangan digital _r_ adalah koordinat _x_ bagi kunci awam fana _Q_.
+
+Dari situ, algoritma mengira nilai tanda tangan_s_, seperti:
+
+++++
+<ul class="simplelist">
+<li><em>s</em> &#8801; <em>q</em><sup>-1</sup> (<em>Keccak256</em>(<em>m</em>) + <em>r</em> * <em>k</em>)  &nbsp;  &nbsp; (<em>mod p</em>)</li>
+</ul>
+++++
+
+di mana:
+
+* _q_ adalah kunci peribadi fana,
+* _r_ adalah kedudukan fana _x_ kunci awam.
+* _k_ ialah tandatangan kunci peribadi (pemilik EOA) .
+* _m_ ialah data urusniaga.
+* _p_ adalah urutan perdana keluk elips.
+
+Pengesahan ialah kebalikan dari fungsi penjana tandatangan, menggunakan nilai _r_ dan _s_ dan kunci awam penghantar untuk mengira nilai _Q_, yang merupakan titik pada lengkung elips (kunci awam yang digunakan semasa penciptaan tandatangan). Langkah-langkahnya adalah seperti berikut:
+
+1. Semak agar semua input dalam keadaan betul
+2. Kira _w_ = __s__^-1^ _mod p_
+3. Kira _u~1~_ = __Keccak256__(__m__) * _w_ _mod p_
+4. Kira _u~2~_ = _r_ * _w_ _mod p_
+5. Akhir sekali, kira titik keluk elips _Q_ &#8801; _u~1~_ * _G_ + _u~2~_ * _K_  {nbsp} {nbsp} (_mod p_)
+
+di mana:
+
+* _r_ dan _s_ adalah nilai tandatangan.
+* _K_ adalah pemilik tandatangan (EOA) kunci awam
+* _m_ adalah data transaksi yang ditandatangani.
+* _G_ adalah titik janaan keluk eliptik
+* _p_ adalah urutan perdana keluk elips.
+
+Jika koordinat _x_ titik terhitung _Q_ bersamaan dengan _r, maka pengesah dapat menyimpulkan bahawa tandatangan itu sah.
+
+Perhatikan bahawa dalam mengesahkan tandatangan, kunci peribadi tidak diketahui atau tidak didedahkan.
+
+[PETUA]
+====
+ECDSA semestinya sebuah matematik yang agak rumit; penjelasan penuh adalah di luar skop buku ini. Beberapa panduan dalam talian yang hebat membawa anda melalui langkah demi langkah: cari "penjelasan ECDSA" atau cuba yang ini: http://bit.ly/2r0HhGB[].(((range="endofrange", startref="ix_06transactions-asciidoc17")))(((range="endofrange", startref="ix_06transactions-asciidoc16")))
+====
+
+[[tx_sign]]
+==== Penandatanganan Transaksi dalam Amalan
+
+((("digital signatures","signing in practice")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","transaction signing in practice")))((("transactions","signing in practice")))Untuk menghasilkan transaksi yang sah, pemula mesti secara digital menandatangani mesej, menggunakan Algoritma Tandatangan Digital Keluk Eliptik. Apabila kita mengatakan "menandatangani transaksi" kita sebenarnya bermaksud "menandatangani hash Keccak-256 daripada data transaksi bersiri RLP." Tandatangan diterapkan kepada hash data transaksi, bukan transaksi itu sendiri.
+
+Untuk menandatangani transaksi di Ethereum, pemula mesti:
+
+1. Buat struktur data urus niaga, yang mengandungi sembilan bidang: +nonce+, +gasPrice+, +gasLimit+, +to+, +value+, +data+, +chainID+, +0+, +0+.
+2. Menghasilkan struktur data transaksi dengan mesej bersiri RLP.
+3. Hitunglah hash Keccak-256 mesej bersiri ini.
+4. Hitungkan tandatangan ECDSA, menandatangani hash dengan kunci persendirian EOA dari pemula.
+5. Tambah nilai +v+, +r+, dan +s+ yang telah dikreditkan oleh ECDSA untuk transaksi tersebut.
+
+Pemboleh ubah tandatangan khas +v+ menunjukkan dua perkara: ID rantaian dan pengecam pemulihan untuk membantu fungsi +ECDSArecover+ menyemak tandatangan. Ia dikira sebagai salah satu daripada 27 atau 28, atau sebagai ID rantai berlipat kali ganda ditambah 35 atau 36. Untuk maklumat lanjut mengenai ID rantaian, lihat <<raw_tx_eip155>>. Pengenal pemulihan (27 atau 28 dalam tanda tangan "gaya lama", atau 35 atau 36 dalam urusniaga sepenuhnya Spurious Dragon&#x2013;) digunakan untuk menunjukkan Parity komponen +y+ kunci awam (lihat <<sign_prefix>> untuk lebih lanjut).
+
+
+[NOTE]
+====
+((("Spurious Dragon")))Pada blok # 2,675,000 Ethereum melaksanakan garpu keras "Spurious Dragon" yang, di antara perubahan lain, memperkenalkan skim penandatanganan baru yang merangkumi perlindungan ulangan urus niaga (menghalang urus niaga dimaksudkan untuk satu rangkaian yang dimainkan semula pada orang lain). Skim penandatanganan baru ini dinyatakan dalam EIP-155. Perubahan ini memberi kesan kepada bentuk transaksi dan tanda tangannya, jadi perhatian harus dibayar kepada yang pertama dari tiga pemboleh ubah tandatangan (iaitu, +v+), yang mengambil satu dari dua bentuk dan menunjukkan bidang data yang termasuk dalam pesanan transaksi yang telah hilang .
+====
+
+
+[[raw_tx]]
+==== Penciptaan dan Penandatanganan Transaksi Mentah
+
+((("EthereumJS")))((("transactions","raw transaction creation/signing")))Dalam bahagian ini, kami akan membuat transaksi mentah dan menandatanganinya, menggunakan pustaka +ethereumjs-tx+, yang boleh dipasang dengan npm. Ini menunjukkan fungsi yang biasanya akan digunakan di dalam dompet, atau aplikasi yang menandatangani transaksi bagi pihak pengguna. Kod sumber untuk contoh ini adalah dalam fail__raw_tx_demo.js__ dalam buku http://bit.ly/2yI2GL3[GitHub repository]:
+
+[[raw_tx_demo_source]]
+[source,javascript]
+----
+include::code/web3js/raw_tx/raw_tx_demo.js[]
+----
+
+[[raw_tx_demo_run]]
+Menjalankan kod contoh menghasilkan keputusan berikut:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node raw_tx_demo.js</strong>
+RLP-Encoded Tx: 0xe6808609184e72a0008303000094b0920c523d582040f2bcb1bd7fb1c7c1...
+Tx Hash: 0xaa7f03f9f4e52fcf69f836a6d2bbc7706580adce0a068ff6525ba337218e6992
+Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1...
+</pre>
+++++
+
+[[raw_tx_eip155]]
+==== Penciptaan Transaksi Mentah dengan EIP-155
+
+((("chain identifier")))((("EIP-155 Simple Replay Attack Protection standard")))((("transactions","raw transaction creation with EIP-1455")))Piawaian EIP-155 "Simple Replay Attack Protection" menetapkan pengekodan transaksi terlindungi yang diserang ulang, yang termasuk _pengenal rantai _ di dalam data transaksi, diutamakan dalam menandatangani. Ini memastikan transaksi yang dibuat untuk satu rantai blok (contohnya, rangkaian utama Ethereum) tidak sah pada rantai blok lain (contohnya, Ethereum Classic atau rangkaian ujian Ropsten). Oleh itu, urus niaga yang disiarkan di satu rangkaian tidak boleh dimainkan semula, demikianlah piawaian tersebut.
+
+EIP-155 menambah tiga bidang ke enam bidang utama struktur data transaksi, iaitu pengenal rantaian, +0+, dan +0+. Ketiga bidang ini ditambahkan ke data transaksi _sebelum dicincang dan dikodkan_. Oleh itu, mereka menukar hash transaksi, yang mana tandatangan itu digunakan kemudian. Dengan memasukkan pengecam rantaian dalam data yang ditandatangani, tandatangan transaksi menghalang sebarang perubahan, kerana tandatangan tidak sah jika pengecam rantai diubah suai. Oleh itu, EIP-155 menjadikannya mustahil bagi suatu urus niaga yang akan dimainkan semula di rantai lain, kerana pengesahan tandatangan bergantung pada pengenal rantai.
+
+
+Bidang pengenal rantai mengambil nilai mengikut rangkaian transaksi yang dimaksudkan, seperti yang digariskan dalam <<chain_id_table>>.
+
+[[chain_id_table]]
+.Pengenal-pengenal Rantai
+[options="header"]
+|======
+| Rantai | ID Rantai
+| Ethereum mainnet | 1
+| Morden (obsolete), Expanse | 2
+| Ropsten | 3
+| Rinkeby | 4
+| Rootstock mainnet | 30
+| Rootstock testnet | 31
+| Kovan | 42
+| Ethereum Classic mainnet | 61
+| Ethereum Classic testnet | 62
+| Geth private testnets | 1337
+|======
+
+Struktur urusniaga yang terhasil adalah RLP yang dikodkan, ditandakan, dan ditandatangani. Algoritma tandatangan diubah sedikit untuk mengekod pengenal rantai dalam awalan +v+ juga.
+
+For more details, see http://bit.ly/2CQUgne[the EIP-155 specification].(((range="endofrange", startref="ix_06transactions-asciidoc15")))(((range="endofrange", startref="ix_06transactions-asciidoc14")))
+
+[[sign_prefix]]
+=== Nilai Awalan Tandatangan (v) dan Pemulihan Kunci Awam
+
+((("digital signatures","signature prefix value (v) and public key recovery")))((("public key recovery")))((("transactions","signature prefix value (v) and public key recovery")))Seperti yang disebutkan dalam <<tx_struct>>, mesej transaksi tidak termasuk medan "from". Ini kerana kunci awam pemula, dapat dikira terus dari tandatangan ECDSA. Sebaik sahaja anda mempunyai kunci awam, anda boleh kira alamat dengan mudah. Proses pemulihan kunci awam penandatangan dipanggil _public key recovery_.
+
+Memandangkan nilai +r+ dan +s+ yang dikira di dalam <<ecdsa_math>>, kita boleh mengira dua kunci awam yang mungkin.
+
+Pertama, kita menghitung dua titik lengkung elips, _R_ dan __R__^__'__^, dari nilai koordinat +r+ yang terdapat dalam tandatangan. Terdapat dua mata kerana lengkung elips adalah simetrik merentasi paksi-x, supaya bagi setiap nilai +x+ terdapat dua nilai yang mungkin sesuai dengan lengkung, satu pada setiap sisi paksi-x.
+
+Dari +r+ kami juga mengira __r__^-1^, yang merupakan pendaraban songsang bagi +r+.
+
+Akhir sekali, kita mengira _z_, yang merupakan bit terendah dari hash mesej, di mana _n_ adalah susunan lengkung elips.
+
+Kedua-dua kunci awam yang mungkin adalah:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>1</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+dan:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>2</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em><sup>'</sup> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+di mana:
+
+* __K__~1~ dan __K__~2~ adalah dua kemungkinan untuk kunci awam penandatangan.
+* __r__^-1^ adalah songsangan berbilang nilai tandatangan +r+.
+* _s_ adalah tandatangan nilai +s+ 
+* __R__ dan __R__^'^ adalah dua kemungkinan untuk kunci awam fana _Q_.
+* _z_ ialah __n__ iaitu bit terendah bagi cincangan wakalah.
+* _G_ adalah titik janaan keluk eliptik
+
+Untuk menjadikan perkara lebih cekap, tandatangan transaksi merangkumi nilai awalan +v+, yang memberitahu kita tentang mana dua nilai _R_ yang mungkin adalah kunci awam fana. Jika +v+ adalah sama, maka _R_ adalah nilai yang betul. Jika +v+ ganjil, maka itu adalah __R__^'^. Dengan cara itu, kita perlu mengira hanya satu nilai untuk _R_ dan hanya satu nilai untuk _K_.
+
+[[offline_sign]]
+=== Mengasingkan Tandatangan dan Transmisi (Tandatangan Luar Talian)
+
+((("digital signatures","separating signing and transmission", id="ix_06transactions-asciidoc18", range="startofrange")))((("offline signing", id="ix_06transactions-asciidoc19", range="startofrange")))((("transactions","separating signing and transmission", id="ix_06transactions-asciidoc20", range="startofrange")))Sebaik sahaja sesuatu transaksi ditandatangani, ia bersedia untuk menghantar kepada rangkaian Ethereum. Tiga langkah iaitu mencipta, menandatangani, dan penyiaran transaksi biasanya berlaku sebagai operasi tunggal, contohnya menggunakan +web3.eth.sendTransaction+. Bagaimanapun, seperti yang anda lihat dalam <<raw_tx>>, anda boleh membuat dan menandatangani transaksi dalam dua langkah berasingan. Sebaik sahaja anda mempunyai transaksi yang ditandatangani, anda boleh menghantarnya menggunakan +web3.eth.sendSignedTransaction+, yang mengambil transaksi yang dikodkan dan ditandatangani hex dan menghantarnya ke rangkaian Ethereum.
+
+Kenapa anda mahu memisahkan penandatanganan dan penghantaran transaksi? Alasan yang paling umum ialah keselamatan. Komputer yang menandatangani urus niaga mesti mengunci kunci persendirian yang dimuatkan dalam ingatan. Komputer yang melakukan penghantaran mesti disambungkan ke internet (dan menjalankan klien Ethereum). Jika kedua-dua fungsi ini berada pada satu komputer, maka anda mempunyai kunci peribadi pada sistem dalam talian, yang agak berbahaya. Memisahkan fungsi menandatangani dan menghantar dan melaksanakannya pada mesin yang berbeza (di luar talian dan peranti dalam talian, masing-masing) dipanggil _offline signing_ dan ini amalan keselamatan kebiasaannya.
+
+<<offline_signing>> tunjukkan proses:
+
+1. Buat urusniaga yang tidak ditandatangani pada komputer dalam talian di mana tingkah laku semasa bagi akaun itu, terutamanya nons dan dana semasa yang ada, mampu dicapai.
+2. Pindahan urusniaga yang tidak ditandatangani ke peranti luar talian "ruang udara" untuk menandatangani transaksi, contohnya, melalui kod QR atau pemacu kilat USB.
+3. Menyampaikan transaksi yang ditandatangani (kembali) ke peranti dalam talian untuk disiarkan di rantai blok Ethereum, misalnya, Melalui kod QR atau pemacu kilat USB.
+
+[[offline_signing]]
+.Penandatanganan luar talian bagi urusniaga Ethereum
+image::images/offline_signing.png["Penandatanganan luar talian bagi urusniaga Ethereum"]
+
+Bergantung pada tahap keselamatan yang anda perlukan, komputer "penandatangan luar talian" anda boleh mempunyai tahap pemisahan yang berbeza-beza dari komputer dalam talian, bermula dari subnet terpencil dan tembok api (dalam talian tetapi diasingkan) ke sistem yang benar-benar luar talian yang dikenali sebagai sistem _ruangan udara_ .  ((("air-gapped system")))Dalam sistem ruangan udara, tidak terdapat sambungan rangkaian sama sekali&#x2014; komputer dipisahkan dari persekitaran dalam talian dengan jurang "udara." Untuk menandatangani transaksi, anda memindahkannya ke atau dari komputer yang dilancarkan menggunakan media penyimpanan data atau (lebih baik) kod imbasan QR dan kamera sesawang. Sudah tentu, ini bermakna anda mesti memindahkan secara manual setiap transaksi yang anda mahu tandatangan, dan ini semacam menyusahkan.
+
+Walaupun tidak banyak persekitaran boleh menggunakan sistem udara sepenuhnya, bahkan tahap pengasingan kecil turut mempunyai manfaat keselamatan yang ketara. Sebagai contoh, subnet terpencil dengan tembok api yang hanya membenarkan protokol mesej giliran, boleh menawarkan kurang permukaan serangan dan keselamatan yang lebih tinggi berbanding dengan menandatangani sistem dalam talian. ((("ZeroMQ (0MQ)")))Banyak syarikat menggunakan protokol seperti ZeroMQ (0MQ) bagi tujuan ini. Dengan persediaan seperti itu, urusniaga akan bersiri dan bergilir untuk ditandatangan. Protokol giliran menghantar mesej bersiri, dengan cara yang serupa dengan soket TCP, ke komputer yang ditandatangani. Komputer penandatangan membaca transaksi bergilir dan bersiri (dengan teliti), menggunakan tandatangan dengan kunci yang sesuai, dan menempatkannya keluar dari giliran. Giliran yang keluar mengirimkan transaksi yang ditandatangani ke komputer dengan klien Ethereum yang keluar dari giliran dan mengirimkannya.(((range="endofrange", startref="ix_06transactions-asciidoc20")))(((range="endofrange", startref="ix_06transactions-asciidoc19")))(((range="endofrange", startref="ix_06transactions-asciidoc18")))
+
+[[tx_propagation]]
+=== Penyebaran Transaksi
+
+((("flood routing")))((("node","transaction propagation")))((("propagation of transactions")))((("transactions","propagation of")))Rangkaian Ethereum menggunakan protokol "routing". Setiap klien Ethereum bertindak sebagai _nod_ dalam rangkaian _rakan-ke-rakan (P2P), yang (idealnya) membentuk rangkaian _mesh_. Tiada nod rangkaian yang khusus: ia semua bertindak sebagai rakan setara. Kami akan menggunakan istilah "nod" untuk merujuk kepada klien Ethereum yang bersambung dan menyertai rangkaian P2P.
+
+Penyebaran transaksi bermula dengan nod Ethereum yang asli mencipta (atau menerima dari luar talian) transaksi yang ditandatangani. Urusniaga disahkan dan kemudian dihantar ke semua nod Ethereum lain yang _terus_ disambungkan ke nod yang berasal. ((("neighbor nodes")))Secara purata, setiap nod Ethereum mengekalkan sambungan kepada sekurang-kurangnya 13 nod lain, yang dipanggil _jiran_. Setiap jiran nod mengesahkan urusniaga sebaik sahaja mereka menerimanya. Jika mereka bersetuju bahawa ia sah, mereka menyimpan salinan dan menyebarkannya kepada semua jiran mereka (kecuali yang berasal dari mereka). Akibatnya, urusniaga itu keluar dari nod yang asli, merentasi rangkaian, sehingga semua nod dalam rangkaian mempunyai salinan urusniaga. Nod boleh menapis mesej yang mereka sebar, tetapi secara lalainya adalah untuk menyebarkan semua mesej transaksi yang sah yang mereka terima.
+
+Dalam masa beberapa saat sahaja, satu transaksi Ethereum menyebarkan kepada semua nod Ethereum di seluruh dunia. Dari perspektif setiap nod, tidak mungkin untuk mengetahui asalnya transaksi. Jiran yang menghantarnya ke nod mungkin menjadi pencetusnya transaksi atau mungkin menerimanya daripada salah seorang jirannya. Untuk dapat mengesan asal-usul transaksi, atau mengganggu penyebaran, penyerang perlu mengawal peratusan yang signifikan dari semua nod. Ini adalah sebahagian dari reka bentuk keselamatan dan kerahsiaan rangkaian P2P, terutama seperti yang digunakan pada rangkaian rantai blok.
+
+[[chain_record]]
+=== Merekod dalam Rantai Blok
+
+((("blockchain","recording transactions on")))((("miners")))((("mining farms")))((("transactions","recording on the blockchain")))Walaupun semua nod dalam Ethereum adalah setara tugasnya, sebahagiannya dikendalikan oleh _pelombong_ dan menyalurkan urusniaga dan blok ke _ladang perlombongan_, iaitu komputer dengan unit pemprosesan grafik berkinerja tinggi (GPU). Komputer perlombongan menambah urusniaga ke calon blok dan cuba mencari _bukti kerja_ yang menjadikan calon blok itu sah. Kami akan membincangkan ini dengan lebih terperinci dalam <<consensus>>.
+
+Disingkatkan nota ini, urusniaga yang sah akhirnya akan dimasukkan ke dalam satu blok urusniaga dan dengan itu, direkodkan dalam blok Ethereum. Sebaik sahaja dilombong ke dalam blok, urusniaga juga mengubah keadaan tunggal Ethereum, sama ada dengan mengubah baki akaun (dalam kes pembayaran mudah) atau dengan menggunakan kontrak yang mengubah keadaan dalamannya. Perubahan ini direkodkan bersama transaksi, dalam bentuk transaksi _resit_, yang mungkin juga termasuk _kejadian_. Kita akan memeriksa semua ini dengan lebih terperinci dalam <<evm_chapter>>.
+
+Transaksi yang telah selesai perjalanannya dari mula penciptaan melalui penandatanganan EOA, penyebaran, dan akhirnya perlombongan telah mengubah keadaan ketunggalan dan meninggalkan tanda yang tidak dapat dipadam di dalam rantai blok tersebut.
+
+=== Transaksi Pelbagai Tandatangan (Multisig)
+
+((("multiple-signature (multisig) transactions")))((("transactions","multiple-signature")))Jika anda sudah biasa dengan kemampuan skrip Bitcoin, anda tahu bahawa adalah mungkin untuk membuat akaun multisig Bitcoin yang hanya boleh membelanjakan dana apabila beberapa pihak menandatangani transaksi (misalnya., 2 dari 2 atau 3 dari 4 tandatangan). Urus niaga EOA asas Ethereum tidak mempunyai peruntukan bagi pelbagai tandatangan; Walau bagaimanapun, keterhadan menandatangani sewenang-wenangnya boleh dikuatkuasakan oleh kontrak pintar dengan apa-apa syarat yang anda boleh fikirkan, untuk mengendalikan pemindahan ether dan token sama daripadanya.
+
+Untuk memanfaatkan keupayaan ini, ether harus dipindahkan ke "kontrak dompet" yang diprogramkan dengan peraturan perbelanjaan yang diingini, seperti keperluan multisig atau had pengeluaran (atau gabungan keduanya. Kontrak dompet kemudian menghantar dana apabila diminta oleh EOA yang diberi kuasa setelah syarat pengeluaran telah dipenuhi. Sebagai contoh, untuk melindungi ether anda di bawah keadaan multisig, pindahkan ether ke kontrak multisig. Apabila anda ingin menghantar dana ke akaun lain, semua pengguna yang diperlukan perlu menghantar transaksi ke kontrak menggunakan aplikasi dompet biasa, terus membenarkan kontrak untuk melaksanakan pass:[<span class="keep-together">transaksi</span>].
+
+Kontrak ini juga boleh direkabentuk untuk memerlukan beberapa tandatangan sebelum melaksanakan kod tempatan atau untuk memicu kontrak lain. Keselamatan skim ini akhirnya ditentukan oleh kod kontrak multisig.
+
+Keupayaan melaksanakan transaksi multisig sebagai kontrak pintar menunjukkan kelonggaran Ethereum. Walau bagaimanapun, ia adalah serampang bermata dua, kerana kelonggaran tambahan boleh membawa kepada pepijat yang menjejaskan keselamatan skim multisig. Sebenarnya, ada beberapa cadangan untuk membuat perintah multisig dalam EVM yang menghilangkan keperluan untuk kontrak pintar, sekurang-kurangnya untuk skim multisig semunah M-dari-N. Ini akan bersamaan dengan sistem multisig Bitcoin, yang merupakan sebahagian daripada peraturan teras kesepakatan dan telah terbukti kukuh dan selamat.
+
+=== Kesimpulan
+
+Transaksi adalah titik permulaan setiap aktiviti dalam sistem Ethereum. Urusniaga adalah "input" yang menyebabkan Mesin Maya Ethereum untuk menilai kontrak, baki kemaskini, dan lebih banyak mengubahsuai keadaan rantai blok Ethereum. Seterusnya, kita akan bekerjasama dengan kontrak pintar dengan lebih terperinci dan belajar bagaimana untuk memprogramkan bahasa berorientasikan kontrak Solidity. (((range="endofrange", startref="ix_06transactions-asciidoc0")))

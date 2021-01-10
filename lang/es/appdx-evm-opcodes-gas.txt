@@ -1,0 +1,331 @@
+[appendix]
+[[evm_opcodes]]
+== Códigos Operacionales de la EVM de Ethereum y sus Consumo de Gas
+
+((("EVM (Ethereum Virtual Machine)","códigos operacionales y sus consumos de gas")))((("gas","códigos operacionales de la EVM y sus consumos de gas")))Este apéndice se basa en el trabajo de consolidación realizado por los colaboradores del repositorio https://github.com/trailofbits/evm-opcodes como referencia para los códigos operacionales de la EVM de Ethereum y la información de tales instrucciones, que es presentado con licencia Apache 2.0 según el enlace: http://bit.ly/2zfrv0b[Apache License 2.0].
+
+[[evm_opcodes_table]]
+[cols=",,,,",options="header",]
+.códigos operacionales de la EVM y sus costos en gas
+|=======================================================================================================================================================================================================
+|Código |Nombre |Descripción |Información Extra |Gas
+|`0x00` |+STOP+ |Detiene la ejecución |- |0
+
+|`0x01` |+ADD+ |Operación de suma |- |3
+
+|`0x02` |+MUL+ |Operación de Multiplicación |- |5
+
+|`0x03` |+SUB+ |Operación de resta |- |3
+
+|`0x04` |+DIV+ |Operación de división entera |- |5
+
+|`0x05` |+SDIV+ |Operación de división con signo (truncada) |- |5
+
+|`0x06` |+MOD+ |Operación módulo residuo |- |5
+
+|`0x07` |+SMOD+ |Operación módulo residuo con signo |- |5
+
+|`0x08` |+ADDMOD+ |Operación de adición de módulo |- |8
+
+|`0x09` |+MULMOD+ |Operación de multiplicación de módulo |- |8
+
+|`0x0a` |+EXP+ |Operación exponencial |- |10***
+
+|`0x0b` |+SIGNEXTEND+ |Extiende la longitud del entero con signo en complemento a dos |- |5
+
+|`0x0c` - `0x0f` |Sin usar |Sin usar |- |
+
+|`0x10` |+LT+ |Comparación menor que |- |3
+
+|`0x11` |+GT+ |Comparación mayor que |- |3
+
+|`0x12` |+SLT+ |Comparación menor que con signo |- |3
+
+|`0x13` |+SGT+ |Comparación mayor que con signo |- |3
+
+|`0x14` |+EQ+ |Comparación de igualdad |- |3
+
+|`0x15` |+ISZERO+ |Operador NOT simple |- |3
+
+|`0x16` |+AND+ |Operación AND bit a bit |- |3
+
+|`0x17` |+OR+ |Operación OR bit a bit |- |3
+
+|`0x18` |+XOR+ |Operación XOR bit a bit |- |3
+
+|`0x19` |+NOT+ |Operación NOT bit a bit |- |3
+
+|`0x1a` |+BYTE+ |Recupera un solo byte de la palabra |- |3
+
+|`0x1b` - `0x1f` |Sin usar |Sin usar |- |
+
+|`0x20` |+SHA3+ |Calcula el hash Keccak-256 |- |30
+
+|`0x21` - `0x2f` |Sin usar |Sin usar |- |
+
+|`0x30` |+ADDRESS+ |Obtiene la dirección de la cuenta bajo ejecución |- |2
+
+|`0x31` |+BALANCE+ |Obtiene el saldo de la cuenta dada |- |400
+
+|`0x32` |+ORIGIN+ |Obtiene la dirección originadora de la ejecución |- |2
+
+|`0x33` |+CALLER+ |Obtiene la dirección del invocador |- |2
+
+|`0x34` |+CALLVALUE+ |Obtiene el valor depositado por la instrucción/transacción responsable de esta ejecución |- |2
+
+|`0x35` |+CALLDATALOAD+ |Obtiene los datos de entrada del entorno actual |- |3
+
+|`0x36` |+CALLDATASIZE+ |Obtiene el tamaño de los datos de entrada del entorno actual |- |2
+
+|`0x37` |+CALLDATACOPY+ |Copia los datos de entrada del entorno actual a la memoria |- |3
+
+|`0x38` |+CODESIZE+ |Obtiene el tamaño del código que se ejecuta en el entorno actual |- |2
+
+|`0x39` |+CODECOPY+ |Copia el código del entorno actual bajo ejecución a la memoria |- |3
+
+|`0x3a` |+GASPRICE+ |Obtiene el precio del gas en el entorno actual |- |2
+
+|`0x3b` |+EXTCODESIZE+ |Obtiene el tamaño del código de una cuenta |- |700
+
+|`0x3c` |+EXTCODECOPY+ |Copia el código de una cuenta en la memoria |- |700
+
+|`0x3d` |+RETURNDATASIZE+ |Inserta en la pila el tamaño del búfer de datos devueltos |http://bit.ly/2zaBcNe[EIP-211] |2
+
+|`0x3e` |+RETURNDATACOPY+ |Copia los datos devueltos en el búfer de datos a la memoria |http://bit.ly/2zaBcNe[EIP-211] |3
+
+|`0x3f` |Sin usar |- |- |
+
+|`0x40` |+BLOCKHASH+ |Obtiene el hash de uno de los 256 bloques completos más recientes |- |20
+
+|`0x41` |+COINBASE+ |Obtiene la dirección del beneficiario del bloque |- |2
+
+|`0x42` |+TIMESTAMP+ |Obtiene el sello de tiempo del bloque |- |2
+
+|`0x43` |+NUMBER+ |Obtiene el número del bloque |- |2
+
+|`0x44` |+DIFFICULTY+ |Consigue la dificultad del bloque |- |2
+
+|`0x45` |+GASLIMIT+ |Obtiene el límite de gas consumible por el bloque |- |2
+
+|`0x46` - `0x4f` |Sin usar |- |- |
+
+|`0x50` |+POP+ |Remueve la primera palabra de la pila |- |2
+
+|`0x51` |+MLOAD+ |Recoge una palabra de la memoria |- |3
+
+|`0x52` |+MSTORE+ |Guardar una palabra en memoria |- |3*
+
+|`0x53` |+MSTORE8+ |Guarda un byte en memoria |- |3
+
+|`0x54` |+SLOAD+ |Recoge una palabra desde el almacenamiento |- |200
+
+|`0x55` |+SSTORE+ |Guarda una palabra en el almacenamiento |- |0*
+
+|`0x56` |+JUMP+ |Modifica el contador de programa de la EVM |- |8
+
+|`0x57` |+JUMPI+ |Modifica condicionalmente el contador de programa de la EVM |- |10
+
+|`0x58` |+GETPC+ |Obtiene el valor del contador de programa antes de un incremento |- |2
+
+|`0x59` |+MSIZE+ |Obtiene el tamaño de la memoria activa en bytes |- |2
+
+|`0x5a` |+GAS+ |Obtiene la cantidad de gas disponible, incluida la reducción correspondiente en la cantidad de gas disponible |- |2
+
+|`0x5b` |+JUMPDEST+ |Marcar un destino válido para saltos |- |1
+
+|`0x5c` - `0x5f` |Sin usar |- |- |
+
+|`0x60` |+PUSH1+ |Coloca un elemento de 1 byte en la pila |- |3
+
+|`0x61` |+PUSH2+ |Coloca un elemento de 2 bytes en la pila |- |3
+
+|`0x62` |+PUSH3+ |Coloca un elemento de 3 bytes en la pila |- |3
+
+|`0x63` |+PUSH4+ |Coloca un elemento de 4 bytes en la pila |- |3
+
+|`0x64` |+PUSH5+ |Coloca un elemento de 5 bytes en la pila |- |3
+
+|`0x65` |+PUSH6+ |Coloca un elemento de 6 bytes en la pila |- |3
+
+|`0x66` |+PUSH7+ |Coloca un elemento de 7 bytes en la pila |- |3
+
+|`0x67` |+PUSH8+ |Coloca un elemento de 8 bytes en la pila |- |3
+
+|`0x68` |+PUSH9+ |Coloca un elemento de 9 bytes en la pila |- |3
+
+|`0x69` |+PUSH10+ |Coloca un elemento de 10 bytes en la pila |- |3
+
+|`0x6a` |+PUSH11+ |Coloca un elemento de 11 bytes en la pila |- |3
+
+|`0x6b` |+PUSH12+ |Coloca un elemento de 12 bytes en la pila |- |3
+
+|`0x6c` |+PUSH13+ |Coloca un elemento de 13 bytes en la pila |- |3
+
+|`0x6d` |+PUSH14+ |Coloca un elemento de 14 bytes en la pila |- |3
+
+|`0x6e` |+PUSH15+ |Coloca un elemento de 15 bytes en la pila |- |3
+
+|`0x6f` |+PUSH16+ |Coloca un elemento de 16 bytes en la pila |- |3
+
+|`0x70` |+PUSH17+ |Coloca un elemento de 17 bytes en la pila |- |3
+
+|`0x71` |+PUSH18+ |Coloca un elemento de 18 bytes en la pila |- |3
+
+|`0x72` |+PUSH19+ |Coloca un elemento de 19 bytes en la pila |- |3
+
+|`0x73` |+PUSH20+ |Coloca un elemento de 20 bytes en la pila |- |3
+
+|`0x74` |+PUSH21+ |Coloca un elemento de 21 bytes en la pila |- |3
+
+|`0x75` |+PUSH22+ |Coloca un elemento de 22 bytes en la pila |- |3
+
+|`0x76` |+PUSH23+ |Coloca un elemento de 23 bytes en la pila |- |3
+
+|`0x77` |+PUSH24+ |Coloca un elemento de 24 bytes en la pila |- |3
+
+|`0x78` |+PUSH25+ |Coloca un elemento de 25 bytes en la pila |- |3
+
+|`0x79` |+PUSH26+ |Coloca un elemento de 26 bytes en la pila |- |3
+
+|`0x7a` |+PUSH27+ |Coloca un elemento de 27 bytes en la pila |- |3
+
+|`0x7b` |+PUSH28+ |Coloca un elemento de 28 bytes en la pila |- |3
+
+|`0x7c` |+PUSH29+ |Coloca un elemento de 29 bytes en la pila |- |3
+
+|`0x7d` |+PUSH30+ |Coloca un elemento de 30 bytes en la pila |- |3
+
+|`0x7e` |+PUSH31+ |Coloca un elemento de 31 bytes en la pila |- |3
+
+|`0x7f` |+PUSH32+ |Coloca un elemento de 32 bytes (una palabra completa) en la pila |- |3
+
+|`0x80` |+DUP1+ |Duplica el primer elemento de la pila |- |3
+
+|`0x81` |+DUP2+ |Duplica el segundo elemento de la pila |- |3
+
+|`0x82` |+DUP3+ |Duplica el tercer elemento de la pila |- |3
+
+|`0x83` |+DUP4+ |Duplica el cuarto elemento de la pila |- |3
+
+|`0x84` |+DUP5+ |Duplica el quinto elemento de la pila |- |3
+
+|`0x85` |+DUP6+ |Duplica el sexto elemento de la pila |- |3
+
+|`0x86` |+DUP7+ |Duplica el 7mo elemento de la pila |- |3
+
+|`0x87` |+DUP8+ |Duplica el 8vo elemento de la pila |- |3
+
+|`0x88` |+DUP9+ |Duplica el 9no elemento de la pila |- |3
+
+|`0x89` |+DUP10+ |Duplica el décimo elemento de la pila |- |3
+
+|`0x8a` |+DUP11+ |Duplica el 11vo elemento de la pila |- |3
+
+|`0x8b` |+DUP12+ |Duplica el 12vo elemento de la pila |- |3
+
+|`0x8c` |+DUP13+ |Duplica el 13vo elemento de la pila |- |3
+
+|`0x8d` |+DUP14+ |Duplica el 14vo elemento de la pila |- |3
+
+|`0x8e` |+DUP15+ |Duplica el 15vo elemento de la pila |- |3
+
+|`0x8f` |+DUP16+ |Duplica el 16vo elemento de la pila |- |3
+
+|`0x90` |+SWAP1+ |Intercambia el 1er elemento con el 2do de la pila |- |3
+
+|`0x91` |+SWAP2+ |Intercambia el 1er elemento con el 3ro de la pila |- |3
+
+|`0x92` |+SWAP3+ |Intercambia el 1er elemento con el 4to de la pila |- |3
+
+|`0x93` |+SWAP4+ |Intercambia el 1er elemento con el 5to de la pila |- |3
+
+|`0x94` |+SWAP5+ |Intercambia el 1er elemento con el 6to de la pila |- |3
+
+|`0x95` |+SWAP6+ |Intercambia el 1er elemento con el 7mo de la pila |- |3
+
+|`0x96` |+SWAP7+ |Intercambia el 1er elemento con el 8vo de la pila |- |3
+
+|`0x97` |+SWAP8+ |Intercambia el 1er elemento con el 9no de la pila |- |3
+
+|`0x98` |+SWAP9+ |Intercambia el 1er elemento con el 10mo de la pila |- |3
+
+|`0x99` |+SWAP10+ |Intercambia el 1er elemento con el 11vo de la pila |- |3
+
+|`0x9a` |+SWAP11+ |Intercambia el 1er elemento con el 12vo de la pila |- |3
+
+|`0x9b` |+SWAP12+ |Intercambia el 1er elemento con el 13vo de la pila |- |3
+
+|`0x9c` |+SWAP13+ |Intercambia el 1er elemento con el 14vo de la pila |- |3
+
+|`0x9d` |+SWAP14+ |Intercambia el 1er elemento con el 15vo de la pila |- |3
+
+|`0x9e` |+SWAP15+ |Intercambia el 1er elemento con el 16vo de la pila |- |3
+
+|`0x9f` |+SWAP16+ |Intercambia el 1er elemento con el 17vo de la pila |- |3
+
+|`0xa0` |+LOG0+ |Agrega historial de registro sin temas |- |375
+
+|`0xa1` |+LOG1+ |Agrega historial de registro con un tema |- |750
+
+|`0xa2` |+LOG2+ |Agrega historial de registro con dos temas |- |1125
+
+|`0xa3` |+LOG3+ |Agrega historial de registro con tres temas |- |1500
+
+|`0xa4` |+LOG4+ |Agrega historial de registro con cuatro temas |- |1875
+
+|`0xa5` - `0xaf` |Sin usar |- |- |
+
+|`0xb0` |+JUMPTO+ |Tentativo http://bit.ly/2Sx2Vkg[libevmasm tiene diferentes números] | http://bit.ly/2CR77pu[EIP 615] |
+
+|`0xb1` |+JUMPIF+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb2` |+JUMPSUB+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb4` |+JUMPSUBV+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb5` |+BEGINSUB+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb6` |+BEGINDATA+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb8` |+RETURNSUB+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xb9` |+PUTLOCAL+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xba` |+GETLOCA+ |Tentativo |http://bit.ly/2CR77pu[EIP-615] |
+
+|`0xbb` - `0xe0` |Sin usar |- |- |
+
+|`0xe1` |+SLOADBYTES+ |Solo referenciado en +pyethereum+ |- |-
+
+|`0xe2` |+SSTOREBYTES+ |Solo referenciado en +pyethereum+ |- |-
+
+|`0xe3` |+SSIZE+ |Solo referenciado en +pyethereum+ |- |-
+
+|`0xe4` - `0xef` |Sin usar |- |- |
+
+|`0xf0` |+CREATE+ |Crea una nueva cuenta con código asociado |- |32000
+
+|`0xf1` |+CALL+ |Mensaje-de-invocación a una cuenta |- |Complicado
+
+|`0xf2` |+CALLCODE+ |Mensaje-de-invocación hacia esta cuenta con el código de una cuenta alternativa |- |Complicado
+
+|`0xf3` |+RETURN+ |Detiene la ejecución devolviendo los datos de salida |- |0
+
+|`0xf4` |+DELEGATECALL+ |Mensaje-de-invocación a esta cuenta con el código de una cuenta alternativa, pero persistiendo en esta cuenta con el código de una cuenta alternativa |- |Complicado
+
+|`0xf5` |+CALLBLACKBOX+ |- |- |40
+
+|`0xf6` - `0xf9` |Sin usar |- |- |
+
+|`0xfa` |+STATICCALL+ |Similar a +CALL+, pero no modifica el estado |- |40
+
+|`0xfb` |+CREATE2+ |Crea una nueva cuenta y establece la dirección de dicha cuenta igual a `sha3(remitente + sha3(código de inicio)) % 2** 160` |- |
+
+|`0xfc` |+TXEXECGAS+ |No figura en el paper amarillo (a corregir) |- |-
+
+|`0xfd` |+REVERT+ |Detiene la ejecución y revierte los cambios de estado, sin consumir todo el gas proporcionado y devolviendo una razón |- |0
+
+|`0xfe` |+INVALID+ |Instrucción no válida designada |- |0
+
+|`0xff` |+SELFDESTRUCT+ |Detiene la ejecución y registra la cuenta para su posterior eliminación |- |5000*
+|=======================================================================================================================================================================================================

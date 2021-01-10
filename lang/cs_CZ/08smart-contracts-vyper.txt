@@ -1,0 +1,319 @@
+[[vyper_chap]]
+== Chytré kontrakty a Vyper
+
+((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper je experimentální, kontraktově orientovaný programovací jazyk pro virtuální stroj Ethereum, který se snaží poskytovat vynikající auditovatelnost, což vývojářům usnadní vytváření srozumitelného kódu. Ve skutečnosti je jedním z principů Vyperu prakticky nemožné, aby vývojáři psali zavádějící kód.
+
+V této kapitole se podíváme na běžné problémy s chytrými kontrakty, představíme programovací jazyk kontraktů Vyper a porovnáme jej se Solidity, čímž ukážeme rozdíly.
+
+=== Zranitelnosti a Vyper
+
+https://arxiv.org/pdf/1802.06038.pdf[Nedávná studie] ((("vulnerabilities", seealso="security; specific attacks/vulnerabilities")))((("Vyper","contract vulnerabilities and")))analyzovala téměř milion nasazených Ethereum chytrých kontraktů a zjistila, že mnoho z těchto kontraktů obsahovalo vážné zranitelnosti. Během své analýzy vědci nastínili tři základní kategorie sledovaných zranitelností:
+
+Sebevražedné kontrakty:: Chytré kontrakty, které mohou být zabity libovolnými adresami
+
+Chamtivé kontrakty:: Chytré kontrakty, které mohou dosáhnout stavu, ve kterém nemohou uvolnit ether
+
+Marnotratné kontrakty:: Chytré kontrakty, které využít k uvolnění etheru na libovolné adresy
+
+Chyby zabezpečení jsou zaváděny do inteligentních smluv prostřednictvím kódu. Lze silně tvrdit, že tyto a další zranitelnosti nejsou záměrně zavedeny, ale bez ohledu na to, nežádoucí kód chytrých kontraktů zjevně vede k neočekávané ztrátě finančních prostředků pro Ethereum uživatele, a to není ideální. Vyper je navržen tak, aby usnadňoval zápis bezpečného kódu nebo stejně tak ztěžoval náhodný zápis zavádějícího nebo zranitelného kódu.
+
+[[comparison_to_solidity_sec]]
+=== Srovnání se Solidity
+
+((("Solidity","Vyper compared to", id="ix_08smart-contracts-vyper-asciidoc1", range="startofrange")))((("Vyper","Solidity compared to", id="ix_08smart-contracts-vyper-asciidoc2", range="startofrange")))Jedním ze způsobů, jak se Vyper pokouší zkomplikovat psaní nebezpečného kódu, je záměrné _vynechání_ některé z funkcí Solidity. Je důležité, aby ti, kdo uvažují o vývoji chytrých kontraktů ve Vyperu, pochopili, jaké funkce Vyper nemá a proč. Proto v této části prozkoumáme tyto funkce a poskytneme zdůvodnění, proč byly vynechány.
+
+==== Modifiers
+
+((("modifiers")))((("Solidity","modifiers")))((("Vyper","modifiers")))Jak jsme viděli v předchozí kapitole, v Solidity můžete napsat funkci pomocí modifikátorů. Například následující funkce `changeOwner` spustí kód v modifikátoru nazvaném `onlyBy` jako součást jeho provedení:
+
+[source,javascript]
+----
+function changeOwner(address _newOwner)
+    public
+    onlyBy(owner)
+{
+    owner = _newOwner;
+}
+----
+
+Tento modifikátor uplatňuje pravidlo ve vztahu k vlastnictví. Jak vidíte, tento konkrétní modifikátor funguje jako mechanismus k provedení předběžné kontroly jménem funkce `changeOwner`:
+
+[source,javascript]
+----
+modifier onlyBy(address _account)
+{
+    require(msg.sender == _account);
+    _;
+}
+----
+
+Modifikátory však nejsou jen proto, aby prováděly kontroly, jak je ukázáno zde. Ve skutečnosti mohou modifikátory významně změnit prostředí chytrého kontraktu v kontextu volající funkce.  Jednoduše řečeno, modifikátory jsou _všudypřítomné_.
+
+Podívejme se na další příklad Solidity stylu:
+
+[source, javascript]
+----
+enum Stages {
+    SafeStage,
+    DangerStage,
+    FinalStage
+}
+
+uint public creationTime = now;
+Stages public stage = Stages.SafeStage;
+
+function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+}
+
+modifier stageTimeConfirmation() {
+    if (stage == Stages.SafeStage &&
+                now >= creationTime + 10 days)
+        nextStage();
+    _;
+}
+
+function a()
+    public
+    stageTimeConfirmation
+// Zde se nachází další kód
+{
+}
+----
+
+Na jedné straně by vývojáři měli vždy kontrolovat jakýkoli jiný kód, který volá jejich vlastní kód. Je však možné, že v určitých situacích (například když časová omezení nebo vyčerpání vedou k nedostatečné koncentraci) může vývojář přehlédnout jediný řádek kódu. To je ještě pravděpodobnější, pokud vývojář musí skákat uvnitř velkého souboru a zároveň mentálně sledovat hierarchii volání funkcí a převádět stav proměnných chytrých kontraktů do paměti.
+
+Podívejme se na předchozí příklad trochu hlouběji. Představte si, že vývojář píše veřejnou funkci nazvanou `a`. Vývojář je v této smlouvě nový a využívá modifikátor napsaný někým jiným. Na první pohled se zdá, že modifikátor `stageTimeConfirmation` jednoduše provádí některé kontroly týkající se věku kontraktu ve vztahu k volající funkci. Vývojář si nemusí uvědomit, že modifikátor také volá jinou funkci `nextStage`. V tomto zjednodušeném demonstračním scénáři pouhé vyvolání veřejné funkce `a` vede ke změně proměnné `fáze` chytrého kontraktu ze` SafeStage` na `DangerStage`.
+
+Vyper se úplně zbavil modifikátorů. Doporučení od Vypera jsou následující: pokud provádíte pouze kontroly podmínek pomocí modifikátorů, pak jednoduše používejte kontroly přímo v kódu jako součást funkce; pokud změníte stav chytrého kontraktu a tak dále, znovu proveďte tyto změny explicitně jako součástí funkce. Tím se zlepší kontrola správnosti a čitelnost, protože čtenář nemusí mentálně (nebo ručně) „obalit“ kód modifikátoru kolem funkce, aby viděl, co dělá.
+
+==== Dědičnost třídy
+
+((("class inheritance")))((("inheritance")))((("Solidity","class inheritance")))((("Vyper","class inheritance")))Dědičnost umožňuje programátorům využít sílu již napsaného kódu získáním již existujících funkcí, vlastností a chování ze stávajících softwarových knihoven. Dědičnost je mocná a podporuje opětovné použití kódu. Solidity podporuje vícenásobnou dědičnost i polymorfismus, ale zatímco to jsou klíčové vlastnosti objektově orientovaného programování, Vyper je nepodporuje. Vyper tvrdí, že implementace dědičnosti vyžaduje, aby kodéry a auditoři skákali mezi více soubory, aby pochopili, co program dělá. Vyper také zastává názor, že vícenásobná dědičnost může způsobit, že kód bude příliš komplikovaný na pochopení - pohled mlčky naznačený v Solidity http://bit.ly/2Q6Azvo[dokumentaci], který poskytuje příklad toho, jak může být vícenásobná dědičnost problematická.
+
+==== Vložený asembler
+
+((("inline assembly")))((("inline assembly","Solidity compared to Vyper")))((("Solidity inline assembly")))Vložený asembler poskytuje vývojářům nízkoúrovňový přístup k Ethereum Virtuálnímu Stroji, který umožňuje Solidity programům provádět operace přímým přístupem k instrukcím EVM. Například následující vložený kód asembleru přičte číslo 3 do paměti umístěné na pozici  +0x80+:
+
+----
+3 0x80 mload add 0x80 mstore
+----
+
+Vyper považuje cenu za ztrátu čitelnosti příliš vysokou, kterou nedokáže vyvážit ani rozšířená síla, a proto nepodporuje vložený asembler.
+
+==== Přetěžování funkce
+
+((("function overloading")))((("Solidity","function overloading")))((("Vyper","function overloading")))Přetěžování funkcí umožňuje vývojářům psát více funkcí stejného jména. Která funkce se používá při dané příležitosti, závisí na typech dodaných parametrů. Vezměte například následující dvě funkce:
+
+[source,javascript]
+----
+function f(uint _in) public pure returns (uint out) {
+    out = 1;
+}
+
+function f(uint _in, bytes32 _key) public pure returns (uint out) {
+    out = 2;
+}
+----
+
+První funkce (pojmenovaná +f+) přijímá vstupní parametr typu +uint+; druhá funkce (také pojmenovaná +f+) přijímá dva parametry, jeden typu +uint+ a druhý typu +bytes32+. Mít více definic funkcí se stejným názvem s různými parametry může být matoucí, takže Vyper nepodporuje přetěžování funkcí.
+
+==== Přetypování proměnných
+
+((("Solidity","variable typecasting")))((("typecasting")))((("Vyper","variable typecasting")))Existují dva druhy přetypování: _implicitní_ a _explicitní_
+
+((("implicit typecasting"))) Implicitní přetypování se často provádí v době kompilace. Například pokud je typová konverze sémanticky správná a pravděpodobně nebude ztracena žádná informace, kompilátor může provést implicitní převod, jako je převod proměnné typu + uint8 + na + uint16 +. Nejstarší verze Vyperu povolily implicitní přetypování proměnných, ale nedávné verze ne.
+
+((("explicit typecasting")))Explicitní přetypování lze vložit do Solidity. Bohužel mohou vést k neočekávanému chování. Například uložení +uint32+ do menšího typu +uint16+ jednoduše odstraní bity vyššího řádu, jak je ukázáno zde:
+
+[source,javascript]
+----
+uint32 a = 0x12345678;
+uint16 b = uint16(a);
+// Proměnná b je nyní 0x5678
+----
+
+((("convert function (Vyper)")))Vyper místo toho má funkci +convert+ provádějící explicitní přetypování. Funkce převodu (nachází se na řádku 82 v http://bit.ly/2P36ZKT[_convert.py_]):
+
+[source,python]
+----
+def convert(expr, context):
+    output_type = expr.args[1].s
+    if output_type in conversion_table:
+        return conversion_table[output_type](expr, context)
+    else:
+        raise Exception("Conversion to {} is invalid.".format(output_type))
+----
+
+Všimněte si použití +conversion_table+ (nachází se na řádku 90 stejného souboru), který vypadá takto:
+
+[source,python]
+----
+conversion_table = {
+    'int128': to_int128,
+    'uint256': to_unint256,
+    'decimal': to_decimal,
+    'bytes32': to_bytes32,
+}
+----
+
+Když vývojář volá +convert+, odkáže se na odkaz +conversion_table+, což zajišťuje provedení příslušné konverze. Pokud například vývojář předá funkci +convert+ parametr +int128+, bude provedena funkce +to_int128+ na řádku 26 stejného souboru (_convert.py_). Funkce +to_int128+ je následující:
+
+[source,python]
+----
+@signature(('int128', 'uint256', 'bytes32', 'bytes'), 'str_literal')
+def to_int128(expr, args, kwargs, context):
+    in_node = args[0]
+    typ, len = get_type(in_node)
+    if typ in ('int128', 'uint256', 'bytes32'):
+        if in_node.typ.is_literal 
+            and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+            raise InvalidLiteralException(
+                "Number out of range: {}".format(in_node.value), expr
+            )
+        return LLLnode.from_list(
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node,
+            ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'),
+            pos=getpos(expr)
+        )
+    else:
+        return byte_array_to_num(in_node, expr, 'int128')
+----
+
+Jak vidíte, proces převodu zajišťuje, že nelze ztratit žádné informace; pokud by to mohlo být, je vyvolána výjimka. Převodový kód zabraňuje zkrácení a dalším anomáliím, které by byly běžně povoleny implicitním přetypováním.
+
+Výběr explicitního místo implicitní přetypování znamená, že vývojář je zodpovědný za provedení všech přetypování. I když tento přístup vede k podrobnějšímu kódu, zvyšuje také bezpečnost a auditovatelnost chytrých kontraktů.
+
+
+==== Počáteční a koncové podmínky
+
+((("Vyper","preconditions/postconditions"))) Vyper explicitně zpracovává počáteční a koncové podmínky a změny stavu. I když to vytváří nadbytečný kód, umožňuje to také maximální čitelnost a bezpečnost. Při psaní chytrých kontraktů ve Vyperu by vývojář měl dodržovat následující tři body:
+
+Stav::
+Jaký je aktuální stav Ethereum stavové proměnné?
+Efekty::
+Jaké dopady bude mít tento kód chytrého kontraktu na stav stavových proměnných po jeho provedení? To znamená, co _bude_ ovlivněno a _co nebude_ ovlivněno? Jsou tyto účinky shodné se záměrem chytrého kontraktu?
+Interakce::
+Po vyčerpávajícím projednávání prvních dvou úvah je čas spustit kód. Před nasazením logicky projděte kód a zvažte všechny možné trvalé výsledky, důsledky a scénáře provádění kódu, včetně interakcí s jinými kontrakty.
+
+V ideálním případě by měl být každý z těchto bodů pečlivě zvážen a následně důkladně zdokumentován v kódu. Tím se zlepší návrh kódu a nakonec se stane čitelnějším a snadněji kontrolovatelným. (((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
+
+[[decorators_sec]]
+=== Dekorátory
+((("decorators, Vyper")))((("Vyper","decorators")))Na začátku každé funkce mohou být použity následující dekorátory:
+
++@private+:: Dekorátor `@private` dělá funkci nepřístupnou mimo kontrakt.
+
++@public+::: Dekorátor `@public`  dělá funkci veřejně viditelnou a spustitelnou. Například i Ethereum peněženka zobrazí takové funkce při prohlížení kontraktu.
+
++@constant+:: Funkce s dekorátorem `@constant` nemohou měnit stavové proměnné. Pokud se funkce pokusí změnit stavovou proměnnou, kompilátor ve skutečnosti odmítne celý program (s příslušnou chybou).
+
++@payable+:: Pouze funkce s dekorátorem `@payable` mohou převádět hodnotu.
+
+Vyper explicitně implementuje http://bit.ly/2P14RDq[logiku dekorátorů]. Například proces kompilace Vyper se nezdaří, pokud funkce má  dekorátor `@payable` i dekorátor `@constant`. To má smysl, protože funkce, která přenáší hodnotu, podle definice aktualizovala stav, takže nemůže být `@constant`. Každá Vyper funkcemusí být buď `@public` nebo `@private` (ale ne obojí!).
+
+[[order_of_functions_sec]]
+=== Funkce a pořadí proměnných
+
+((("function declarations, ordering of")))((("Solidity","function ordering")))((("Solidity","variable ordering")))((("variable declarations, ordering of")))((("Vyper","function ordering")))((("Vyper","variable ordering")))Každý jednotlivý Vyper kontrakt se skládá pouze z jednoho souboru Vyper. Jinými slovy, celý daný kód Vyper chytrého kontraktu, včetně všech funkcí, proměnných atd., existuje na jednom místě. Vyper vyžaduje, aby funkce každého chytrého kontraktu a deklarace proměnných byly fyzicky psány v určitém pořadí. Solidy tento požadavek vůbec nemá. Podívejme se rychle na příklad v Solidity:
+
+[source,javascript]
+----
+pragma solidity ^0.4.0;
+
+contract ordering {
+
+    function topFunction()
+    external
+    returns (bool) {
+        initiatizedBelowTopFunction = this.lowerFunction();
+        return initiatizedBelowTopFunction;
+    }
+
+    bool initiatizedBelowTopFunction;
+    bool lowerFunctionVar;
+
+    function lowerFunction()
+    external
+    returns (bool) {
+        lowerFunctionVar = true;
+        return lowerFunctionVar;
+    }
+
+}
+----
+
+V tomto příkladu funkce nazvaná +topFunction+ volá jinou funkci +LowerFunction+. +topFunction+ také přiřazuje hodnotu proměnné nazvané +initiatizedBelowTopFunction+. Jak vidíte, Solidity nevyžaduje, aby tyto funkce a proměnné byly fyzicky deklarovány dříve, než budou vyvolány vykonávaným kódem. Toto je platný Solidity kód, který bude úspěšně kompilován.
+
+Vyper požadavky na pořadí nejsou novinkou; ve skutečnosti byly tyto požadavky na  pořadí vždy přítomny při programování v Pythonu. Vyper požaduje, aby pořadí bylo přímé a logické, jak ukazuje následující příklad:
+
+[source,python]
+----
+# Deklarace proměnné nazvané theBool
+theBool: public(bool)
+
+# Deklarace funkce nazvané topFunction
+@public
+def topFunction() -> bool:
+# Přiřadit hodnotu již deklarované proměnné nazvané TheBool
+    self.theBool = True
+    return self.theBool
+
+# Deklarace funkce nazvané lowerFunction
+@public
+def lowerFunction():
+# Zavolání již deklarované funkce nazvané topFunction
+    assert self.topFunction()
+----
+
+To ukazuje správné  pořadí funkcí a proměnných ve Vyper chytrém kontraktu. Všimněte si, jak jsou proměnná +theBool+ deklarovány před tím, než jí bude přiřazena hodnota a funkce +topFunction+ je deklarována dříve než je volána. Pokud by byl +theBool+ deklarován níže +topFunction+ nebo pokud by +topFunction+ byla deklarována níže +LowerFunction+, tento konktrakt by nebyl sestaven.
+
+[[online_code_editor_and_compiler_sec]]
+=== Kompilace
+((("compiling","Vyper")))((("Vyper","compilation")))Vyper má svůj vlastní https://vyper.online [online editor a kompilátor], který vám umožní psát a poté kompilovat své chytré kontrakty do bajtkódu, ABI a LLL pouze pomocí webového prohlížeče. Online kompilátor Vyper má pro vaše pohodlí řadu předpřipravených chytrých kontraktů, včetně  kontraktů na jednoduchou otevřenou aukci, bezpečné vzdálené nákupy, tokeny ERC20 a další. Tento nástroj nabízí pouze jednu verzi kompilačního softwaru. Je pravidelně aktualizován, ale ne vždy zaručuje nejnovější verzi. Etherscan má https://etherscan.io/vyper[online Vyper kompilátor], který vám umožňuje vybrat verzi kompilátoru. Https://remix.ethereum.org [Remix], původně navržený pro Solidity chytré kontrakty, má nyní na kartě nastavení k dispozici zásuvný modul Vyper.
+
+[NOTE]
+====
+((("ERC20 token standard","Vyper implementation of")))Vyper implementuje ERC20 jako předkompilovaný kontrakt, což umožňuje, aby tento chytrý kontrakt byly snadno použity po vybalení z krabice. Kontrakty ve Vyperu musí být deklarovány jako globální proměnné. Příklad pro deklarování ERC20 proměnné je následující:
+
+[source,javascript]
+----
+token: address(ERC20)
+----
+====
+
+Kontrakt můžete také zkompilovat pomocí příkazového řádku. Každý Vyper kontrakt je uložen v jediném souboru s příponou _.vy_.
+Po instalaci můžete sestavit Vyper kontrakt spuštěním následujícího příkazu:
+
+----
+vyper ~/hello_world.vy
+----
+
+Lidsky čitelný popis ABI (ve formátu JSON) lze poté získat spuštěním následujícího příkazu:
+
+----
+vyper -f json ~/hello_world.v.py
+----
+
+[[protecting_against_overflows_sec]]
+=== Ochrana proti chybám přetečení na úrovni kompilátoru
+
+((("compiling","protecting against overflow errors at the compiler level")))((("overflow","protecting against")))((("Vyper","overflow protection")))Chyby přetečení v softwaru můžou mít katastrofické dopady při práci se skutečnou hodnotou. Například jedna http://bit.ly/2yHfvoF[transakce z poloviny dubna 2018] ukazuje pass:[<span class="keep-together">chybný přenos více než 57 896 044 618 658 1008 000 000 000 000 000 000 000 000 000</span>], 000 000 000 000 000 000 000 BEC tokenů. Tato transakce byla výsledkem celočíselného přetečení v kontraktu ERC20 tokenu BeautyChain (_BecToken.sol_). Vývojáři Solidity mají přístup do knihoven, jako je http://bit.ly/2ABhb4l[+SafeMath+], stejně jako nástroje pro analýzu zabezpečení Ethereum chytrých kontraktů, jako je http://bit.ly/2CQRoGU[Mythril OSS]. Vývojáři však nejsou nuceni používat bezpečnostní nástroje. Jednoduše řečeno, pokud není jazykem vynucována bezpečnost, vývojáři mohou psát nebezpečný kód, který bude úspěšně kompilován a později „úspěšně“ proveden.
+
+Vyper má vestavěnou ochranu proti přetečení, implementovanou ve dvou bodech. Za prvé, Vyper poskytuje http://bit.ly/2PuDfpB[ekvivalent +SafeMath+], který obsahuje nezbytné případy výjimek pro celočíselnou aritmetiku. Za druhé, Vyper používá svorky vždy, když je načtena konstantní proměnná, hodnota je předána funkci nebo je přiřazena proměnná. Svorky jsou implementovány pomocí uživatelských funkcí v nízkoúrovňovém kompilátoru jazyku Lisp-like Language (LLL) a nelze je zakázat. (Vyper kompilátor vytváří výstup v LLL místo EVM bajtkódu; to zjednodušuje vývoj samotného Vyperu.)
+
+
+[[reading_and_writing_data_sec]]
+=== Čtení a zápis dat
+((("Vyper","reading/writing data"))) I když je ukládání, čtení a úpravy dat nákladné, jsou tyto operace nezbytnou součástí většiny chytrých kontraktů. Chytré kontrakty mohou zapisovat data na dvě místa:
+
+Globální stav:: ((("global state trie")))Stavové proměnné v daném chytrém kontraktu jsou uloženy v Ethereum globální stavové trii (trie je druh stromové datové struktury). Chytrý kontrakt může pouze ukládat, číst a měnit data patřící dané adrese kontraktu (tj. chytré kontrakty nemohou číst jiné chytré kontrakty nebo do nich zapisovat).
+
+Protokoly:: ((("logs, Vyper"))) Chytrý kontrakt může také zapisovat data do Ethereum bločenky prostřednictvím protokolu událostí. Zatímco zpočátku Vyper použil vlastní pass:[<code>__protokolovou__</code>] syntaxi pro deklarování těchto událostí, byla provedena aktualizace, která přiblížila jeho deklaraci událostí více v souladu s původní Solidity syntaxí. Například Vyper deklarace události nazvané `MyLog` byla původně pass:[__]logpass:[__]({arg1: indexed(bytes[3])})`. Syntaxe se nyní změnila na `MyLog: event({arg1: indexed(bytes[3])})`. Je důležité si uvědomit, že provedení protokolované události ve Vyperu bylo a stále je následující: `log.MyLog("123")`.
+
+Chytré kontrakty mohou zapisovat do Ethereum bločenky (prostřednictvím protokolu událostí), nemohou však číst události protokolu uložené v bločence. Bez ohledu na to je jednou z výhod zápisu do Ethereum bločenky prostřednictvím protokolu událostí to, že protokoly mohou být objeveny a přečteny ve veřejné  bločence pomocí odlehčených klientů. Například hodnota +logsBloom+ v těženém bloku může indikovat, zda je či není přítomna událost protokolu. Jakmile je existence událostí protokolu stanovena, lze data protokolu získat z dané transakční účtenky.
+
+
+=== Závěry
+
+Vyper je výkonný a zajímavý nový programovací jazyk orientovaný na kontrakty. Je navržen směrem ke „správnosti“ na úkor určité flexibility. To může programátorům umožnit psát lepší chytré kontrakty a vyhnout se určitým nástrahám, které způsobují vážné chyby. Dále se podrobněji podíváme na zabezpečení chytrého kontraktu. Některé nuance návrhu Vyperu se mohou projevit po přečtení všech možných bezpečnostních problémů, které mohou nastat u chytrých kontraktů. (((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc0")))
