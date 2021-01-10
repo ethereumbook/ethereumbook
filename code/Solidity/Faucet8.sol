@@ -9,7 +9,8 @@ contract owned {
 	}
 	// Access control modifier
 	modifier onlyOwner {
-		require(msg.sender == owner, "Only the contract owner can call this function");
+		require(msg.sender == owner,
+		        "Only the contract owner can call this function");
 		_;
 	}
 }
@@ -36,7 +37,7 @@ contract Faucet is mortal {
 		emit Withdrawal(msg.sender, withdraw_amount);
 	}
 	// Accept any incoming amount
-	function () public payable {
+	function () external payable {
 		emit Deposit(msg.sender, msg.value);
 	}
 }

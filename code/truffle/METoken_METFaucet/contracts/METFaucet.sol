@@ -1,7 +1,7 @@
 // Version of Solidity compiler this program was written for
 pragma solidity ^0.4.19;
 
-import 'zeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
+import 'openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol';
 
 
 // A faucet for ERC20 token MET
@@ -29,6 +29,6 @@ contract METFaucet {
     }
 
 	// REJECT any incoming ether
-	function () public payable { revert(); }
+	function () external payable { revert(); }
 
 }

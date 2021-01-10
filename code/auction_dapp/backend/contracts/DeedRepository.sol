@@ -4,20 +4,23 @@ import "./ERC721/ERC721Token.sol";
 /**
  * @title Repository of ERC721 Deeds
  * This contract contains the list of deeds registered by users.
- * This is a demo to show how tokens(deeds) can be mint and add to the repository
+ * This is a demo to show how tokens (deeds) can be minted and added 
+ * to the repository.
  */
 contract DeedRepository is ERC721Token {
+
 
     /**
     * @dev Created a DeedRepository with a name and symbol
     * @param _name string represents the name of the repository
-    * @param _symbol string represents the symbol of the repositor
+    * @param _symbol string represents the symbol of the repository
     */
-    function DeedRepository(string _name, string _symbol) public ERC721Token(_name, _symbol) {}
+    function DeedRepository(string _name, string _symbol) 
+        public ERC721Token(_name, _symbol) {}
     
     /**
     * @dev Public function to register a new deed
-    * @dev Call the ERC721Token Minter
+    * @dev Call the ERC721Token minter
     * @param _tokenId uint256 represents a specific deed
     * @param _uri string containing metadata/uri
     */

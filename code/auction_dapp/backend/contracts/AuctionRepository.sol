@@ -251,7 +251,7 @@ contract AuctionRepository {
     * @dev Refund previous bidder if a new bid is valid and placed.
     * @param _auctionId uint ID of the created auction
     */
-    function bidOnAuction(uint _auctionId) public payable {
+    function bidOnAuction(uint _auctionId) external payable {
         uint256 ethAmountSent = msg.value;
 
         // owner can't bid on their auctions

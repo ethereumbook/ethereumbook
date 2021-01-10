@@ -2,7 +2,8 @@ pragma solidity 0.4.23;
 
 import './SampleToken.sol';
 import 'openzeppelin-solidity/contracts/crowdsale/emission/MintedCrowdsale.sol';
-import 'openzeppelin-solidity/contracts/crowdsale/distribution/PostDeliveryCrowdsale.sol';
+import 'openzeppelin-solidity/contracts/crowdsale/ \
+  distribution/PostDeliveryCrowdsale.sol';
 
 contract SampleCrowdsale is PostDeliveryCrowdsale, MintedCrowdsale {
 
