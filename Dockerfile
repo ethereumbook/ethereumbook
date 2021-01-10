@@ -1,5 +1,5 @@
 # derived from asciidoctor/docker-asciidoctor by merklebloom and @aantonop
-FROM alpine:3.7
+FROM alpine:latest
 
 LABEL MAINTAINERS="Andreas M. Antonopoulos @aantonop"
 
@@ -16,35 +16,39 @@ RUN apk add --no-cache \
     inotify-tools \
     make \
     openjdk8-jre \
-    py2-pillow \
+    py3-pillow \
     py-setuptools \
-    python2 \
+    python3 \
     ruby \
     ruby-mathematical \
     ttf-liberation \
     ttf-dejavu \
     unzip \
-    which
+    which \
+	zlib-dev \
+	imagemagick
 
 # Installing Python dependencies for additional
 # functionnalities as diagrams or syntax highligthing
 RUN apk add --no-cache --virtual .pythonmakedepends \
     build-base \
-    python2-dev \
-    py2-pip \
-  && pip install --upgrade pip \
-  && pip install --no-cache-dir \
+    python3-dev \
+    py3-pip \
+  && pip3 install --upgrade pip \
+  && pip3 install --no-cache-dir \
     actdiag \
     'blockdiag[pdf]' \
     nwdiag \
     Pygments \
     seqdiag \
+	transifex-client \
+	requests \
   && apk del -r --no-cache .pythonmakedepends
 
 
-ARG asciidoctor_version=2.0.10
+ARG asciidoctor_version=2.0.12
 ARG asciidoctor_pdf_version=1.5.3
-ARG asciidoctor_epub_version=1.5.0.alpha.17
+ARG asciidoctor_epub_version=1.5.0.alpha.19
 
 ENV ASCIIDOCTOR_VERSION=${asciidoctor_version} \
   ASCIIDOCTOR_PDF_VERSION=${asciidoctor_pdf_version} \
@@ -67,7 +71,6 @@ RUN apk add --no-cache --virtual .rubymakedepends \
     coderay \
     epubcheck:3.0.1 \
     haml \
-    kindlegen:3.0.3 \
     pygments.rb \
     rake \
     rouge \
