@@ -1,0 +1,634 @@
+[[keys_addresses]]
+== Kriptografi
+
+((("cryptography", id="ix_04keys-addresses-asciidoc0", range="startofrange")))One of Ethereum's foundational technologies is ((("cryptography","defined")))Salah satu teknologi asas Ethereum ialah ((("cryptography","defined")))kriptografi digunakan secara meluas dalam keselamatan komputer secara matematik. Kriptografi bermaksud "penulisan rahsia" dalam bahasa Yunani, tetapi kajian kriptografi merangkumi lebih daripada sekadar tulisan rahsia, yang disebut sebagai penyulitan atau _encryption_. Kriptografi misalnya boleh digunakan untuk membuktikan pengetahuan rahsia tanpa mendedahkan rahsia itu (contohnya, Dengan tandatangan digital), atau membuktikan keaslian data (contohnya, dengan cap jari digital, juga dikenali sebagai cincangan "hash"). Jenis-jenis bukti kriptografi ini adalah alat matematik yang penting untuk operasi platform Ethereum (dan sememangnya, semua sistem rantai blok), dan juga digunakan secara meluas dalam aplikasi Ethereum. ((("encryption", seealso="keys and addresses")))
+
+Ambil perhatian bahawa, pada masa penerbitan buku ini, tiada bahagian protokol Ethereum melibatkan penyulitan (inkripsi); iaitu semua komunikasi dengan platform Ethereum dan antara nod (termasuk data urusniaga) tidak disulitkan dan boleh dibaca oleh sesiapa sahaja. Ini adalah supaya semua orang boleh mengesahkan kebenaran kemaskini tingkah laku dan kesepakatan boleh dicapai. Di masa hadapan, alat kriptografi yang maju, seperti bukti pengetahuan sifar dan penyulitan pemetaan struktur algebra (homomorfik), akan tersedia kelak, yang akan membolehkan beberapa pengiraan yang disulitkan untuk direkodkan pada rantai blok dalam masa yang sama masih menggunakan kesepakatan (konsensus); Walau bagaimanapun, ianya masih belum digunakan walaupun telah dikeluarkan.
+
+Dalam bab ini kita akan memperkenalkan beberapa kriptografi yang digunakan dalam Ethereum iaitu kriptografi utama awam (PKC), yang digunakan untuk mengawal pemilikan dana, dalam bentuk alamat kripto dan kunci peribadi.
+
+[[keys_addresses_intro]]
+=== Kunci dan Alamat
+
+((("cryptography","keys and addresses")))((("EOA (Externally Owned Account)","keys and addresses")))((("keys and addresses")))Sebagaimana di dalam buku ini dalam tajuk yang lalu, Ethereum mempunyai dua jenis akaun yang berbeza: Akaun Pemilikan Luaran (EOA) dan _kontrak_. Pemilikan ether oleh EOA ditubuhkan melalui _kunci peribadi_ digital, _Alamat Ethereum_ dan _tandatangan digital_. ((("private keys", seealso="keys and addresses")))Kunci peribadi adalah di dalam kepala semua pengguna yang berurusan dengan Ethereum. Malah, alamat akaun itu sendiri diperoleh secara langsung dari kunci peribadi: kunci peribadi menentukan satu alamat Ethereum yang unik, yang juga dikenali sebagai _akaun_.
+
+Kekunci peribadi tidak digunakan secara langsung dalam sistem Ethereum dengan cara apa pun; ianya tidak pernah dihantar atau disimpan di Ethereum. Oleh kerana itulah, kunci persendirian harus tetap bersifat peribadi dan tidak pernah muncul dalam wakalah yang dihantar ke rangkaian, dan tidak juga harus disimpan di dalam rantai; hanya alamat akaun dan tandatangan digital yang dihantar dan disimpan pada sistem Ethereum. Untuk maklumat lanjut mengenai cara menyimpan kunci persendirian dengan selamat dan terjamin, lihat <<control_responsibility> > dan <<wallets_chapter> >.
+
+((("digital signatures")))Akses dan kawalan dana dicapai dengan tandatangan digital, yang juga dibuat menggunakan kunci peribadi. Urusniaga Ethereum memerlukan tandatangan digital yang sah untuk dimasukkan ke dalam rantai blok. Sesiapa yang mempunyai salinan kunci peribadi maka dia mempunyai kawalan ke atas akaun yang sepadan dan mana-mana ether yang dipegangnya. Dengan mengandaikan pengguna menyimpan kunci peribadi mereka dengan selamat, tandatangan digital dalam transaksi Ethereum membuktikan pemilik sebenar dana, kerana mereka membuktikan pemilikan kunci peribadi itu.
+
+((("key pairs")))Dalam sistem awam berasaskan sistem kriptografi&#x2013;, seperti yang digunakan oleh Ethereum, kunci muncul secara berpasangan yang terdiri daripada kunci peribadi (rahsia) dan kunci awam. Fikirkan kunci awam seperti yang sama dengan nombor akaun bank, dan kunci persendirian yang serupa dengan PIN rahsia; ia adalah benteng terakhir yang memberikan kawalan ke atas akaun itu, dan yang pertama dahulu yang mengenalkannya kepada orang lain. Kekunci peribadi sendiri sangat jarang dilihat oleh pengguna Ethereum; untuk sebahagian besar, mereka disimpan (dalam bentuk yang disulitkan) dalam fail khas dan diuruskan oleh perisian dompet Ethereum.
+
+Dalam bahagian pembayaran transaksi Ethereum, penerima yang dimaksudkan akan diwakili oleh alamat Ethereum, yang digunakan dengan cara yang sama seperti butiran akaun penerima bayaran pemindahan bank. Seperti yang akan kita lihat dengan lebih terperinci nanti, alamat Ethereum untuk EOA dijana daripada bahagian kunci utama bagi pasangan kunci. Walau bagaimanapun, tidak semua alamat Ethereum mewakili pasangan kunci awam-peribadi; mereka juga boleh mewakili kontrak, yang, seperti yang akan kita lihat di <<smart_contracts_chapter>>, tidak disokong oleh kunci peribadi.
+
+Di sepanjang bab ini, kita akan meneroka kriptografi asas dengan lebih terperinci dan menjelaskan matematik yang digunakan dalam Ethereum. Kemudian kita akan melihat bagaimana kunci dihasilkan, disimpan, dan diuruskan. Akhir sekali, kita akan mengkaji semula pelbagai format pengekodan yang digunakan untuk mewakili kunci peribadi, kunci awam dan alamat.
+
+[[pkc]]
+=== Kriptografi Kunci Awam dan Matawang Kripto
+
+((("cryptography","public key cryptography and cryptocurrency", id="ix_04keys-addresses-asciidoc1", range="startofrange")))((("public key cryptography", id="ix_04keys-addresses-asciidoc2", range="startofrange")))Kunci awam kriptografi (juga dikenali sebagai "asymmetric cryptography") adalah bahagian teras keselamatan maklumat moden hari ini. ((("Diffie, Whitfield")))((("Hellman, Martin")))((("key exchange protocol")))((("Merkle, Ralph")))Protokol Pengurupan Kekunci yang diterbitkan pada tahun 1970-an oleh Martin Hellman, Whitfield Diffie, dan Ralph Merkle, merupakan satu kejayaan besar yang mencipta gelombang pertama kepentingan awam dalam bidang kriptografi. Sebelum tahun 1970-an, pengetahuan kriptografi yang kuat dirahsiakan oleh pass:[<span class="keep-together">kerajaan</span>].
+
+Kunci kriptografi awam menggunakan kekunci unik untuk mendapatkan maklumat yang selamat. Kekunci ini didasarkan pada fungsi matematik yang mempunyai sifat khas: mudah untuk mengiranya, tetapi sukar untuk mengira keterbalikannya. Berdasarkan fungsi ini, kriptografi membolehkan penciptaan rahsia digital dan tandatangan digital yang tidak dapat dinafikan lagi, yang dijamin oleh peraturan matematik.
+
+Sebagai contoh, mendarabkan dua nombor perdana yang besar bersama-sama adalah benda yang remeh. ((("prime factorization")))Tetapi memandangkan hasil dua nombor perdana yang besar, sangat sukar untuk mencari faktor utama (masalah yang dipanggil _faktor perdana_). Katakan kita mempersembahkan nombor 8,018,009 dan memberitahu anda bahawa ia adalah hasil dua nombor perdana. Mencari kedua-dua nombor perdana ini lebih sukar untuk anda berbanding dengan saya untuk membahagikan nombor ini untuk menghasilkan 8,018,009.
+
+((("trapdoor functions")))Sesetengah fungsi matematik boleh terbalik dengan mudah jika anda mengetahui beberapa maklumat rahsia. Dalam contoh terdahulu, jika saya memberitahu anda bahawa salah satu daripada faktor perdana adalah 2,003, anda boleh secara diam-diam mencari yang lain dengan pembahagian mudah: 8,018,009 ÷ 2,003 = 4,003. Fungsi sedemikian sering dipanggil fungsi _pintu jebak_ (trapdoor) kerana mereka sangat sukar untuk diterbalikkan melainkan jika anda diberi maklumat rahsia yang boleh digunakan sebagai jalan pintas untuk membalikkan fungsi tersebut.
+
+((("elliptic curve cryptography")))Satu kategori fungsi matematik yang lebih maju yang berguna dalam kriptografi adalah berdasarkan operasi aritmetik pada lengkung bulatan panjang (elips). Dalam aritmetik lengkung elips, bentuk pendaraban perdana adalah mudah tetapi pembahagian (dari belakang) adalah mustahil. ((("discrete logarithm problem")))Ini dipanggil masalah logaritma berasingan dan pada masa ini tidak terdapat pintu jebak yang diketahui. Kriptografi keluk eliptik digunakan secara meluas dalam sistem komputer moden dan merupakan asas penggunaan kunci peribadi dan tanda tangan digital Ethereum (dan matawang kripto selainnya).
+
+[NOTA]
+====
+Lihatlah sumber-sumber berikut jika anda berminat untuk membaca lebih lanjut mengenai kriptografi dan fungsi matematik yang digunakan dalam kriptografi moden:
+
+* http://bit.ly/2DcwNhn[Cryptography]
+
+* http://bit.ly/2zeZV3c[Trapdoor function]
+
+* http://bit.ly/2ACJjnV[Prime factorization]
+
+* http://bit.ly/2Q7mZYI[Discrete logarithm]
+
+* http://bit.ly/2zfeKCP[Elliptic curve cryptography]
+====
+
+Di dalam Ethereum, kita menggunakan kriptografi utama awam (juga dikenali sebagai kriptografi asimetri) untuk mencipta sepasang kunci awam-peribadi yang kita telah bicarakan dalam bab ini. Ia dianggap "sepasang" kerana kunci awam diperoleh dari kunci peribadi. Bersama-sama tersedia dalam mewakili akaun Ethereum, pemegang akaun boleh masuk mengendalikannya (alamat mereka) dan kawalan peribadi ke atas kemasukan ke mana-mana ether dalam akaun dan ke atas apa-apa pengesahan keperluan akaun apabila menggunakan kontrak pintar.((("digital signatures","private key and")))Kunci peribadi mengendalikan kemasukan dengan menjadi maklumat yang unik yang diperlukan untuk membuat tandatangan digital, yang diperlukan untuk menandatangani transaksi untuk membelanjakan sebarang dana dalam akaun. Tandatangan digital juga digunakan untuk mengesahkan pemilik atau pengguna kontrak, seperti yang akan kita lihat di <<smart_contracts_chapter>>.
+
+[PETUA]
+====
+((("key pairs")))Dalam kebanyakan pelaksanaan dompet, kunci peribadi dan awam disimpan bersama sebagai _sepasang kunci_ untuk kemudahan. Walau bagaimanapun, kunci awam boleh dikira tidak seberapa penting berbanding kunci peribadi, jadi simpanlah kunci persendirian sebaik mungkin.
+====
+
+Tandatangan digital boleh dibuat untuk menandatangani mana-mana mesej. Bagi transaksi Ethereum, butiran transaksi itu sendiri digunakan sebagai mesej. Matematik kriptografi&#x2014; dalam kes ini, lengkung elips kriptografi&#x2014; menyediakan cara untuk mesej (contohnya, butiran transaksi) digabungkan dengan kunci peribadi untuk membuat kod yang hanya dapat dihasilkan dengan pengetahuan kunci peribadi. 
+Kod tersebut dipanggil tandatangan digital. Perhatikan bahawa transaksi Ethereum pada dasarnya adalah permintaan untuk memasuki akaun tertentu dengan alamat Ethereum tertentu. Apabila urusniaga dihantar ke rangkaian Ethereum untuk memindahkan dana atau bertindak balas dengan kontrak pintar, ia perlu dihantar dengan tandatangan digital yang dibuat dari kunci persendirian yang bersamaan dengan alamat Ethereum berkenaan. Matematik lengkung eliptik bermaksud bahawa _pelombong_ boleh mengesahkan bahawa transaksi itu sah, dengan memeriksa tandatangan digital yang sepadan dengan butir-butir transaksi _dan_ alamat Ethereum yang apabila permintaan masuk dibuat. Pengesahan tidak melibatkan kunci persendirian sama sekali; yang kekal peribadi. Walau bagaimanapun, proses pengesahan telah melampaui keresahan masyarakat dengan menganggap bahawa urusniaga hanya boleh diperoleh daripada seseorang yang mempunyai kunci persendirian yang sesuai dengan kunci awam di belakang alamat Ethereum. Inilah "keajaiban" kunci awam kriptografi.
+
+
+[PETUA]
+====
+Tidak wujud penyulitan (inkrip) itu sebahagian daripada protokol&#x2014;Ethereum, semua mesej yang dihantar sebagai sebahagian daripada operasi rangkaian Ethereum boleh (seharusnya) dibaca oleh semua orang. Oleh itu, kunci peribadi hanya digunakan untuk membuat tandatangan digital untuk pengesahan transaksi.(((range="endofrange", startref="ix_04keys-addresses-asciidoc2")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc1")))
+====
+
+[[private_keys]]
+=== Kunci Peribadi
+
+((("private keys", id="ix_04keys-addresses-asciidoc3", range="startofrange")))Kunci peribadi sekadar nombor, dipilih secara rawak. Kepemilikan dan kawalan kunci perinadi adalah akar pengguna mengawal sendiri semua dana yang berkaitan dengan alamat Ethereum yang sesuai, serta merupakan kemasukan kepada kontrak yang berkuasa ke atas alamat tersebut. Kunci peribadi digunakan untuk membuat tandatangan yang diperlukan untuk membelanjakan ether dengan membuktikan pemilikan dana yang digunakan dalam transaksi. ((("warnings and cautions","private key protection")))Kunci persendirian mesti dirahsiakan sebilang masa, kerana mendedahkannya kepada pihak ketiga adalah setara dengan memberi mereka kawalan ke atas ether dan kontrak yang dijaga oleh kunci persendirian itu. Kunci persendirian juga harus disandarkan dan dilindungi daripada kerugian dan bencana yang tidak disengajakan. Sekiranya ia hilang, ia tidak dapat dipulihkan dan dana yang tersimpan olehnya hilang buat selama-lamanya.
+
+[PETUA]
+====
+Kekunci peribadi Ethereum hanyalah nombor. Satu cara pemilihan kunci peribadi secara rawak ini adalah dengan perumpamaan permainan syiling, serta sediakan pensil dan kertas sahaja: lambung duit syiling sebanyak 256 kali dan anda mempunyai digit perduaan kunci peribadi rawak yang anda boleh gunakan dalam dompet Ethereum (sila&#x2014;lihat bahagian seterusnya ). Kunci awam dan alamat kripto boleh dihasilkan daripada kunci peribadi.
+====
+
+[[generating_private_key]]
+==== Menjana Kunci Peribadi dari Nombor Rawak
+
+((("entropy","private key generation and")))((("private keys","generating from random number")))((("random numbers, private key generation from")))Langkah utama dan terpenting dalam menghasilkan kunci adalah mencari sumber keseimbangan mekanikal, atau rawak. Mewujudkan kunci peribadi Ethereum pada dasarnya melibatkan pemilihan nombor antara 1 dan 2 ^256^. Kaedah yang tepat yang anda gunakan untuk memilih nombor itu tidak penting selagi ia tidak dapat diramal atau ditentukan. Perisian Ethereum menggunakan penjana nombor rawak sistem operasi asas untuk menghasilkan 256 bit secara rawak. Biasanya, penjana nombor rawak OS dimulakan oleh sumber manusia secara rawak, sebab itu anda mungkin diminta untuk menggerakkan tetikus anda sekitar selama beberapa saat, atau tekan kekunci rawak pada papan kekunci anda. Sebuah pilihan yang lain boleh menghasilkan bunyi radiasi kosmik pada saluran mikrofon komputer.
+
+Lebih tepat lagi, kunci peribadi boleh menjadi nombor bukan sifar sehingga jumlah yang besar sedikit kurang dari 2^256^&#x2014; nombor besar 78 digit, iaitu kira-kira 1.158 * 10^77^. Nombor sebenar berkongsi 38 digit pertama dengan 2 ^256^ dan ditakrifkan sebagai susunan lengkung elips yang digunakan dalam Ethereum (lihat <<elliptic_curve>>). Untuk membuat kunci peribadi, kita secara rawak memilih nombor 256-bit dan tentukan bahawa ia berada dalam lingkungan yang sah. Dalam istilah pengaturcaraan, ini biasanya dicapai dengan memakan rentetan bit rawak yang lebih besar (dikumpulkan dari sumber selamat kriptografi secara rawak) ke dalam algoritma cincangan (hash) 256-bit seperti Keccak-256 atau SHA-256, kedua-duanya akan menghasilkan nombor 256-bit. Sekiranya hasilnya berada dalam lingkungan yang sah, bermakna kita telah mempunyai kunci peribadi yang sesuai. Jika tidak, sila cuba lagi dengan nombor rawak yang lain.
+
+[PETUA]
+====
+2^256^&#x2014;saiz ruang utama kunci peribadi Ethereum&#x2014;adalah nombor yang tidak dapat dibayangkan. Ia adalah kira-kira 10^77^ dalam perpuluhan; iaitu, nombor dengan 77 digit. Sebagai perbandingan, alam semesta yang kelihatan dianggarkan mengandungi 10^80 atom-atom. Oleh itu, terdapat kunci peribadi yang hampir cukup untuk memberikan setiap satu kunci ini kepada seluruh atom di alam semesta. Jika anda memilih kunci persendirian secara rawak, tidak ada cara yang untuk manusia meneka atau memilih sendiri kerana banyaknya nombor itu.
+====
+
+Perhatikan bahawa proses penjanaan kumci peribadi adalah di luar talian; ia tidak memerlukan sebarang komunikasi dengan rangkaian Ethereum, atau mana-mana hubungan dengan sesiapa sahaja. Oleh itu, untuk memilih nombor yang tidak akan dipilih oleh orang lain, ia perlu benar-benar rawak. Jika anda memilih nombor itu sendiri, kemungkinan risiko orang lain akan mencubanya (dan kemudian membawa lari ether anda) terlalu tinggi. Menggunakan penjana nombor rawak yang teruk (seperti fungsi pseudorandom +rand+ dalam kebanyakan bahasa pengaturcaraan) mengakibatkan keadaan lebih buruk, kerana ia lebih jelas dan lebih mudah untuk ditiru. Sama seperti kata laluan untuk akaun dalam talian, kunci peribadi perlu sukar diduga. Mujurlah, anda tidak perlu mengingati kunci peribadi anda, jadi anda boleh mengambil pendekatan yang terbaik untuk memilihnya: iaitu dengan keadah rawak yang sebenar.
+
+[AMARAN]
+====
+Jangan tulis kod anda sendiri untuk mencipta nombor rawak atau gunakan penjana nombor rawak mudah yang ditawarkan oleh bahasa pengaturcaraan anda. Adalah penting bahawa anda menggunakan penjana nombor pseudo-rawak secara kriptografi (seperti CSPRNG) dengan suapan dari sumber entropi yang mencukupi. Semak dokumentasi perpustakaan penjana nombor rawak yang anda pilih untuk memastikan ia selamat dari segi kriptografi. Pelaksanaan yang betul perpustakaan CSPRNG adalah penting untuk keselamatan kunci.
+====
+
+Berikut ialah kunci persendirian yang dijana secara rawak yang ditunjukkan dalam format heksadesimal (256 bit ditunjukkan sebagai 64 digit heksadesimal, setiap 4 bit):(((range="endofrange", startref="ix_04keys-addresses-asciidoc3")))
+
+[[prv_key_example]]
+----
+f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+
+[[pubkey]]
+=== Kunci Awam
+
+((("cryptography","public keys", id="ix_04keys-addresses-asciidoc4", range="startofrange")))((("elliptic curve cryptography","public key generation", id="ix_04keys-addresses-asciidoc5", range="startofrange")))((("public keys", seealso="keys and addresses", id="ix_04keys-addresses-asciidoc6", range="startofrange")))Kekunci awam Ethereum adalah _titik_ pada lengkung elips, yang bermakna ia adalah satu set koordinat _x_ dan _y_ yang memenuhi persamaan lengkung elips.
+
+Dalam istilah yang lebih mudah, kunci awam Ethereum adalah dua nombor, bergabung bersama. Nombor-nombor ini dihasilkan dari kunci peribadi dengan perhitungan yang boleh _bergerak sehala_. Ini bermakna terlalu remeh untuk mengira kunci awam jika anda mempunyai kunci peribadi, tetapi anda tidak boleh mengira kunci peribadi dari kunci awam.
+
+[AMARAN]
+====
+MATEMATIK akan berlaku! Jangan panik. Jika anda mula hilang pada mana-mana titik dalam perenggan berikut, anda boleh melangkau beberapa bahagian seterusnya. Terdapat banyak alat dan perpustakaan yang akan membuatkan kiraan matematik untuk anda.
+====
+
+Kunci awam dikira dari kunci peribadi dengan menggunakan pendaraban lengkung elips, yang boleh dikatakan tidak dapat berpatah balik: _K_ = _k_ * _G_,  di mana _k_ adalah kunci persendirian, _G_ adalah titik malar yang dipanggil ((("generator point")) _Titik Penjana_, yakni _K_ adalah kunci awam yang terhasil, dan *merupakan pengendali "pendaraban lengkung elips khas. Perhatikan bahawa pendaraban lengkung elips tidak seperti pendaraban biasa. Ia berkongsi sifat-sifat fungsi dengan pendaraban biasa, itu sahaja. Sebagai contoh, operasi terbalik (yang akan dibahagikan kepada nombor normal), yang dikenali sebagai "mencari pengasingan logaritma"&#x201d;&#x2014;,sebagai contoh, mengira _k_ jika anda tahu __K __&#x2014;adalah sukar seperti mencuba semua nilai yang mungkin bagi _k_ (carian paksa atau brute force mungkin mengambil masa yang lama umpama seisi alam semesta ini barulah dapat).
+
+Dalam istilah yang lebih mudah: aritmetik pada lengkung elips berbeza daripada aritmetik integer "biasa". Titik (_G_) boleh didarabkan dengan integer (_k_) untuk menghasilkan titik lain (_K_). Tetapi tidak ada perkara seperti _pembahagian_, ia tidak mungkin hanya "membahagi" kunci awam _K_ dengan titik _G_ untuk mengira kunci peribadi _k_. Inilah fungsi matematik sehala yang diterangkan di dalam <<pkc>>.
+
+[NOTA]
+====
+((("one-way functions")))Pendaraban lengkung elips adalah sejenis fungsi yang pengkriptografi memanggil fungsi "sehala", ianya mudah dilakukan dalam satu arah (pendaraban) dan tidak boleh dilakukan dalam arah sebaliknya (bahagi). Pemilik kunci peribadi dengan mudah boleh membuat kunci awam dan kemudian berkongsi dengan dunia, mengetahui bahawa tiada siapa yang dapat membalikkan fungsi tersebut dan mengira kunci peribadi dari kunci awam. Helah matematik ini menjadi asas bagi tandatangan digital yang tidak dapat dijalinkan dan selamat yang membuktikan siapa pemilikan dana Ethereum dan pengawal kontrak.
+====
+
+Sebelum kita menunjukkan bagaimana untuk menghasilkan kunci awam dari kunci peribadi, mari kita lihat kriptografi lengkung elips dalam sedikit lebih terperinci.
+
+
+[[elliptic_curve]]
+==== Penjelasan Kriptografi Keluk Elips
+
+((("elliptic curve cryptography","basics", id="ix_04keys-addresses-asciidoc7", range="startofrange")))Keluk elips ((("elliptic curve cryptography", id="ix_04keys-addresses-asciidoc8", range="startofrange")))((("public keys","elliptic curve cryptography and", id="ix_04keys-addresses-asciidoc9", range="startofrange")))kriptografi adalah sejenis asimetrik atau kriptografi kunci awam berdasarkan masalah logaritma berasingan seperti yang dinyatakan dengan penambahan dan pendaraban pada titik lengkung elips.
+
+<<ecc-curve>> adalah contoh lengkung elips, sama seperti yang digunakan oleh Ethereum.
+
+[NOTA]
+====
+((("secp256k1 elliptic curve", id="ix_04keys-addresses-asciidoc10", range="startofrange")))Ethereum menggunakan keluk elips yang sama, yang dipanggil +secp256k1+, sebagaimana Bitcoin. Ini kemungkinan menjadikannya menggunakan semula banyak pustaka keluk elips dan alat dari Bitcoin.
+====
+
+[[ecc-curve]]
+Gambaran keluk elips
+image::images/simple_elliptic_curve.png["ecc-curve"]
+
+Ethereum menggunakan lengkung elips tertentu dan set pemalar matematik, seperti yang ditakrifkan dalam piawaian yang dipanggil +secp256k1+, yang ditubuhkan oleh Institut Standard dan Teknologi Negara Amerika Syarikat (NIST). Keluk +secp256k1+ ditakrifkan oleh fungsi berikut, yang menghasilkan lengkung elips:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <msup><mi>y</mi> <mn>2</mn> </msup>
+      <mo>=</mo>
+      <mrow>
+        <mo>(</mo>
+        <msup><mi>x</mi> <mn>3</mn> </msup>
+        <mo>+</mo>
+        <mn>7</mn>
+        <mo>)</mo>
+      </mrow>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mtext>over</mtext>
+    <mspace width="3.33333pt"/>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>&#x1d53d;</mi> <mi>p</mi> </msub>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+atau:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <msup><mi>y</mi> <mn>2</mn> </msup>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+    <mo>=</mo>
+    <mrow>
+      <mo>(</mo>
+      <msup><mi>x</mi> <mn>3</mn> </msup>
+      <mo>+</mo>
+      <mn>7</mn>
+      <mo>)</mo>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+_Mod p_ (nombor perdana _p_) menandakan bahawa lengkung ini melebihi medan perdana terhingga _p_, juga ditulis sebagai latexmath:[\( \mathbb{F}_p \)], where _p_ = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, yang merupakan bilangan nombor perdana yang sangat besar.
+
+Oleh kerana lengkung ini ditakrifkan dalam arahan keterhadan medan nombor perdana berbanding bilangan sebenar, ia kelihatan seperti corak titik-titik yang bertaburan dalam dua dimensi, yang menjadikannya sukar untuk digambarkan. Walau bagaimanapun, matematiknya adalah sama dengan lengkung elips berbanding bilangan sebenar. Sebagai contoh, <<ecc-over-F17-math>> menunjukkan lengkungan elips yang sama ke atas medan yang terbatas pada nombor perdana 17, menunjukkan corak titik pada grid. Keluk elips +secp256k1+ lengkung Ethereum boleh dianggap sebagai corak titik yang lebih kompleks pada grid yang tidak jelas.
+
+[[ecc-over-F17-math]]
+[role="smallersixty"]
+. Kriptografi lengkung elips: menggambarkan lengkung elips terhadap F(p), dengan p=17
+image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
+
+Jadi, sebagai contoh, berikut adalah titik _Q_ dengan koordinat (_x_, _ y_) yang merupakan titik pada keluk +secp256k1+:
+
+[[coordinates_example]]
+----
+Q = 
+(49790390825249384486033144355916864607616083520101638681403973749255924539515,
+59574132161899900045862086493921015780032175291755807399284007721050341297360)
+----
+
+<<example_1>> menunjukkan bagaimana anda boleh menyemak sendiri menggunakan Python. Pembolehubah +x+ dan +y+ adalah koordinat titik _Q_, seperti dalam contoh terdahulu. Pemboleh ubah +p+ adalah urutan utama lengkung elips (nombor perdana yang digunakan untuk semua operasi modulo). Garis terakhir Python adalah persamaan lengkung elips (pengendali +%+ di Python adalah operator modulo). Jika +x+ dan +y+ sememangnya koordinat titik pada lengkung elips, maka mereka memenuhi persamaan dan hasilnya adalah sifar (+0L+ adalah integer panjang dengan nilai sifar). Cubalah sendiri dengan menaip ++**python**++ dalam baris arahan dan salin setiap setiap baris (selepas prompt +>>>+) dari senarai(((range="endofrange", startref="ix_04keys-addresses-asciidoc10"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc9")))
+
+++++
+<div data-type="example" id="example_1">
+<h5> Mwnggunakan Python bagi mengesahkan titik itu di dalam keluk elips</h5>
+<pre data-type="programlisting">
+Python 3.4.0 (default, Mar 30 2014, 19:23:13)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.38)] on darwin
+Taip "help", "copyright", "credits" atau "license" untuk mendapatkan lebih banyak maklumat.
+>>> <strong>p = 115792089237316195423570985008687907853269984665640564039457584007908834 \
+671663</strong>
+>>> <strong>x = 49790390825249384486033144355916864607616083520101638681403973749255924539515</strong>
+>>> <strong>y = 59574132161899900045862086493921015780032175291755807399284007721050341297360</strong>
+>>> <strong>(x ** 3 + 7 - y**2) % p</strong>
+0L
+</pre>
+</div>
+++++
+
+[[EC_math]]
+==== Operasi aritmetik Keluk Elips
+
+((("elliptic curve cryptography","arithmetic operations")))Banyak lengkung elips kelihatan dan berfungsi seperti integer aritmetik yang kita pelajari di sekolah. Khususnya, kita boleh menentukan pengendali tambahan, berbanding melompat di sepanjang baris nombor, seeloknya melompat terus ke titik lain pada lengkung. Sekali kita mempunyai pengendali tambahan, kita juga boleh menentukan pendaraban satu titik dan nombor keseluruhan, yang bersamaan bagi penambahan berulang.
+
+Penambahan lengkung elips ditakrifkan seperti yang diberikan dua titik _P_~1~ dan _P_~2~ pada lengkung elips, terdapat titik ketiga _P_~3~ = _P_~1~ + _P_~2~, juga pada lengkung elips.
+
+Secara geometri, titik ketiga _P_~3~ dikira dengan melukis garis antara _P_~1~ dan _P_~2~. Garis ini akan merentasi lengkung elips dalam satu tempat tambah (amat mengagumkan!). Panggil titik ini _P_~3~' = (_x_, _y_). Kemudian balikkan pada paksi-x untuk mendapatkan _P_~3~ = (_x_, _–y_).
+
+Jika _P_~1~ dan _P_~2~ adalah titik yang sama, garis "antara" _P_~1~ dan _P_~2~ perlu diluaskan menjadi lengkung pada lengkung pada titik ini _P_~1~. Tangen ini akan memotong lengkung tepat pada satu titik baru. Anda boleh menggunakan teknik dari kiraan untuk menentukan cerun garis tangen. Agak mengejutkan, teknik ini berfungsi, walaupun kita tidak minat untuk meletak titik pada lengkung dengan dua koordinat integer!
+
+Dalam matematik keluk elips, terdapat juga titik yang dipanggil ";titik di infiniti" yang lebih kurang sama dengan peranan nombor sifar di penambah. Pada komputer, ia kadang-kadang diwakili oleh _x_=_y_=0 (yang tidak memenuhi persamaan lengkung elips, tetapi ia adalah kes berasingan yang mudah, boleh diperiksa). Terdapat beberapa kes khas yang menjelaskan keperluan untuk titik di infiniti.
+
+Dalam sesetengah kes (contohnya, jika _P_~1~ and _P_~2~ mempunyai nilai _x_ yang sama tetapi nilai-nilai _y_ yang berbeza), garis akan sama menegak, di mana _P_~3~ = titik di infiniti.
+
+Jika _P_~1~ adalah titik pada tak terhingga, maka _P_~1~ + _P_~2~ = _P_~2~. Begitu juga, jika _P_~2~ adalah titik pada tak terhingga, maka _P_~1~ + _P_~2~ = _P_~1~. Ini menunjukkan bagaimana titik di infiniti memainkan peranan yang memainkan sifar dalam aritmetik "biasa".
+
+Ternyata pass:[+] bersekutu, yang bermaksud bahawa (_A_ pass:[+] _B_) pass:[+] _C_ = _A_ pass:[+] (_B_ pass:[+] _C_). Ini bermakna kita boleh menulis _A_ pass:[+] _B_ pass:[+] _C_ (tanpa tanda kurung) tanpa ragu-ragu lagi.
+
+Sekarang kita telah menetapkan tambah, kita dapat menentukan pendaraban dalam cara standard yang memanjangkan penambahan. Untuk titik _P_ pada lengkung elips, jika _k_ adalah nombor keseluruhan, maka _k_ pass:[*] _P_ = _P_ pass:[+] _P_ pass:[+] _P_ pass:[+] ... pass:[+] _P_ (_k_ kali). Perhatikan bahawa _k_ kadangkala (mungkin mengelirukan) dipanggil "eksponen" dalam kes ini.(((range="endofrange", startref="ix_04keys-addresses-asciidoc8")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc7")))
+
+[[public_key_derivation]]
+==== Menjana Kunci Awam
+
+((("elliptic curve cryptography","public key generation with")))((("generator point")))((("public keys","generating")))Bermula dengan kunci peribadi dalam bentuk daripada nombor yang dijana secara rawak _k_, kami melipat gandakannya dengan titik yang telah ditetapkan pada lengkung yang dipanggil _titik menjana_ _G_ untuk menghasilkan titik lain di tempat lain pada lengkung, iaitu kunci awam yang sama _K_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mi>K</mi>
+    <mo>=</mo>
+    <mi>k</mi>
+    <mo>*</mo>
+    <mi>G</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+((("secp256k1 elliptic curve")))Titik penjana ditentukan sebagai sebahagian daripada standard +secp256+; ia adalah sama bagi semua pelaksanaan +secp256k1 , dan semua kekunci yang diperoleh daripada lengkung itu menggunakan titik yang sama _G_. Oleh kerana titik penjana sentiasa sama untuk semua pengguna Ethereum, kunci peribadi _k_ didarab dengan _G_ akan sentiasa menghasilkan _K_ kunci awam yang sama. Hubungan antara _k_ dan _K_ tetap, tetapi hanya dapat dikira dalam satu arah, dari _k_ ke _K_. Itulah sebabnya alamat Ethereum (berasal dari _K_) boleh dikongsi dengan sesiapa sahaja dan tidak mendedahkan kunci peribadi pengguna (_k_).
+
+Seperti yang kita nyatakan di bahagian sebelumnya, pendaraban _k_ * _G_ bersamaan dengan penambahan berulang, jadi ass:[+] _G_ pass:[+] ... pass:[+] _G_, berulang _k_ kali. Ringkasnya, untuk menghasilkan kunci awam _K_ dari kunci peribadi _k_, kita menambah titik penjana _G_ kepada dirinya sendiri, _k_ kali.
+
+[PETUA]
+====
+Kunci peribadi boleh ditukar menjadi kunci awam, tetapi kunci awam tidak boleh ditukar kembali ke kunci peribadi, kerana matematik hanya berfungsi satu cara.
+====
+
+Mari kita gunakan pengiraan ini untuk mencari kunci awam untuk kunci peribadi khusus yang kami tunjukkan dalam <<private_keys>>
+
+
+[[example_privkey]]
+Contoh contoh kunci persendirian kepada pengiraan kunci awam
+----
+K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
+----
+
+Pustaka kriptografi boleh membantu kita mengira _K_, menggunakan pendaraban lengkung elips. Kunci awam yang terhasil _K_ ditakrifkan sebagai titik:
+
+----
+K = (x, y)
+----
+
+di mana:
+
+----
+x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
+y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+Di dalam Ethereum, anda boleh melihat kunci awam yang diwakili sebagai serangkai 130 aksara heksadesimal (65 bait). Ini diterima pakai dari format seragam yang dicadangkan oleh konsortium industri Piawaian Kumpulan Kriptografi yang Efisien (SECG), didokumenkan dalam http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. Piawai mentakrifkan empat awalan yang mungkin boleh digunakan untuk mengenal pasti titik pada lengkung elips, disenaraikan dalam <<EC_prefix_table>> 
+
+[[EC_prefix_table]]
+. Rangkai EC  bagi awalan kunci awam
+[options="header"]
+|===
+| Awalan | Makna | Panjang (awalan pengiraan bait)
+| +0x00+ | Titik Infiniti | 1
+| +0x04+ | Titik tidak dimampatkan | 65
+| +0x02+ | Titik termampat dengan +y+ | 33
+| +0x03+ | Titik termampat dengan kemungkinan +y+ | 33
+|===
+
+Ethereum hanya menggunakan kunci awam yang tidak dipadatkan; Oleh itu, satu-satunya awalan yang berkaitan dengannya adalah (hex) +04+. Serangkaian ini merangkumi koordinat _x_ dan _y_ kunci awam:
+
+[[concat_coordinates]]
+----
+04 + x-coordinate (32 bytes/64 hex) + y-coordinate (32 bytes/64 hex)
+----
+
+Oleh itu, kunci awam yang dikira terlebih dahulu adalah bersiri seperti berikut:
+
+[[serialized_pubkey]]
+----
+046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0 \
+c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+[[EC_lib]]
+==== Pustaka Keluk Eliptik
+
+((("elliptic curve cryptography","libraries")))((("secp256k1 elliptic curve")))Terdapat beberapa perlaksanaan  +secp256k1+  keluk elips yang digunakan dalam projek yang berkaitan dengan matawang kripto:
+
+((("OpenSSL cryptographic library")))https://www.openssl.org/[OpenSSL]:: Pustaka OpenSSL menawarkan set lengkap primitif kriptografi, termasuk pelaksanaan penuh +secp256k1+. Sebagai contoh, untuk mendapatkan kunci awam, fungsi +EC_POINT_mul+ boleh digunakan.
+
+((("libsecp256k1 cryptographic library")))https://github.com/bitcoin-core/secp256k1[libsecp256k1]:: Bitcoin Core +libsecp256k1+ adalah penerapan bahasa C- bagi +secep256k1+ keluk elips dan kriptografi primitif yang lain. Ia ditulis dari awal untuk menggantikan OpenSSL dalam perisian Bitcoin Core, dan dianggap unggul dalam prestasi dan keselamatan.(((range="endofrange", startref="ix_04keys-addresses-asciidoc6")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc5")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc4")))
+
+[[hash_functions]]
+=== Fungsi Hash Kriptografi
+
+((("cryptographic hash functions", id="ix_04keys-addresses-asciidoc11", range="startofrange")))((("cryptography","hash functions", id="ix_04keys-addresses-asciidoc12", range="startofrange")))((("hash functions", id="ix_04keys-addresses-asciidoc13", range="startofrange")))Fungsi cincangan kriptografi yakni "hash"  digunakan dalam Ethereum. Sebenarnya, fungsi hash digunakan secara meluas dalam hampir semua sistem kriptografi&#x2014;fakta yang dipetik oleh (((("Schneier, Bruce")))pass:[1cryptographer1] http://bit.ly/2Q79qZp[Bruce Schneier], berkata, "Lebih banyak daripada algoritma penyulitan, fungsi hash satu arah adalah kerja keras kriptografi moden."
+
+Dalam seksyen ini, kita akan membincangkan fungsi hash, meneroka sifat asas mereka, dan melihat bagaimana ciri-ciri tersebut menjadikannya sangat berguna dalam banyak bidang kriptografi moden. Kami memasukkan fungsi hash di sini kerana ia adalah sebahagian daripada pertukaran kunci awam Ethereum ke dalam alamat. ((("cap jari digital"))Ia juga boleh digunakan untuk mencipta _cap jari digital_, yang membantu dalam pengesahan data.
+
+((("one-way functions")))Dalam istilah yang mudah, fungsi http://bit.ly/2CR26gD[_hash function_] adalah &#x201c;sebarang fungsi yang boleh digunakan untuk memetakan data saiz sewenang-wenangnya kepada data saiz tetap.&#x201d; ((("pre-image")))Input ke fungsi hash dipanggil _pra-imej_, _wakalah_, atau _input data_. Output dipanggil _hash_. hhttp://bit.ly/2Jrn3jM[_Cryptographic hash functions_] adalah subkategori khas yang mempunyai ciri khusus yang berguna untuk mengamankan platform, seperti Ethereum.
+
+Fungsi hash kriptografi adalah fungsi hash _sehala_ yang memetakan data saiz sewenang-wenang kepada rentetan bit tetap. Sifat "sehala"; bermakna ia tidak dapat digunakan untuk mencipta semula data masukan jika seseorang hanya mengetahui hash output. Satu-satunya cara untuk menentukan input yang mungkin adalah untuk melakukan carian kekerasan (brute force), memeriksa setiap senarai output sepadan; memandangkan ruang carian hampir tidak tiada penghujungnya, mudah untuk memahami perbuatan itu adalah mustahil. Walaupun anda mendapati beberapa data input yang mencipta hash yang sepadan, ia mungkin bukan data input asal: fungsi hash adalah fungsi "banyak-ke-satu". (((("hash collision")))Mencari dua set data input hash ke output yang sama dipanggil mencari _perlanggaran hash_. Secara kasar, lebih baik fungsi hash, lebih jarang berlaku perlanggaran hash. Untuk Ethereum, ia tidak mungkin terkesan.
+
+((("hash functions","main properties")))Mari kita lihat dengan lebih dekat sifat-sifat fungsi hash kriptografi. Ini termasuk:
+
+Determinism :: Yaki penentuan. Mesej input yang diberikan sentiasa menghasilkan output hash yang sama.
+
+Verifiability :: Yakni boleh mengesahkan. Pengiraan mesej hash adalah cekap (kerumitan mendatar).
+
+Noncorrelation:: Yakni tiada hubung kait. Perubahan kecil kepada mesej (contohnya, perubahan 1-bit) perlu mengubah output hash dengan begitu meluas sehingga ia tidak boleh dikaitkan dengan mesej asal hash.
+
+Irreversibility :: Yakni, tidak boleh patah balik. Pengiraan mesej dari cincangannya tidak dapat dilaksanakan, sama dengan pencarian keras melalui semua maklumat yang mungkin.
+
+Collision protection :: Yakni melindungi dari perlanggaran. Ia tidak boleh digunakan untuk mengira dua mesej berbeza yang menghasilkan output cincangan hash yang sama.
+
+Rintangan terhadap perlanggaran hash sangat penting untuk mengelakkan pemalsuan tandatangan digital di Ethereum.
+
+Gabungan sifat-sifat ini menjadikan fungsi kriptografi hash berguna untuk pelbagai aplikasi keselamatan, termasuk:
+
+* Cap jari data
+* Ketelusan wakalah (pengesanan ralat)
+* Bukti kerja
+* Pengesahan (cincangan kata laluan dan peregangan kunci)
+* Penjana nombor Pseudo-rawak
+* Komitmen wakalah (cara kerja serlah-amanat)
+* Pengenal yang bitara
+
+Kita akan mendapati banyak perkara ini di Ethereum ketika kita sedang meningkat maju melalui pelbagai lapisan sistem.
+
+[[keccak256]]
+==== Fungsi Kriptografik Hash Ethereum: Keccak-256
+
+((("hash functions","Keccak-256")))((("Keccak-256 hash function")))((("SHA-3 Hash Function")))Ethereum menggunakan fungsi cincangan kriptografi _Keccak-256_ di banyak tempat. Kecak-256 direka sebagai calon untuk Pertandingan Fungsi Kriptografik Hash SHA-3 yang diadakan pada tahun 2007 oleh ((("National Institute of Science and Technology (NIST)")))((("NIST (National Institute of Science and Technology)")))Institut Sains dan Teknologi Kebangsaan. Kecek adalah algoritma pemenang, yang menjadi standard sebagai ((("Federal Information Processing Standard (FIPS)")))((("FIPS (Federal Information Processing Standard)")))((("FIPS-202")))iaitu Standard Pemprosesan Maklumat Persekutuan (FIPS) 202 pada tahun 2015.
+
+Walau bagaimanapun, semasa tempoh Ethereum dibangunkan, piawaian NIST masih belum dimuktamadkan. NIST menyesuaikan beberapa parameter Keccak selepas proses standard selesai, dikatakan bahawa ianya meningkatkan kecekapannya. Ini berlaku pada masa yang sama di mana hero pemberi maklumat ((("Snowden, Edward")))Edward Snowden mendedahkan dokumen yang mendedahkan bahawa NIST mungkin telah dipengaruhi secara tidak langsung oleh Agensi Keselamatan Negara untuk melemahkan standard penjana nombor rambang((("Dual_EC_DRBG")))Dual_EC_DRBG ,dengan serta merta meletakkan penjana nombor rawak standard ke belakang. Hasil daripada kontroversi ini adalah tindak balas terhadap perubahan yang dicadangkan dan kelewatan yang ketara dalam penyeragaman SHA-3. Pada masa itu, Yayasan Ethereum memutuskan untuk melaksanakan algoritma kecek asal, seperti yang dicadangkan oleh penciptanya, dan bukannya standard SHA-3 yang diubah suai oleh NIST.
+
+[AMARAN]
+====
+Walaupun anda mungkin melihat "SHA-3" yang disebutkan di sepanjang dokumen dan kod Ethereum, sebenarnya ini semua sebenarnya merujuk kepada Keccak-256, bukan piawaian krseragaman FIPS-202 SHA-3. Perbezaan pelaksanaan adalah sedikit, mempunyai kaitan dengan parameter padding, tetapi ia adalah penting dalam Keccak-256 untuk menghasilkan output hash yang berbeza dari FIPS-202 SHA-3 bagi input yang sama.
+====
+
+[[which_hash]]
+==== Manakah Fungsi Hash Yang Saya Gunakan?
+
+((("hash functions","test vector for determining")))((("test vector, determining hash functions with")))Bagaimana anda boleh mengetahui jika pustaka perisian anda menggunakan implikasi FIPS-202 SHA- atau kecak-256, kerana kedua-duanya dipanggil "SHA-3"?
+
+Cara mudah untuk memberitahu ialah menggunakan _testvektor_, output yang diharapkan memberikan input. ((("empty input test")))Ujian yang paling biasa digunakan untuk fungsi hash ialah input _empty input_. Jika anda menjalankan fungsi hash dengan rentetan kosong sebagai input, anda harus melihat hasil berikut:
+
+----
+Keccak256("") =
+  c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+SHA3("") =
+  a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
+----
+
+
+Tidak kira apa fungsi itu dipanggil, anda boleh mengujinya untuk melihat sama ada ia adalah kecek-256 yang asal atau standard NIST yang dimuktamadkan iaitu FIPS-202 SHA-3 dengan menjalankan ujian mudah ini. Ingat, Ethereum menggunakan Keccak-256, walaupun ia sering dipanggil SHA-3 dalam kod.
+
+[NOTA]
+====
+Oleh kerana kekeliruan yang dibuat oleh perbezaan antara fungsi hash yang digunakan di Ethereum (Keccak-256) dan standard yang diseragamkan (FIP-202 SHA-3), terdapat usaha untuk menamakan semula semua contoh +sha3+ dalam semua kod, opkod, dan pustaka bagi +keccak256+. Lihat https://github.com/ethereum/EIPs/issues/59[ERC59] untuk maklumat lanjut.
+====
+
+
+Seterusnya, mari kita periksa permohonan pertama dari Keccak-256 dalam Ethereum, iaitu untuk menghasilkan alamat Ethereum dari kunci awam. (((range="endofrange", startref="ix_04keys-addresses-asciidoc13")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc12")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc11")))
+
+[[eth_address]]
+=== Ethereum Addresses
+
+((("addresses", id="ix_04keys-addresses-asciidoc14", range="startofrange")))((("cryptography","Ethereum addresses and", id="ix_04keys-addresses-asciidoc15", range="startofrange")))Alamat Ethereum adalah _pengenal bitara_ yang berasal dari kunci awam atau kontrak menggunakan fungsi hash satu arah Keccak-256.
+
+Dalam contoh terdahulu, kita memulakan dengan kunci peribadi dan menggunakan pendaraban lengkung elips untuk mendapatkan kunci awam:
+
+[role="pagebreak-before"]
+Private key _k_:
+
+----
+k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+[[concat_pubkey]]
+Kunci awam _K_ (_x_ dan _y_ koordinat yang disatukan dan ditunjukkan sebagai hex):
+
+----
+K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e...
+----
+
+[NOTA]
+====
+Perlu diingat bahawa kunci awam tidak diformat dengan awalan (hex) +04+ apabila alamat telah dikira.
+====
+
+Kita menggunakan Keccak-256 untuk mengira kunci awam _hash_ ini:
+
+[[calculate_hash]]
+----
+Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Kemudian kita menyimpan hanya 20 bait (bait paling sedikit) yang terakhir, iaitu alamat Ethereum kita:
+
+[[keep_last_20]]
+----
+001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Selalunya anda akan melihat alamat Ethereum dengan awalan +0x+ yang menunjukkan ia disandikan heksadesimal, seperti ini:
+
+[[hex_prefix]]
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+[[eth_address_format]]
+==== Format Alamat Ethereum
+
+((("addresses","formats")))Alamat Ethereum adalah nombor heksadesimal, pengenal yang berasal dari 20 bait terakhir daripada kunci awam hash Keccak-256 .
+
+((("checksum","in Ethereum address formats")))Tidak seperti alamat Bitcoin, yang dikodkan dalam antara muka pengguna semua klien untuk memasukkan "checksum" terbina dalam untuk melindungi daripada alamat yang salah, alamat Ethereum dibentangkan sebagai heksadesimal mentah tanpa sebarang pemeriksaan.
+
+Rasional di balik keputusan itu adalah bahawa alamat Ethereum akhirnya akan tersembunyi di sebalik abstrak (seperti perkhidmatan nama) pada lapisan yang lebih tinggi dalam sistem dan pemeriksaan jumlah (checksum) itu harus ditambah pada lapisan yang lebih tinggi jika perlu.
+
+Kenyataannya, lapisan yang lebih tinggi ini dibangunkan terlalu perlahan dan pilihan reka bentuk yang membawa kepada beberapa masalah pada hari pertama ia saling kaitan (ekosistem), termasuk kehilangan dana disebabkan oleh alamat yang salah dan ralat pengesahan input. Selain itu, kerana Perkhidmatan Penamaan Ethereum (ENS) dibangunkan lebih perlahan daripada yang dijangkakan pada awalnya, pengekodan pilihan lain telah diambil-terima dengan perlahan oleh pembangun dompet kripto. Kita akan melihat beberapa pilihan pengekodan seterusnya.
+
+[[ICAP]]
+==== Protokol Alamat Pelanggan Antara Urup
+
+("addresses","ICAP encoding", id="ix_04keys-addresses-asciidoc16", range="startofrange")))((("ICAP (Inter-exchange Client Address Protocol)", id="ix_04keys-addresses-asciidoc17", range="startofrange")))((("Inter-exchange Client Address Protocol (ICAP)", id="ix_04keys-addresses-asciidoc18", range="startofrange")))Sebuah _Protokol Alamat Pelanggan Antara Urup_ (ICAP) adalah pengekodan alamat Ethereum yang sebahagiannya serasi dengan ((("IBAN (International Bank Account Number)")))((("International Bank Account Number (IBAN)")))Nombor Akaun Bank Antarabangsa (IBAN), yang menawarkan pengekodan serba boleh, semakan jumlah, dan saling boleh kerja bagi alamat Ethereum. Alamat ICAP boleh menyandi alamat Ethereum atau nama biasa berdaftar dengan nama pendaftaran Ethereum. Anda boleh membaca lebih lanjut mengenai ICAP di http://bit.ly/2JsZHKu[Ethereum Wiki].
+
+IBAN adalah piawaian antarabangsa untuk mengenal pasti nombor akaun bank, yang kebanyakannya digunakan untuk pemindahan kawat. Ia secara umum diterima pakai di Kawasan Pembayaran Tunggal Eropah (SEPA) dan sebagainya. IBAN adalah perkhidmatan terpusat dan teratur. ICAP adalah pelaksanaan yang terpusat tetapi bersesuaian untuk alamat Ethereum.
+
+IBAN terdiri daripada rentetan sehingga 34 aksara abjad angka (tidak peka huruf besar) yang terdiri daripada kod negara, cek, dan pengecaman akaun bank (pengkhususan negara).
+
+ICAP menggunakan struktur yang sama dengan memperkenalkan kod negara yang tidak standard, &#x201c;XE,&#x201d; yang bermaksud "Ethereum' diikuti oleh semak jumlah )checksum) dua aksara dan tiga kemungkinan ragam pengenal akaun:
+
+Direct:: Integer pangkalan-36 "endian" besar terdiri sehingga 30 aksara bernombor (alphanumeric), yang mewakili sekurang-kurangnya 155 bit alamat Ethereum. Oleh kerana pengekodan ini kurang daripada 160 bit penuh alamat Ethereum umum, ia hanya berfungsi untuk alamat Ethereum yang bermula dengan satu atau lebih bait sifar. Kelebihannya ialah ia bersesuaian dengan IBAN, dari segi medan panjang dan pemeriksaan. Contoh: + +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 aksara).
+
+Asas:: Sama seperti pengekodan langsung, kecuali ia adalah 31 aksara panjang. Ini membolehkan ia menyandikan sebarang alamat Ethereum, tetapi menjadikannya tidak sesuai dengan pengesahan bidang IBAN. Contoh: +XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P+ (35 aksara panjang).
+
+Tidak langsung:: Menukarkan kod suatu pengenal yang membuat keputusan dengan alamat Ethereum melalui penyedia pendaftaran nama. Ia menggunakan 16 aksara bernombor, terdiri daripada _pengenal aset_ (contohnya, ETH), perkhidmatan nama (contohnya., XREG), dan nama 9 aksara yang boleh dibaca manusia (contohnya, KITTYCATS). Contoh: +XEpass:[##]ETHXREGKITTYCATS+ (20 aksara panjang), di mana +##+ perlu digantikan oleh dua aksara checksum yang dikira.
+
+((("EthereumJS helpeth")))((("helpeth command-line tool")))Kita boleh menggunakan alat arahan baris +helpeth+ untuk membuat alamat ICAP. Anda boleh memasangkan helpeth dengan:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g helpeth</strong>
+</pre>
+++++
+
+Jika anda tidak mempunyai npm, anda mungkin perlu memasang nodeJS terlebih dahulu, yang boleh anda lakukan dengan mengikuti arahan di https://nodeJS.org.
+
+Kini kita sudah ada helpeth, mari kita cuba membuat alamat ICAP dengan contoh kunci peribadi kita (awalan dengan +0x+ dan diserahkan sebagai parameter +helpeth+).
+
+++++
+<pre data-type="programlisting">
+$ <strong>helpeth keyDetails \
+  -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315</strong>
+
+Address: 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+ICAP: XE60 HAMI CDXS V5QX VJA7 TJW4 7Q9C HWKJ D
+Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b...
+</pre>
+++++
+
+Arahan +helpeth+ akan membina alamat Ethereum heksadesimal serta alamat ICAP untuk kita. Alamat ICAP untuk kekunci contoh kami ialah:
+
+[[ICAP_example]]
+----
+XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
+----
+
+Oleh kerana alamat Ethereum contoh dimulakan dengan bait sifar, ia boleh dikodkan menggunakan kaedah pengekodan ICAP Langsung, iaitu pengekodan yang sah dalam format IBAN. Anda boleh ketahuinya kerana panjangnya 33 aksara.
+
+Jika alamat kita tidak bermula dengan sifar, ia akan dikodkan dengan Pengekodan Asas, yang akan menjadi 35 aksara panjang dan tidak sah sebagai IBAN.
+
+[PETUA]
+====
+Kemungkinan mana-mana alamat Ethereum bermula dengan bait sifar adalah 1 dalam 256. Untuk menghasilkan satu seperti itu, ia akan mengambil purata 256 percubaan dengan 256 kunci peribadi yang berbeza secara rawak sebelum kita peroleh kunci yang boleh berfungsi dengan Alamat ICAP dikodkan "secara terus" bersesuaian dengan IBAN .
+====
+
+Pada masa ini, ICAP malangnya hanya disokong oleh beberapa dompet. (((range="endofrange", startref="ix_04keys-addresses-asciidoc18")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc17")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc16")))
+
+[[EIP55]]
+==== Menegkodkan Hex dengan Checksum dalam Huruf Besar (EIP-55)
+
+((("addresses","hex encoding with checksum in capitalization (EIP-55)", id="ix_04keys-addresses-asciidoc19", range="startofrange")))((("checksum","EIP-55 and", id="ix_04keys-addresses-asciidoc20", range="startofrange")))((("EIP-55 (Ethereum Improvement Proposal 55)","checksum for addresses", id="ix_04keys-addresses-asciidoc21", range="startofrange")))Oleh kerana penyebaran ICAP dan perkhidmatan nama yang sangat perlahan, satu standard telah dicadangkan oleh https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md[Ethereum Improvement Proposal 55 (EIP-55)]. Cadangan Peningkatan Ethereum 55 menawarkan pemeriksaan yang bersesuaian untuk alamat Ethereum dengan mengubah huruf besar alamat heksadesimal. Ilhamnya adalah alamat Ethereum adalah huruf tidak sensitif dan semua dompet sepatutnya menerima alamat Ethereum yang dinyatakan dalam huruf besar atau huruf kecil, tanpa sebarang perbezaan dalam tafsiran.
+
+Dengan mengubah huruf besar abjad dalam alamat, kita dapat menyampaikan semak jumlah (checksum) yang boleh digunakan untuk melindungi ketelusan alamat terhadap kesilapan menaip atau membaca. Dompet yang tidak menyokong checksum EIP-55 hanya mengabaikan alamat yang mengandungi huruf besar yang bercampur, tetapi mereka yang menyokongnya boleh mengesahkannya dan mengesan ralat dengan kadar 99.986%.
+
+Pengekodan bercampur-campur tanpa sedar dan mungkin anda tidak menyedarinya pada mulanya. Alamat contoh kami ialah:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Dengan EIP-55 huruf besar bercampuran, semak jumlah akan menjadi:
+
+[[mixed_capitalization]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Bolehkah anda memberitahu perbezaannya? Beberapa aksara (A&#x2013;F) dari abjad pengekodan heksadesimal sekarang menjadi huruf besar, sementara yang lain adalah huruf kecil.
+
+EIP-55 agak mudah dilaksanakan. Kita ambil hash keccak-256 dari alamat huruf kecil heksadesimal. Hash ini bertindak sebagai cap jari digital alamat, memberikan kita checksum yang mudah. Mana-mana perubahan kecil dalam input (alamat) menyebabkan perubahan besar dalam hash yang dihasilkan (checksum), yang membolehkan kita untuk mengesan ralat dengan pasti. Cincangan hash alamat kita itu kemudian dikodkan dalam huruf besar alamat itu sendiri. Mari semaka, langkah demi langkah:
+
+1. Alamat dengan huruf kecil hash, tanpa awalan +0x+ :
+
+[[hash_lower_case_address]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9") =
+23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
+----
+
+[start=2]
+1. Guna aksara huruf setiap bagi alamat abjad jika digit hex yang bersamaan dengan hash lebih besar daripada atau sama dengan +0x8+. Ini mudah ditunjukkan sama ada kita menyusun alamat dan hash itu:
+
+[[capitalize_input]]
+----
+Address: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+Alamat kita mengandungi aksara abjad huruf +d+ di kedudukan keempat. Watak keempat hash ialah nombor +6+, yang kurang daripada +8+. Jadi, kita biarkan huruf +d+. kecil itu. Watak abjad seterusnya dalam alamat kami ialah +f +, dalam kedudukan keenam. Ciri keenam hash ialah +c+, yang lebih besar daripada +8+. Oleh itu, kita besarkan huruf +F+ di alamat, dan sebagainya. Seperti yang dapat anda lihat, kita hanya menggunakan hash 20 bait (40 aksara hex) yang pertama sebagai checksum, kerana kita hanya mempunyai 20 byte (40 aksara hex) di alamat untuk memberikan hurtuf besar dengan sewajarnya.
+
+Semak alamat bercampur huruf besar yang dihasilkan sendiri dan lihat jika anda dapat memberitahu aksara yang dihuruf besarkan dan aksara mana yang sesuai dengan hash alamat:
+
+[[capitalize_output]]
+----
+Address: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+[[EIP55_error]]
+===== Mengesan ralat dalam alamat yang dikodkan EIP-55
+
+((("EIP-55 (Ethereum Improvement Proposal 55)","detecting an error in an encoded address")))Sekarang, mari kita lihat bagaimana alamat EIP-55 akan membantu kita mencari ralat. Mari kita anggap kita telah mencetak alamat Ethereum, iaitu EIP-55 yang dikodkan:
+
+[[correct_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Sekarang mari kita membuat kesilapan asas dalam membaca alamat itu. Watak sebelum yang terakhir adalah modal +F+. Untuk contoh ini mari kita anggap kita salah baca sebagai modal +E+, dan kita taip alamat berikut (tidak betul) ke dalam dompet kita:
+
+[[incorrect_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+----
+
+Nasib baik, dompet kita adalah mematuhi EIP-55! Ia memperhatikan huruf besar bercampuran dan ketika percubaan untuk mengesahkan alamat. Ia menukarkannya kepada huruf kecil, dan mengira hash ceksum:
+
+[[hash_demo]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9") =
+5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
+----
+
+Seperti yang anda dapat lihat, walaupun alamatnya hanya diubah oleh satu aksara (sebenarnya, hanya satu bit, sebagai +e+ dan +f+ sedikit terpisah), hash alamat telah berubah secara radikal. Itulah kegunaan fungsi hash yang menjadikannya berguna untuk semak jumlah!
+
+Sekarang, mari kita tukar yang kedua dan semak huruf besar:
+
+[[incorrect_capitalization]]
+----
+001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+5429b5d9460122fb4b11af9cb88b7bb76d892886...
+----
+
+Itu semua salah! Beberapa aksara abjad tersalah huruf besar. Ingatlah bahawa menghuruf besarkan alamat adalah pengekodan  _pembetulan_ semak nilai.
+
+Menghuruf besarkan alamat yang kita masukkan adalah tidak sesuai dengan yang dihitung oleh checksum, ini bermaksud, sesuatu telah mengubah alamat, dan kesalahan telah pass:[<span class="keep-together">diperkenalkan</span>](((range="endofrange", startref="ix_04keys-addresses-asciidoc21")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc20")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc19"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc15")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc14")))
+
+
+[[keys-addresses-conclusions]]
+=== Kesimpulan
+
+Dalam bab ini kami menyediakan tinjauan ringkas tentang kriptografi kunci awam dan menumpukan kepada penggunaan kunci awam dan peribadi dalam Ethereum dan penggunaan alat kriptografi, seperti fungsi hash, dalam penciptaan dan pengesahan alamat Ethereum. Kita sama-sama melihat tandatangan digital dan bagaimana ianya dapat menunjukkan pemilikan kunci peribadi tanpa mendedahkan kunci peribadi itu. Di dalam <<wallets_chapter>>, kami akan meletakkan buah fikiran bersama dan melihat bagaimana dompet boleh digunakan untuk menguruskan himpunan kekunci.(((range="endofrange", startref="ix_04keys-addresses-asciidoc0")))

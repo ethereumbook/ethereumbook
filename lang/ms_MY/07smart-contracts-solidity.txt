@@ -1,0 +1,1051 @@
+[[smart_contracts_chapter]]
+== Kontrak Pintar dan Kekuatan
+
+((("smart contracts", id="ix_07smart-contracts-solidity-asciidoc0", range="startofrange")))Sebagaimana yang dibincangkan dalam <<intro_chapter>>, Terdapat dua jenis akaun di Ethereum: ((("EOA (Externally Owned Account)","contract accounts compared to")))akaun pemilikan luaran (EOA) dan akaun kontrak. EOA dikawal oleh pengguna, sering melalui perisian seperti aplikasi dompet yang bersebelahan dengan platform Ethereum.((("contract accounts","EOAs compared to")))((("smart contracts","EOAs compared to")))Sebaliknya, akaun kontrak dikawal oleh kod program (biasanya disebut&#x201c;smart contracts&#x201d;) yang dilaksanakan oleh Mesin Maya Ethereum. Pendek kata, EOA adalah akaun mudah tanpa sebarang kod berkaitan atau storan data, manakala akaun kontrak mempunyai kedua-dua kod berkaitan dan storan data. EOA dikawal oleh transaksi yang dibuat dan ditandatangani secara kriptografi dengan kunci peribadi di luar "dunia nyata" dan bebas daripada protokol, sedangkan akaun kontrak tidak mempunyai kunci peribadi dan "dikendalikan sendiri" dengan cara yang telah ditentukan oleh kod kontrak pintar. Kedua-dua jenis akaun dikenal pasti oleh alamat Ethereum. Dalam bab ini, kami akan membincangkan akaun kontrak dan kod program yang mengawalnya.
+
+[[smart_contracts_definition]]
+=== Apakah Kontrak Pintar?
+
+((("smart contracts","defined")))Istilah _kontrak pintar_ telah digunakan selama bertahun-tahun untuk menggambarkan pelbagai jenis perkara yang berbeza. ((("contract creation transaction")))((("Szabo, Nick")))Pada tahun 1990-an, jurugrafik kripto Nick Szabo mencipta istilah itu dan menyatakannya sebagai "satu akujanji, yang dinyatakan dalam bentuk digital, termasuk protokol dalam yang dilakukan pihak-pihak atas janji lain." Sejak itu, konsep kontrak pintar telah berkembang, terutamanya selepas pengenalan platform rantai blok yang bukan terpusat dengan ciptaan Bitcoin pada tahun 2009. Dalam konteks Ethereum, istilah ini sebenarnya adalah sedikit kesilapan, memandangkan kontrak pintar Ethereum tidaklah kontrak pintar mahupun undang-undang, tetapi istilah itu telah terperangkap. Dalam buku ini, kami menggunakan istilah "kontrak pintar" untuk merujuk kepada program komputer yang tidak dapat diubah secara berterusan dalam konteks Mesin Ethereum Maya (EVM) sebagai sebahagian daripada protokol&#x2014 rangkaian Ethereum iaitu komputer dunia Ethereum yang bukan terpusat itu.
+
+Mari kita membongkar definisi itu:
+
+Program komputer::
+Kontrak pintar hanyalah program komputer. Perkataan &#x201c;kontrak&#x201d; tidak mempunyai makna undang-undang dalam konteks ini.
+
+Tidak Dapat Diubah (Immutable)::
+Setelah digunakan, kod kontrak pintar tidak dapat diubah. Tidak seperti perisian tradisional, satu-satunya cara untuk mengubah suai kontrak pintar adalah dengan menggunakan contoh baru.
+
+Menentukan (Deterministic)::
+Hasil pelaksanaan kontrak pintar adalah sama bagi setiap orang yang menjalankannya, memandangkan konteks transaksi yang memulakan pelaksanaannya dan keadaan rantai blok Ethereum pada saat pelaksanaan.
+
+Konteks EVM::
+Kontrak pintar beroperasi dengan konteks pelaksanaan yang sangat terhad. Mereka boleh mengakses keadaan mereka sendiri, konteks transaksi yang memanggil mereka, dan beberapa maklumat tentang blok paling terkini.
+
+Dunia Komputer Bukan Terpusat::
+EVM berjalan sebagai keadaan setempat pada setiap nod Ethereum, tetapi oleh semua keadaan EVM beroperasi pada sama permulaan tingkahlakunya dan menghasilkan tingkah laku akhir yang sama, sistem secara keseluruhan beroperasi sebagai komputer "dunia komputer" tunggal.
+
+[[smart_contract_lifecycle]]
+=== Kitaran Hidup Kontrak Pintar
+
+((("smart contracts","life cycle of")))Kontrak pintar biasanya ditulis dalam bahasa peringkat tinggi, seperti Solidity. Tetapi untuk menjalankannya, mereka mesti dikumpulkan ke kod bait peringkat rendah yang berjalan di EVM. Setelah disusun, ia akan ditempatkan di platform Ethereum menggunakan urusniaga _ciptaan kontrak_ khusus, yang dikenalpasti seperti itu dihantar ke alamat penciptaan khusus kontrak iaitu +0x0+ (lihat <<contract_reg>>). Setiap kontrak dikenalpasti oleh alamat Ethereum, yang diperoleh daripada transaksi penciptaan kontrak sebagai fungsi akaun asal dan nons. Alamat Ethereum kontrak boleh digunakan dalam transaksi sebagai penerima, menghantar dana ke kontrak atau memanggil salah satu fungsi kontrak. Perhatikan bahawa tidak seperti EOA, tiada kunci yang berkaitan dengan akaun yang dibuat untuk kontrak pintar yang baharu. Sebagai pencipta kontrak, anda tidak mendapat apa-apa keistimewaan istimewakhusus di peringkat protokol (walaupun anda secara jelasnya, boleh memasukkannya ke dalam kontrak pintar). Anda pastinya tidak menerima kunci peribadi untuk akaun kontrak, yang sebenarnya tidak wujud&#x2014;kita boleh gelarkannya, akaun kontrak pintar sendiri.
+
+((("transactions","smart contracts and")))Yang penting, kontrak _hanya akan dijalankan jika mereka dipanggil oleh transaksi_. Semua kontrak pintar dalam Ethereum dilaksanakan, kerana transaksi yang dimulakan dari EOA. Kontrak boleh memanggil kontrak lain yang boleh memanggil kontrak lain, dan seterusnya, tetapi kontrak pertama dalam rantai pelaksanaan itu akan selalu dipanggil oleh transaksi dari EOA. Kontrak tidak pernah berjalan "dengan sendiri" atau "berjalan di latar belakang." Kontrak itu kejung sehingga transaksi mencetuskan pelaksanaan, sama ada secara langsung atau tidak langsung sebagai sebahagian daripada rantaian panggilan kontrak. Ia juga perlu diperhatikan bahawa kontrak pintar tidak dilaksanakan secara selari dalam apa jua cara&#x2014;komputer dunia Ethereum boleh dianggap sebagai mesin tunggal.
+
+((("transactions","as atomic")))Urusniaga adalah _atomik_, tidak kira berapa banyak kontrak yang mereka panggil atau apa yang dilakukan kontrak tersebut apabila dipanggil. Urusniaga melaksanakan secara keseluruhannya, dengan sebarang perubahan dalam keadaan global (kontrak, akaun, dan lain-lain) yang direkodkan hanya jika semua pelaksanaan berakhir dengan jayanya. Penamatan yang berjaya bermakna, program itu dilaksanakan tanpa kesilapan dan sampai akhir pelaksanaan. Jika pelaksanaan gagal kerana ralat, semua kesannya (perubahan dalam keadaan) akan "ilancarkan semula" seolah-olah urusniaga itu tidak berlaku sebelumnya. Urus niaga yang gagal masih direkodkan sebagai percubaan, dan ether yang dibelanjakan untuk gas terhadap pelaksanaan ditolak dari akaun asal, tetapi jika berlaku sebaliknya, ia tidak mempunyai kesan lain pada kontrak atau keadaan akaun.
+
+((("smart contracts","deleting")))Seperti yang dinyatakan sebelum ini, adalah penting untuk diingat bahawa kod kontrak tidak boleh diubah. Walau bagaimanapun, kontrak boleh "dipadam," dikeluarkan kod dan keadaan dalamannya (simpanan) dari alamatnya, dan membiarkan akaun kosong. Sebarang urusniaga yang dihantar ke alamat akaun tersebut selepas kontrak telah dipadamkan tidak menyebabkan sebarang pelaksanaan kod, kerana tidak ada lagi kod di sana untuk dilaksanakan. ((("SELFDESTRUCT opcode")))Untuk memadam kontrak, anda melaksanakan kod operasi EVM yang dipanggil +SELFDESTRUCT+ (sebelum ini dipanggil +SUICIDE+). ((("negative gas")))Operasi itu melibatkan kos "gas negatif", dengan mengembalikan gas, justeru itu memberi insentif kepada terbitan sumber rangkaian klien dari menghapuskan penyata yang disimpan. Memadam kontrak dengan cara ini tidak mengalih keluar sejarah transaksi kontrak (masa lalu), kerana blok tersebut sendiri tidak berubah. Ia juga penting untuk diperhatikan bahawa keupayaan +SELFDESTRUCT+ hanya akan tersedia jika pengarang kontrak memprogramkan kontrak pintar bagi tujuan tersebut. Sekiranya kod kontrak tidak mempunyai kod oerasi +SELFDESTRUCT+, atau tidak boleh diakses lagi, maka kontrak pintar tidak boleh dihapuskan.
+
+[[high_level_languages]]
+=== Pengenalan kepada Bahasa Tahap Tinggi Ethereum
+
+((("EVM (Ethereum Virtual Machine)","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc1", range="startofrange")))((("smart contracts","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc2", range="startofrange")))EVM adalah mesin maya yang menjalankan((("EVM bytecode")))bentuk kod khusus yang dipanggil _kod bait EVM_, sama dengan CPU komputer anda, yang menjalankan kod mesin seperti x86_64. Kita akan memeriksa operasi dan bahasa EVM dengan lebih terperinci dalam <<evm_chapter>>. Dalam bahagian ini, kita akan melihat bagaimana kontrak pintar ditulis untuk dijalankan di EVM.
+
+Walaupun adalah mungkin untuk memprogramkan kontrak pintar secara langsung dalam kod bait, ianya agak sukar dan sangat sukar bagi pengaturcara untuk membaca dan memahaminya. Sebaliknya, kebanyakan pembangun Ethereum menggunakan bahasa peringkat tinggi untuk menulis program, dan menyusunnya bagi mengubahkannya menjadi kod bait.
+
+Walaupun mana-mana bahasa peringkat tinggi boleh disesuaikan untuk menulis kontrak pintar, mengadaptasi bahasa sewenang-wenang untuk disesuaikan dengan kod bait EVM adalah latihan yang agak rumit dan secara umum akan membawa kepada beberapa kekeliruan. Kontrak pintar beroperasi dalam persekitaran pelaksanaan (EVM) yang sangat terhad dan tersedikit. Di samping itu, satu set khusus pembolehubah dan fungsi sistem khusus EVM perlu disediakan. Oleh itu, adalah lebih mudah untuk membina bahasa kontrak pintar dari awal berbanding untuk menjadikan bahasa kegunaan umum bersesuaian untuk menulis kontrak pintar. Akibatnya, beberapa bahasa tujuan khas telah muncul untuk kontrak pintar pengaturcaraan. Ethereum mempunyai beberapa bahasa semacam itu, bersama dengan penyusun yang diperlukan untuk menghasilkan kod bait EVM yang boleh dilaksanakan.
+
+((("declarative programming")))Secara umum, bahasa pengaturcaraan boleh dibahagikan kepada dua contoh pengaturcaraan yang luas: _isytihar_ dan _kepatuhan_, juga dikenali sebagai _penugasan_ dan _peraturan_, masing-masing. Dalam pengaturcaraan isytiharan, kita menulis tugas yang menyatakan _masuk akal_ suatu program, tetapi bukannya _aliran_. ((("kesan sampingan"))) Pengaturcaraan isytiharan (deklaratif) digunakan untuk membuat program di mana tidak ada _kesan sampingan_, yang bermaksud bahawa tiada perubahan kepada keadaan di luar fungsi. Bahasa pengaturcaraan deklaratif termasuk Haskell dan SQL. ((("bahasa pengaturcaraan kacuk";))) ((("imperative programming"))) Pengaturcaraan patuhan (imperatif), sebaliknya adalah di mana seorang pengaturcara menulis satu set tugasan yang menggabungkan logik dan aliran sesuatu program. Bahasa pengaturcaraan yang penting termasuk C++ dan Java. Sesetengah bahasa adalah "hibrid," yang bermaksud kacuk di mana ianya menggalakkan pengaturcaraan isytiharan tetapi juga boleh digunakan untuk menyatakan contoh pengaturcaraan yang penting. Hibrid tersebut termasuk Lisp, JavaScript, dan Python. Secara umum, setiap bahasa penting boleh digunakan untuk menulis dalam contoh isytiharan, tetapi ia sering menghasilkan kod yang tidak masuk akal. Sebagai perbandingan, bahasa perisytiharan tulen tidak boleh digunakan untuk menulis dalam contoh patuhan. Dalam bahasa-bahasa semata-mata isytiharan, ada yang tiada "pembolehubah."
+
+Walaupun pengaturcaraan patuhan (imperatif) lebih sering digunakan oleh pengaturcara, ia boleh menjadi sangat sukar untuk menulis program-program yang melaksanakan _sebagaimana yang diharapkan_. Keupayaan mana-mana bahagian program untuk mengubah penyata yang lain menjadikannya alasan yang sukar untuk pelaksanaan program dan mendatangkan banyak lagi pepijat. Pengaturcaraan isytiharan, sebagai perbandingan, memudahkan untuk memahami bagaimana program akan berperilaku: kerana ia tidak mempunyai kesan sampingan, mana-mana bahagian program dapat difahami secara terpisah.
+
+Dalam kontrak pintar, pepijat meningkatkan kos. Oleh itu, amat penting untuk menulis kontrak pintar tanpa kesan yang tidak diingini. Untuk melakukan seperti itu, anda mesti mempunyai sebab musabab tentang bakal gelagat yang dijangka dari program ini. Jadi, bahasa isytiharan memainkan peranan yang jauh lebih besar dalam kontrak pintar daripada yang mereka lakukan dalam perisian kegunaan umum. Walau bagaimanapun, seperti yang anda lihat, bahasa yang paling banyak digunakan untuk kontrak pintar (Solidity) adalah patuhan (imperatif). Pengaturcara, seakan melawan arus perubahan!
+
+Pada masa ini, bahasa pengaturcaraan peringkat tinggi yang disokong untuk kontrak pintar termasuklah (susunan mengikut amggaran usia):
+
+LLL :: ((("LLL"))) Bahasa pengaturcaraan berfungsi (deklaratif), dengan sintaks seperti Lisp. Ia adalah bahasa peringkat tinggi pertama untuk kontrak pintar Ethereum tetapi jarang digunakan hari ini.
+
+Serpent:: ((("Serpent"))) Satu bahasa pengaturcaraan (penting) dengan sintaks yang sama dengan Python. Juga boleh digunakan untuk menulis kod fungsi (deklaratif), walaupun ia tidak sepenuhnya bebas dari kesan sampingan.
+
+Solidity: ((("Solidity"))) Satu bahasa pengaturcaraan (penting) dengan sintaks menyerupau JavaScript, pass:[C ++], atau Java. Bahasa yang paling masyhur dan sering digunakan untuk kontrak pintar Ethereum.
+
+Vyper:: ((("Vyper")))Satu bahasa yang baru dibangunkan, mirip dengan Serpent dan dengan sintaks seperti Python. Bertujuan untuk mendekatkan diri kepada bahasa yang sama seperti Python yang berfungsi sebagai Serpent, tetapi tidak menggantikan Serpent.
+
+Bamboo:: ((("Bamboo")))Satu bahasa yang baru dibangunkan, dipengaruhi oleh Erlang, dengan peralihan tingkahlaku nyata dan tanpa aliran berulang (bergelung). Dihadangkan untuk mengurangkan kesan sampingan dan meningkatkan kebolehlaksanaan. Sangat baru dan belum diterima secara meluas.
+
+Seperti yang anda lihat, terdapat banyak bahasa yang boleh dipilih. Walau bagaimanapun, kesemua Solidity adalah yang paling masyhur dan penting, sehingga menjadi bahasa peringkat tinggi Ethereum dan selain rantai blok seperti EVM. Kita menghabiskan sebahagian besar masa untuk menggunakan Solidity, dalam masa sama juga akan meneroka beberapa contoh dalam bahasa peringkat tinggi yang lain untuk mendapatkan pemahaman tentang falsafahnya yang berbeza. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc2")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc1")))
+
+[[building_a_smart_contract_sec]]
+=== Membina Kontrak Pintar dengan Solidity
+
+(((("smart contracts","building with Solidity", id="ix_07smart-contracts-solidity-asciidoc3", range="startofrange")))((("Solidity","building a smart contract with", id="ix_07smart-contracts-solidity-asciidoc4", range="startofrange")))Solidity ((("smart contracts","Solidity and", id="ix_07smart-contracts-solidity-asciidoc5", range="startofrange")))((("Solidity","smart contracts and", id="ix_07smart-contracts-solidity-asciidoc6", range="startofrange")))dicipta oleh ((("Wood, Dr. Gavin","and Solidity")))Dr. Gavin Wood (pengarang buku ini) sebagai bahasa secara jelas untuk menulis kontrak pintar dengan ciri-ciri untuk menyokong secara langsung pelaksanaan dalam persekitaran yang terpusat di dunia komputer Ethereum. Ciri-ciri yang dihasilkan agak umum, dan akhirnya ia telah digunakan untuk mengodkan kontrak pintar pada beberapa platform rantai blok yang lain. Ia dibangunkan oleh Christian Reitiwessner dan kemudian oleh Alex Beregszaszi, Liana Husikyan, Yoichi Hirai, dan beberapa penyumbang utama Ethereum. Solidity kini dibangunkan dan dikekalkan sebagai projek bebas dalam https://github.com/ethereum/solidity[on GitHub].
+
+"Produk" utama projek Solidity adalah penyusun Solidity, +solc+, yang menukar program yang ditulis dalam bahasa Soliditi kepada kod bait EVM. Projek ini juga menguruskan piawaian antaramuka penduaan aplikasi penting (ABI) untuk kontrak pintar Ethereum, yang akan kita pelajari secara terperinci dalam bab ini. Setiap versi penyusun Solidity berkait rapat dan menyusun versi khusus Soliditi pass:[<span class="keep-together">language</span>].
+
+Untuk memulakan, kita akan memuat turun pelaksana pendua (binari) dari penyusun Solidity. Kemudian kita akan membangunkan dan menyusun kontrak mudah, mengikuti dari contoh yang kita bermula di  <<intro_chapter>>.
+
+==== Memilih Versi Solidity
+
+((("semantic versioning")))((("Solidity","selecting version of")))Solidity mengikuti model versi yang disebut https://semver.org/[_semantic versioning_] tiga nombor dipisahkan oleh titik: __++MAJOR.MINOR.PATCH++__.. Nombor "utama" ditambah untuk perubahan major dan _ketidakserasian mundur_, nombor "kecil" ditambah sebagai ciri ketidakserasian mundur yang ditambah di antara terbitan utama, dan nombor "yang ditempel" ditambah untuk pembetulan pepijat ketidakserasian mundur itu.
+
+Pada masa penulisan, Solidity masih versi 0.4.24. Peraturan untuk versi ini, untuk pembangunan awal sesuatu projek, adalah berbeza: apa saja boleh berubah pada bila-bila masa. Dalam praktiknya, Solidty melayan nombor "kecil" (minor) seolah-olah ia adalah versi utama (major), dan nombor "yang ditempel padanya" seolah-olah ia adalah versi kecil. Oleh itu, dalam 0.4.24, angka 0.4 dianggap sebagai versi utama dan angka 24 itu perubahan versi yang kecil.
+
+Penerbitan versi utama 0.5 bagi Solidity dijangkakan tidak lama lagi.
+
+Seperti yang anda lihat dalam <<intro_chapter>>, program Solidity anda mengandungi arahan pragma yang menentukan versi minimum dan maksimum Solidity yang serasi dengannya, dan boleh digunakan untuk menyusun kontrak anda.
+
+Kerana Soliditi membangun pesat, adalah lebih baik memasang keluaran terkini.
+
+==== Muat turun dan Pasang
+
+((("Solidity","downloading/installing")))Terdapat beberapa kaedah yang boleh anda gunakan untuk memuat turun dan memasang Solidity, sama ada sebagai keluaran pendua atau penyusun dari kod sumber. Anda boleh mendapatkan arahan terperinci di http://bit.ly/2RrZmup[the Solidity documentation].
+
+Inilah caranya untuk memasang keluaran binari terbaharu dari Solidity pada sistem operasi Ubuntu/Debian, menggunakan pengurus pakej +apt+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo add-apt-repository ppa: ethereum / ethereum</strong>
+$ <strong>sudo apt update</strong>
+$ <strong>sudo apt install solc</strong>
+</pre>
+++++
+
+Setelah anda +solc+ terpasang, periksa versi dengan menjalankan:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --version</strong>
+solc ialah antaramuka bagi baris perintah penyusun Solidity
+Versi: 0.4.24+commit.e67f0147.Linux.g++
+</pre>
+++++
+
+Terdapat beberapa cara lain untuk memasang Solidity, bergantung pada sistem operasi dan keperluan anda, termasuk menyusun secara langsung dari sumber kod. Untuk maklumat lanjut lihat https://github.com/ethereum/solidity[].
+
+
+
+==== Persekitaran Pembangunan
+
+((("Solidity","development environment")))Untuk membangunkan Solidity, anda boleh menggunakan mana-mana penyunting teks dan +solc+ pada baris arahan. Walau bagaimanapun, anda mungkin mendapati bahawa beberapa penyunting teks yang direka untuk pembangunan, seperti Emacs, Vim, dan Atom, menawarkan ciri tambahan seperti penonjolan sintaks dan makro yang menjadikan pembangunan Soliditi lebih mudah.
+
+Terdapat juga persekitaran pembangunan berasaskan sesawang, seperti https://remix.ethereum.org/[Remix IDE] dan https://ethfiddle.com/[EthFiddle].
+
+Gunakan alat yang membuat anda giat bekerja. Ini kerana, program Solidity hanyalah fail teks biasa. Walaupun penyunting dan persekitaran pembangunan yang pelbagai itu boleh membuat perkara menjadi lebih mudah, anda hanya sekadar memerlukan teks penyunting yang mudah, seperti nano (Linux / Unix), TextEdit (macOS), atau bahkan NotePad (Windows). Hanya simpan kod sumber program anda dengan sambungan _.sol_ dan ia akan diiktiraf oleh penyusun Solidity sebagai program Solidity.
+
+==== Menulis Program Solidity Yang Mudah
+
+((("Solidity","writing a simple program in")))Dalam <<intro_chapter>>, kami menulis program Solidity pertama kami. Apabila kami mula membina kontrak +Faucet+, kami menggunakan IDE Remix untuk menyusun dan menyerahkan kontrak. Dalam bahagian ini, kami akan meninjau semula, memperbaiki, dan memperelokkan +Faucet+.
+
+Percubaan pertama kami kelihatan seperti <<original_sol_faucet>>.
+
+[[original_sol_faucet]]
+.Faucet.sol: Kontrak Solidity yang melaksanakan faucet
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet.sol[]
+----
+====
+
+==== Menyusun dengan Penyusun Solidity (solc)
+
+((("Faucet.sol contract (test example)","compiling")))((("solc (Solidity compiler)")))((("Solidity compiler (solc)")))Sekarang, kita akan gunakan penyusun Solidity pada baris arahan untuk menyusunkan kontrak secara langsung. Penyusun Solidity +solc+ menawarkan pelbagai pilihan, yang boleh anda lihat dengan memberikan hujahan +-help+
+
+Kami menggunakan hujahan +--bin+ dan juga +--optimize+ daripada +solc+ untuk menghasilkan pendua yang dicukupkan dari contoh kontrak kami:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --optimize - bin Faucet.sol</strong>
+======= Faucet.sol: Faucet =======
+Binari:
+6060604052341561000f57600080fd5b60cf8061001d6000396000f300606060405260043610603e5
+763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416
+632e1a7d4d81146040575b005b3415604a57600080fd5b603e60043567016345785d8a00008111156
+06357600080fd5b73ffffffffffffffffffffffffffffffffffffff331681156108fc0282604051
+600060405180830381858888f19350505050151560a057600080fd5b505600a165627a7a723058203
+556d79355f2da19e773a9551e95f1ca7457f2b5fbbf4eacf7748ab59d2532130029
+</pre>
+++++
+
+
+Keputusan yang dihasilkan +solc+ adalah binary bersiri hex yang boleh dikemukakan kepada rantai blok Ethereum.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc6")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc5")))
+
+[[eth_contract_abi_sec]]
+=== Kontrak Ethereum ABI
+
+((("ABI (application binary interface)", id="ix_07smart-contracts-solidity-asciidoc7", range="startofrange")))((("application binary interface (ABI)", id="ix_07smart-contracts-solidity-asciidoc8", range="startofrange")))((("smart contracts","ABI", id="ix_07smart-contracts-solidity-asciidoc9", range="startofrange")))Dalam perisian komputer, _Antara muka Pendua Aplikasi_ adalah antara muka di antara dua modul program; iaitu kebiasaannya antara sistem operasi dan program pengguna. ABI menjelaskan bagaimana bentuk dan fungsi data dimasuki ke dalam _kod jentera_; Jangan terkeliru dengan API, yang menghuraikan akses ke dalam format tahap tinggi, yang boleh dibaca oleh manusia sebagai kod sumber. Oleh itu ABI adalah cara utama pengekodan dan penyahkodan data masuk dan keluar dari kod jentera.
+
+Dalam Ethereum, ABI digunakan untuk mengodkan panggilan kontrak untuk EVM dan membaca data daripada transaksi. Tujuan ABI adalah untuk menentukan fungsi dalam kontrak yang boleh digunakan dan menerangkan bagaimana setiap fungsi akan menerima hujah dan mengembalikan hasilnya.
+
+Kontrak ABI ditentukan sebagai jujukan fungsi JSON (lihat <1>) dan peristiwa (lihat <2>). Penjelasan fungsi adalah objek JSON dengan bidang `type`, `name`, `inputs`, `outputs`, `constant`, dan `payable`. Objek penjelasan acara mempunyai bidang `type`, `name`, `inputs`, and `anonymous`.
+
+Kami menggunakan baris perintah +solc+ penyusun Solidity untuk menghasilkan ABI untuk pass:[<span class="keep-together"><em>Faucet.sol</em></span>] contoh kontrak ialah::
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --abi Faucet.sol</strong>
+======= Faucet.sol: Faucet =======
+Kontrak JSON ABI
+[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}], \
+"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable", \
+"type":"function"},{"payable":true,"stateMutability":"payable", \
+"type":"fallback"}]
+</pre>
+++++
+
+Seperti yang anda lihat, penyusun Solidity menghasilkan satu susunan JSON yang menggambarkan kedua-dua fungsi yang ditakrifkan oleh _Faucet.sol_. JSON ini boleh digunakan oleh mana-mana aplikasi yang ingin mengakses kontrak +Faucet+ sebaik sahaja ia digunakan. Dengan menggunakan ABI, aplikasi seperti dompet atau pelayar DApp boleh membina transaksi yang memanggil fungsi dalam +Faucet+ dengan hujah dan jenis argumen yang betul. Sebagai contoh, dompet akan tahu bahawa, untuk memanggil fungsi +withdraw+, ia perlu memberi argumen +uint256+ bernama +withdraw_amount+. Dompet boleh meminta pengguna untuk memberikan berapakah nilai itu, kemudian ia mencipta transaksi yang mengekodkannya dan melaksanakan fungsi +withdraw+.
+
+Semua yang diperlukan untuk aplikasi untuk berinteraksi dengan kontrak adalah ABI dan alamat di mana kontrak telah digunakan.
+
+[[solidity_pragma]]
+==== Memilih Versi Penyusun dan Bahasa Solidity
+
+((("Solidity","selecting compiler and language version")))Seperti yang kita lihat dalam kod sebelumnya, kontrak +Faucet+ itu telah berjaya dikumpulkan dengan versi Solidity 0.4.21. Tetapi bagaimana jika kita menggunakan versi yang berbeza daripada penyusun Solidity? Bahasa Solidity masih dalam perubahan beransur-ansur dan perkara-perkara boleh berubah dengan cara yang tidak dijangka. Kontrak kita ini agak mudah, tapi bagaimana jika program kita menggunakan ciri yang hanya ditambah dalam versi Solidity 0.4.19 tetapu kita pula cuba menyusunnya dengan versi 0.4.18?
+
+Untuk mengatasi masalah tersebut, Solidity menawarkan _arahan penyusunan_ yang dikenali sebagai _versi pragma_ yang mengarahkan penyusun (kompiler) yang program menjangkakan adanya versi penyusun tertentu (serta bahasa). Mari lihat contoh:
+
+[[compiler_version]]
+----
+pragma solidity ^0.4.19;
+----
+
+Pengkomputeran Solidity membaca pragma versi dan akan menghasilkan ralat jika versi pengkompil tidak serasi dengan pragma versi. Dalam kes ini, pragma versi kami mengatakan bahawa program ini boleh disusun oleh pengompilasi Solidity dengan versi minimum 0.4.19. Walau bagaimanapun, simbol + ^ + menyatakan bahawa kami membenarkan penyusunan dengan mana-mana revisi _minor di atas 0.4.19; contohnya, 0.4.20, tetapi tidak 0.5.0 (yang merupakan semakan utama, bukan semakan kecil). Arahan Pragma tidak disusun menjadi bytecode EVM. Mereka hanya digunakan oleh pengkompil untuk memeriksa keserasian.
+
+Mari tambahkan arahan pragma ke kontrak +Faucet+. Kami akan menamakan fail bajaru itu pass: [<span class="keep-together"><em>Faucet2.sol</em></span>], untuk menjejaki perubahan ketika kita meneruskan contoh-contoh ini bermula dari <<add_pragma_to_faucet>>.
+
+[[add_pragma_to_faucet]]
+.Faucet2.sol: Menambah versi pragma ke Faucet
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet2.sol[]
+----
+====
+
+Menambah versi pragma adalah amalan terbaik, kerana ia mengelakkan masalah dengan ketidakserasian penyusun dan versi bahasa yang tidak sesuai. Kami akan meneroka amalan terbaik yang lain dan terus memperbaiki kontrak +Faucet+ di seluruh bab ini.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc9")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc8")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc7")))
+
+=== Memprogramkan dengan Solidity
+
+((("Solidity","programming with", id="ix_07smart-contracts-solidity-asciidoc10", range="startofrange")))Dalam bahagian ini, kita akan melihat beberapa keupayaan bahasa Solidity. Seperti yang telah disebutkan dalam <<intro_chapter>>, contoh kontrak pertama kami adalah sangat mudah tetapi ada juga cacat dalam pelbagai cara. Kita akan beransur-ansur memperbaikinya di sini, sambil meneroka cara menggunakan Solidity. Ini bukanlah pelajaran Solidity yang komprehensif, bagaimanapun, sebagai Solidity agak rumit dan berkembang pesat. Kita akan belajar asas-asas agar najti anda dapat meneroka selebihnya sendiri. Dokumentasi untuk Solidity boleh didapati
+laman projek https://solidity.readthedocs.io/en/latest/[on Solidity]
+
+==== Jenis Data
+
+((("Solidity","data types", id="ix_07smart-contracts-solidity-asciidoc11", range="startofrange")))Pertama, mari kita lihat beberapa jenis data asas yang ditawarkan dalam Solidity:
+
+Boolean (+bool+):: Nilai Boolean, +true+ or +false+, dengan pengendali logik +!+ (not), +&&+ (dan), +||+ (atau), +==+ (sama dengan), dan +!=+ (tidak sama dengan).
+
+Integer (+int+, +uint+):: ditanda (+int+) and tidak ditanda (+uint+) integers, diisytiharkan dalam peningkatan 8 bit dari +int8+ kepada +uint256+. Tanpa akhiran saiz, jumlah 256-bit digunakan, untuk memadankan saiz perkataan EVM.
+
+Titik tetap (+fixed+, +ufixed+):: Titik nombor tetap, diisytiharkan dengan pass:[(<code>u</code>)<code>ditetapkan<em>M</em>x<em>N</em></code>] di mana  __++M++__ adalah saiz dalam bit (kenaikan 8 hingga 256) dan__++N++__ ialah bilangan perpuluhan selepas titik (sehingga 18); contohnya, +ufixed32x2+.
+
+Address:: Alamat Ethereum 20-bait. Objek +address+ mempunyai banyak fungsi ahli yang berguna, yang utama adalah +balance+ (mengembalikan baki akaun) dan pass:[<span class="keep-together"><code>transfer</code></span>] (pemindahan ether ke akaun).
+
+Byte array (tetap): Arahan ukuran saiz bait, diisytiharkan dengan +bytes1+ hingga +bytes32+.
+
+Byte array (dinamik):: Arahan ukuran berubah, diisytiharkan dengan +bytes+ atau pun +string+.
+
+Enum:: Jenis yang ditakrifkan pengguna untuk menghuraikan nilai-nilai secara senyap-senyap: +enum NAME {LABEL1, LABEL 2, pass:[...]}+.
+
+Array:: Arahan pelbagai jenis, sama ada tetap atau dinamik: +uint32[][5]+ adalah susunan bersaiz tetap bagi lima susunan dinamik integer tidak ditandai.
+
+Struct:: Kandungan data pengguna yang ditakrifkan, untuk kumpulan pembolehubah: pass:[<code>struct NAME {TYPE1 <span class="keep-together">VARIABLE1</span>; TYPE2 VARIABLE2; ...}</code>].
+
+Mapping:: Jadual carian Hash untuk __++key++__ +=>+ _++value++_ pairs: +mapping(KEY_TYPE => VALUE_TYPE) NAME+.
+
+Sebagai tambahan kepada jenis data ini, Solidity juga menawarkan pelbagai nilai persamaan yang boleh digunakan untuk mengira unit yang berbeza:
+
+Unit masa :: Unit +seconds+, +minutes+, +hours+, dan +days+ boleh digunakan sebagai imbuhan/akhiran, menukar kepada bahagi kepada unit asas +seconds+ (saat).
+
+Unit Ether:: Unit bagi +wei+, +finney+, +szabo+, and +ether+ boleh digunakan sebagai akhiran, menukar kepada gandaan unit asas +wei+.
+
+Dalam contoh kontrak +Faucet+ kami, kita menggunakan +uint+ (yang merupakan samaran untuk +uint256+) untuk pemboleh ubah +withdraw_amount+. Kami juga secara tidak langsung menggunakan pemboleh ubah +address+  yang kami tetapkan dengan +msg.sender+. Kita akan menggunakan lebih banyak jenis data dalam contoh di seluruh bab ini.
+
+Mari kita gunakan salah satu pengganda unit untuk meningkatkan kebolehbacaan kontrak contoh ini. Dalam fungsi +withdraw+ , kita menghadkan pengeluaran tertinggu, menyatakan had dalam wei, unit asas bagi ether:
+
+----
+require(withdraw_amount <= 100000000000000000);
+----
+
+Itu tidak mudah dibaca. Kami boleh memperbaiki kod ini dengan menggunakan unit pendaraban +ether+, untuk menyatakan nilai dalam ether dan bukannya wei: (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc11")))
+
+----
+require(withdraw_amount <= 0.1 ether);
+----
+
+==== Pembolehubah dan Fungsi Global Yang Diperuntukkan
+
+((("Solidity","predefined global variables/functions", id="ix_07smart-contracts-solidity-asciidoc12", range="startofrange")))Apabila kontrak dilaksanakan di EVM, ia memasuki set objek kecil global. Ini termasuklah objek +block+, +msg+, dan +tx+. Di samping itu, Solidity mendedahkan beberapa kod operasi EVM sebagai fungsi yang telah ditetapkan. Dalam seksyen ini kita akan mengkaji pemboleh ubah dan fungsi yang boleh anda akses dari dalam kontrak pintar dalam Aolidity.
+
+===== Konteks panggilan transaksi/mesej
+
+((("message call")))((("msg object")))((("transaction call")))Objek +msg+ adalah panggilan transaksi (berasal dari EOA) atay panggilan wakalah (berasal dari kontrak) yang melancarkan pelaksanaan kontrak ini. Ia mengandungi beberapa sifat yang berguna:
+
++msg.sender+:: Kita telah pun menggunakannya. Ia mewakili alamat yang memulakan panggilan kontrak ini, tidak semestinya EOA yang asal bagi menghantar transaksi. Jika kontrak kita dipanggil terus oleh transaksi EOA, maka ini adalah alamat yang menandatangani transaksi, tetapi jika tidak, ia akan menjadi alamat kontrak.
+
++msg.value+:: Nilai ether yang dihantar dengan panggilan ini (dalam wei).
+
++msg.gas+:: Jumlah gas yang tersisa dalam bekalan gas persekitaran pelaksanaan ini. Ini telah dicabut keluar dari Solidity v0.4.21 dan digantikan dengan fungsi +gasleft+.
+
++msg.data+:: Muatan data panggilan ke dalam kontrak kita ini.
+
++msg.sig+:: Empat bait pertama dari muatan data, iaitu pemilih fungsi.
+
+[CATATAN]
+====
+Bilamana kontrak memanggil kontrak lain, nilai semua sifat +msg+ itu berubah untuk mencerminkan maklumat pemanggil yang baru. Satu-satunya pengecualian untuk ini ialah fungsi +delegatecall+, yang mengendalikan kod kontrak/pustaka lain dalam +msg+ yang asal pass:[<span class="keep-together">konteks</span>].
+====
+
+===== Konteks urus niaga
+
+((("tx object")))Objek +tx+ menyediakan cara untuk mengakses maklumat berkaitan transaksi:
+
+++tx.gasprice++:: Harga gas dalam panggilan urusniaga.
+
+++tx.origin++:: Alamat EOA yang berasal dari transaksi ini. AMARAN: tidak selamat!
+
+===== Ungkapan Maksud Blok
+
+((("block object")))Objek +block+ mengandungi maklumat mengenai blok semasa:
+
+++block.blockhash(__blockNumber__)++:: Hash blok pada nombor blok yang ditentukan, sehingga 256 blok pada masa lalu. Dihentikan dan digantikan dengan fungsi +blockhash+ dalam Solidity v0.4.22.
+
+++block.coinbase++:: Alamat penerima blok semasa dan ganjaran blok.
+
+++block.difficulty++:: Kesukaran (bukti kerja) blok semasa.
+
+++block.gaslimit++:: Jumlah had tertinggi gas yang boleh dibelanjakan untuk semua urus niaga termasuk dalam blok semasa.
+
+++block.number++:: Nombor blok semasa (ketinggian rantai blok).
+
+++block.timestamp++:: Cap masa yang diletakkan di blok semasa itu, oleh pelombong (bilangan saat sejak zaman Unix).
+
+[[solidity_address_object]]
+===== alamat objek
+
+((("address object")))Mana-mana alamat, sama ada diluluskan sebagai input atau labuhan dari objek kontrak, mempunyai beberapa sifat dan kaedah:
+
++address.balance+:: Baki alamat, dalam bentuk wei. Sebagai contoh, baki kontrak semasa ialah +address(isi sini).balance+.
+
+++address.transfer(__jumlah__)++:: Pindahkan jumlah (dalam wei) ke alamat ini, mengabaikan sebarang ralat. Kami menggunakan fungsi ini dalam contoh +Faucet+ sebagai kaedah pada alamat +msg.sender+, sebagai +msg.sender.transfer+.
+
+++address.send(__jumlah__)++:: Sama dengan +transfer+, hanya tidak mengabaikan pengecualian, ia mengembalikan +false+ pada ralat. AMARAN: sentiasa semak nilai pulangan +send+.
+
+++address.call(__payload__)++:: Tahap rendah fungsi&#x2014 +CALL+ ;boleh membina panggilan mesej sewenang-wenang dengan muatan data. Mengembalikan +false+ yang ralat. AMARAN: penerima&#x2014;tidak selamat boleh (menggunakan secara tidak sengaja atau berniat jahat) menggunakan semua gas anda, menyebabkan kontrak anda dihentikan dengan pengecualian +OOG+; sentiasa periksa nilai pulangan +call+.
+
+++address.callcode(__payload__)++:: Fungsi rendah +CALLCODE+, seperti +address(isi sini).call(pass:[...])+ tetapi dengan kod kontrak ini digantikan dengan +address+. Mengembalikan +false+ dalam keralatan. AMARAN: pengguna mahir sahaja!
+
++address.delegatecall()+:: Fungsi rendah +DELEGATECALL+, seperti +callcode(pass:[...])+  tetapi dengan penuh konteks +msg+ dilihat oleh kontrak semasa. Mengembalikan +false+ pada keralatan. AMARAN: penggunaan mahir sahaja!
+
+===== Fungsi terbina dalam
+
+Fungsi lain yang perlu diperhatikan adalah:
+
++addmod+, +mulmod+:: Untuk penambahan kaedah modulus dan pendaraban. Sebagai contoh,+addmod(x,y,k)+ mengira +pass:[(x + y) % k]+.
+
++keccak256+, +sha256+, +sha3+, +ripemd160+:: Fungsi untuk mengira hash dengan pelbagai algoritma piawaian hash.
+
++ecrecover+:: Mengembalikan alamat yang digunakan untuk menandatangani mesej dari tandatangan.
+
+++selfdestruct(__alamat pengguna__)++:: Menghapuskan kontrak semasa, menghantar sebarang ether yang tersisa dalam akaun ke alamat penerima.
+
++this+ :: Alamat akaun kontrak yang sedang dijalankan. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc12")))
+
+==== Penjelasan Kontrak
+
+(((("contract data type")))((("contract definition, Solidity")))((("Solidity","contract definition")))Jenis data dasar Solidity ialah +contract+, contoh +Faucet+ ini, hanya mentakrifkan sebagai objek pass:[<span class="keep-together"><code>kontrak</code></span>]. Sama seperti objek dalam bahasa berlandaskan objek, kontrak adalah wadah yang merangkumi data dan kaedah.
+
+Solidity menawarkan dua jenis objek lain yang serupa dengan kontrak:
+
++interface+:: ((("interface object type")))((("stub")))Takrif antara muka berstruktur seperti kontrak, kecuali tiada fungsi yang ditakrifkan, Perisytiharan jenis ini sering dipanggil _stub_; ia memberitahu anda fungsi hujah dan jenis pulangan tanpa sebarang pelaksanaan. Antara muka menentukan "bentuk" kontrak; apabila diwarisi, setiap fungsi yang diisytiharkan oleh antara muka mesti ditakrifkan oleh anaknya.
+
++library+:: ((("library contract")))Kontrak pustaka adalah salah satu yang dimaksudkan untuk digunakan hanya sekali dan digunakan oleh kontrak lain, menggunakan kaedah +delegatecall+ (lihat <<solidity_address_object>>).
+
+[[solidity_functions]]
+==== Fungsi
+
+((("Solidity","functions", id="ix_07smart-contracts-solidity-asciidoc13", range="startofrange")))Di dalam kontrak, kita menentukan fungsi yang boleh dipanggil oleh transaksi EOA atau kontrak lain. Dalam contoh +Faucet+ ini, kita mempunyai dua fungsi: +withdraw+ dan fungsi _patah balik_ (tidak dinamakan).
+
+((("Solidity","function syntax")))Susunan ayat (sintaks) yang kita gunakan untuk mengisytiharkan fungsi dalam Solidity adalah seperti berikut:
+
+++++
+<pre data-type="programlisting">
+function FunctionName([<em>parameter</em>]) {public|private|internal|external}
+[pure|constant|view|payable] [<em>modifiers</em>] [returns (<em>return types</em>)]
+</pre>
+++++
+
+
+Mari lihat setiap komponen ini:
+
+++FunctionName++ :: Nama fungsi, yang digunakan untuk memanggil fungsi dalam transaksi (dari EOA), dari kontrak lain, atau bahkan dari dalam kontrak yang sama. ((("fallback function")))Satu fungsi dalam setiap kontrak boleh ditakrifkan tanpa nama, di mana ia adalah fungsi _mundur_, yang dipanggil apabila tiada fungsi lain yang dinamakan. Fungsi mundur tidak boleh mempunyai apa-apa hujahan atau mengembalikan apa-apa.
+
+__++parameters++__:: Diikuti dengan nama, kita menentukan hujah-hujah yang mesti diserahkan kepada fungsi, dengan nama dan jenis mereka. Dalam contoh +Faucet+ kita, kita telah menentukan +uint withdraw_amount+ sebagai satu-satunya hujah untuk pass:[<code><span class="keep-together">pengeluaran</span></code>] berfungsi.
+
+Set kata kunci seterusnya (+public+, +private+, +internal+, +external+) menentukan fungsi _boleh terlihat_:
+
++public+:: ((("public function")))Umum/Awam adalah secara lalai; fungsi tersebut boleh dipanggil oleh kontrak lain atau transaksi EOA, atau dari dalam kontrak. Dalam contoh +Faucet+, kedua-dua fungsi ditakrifkan sebagai umum.
+
++external+:: ((("external function")))Fungsi luar adalah seperti fungsi awam, kecuali mereka tidak boleh dipanggil dari dalam kontrak melainkan secara terang-terangan dengan kata kunci +this+.
+
++internal+:: ((("internal function")))Fungsi dalaman hanya boleh diakses dari dalam kontrak&#x2014;Ianya tidak boleh dipanggil oleh kontrak lain atau transaksi EOA. Ianya boleh dipanggil dengan kontrak yang diperoleh (yang mewarisi yang ini).
+
++private+:: ((("private function")))Fungsi peribadi adalah seperti fungsi dalaman tetapi tidak boleh dipanggil dengan mendatangkan:[<span class="keep-together">kontrak</span>].
+
+Perlu diingat bahawa istilah _internal_ dan _private_ agak mengelirukan. Apa-apa fungsi atau data di dalam kontrak adalah sentiasa kelihatan pada rantai blok awam, yang bermaksud bahawa sesiapa sahaja boleh melihat kod atau data. Kata kunci yang diterangkan di sini hanya memberi kesan kepada bagaimana dan bila fungsi boleh dipanggil.
+
+Set kedua kata kunci (+pure+, +constant+, +view+, +payable+) memberikan kesan kepada tingkah laku fungsi:
+
++constant+ atau +view+ :: ((("view (function keyword)")))Fungsi yang ditandakan sebagai _view_ menjanjikan untuk tidak mengubahsuai sebarang keadaan. ((("constant (function keyword)")))Istilah _constant_ adalah gelaran untuk _view_ yang akan diturunkan dalam terbitan akan datang. Pada masa ini, penyusun tidak menguatkuasakan pengubahsuaian +view+, hanya menghasilkan amaran, tetapi ini dijangka menjadi kata kunci yang dikuatkuasakan dalam Solidity v0.5.
+
++pure+:: ((("pure function")))Fungsi tulen adalah salah satu yang tidak membaca atau menulis sebarang pembolehubah dalam storan. Ia hanya boleh beroperasi pada hujahan dan data kembalian, tanpa merujuk kepada mana-mana data yang disimpan. Fungsi tulen bertujuan untuk menggalakkan pengaturcaraan gaya isytiharan tanpa kesan sampingan atau tanpa tingkah laku.
+
++payable+:: ((("payable function")))Fungsi yang boleh dibayar ialah yang boleh menerima bayaran masuk. Fungsi yang tidak diisytiharkan sebagai +payable+ akan menolak pembayaran masuk. Terdapat dua pengecualian, kerana keputusan reka bentuk di EVM: pembayaran koinbase dan warisan +SELFDESTRUCT+ akan dibayar walaupun fungsi sandaran tidak diisytiharkan sebagai +payable+, tetapi ini masuk akal kerana pelaksanaan kod bukan sebahagian daripada pembayaran pembayaran pass:[<span class="keep-together">juga</span>].
+
+Seperti yang dapat dilihat dalam contoh +Faucet+ kami, ia mempunyai satu fungsi yang boleh dibayar (fungsi berpatah balik dari awal), yang merupakan satu-satunya fungsi yang boleh menerima bayaran masuk(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc13")))
+
+==== Pembina Kontrak dan Binasa Diri
+
+((("constructor function")))((("smart contracts","constructor function")))((("Solidity","contract constructor function")))Terdapat satu fungsi khas yang boleh digunakan sekali. Apabila kontrak dibuat, ia juga menjalankan _fungsi jurubina_ jika ada, untuk memulakan keadaan kontrak. Jurubina dijalankan dalam transaksi yang sama dengan penciptaan kontrak. Fungsi jurubina adalah pilihan; anda akan perasan bahawa +Faucet+ kami tidak ada benda itu.
+
+Pembina boleh dinyatakan dalam dua cara. Sehingga dalam Solidity v0.4.21, jurubina adalah fungsi yang namanya sepadan dengan nama kontrak, seperti yang anda lihat di sini:
+
+[source,solidity]
+----
+contract MEContract {
+	function MEContract() {
+		// Inilah jurubinanya
+	}
+}
+----
+
+
+Kesukaran dengan format ini ialah jika nama kontrak diubah dan nama fungsi pembina tidak berubah, ia bukan lagi pembina. Begitu juga, jika ada kesilapan penaipan dalam penamaan kontrak dan/atau jurubina, fungsi itu tidak lagi menjadi pembina. Ini boleh menyebabkan beberapa pepijat yang jahat, tidak dijangka, dan sukar dicari. Bayangkan sebagai contohnya, jika jurubina menetapkan pemilik kontrak untuk tujuan kawalan. Jika fungsi itu sebenarnya bukan pembina kerana kesilapan penamaan, bukan sahaja pemilik dibiarkan tanpa ditetapkan pada masa pembuatan kontrak, tetapi fungsi itu juga boleh digunakan sebagai bahagian tetap dan "boleh dipanggil" dari kontrak, seperti fungsi normal, membenarkan mana-mana pihak ketiga merampas kontrak dan menjadi "pemilik" selepas penciptaan kontrak.
+
+Untuk menangani masalah yang bakal wujud ini dengan fungsi pembina yang berdasarkan nama yang sama seperti kontrak, Solidity v0.4.22 memperkenalkan kata kekunci +constructor yang beroperasi seperti fungsi pembina tetapi tidak mempunyai nama. Menamakan semula kontrak tidak menjejaskan jurubina sama sekali. Selain itu, lebih mudah untuk mengenal pasti fungsi yang menjadi pembina. Ia kelihatan seperti ini:
+
+[source,solidity]
+----
+pragma ^0.4.22
+contract MEContract {
+	constructor () {
+		// Inilah jurubinanya
+	}
+}
+----
+
+Untuk meringkaskan, kitaran hayat kontrak bermula dengan transaksi penciptaan dari akaun EOA atau kontrak. Jika ada pembina, ia dilaksanakan sebagai sebahagian daripada penciptaan kontrak, untuk memulakan keadaan kontrak kerana ia diwujudkan, dan kemudian dibuang.
+
+((("contract destruction")))((("selfdestruct function")))((("Solidity","contract destruction")))((("Solidity","selfdestruct function"))Penamat lain bagi )akhir dari kitaran hayat kontrak adalah _contract destruction_. ((("SELFDESTRUCT opcode")))Kontrak dimusnahkan oleh kod operasi EVM khas yang dipanggil +SELFDESTRUCT+ yakni binasa diri. Ia pernah dipanggil pass:[<span class="keep-together"><code>BUNUH DIRI</code></span>], tetapi nama itu telah dimansuhkan kerana berkait dengan perkataan tidak molek. Dalam Solidity, kod operasi ini didedahkan sebagai fungsi terbina dalam tahap tinggi yang dipanggil +selfdestruct+, yang mengambil hujah, iaitu alamat untuk menerima baki ether yang tinggal dalam akaun kontrak. Ia kelihatan seperti ini:
+
+[source,solidity]
+----
+selfdestruct(address recipient);
+----
+
+Perhatikan bahawa anda mestilah secara jelas menambah arahan ini kepada kontrak anda jika anda mahu ia dihapuskan&#x2014;ini adalah satu-satunya cara kontrak boleh dipadamkan, dan ia tidak hadir secara lalai. Dengan cara ini, pengguna kontrak yang mungkin bergantung pada kontrak yang ada selama-lamanya dapat memastikan bahawa kontrak tidak dapat dihapuskan jika tidak mengandungi kod operasi pass:[<span class="keep-together"><code>SELFDESTRUCT</code></span>]
+
+==== Menambah Jurubina dan Binasa Diri pada Contoh Faucet Kita.
+
+((("constructor function","adding to faucet example")))((("Faucet.sol contract (test example)","adding constructor and selfdestruct to")))((("Solidity","adding constructor/selfdestruct to faucet example")))Kontrak +Faucet+ contoh yang kami perkenalkan di <<intro_chapter>> tidak mempunyai apa-apa fungsi jurubina atau fungsi +binasa diri+. Ini adalah kontrak yang kekal yang tidak boleh dihapuskan. Mari kita tukarkannya, dengan menambah fungsi +constructor+ dan fungsi +selfdestruct+. Kita mungkin mahukan +selfdestruct+ dipanggil _only_ oleh EOA yang asalnya mencipta kontrak. Dengan menghimpunkannya, ini biasanya disimpan dalam pembolehubah alamat yang dipanggil +owner+. Jueubina kita ini menetapkan pemilik boleh ubah, manakala fungsi +binasa diri+ pertama sekali akan memeriksa bahawa pemilik memanggilnya secara langsung.
+
+Pertama, jurubina kita:
+
+[source,solidity]
+----
+// Versi penyusun Soliditi program ini ditulis untuk
+pragma solidity ^0.4.22;
+
+// Kontrak pertama kita ialah faucet!
+contract Faucet {
+
+	address owner;
+
+	// Initialize Faucet contract: set owner
+	constructor() {
+		owner = msg.sender;
+	}
+
+[...]
+----
+
+Kami telah mengubah arahan pragma untuk menentukan v0.4.22 sebagai versi minimum untuk contoh ini, kerana kami menggunakan kata kunci +jurubina+ baharu yang diperkenalkan dalam Solidity v0.4.22. Kontrak kita sekarang mempunyai +alamat+ pembolehubah jenis bernama +owner+. Nama +pemilik+ tidak khusus dengan apa-apa cara. Kita boleh memanggil pembolehubah +potato+ ini dan masih menggunakannya dengan cara yang sama. Nama +owner+ hanya menjadikan tujuannya jelas.
+
+Seterusnya, jurubina tadi, yang berfungsi sebagai sebahagian daripada urusniaga penciptaan kontrak, memberikan alamat dari +msg.sender+ kepada pembolehubah +owner+. Kita menggunakan +msg.sender+ dalam fungsi pass:[<span class="keep-together"><code>withdraw</code></span>] untuk mengenal pasti pemula permintaan pengeluaran. Dalam jurubina, bagaimanapun, +msg.sender+ ialah EOA atau alamat kontrak yang memulakan penciptaan kontrak. Kita mengemalinya kerama ia adalah kes _disebabkan_ ianya adalah fungsi pembina: ia hanya berjalan sekali, semasa penciptaan kontrak.
+
+Sekarang kita boleh menambah fungsi untuk memusnahkan kontrak. Kita perlu memastikan bahawa hanya pemilik boleh menjalankan fungsi ini, jadi kami akan menggunakan pernyataan +require+ untuk mengawal akses. Inilah caranya:
+
+[source,solidity]
+----
+// Pemusnah kontrak
+function destroy() public {
+	require(msg.sender == owner);
+	selfdestruct(owner);
+}
+----
+
+Jika sesiapa memanggil fungai +destroy+ dari alamat selain +owner+, ia akan gagal. Tetapi jika alamat yang sama disimpan dalam +owner+ oleh pembina yang memanggilnya, kontrak itu akan binasa sendiri dan menghantar apa-apa baki kepada pemilik alamat. Perhatikan bahawa kami tidak menggunakan +tx.origin+ yang tidak selamat untuk menentukan sama ada pemilik ingin memusnahkan kontrak&#x2014;menggunakan +tx.origin+ akan membenarkan kontrak jahat untuk memusnahkan kontrak anda tanpa izin anda.
+
+==== Pengubah Fungsi
+
+((("function modifiers")))((("Solidity","function modifiers")))Solidity menawarkan fungsi khas yang dipanggil pengubahsuaian fungsian. Anda mengisi pengubah untuk berfungsi dengan menambah nama pengubah dalam perisytiharan fungsi. Pengubah paling sering digunakan untuk mewujudkan syarat-syarat yang digunakan untuk banyak fungsi dalam kontrak. Kita mempunyai penyata kawalan akses sedia ada, dalam fungsi +destroy+ tadu. Mari buat pengubah fungsi yang menyatakan keadaan itu:
+
+[source,solidity]
+----
+modifier onlyOwner {
+    require(msg.sender == owner);
+    _;
+}
+----
+
+
+Pengubahsuai fungsi ini, yang dinamakan +onlyOwner+, menetapkan syarat pada sebarang fungsi yang diubah, menghendaki alamat yang disimpan sebagai +pemilik+ kontrak adalah sama dengan alamat transaksi +msg.sender+. Ini adalah corak reka bentuk asas untuk kawalan akses, hanya membenarkan pemilik kontrak untuk melaksanakan sebarang fungsi yang mempunyai pengubah +onlyOwner+.
+
+Anda mungkin menyedari bahawa pengubah fungsi kami mempunyai ;pemegang tempat yang jelas atau "placeholder" yang unik di dalamnya, garis bawah yang diikuti oleh koma bertitik (+&#95;;+). Ruang letak ini digantikan dengan kod fungsi yang diubah suai. Pada asasnya, pengubah adalah fungsi diubahsuai "terbalut", meletakkan kodnya di lokasi yang dikenal pasti oleh perlataan bergaris bawah.
+
+Untuk memasukkan  pengubah suai, anda menambah namanya kepada perisytiharan fungsi. Lebih daripada satu pengubah suai boleh digunakan untuk fungsi; ia digunakan dalam urutan yang diisytiharkan sebagai senarai yang dipisahkan koma.
+
+Mari tulis semula fungsi +binasa+ untuk menggunakan pengubah +onlyOwner+:
+
+[source,solidity]
+----
+function destroy() public onlyOwner {
+    selfdestruct(owner);
+}
+----
+
+Nama pengubah fungsi (+onlyOwner+) adalah selepas kata kunci +umum+ dan memberitahu bahawa fungsi +binasa+ diubahsuai oleh pengubah +onlyOwner+. Pada asasnya, anda boleh membaca ini sebagai "Hanya pemilik boleh memusnahkan kontrak ini." Dalam amalan, kod yang dihasilkan bersamaan dengan kod "membalut" dari +onlyOwner+ di sekitar +destroy+.
+
+Pengubah fungsi adalah alat yang sangat berguna kerana ia membolehkan kita menulis prasyarat untuk fungsi dan menerapkannya dengan berterusan, menjadikan kod itu lebih mudah dibaca dan, sebagai hasilnya, lebih mudah untuk mengaudit keselamatan. Ianya paling sering digunakan untuk kawalan akses, tetapi dalam masa sama, ia agak serba boleh dan boleh digunakan untuk pelbagai tujuan lain.
+
+Di dalam pengubah suai, anda boleh memasuki semua nilai (pembolehubah dan hujah) yang dapat dilihat dengan fungsi yang diubah suai. Dalam kes ini, kita boleh mengakses pemilik pembolehubah, yang dinyatakan di dalam kontrak. Walau bagaimanapun, kesongsangan itu tidak benar: anda tidak boleh mengakses sebarang pengubahsuaian yang boleh diubah dalam fungsi yang diubah suai.
+
+==== Warisan Kontrak
+
+((("contract object", id="ix_07smart-contracts-solidity-asciidoc14", range="startofrange")))((("inheritance", id="ix_07smart-contracts-solidity-asciidoc15", range="startofrange")))((("smart contracts","inheritance", id="ix_07smart-contracts-solidity-asciidoc16", range="startofrange")))((("Solidity","contract inheritance", id="ix_07smart-contracts-solidity-asciidoc17", range="startofrange")))Kontrak obejk Solidity menyokong _inheritance_, yang merupakan alat tugasan untuk melanjutkan kontrak asas dengan fungsi tambahan. Untuk menggunakan warisan, tentukan kontrak induk dengan kata kunci +is+:
+
+[source,solidity]
+----
+kontrak Anak adalah Induk{
+  ...
+}
+----
+
+Dengan pembinaan ini, kontrak +child+ mewarisi semua kaedah, fungsi, dan pembolehubah +induk+. Solidity juga menyokong banyak warisan, yang boleh ditentukan oleh nama kontrak yang dipisahkan koma selepas kata kunci +is+.
+
+[source,solidity]
+----
+contract Child is Parent1, Parent2 {
+  ...
+}
+----
+
+Warisan kontrak membolehkan kita untuk menulis kontrak sedemikian rupa bagi mencapai perancangan, keboleh-lanjutan, dan penggunaan semula. Kita bermula dengan kontrak yang mudah dan melaksanakan keupayaan yang paling khusus, kemudian melanjutkannya dengan mewarisi keupayaan dalam kontrak yang lebih khusus.
+
+Dalam kontrak +Faucet+ ini, kami memperkenalkan pembina dan pembinasa, bersama-sama dengan kawalan akses untuk pemilik, yang diberikan pada pembina. Keupayaan itu agak umum: banyak kontrak akan memilikinya. Kita boleh menentukan ia sebagai kontrak khusus, kemudian gunakan warisan untuk melanjutkannya ke kontrak +Faucet+.
+
+kita mula dengan menjelaskan kontrak asas +owner+, yang mempunyai pemilik bolehubah, menetapkannya dalam pembina kontrak:
+
+[source,solidity]
+----
+contract owned {
+	address owner;
+
+	// Pembina kontrak: tetapkan pemilik
+	constructor() {
+		owner = msg.sender;
+	}
+
+	// Pengubah suai kawalan akses
+	modifier onlyOwner {
+	    require(msg.sender == owner);
+	    _;
+	}
+}
+----
+
+Seterusnya, kami menentukan kontrak asas +mortal+, yang mewarisi +owned+:
+
+[source,solidity]
+----
+contract mortal is owned {
+// Pembinasa kontrak
+	function destroy() public onlyOwner {
+		selfdestruct(owner);
+	}
+}
+----
+
+Seperti yang dapat anda lihat, kontrak +mortal+ boleh menggunakan pengubahsuaian +onlyOwner+, yang ditakrifkan dalam +owned+. Ia secara tidak langsung juga menggunakan pemboleh ubah +owner+ dan pembina yang ditakrifkan sebagai +dimiliki+. Warisan membuat setiap kontrak lebih mudah dan memberi tumpuan kepada fungsi khususnya, yang membolehkan kami menguruskan butiran secara penjelasan lebih satu persatu.
+
+Sekarang kita boleh melanjutkan +kontrak yang dimiliki+, mewarisi keupayaannya dalam +Faucet+:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+ // Berikan ether kepada sesiapa yang bertanya
+    function withdraw(uint withdraw_amount) public {
+        // Had jumlah pengeluaran
+        require(withdraw_amount <= 0.1 ether);
+        // Hantar amaun ke alamat yang memintanya
+        msg.sender.transfer(withdraw_amount);
+    }
+    // Menerima jumlah masuk yang masuk
+    function () external payable {}
+}
+----
+
+Dengan mewarisi +kefanaan+, yang seterusnya mewarisi +dimilik+, kontrak +Faucet+ sekarang mempunyai pembina dan  fungsi +binasa+i, dan pemilik yang ditakrifkan. Fungsi ini sama seperti ketika fungsi tersebut berada dalam +Faucet+, tetapi sekarang kita boleh menggunakan semula fungsi tersebut dalam kontrak lain tanpa menulisnya lagi. Penggunaan semula kod dan penjelasan satu persatu menjadikan kod ini lebih bersih, lebih mudah dibaca dan lebih mudah untuk audit. (((Range = &quot;endofrange&quot;, startref = &quot;ix_07smart-contracts-solidity-asciidoc17&quot;))) (((range = &quot;endofrange&quot; startref = &quot;ix_07smart-contracts-solidity-asciidoc16&quot;))) () (range = &quot;endofrange&quot;, startref = &quot;ix_07smart-contracts-solidity-asciidoc15&quot; -contracts-solidity-asciidoc14 &quot;)))
+
+==== Ralat Pengendalian (menegaskan, menghendaki, memulihkan)
+
+((("error handling, Solidity")))((("Solidity","error handling")))Panggilan kontrak boleh menamatkan dan mengembalikan kesilapan. Pengendalian kesilapan dalam Solidity ditangani oleh empat fungsi: menegaskan +assert+, memerlukan +require+, mengembalikan +revert+, dan membuang +throw+ (kini +deprecated+).
+
+Apabila kontrak ditamatkan dengan kesilapan, semua perubahan keadaan (perubahan kepada pemboleh ubah, baki, dan lain-lain) akan dibalikkan, sehingga semua rantaian kontrak memanggil jika lebih daripada satu kontrak dipanggil. Ini memastikan bahawa urus niaga adalah _atomic_, yang bermaksud ia sama ada berjaya diselesaikan atau tidak memberi kesan ke atas keadaan dan diserahkan semula sepenuhnya.
+
+((("assert function","Solidity and")))((("require function")))Fungsi +assert+ dan +require+ berfungsi dengan cara yang sama, menilai keadaan dan menghentikan pelaksanaan dengan ralat jika keadaan adalah salah. Dengan himpunan, +assert+ digunakan apabila hasilnya dijangka benar, yang bermaksud bahawa kita menggunakan +assert+ untuk menguji keadaan dalaman. Sebagai perbandingan, +require+ digunakan semasa menguji input (seperti hujah fungsi atau medan transaksi), menetapkan jangkaan untuk pass:[<span class="keep-together">syarat</span>].
+
+Kita telah menggunakan +require+ dalam pengubah fungsi +onlyOwner+, untuk menguji bahawa pengirim mesej adalah pemilik kontrak:
+
+[source,solidity]
+----
+require(msg.sender == owner);
+----
+
+Fungsi +diperlukan+ bertindak sebagai _syarat berpagar_, menghalang pelaksanaan fungsi lain dan menghasilkan ralat jika tidak berpuas hati.
+
+Pada Solidity v0.4.22, +require+ juga boleh menyertakan mesej teks yang berguna yang boleh digunakan untuk menunjukkan sebab kesilapan itu. Mesej ralat direkodkan dalam log transaksi. Oleh itu, kita boleh memperbaiki kod ini dengan menambah mesej ralat dalam fungsi +require+:
+
+[source,solidity]
+----
+require(msg.sender == owner, "Only the contract owner can call this function");
+----
+
+((("revert function")))((("throw function")))Fungsi +revert+ dan +throw+ menghentikan pelaksanaan kontrak dan memulihkan sebarang perubahan keadaan. Fungsi +throw+ sudah usang dan akan dikeluarkan dalam versi masa depan Solidity; anda harus menggantikannya dengan +revert+. Fungsi +revert+ juga boleh mengambil mesej ralat sebagai satu-satunya hujah, yang direkodkan dalam log transaksi.
+
+Keadaan tertentu dalam kontrak akan menghasilkan ralat tanpa mengira sama ada kita secara jelas menyemaknya. Sebagai contoh, dalam kontrak +Faucet+ kami, ia tidak semestinya sama ada terdapat ether yang cukup untuk memenuhi permintaan pengeluaran. Itu kerana fungsi +pemindahan+ akan gagal dengan kesilapan dan mengembalikan urus niaga sekiranya tidak ada baki untuk membuat pemindahan:
+
+[source,solidity]
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+Walau bagaimanapun, lebih baik untuk menyemak secara jelas dan memberikan mesej ralat yang jelas mengenai kegagalan. Kita boleh melakukannya dengan menambah pernyataan +require+ sebelum pemindahan:
+
+[source,solidity]
+----
+require(this.balance >= withdraw_amount,
+	"Insufficient balance in faucet for withdrawal request");
+msg.sender.transfer(withdraw_amount);
+----
+
+Kod pemeriksaan ralat tambahan seperti ini akan meningkatkan penggunaan gas sedikit, tetapi ia menawarkan pelaporan ralat yang lebih baik daripada jika diabaikan. Anda perlu mencari keseimbangan yang betul antara penggunaan gas dan pemeriksaan kesilapan berjela-jela berdasarkan penggunaan kontrak anda yang dijangkakan. Dalam kes kontrak +Faucet+ yang dimaksudkan untuk testnet, kita mungkin akan tersilap pelaporan tambahan walaupun ia melibatkan biaya gas. Mungkin untuk kontrak utama, kita akan memilih untuk menjadikannya lebih jiimat penggunaan gas.
+
+[[solidity_events]]
+==== Peristiwa
+
+((("events","Solidity", id="ix_07smart-contracts-solidity-asciidoc18", range="startofrange")))((("Solidity","event objects", id="ix_07smart-contracts-solidity-asciidoc19", range="startofrange")))Apabila ((("transaction receipt")))suatu transaksi selesai (berjaya atau tidak), ia menghasilkan penerimaan _transaksi_, seperti yang akan kita lihat dalam <<evm_chapter>>. Resit urus niaga mengandungi _log_ masuk yang memberikan maklumat mengenai tindakan yang berlaku semasa pelaksanaan urus niaga. _Peristiwa_ (events) adalah objek peringkat tinggi Solidity yang digunakan untuk membina log ini.
+
+Peristiwa amat berguna untuk pelanggan ringan dan perkhidmatan DApp, yang boleh "tonton" acara tertentu dan melaporkannya kepada antara muka pengguna, atau membuat perubahan keadaan aplikasi untuk mencerminkan peristiwa dalam kontrak asas.
+
+Objek peristiwa mengambil hujahan yang bersiri dan direkodkan dalam log transaksi, di rantai blok. Anda boleh membekalkan kata kunci +indexed+ sebelum hujah, untuk menjadikan bahagian nilai jadual tersusun dengan daftar kata-nombor yang penting (jadual hash) yang boleh dicari atau ditapis oleh aplikasi.
+
+((("Faucet.sol contract (test example)","adding events to", id="ix_07smart-contracts-solidity-asciidoc20", range="startofrange")))Kita belum menambahkan sebarang peristiwa dalam +Faucet+ contoh buat setakat ini, jadi mari kita lakukannya. Kami akan menambah dua peristiwa, satu untuk log apa-apa pengeluaran dan satu untuk log apa-apa deposit. Kami akan memanggil peristiwa masing-masing sebagai +Pengeluaran+ dan +Deposit+. Pertama, kami mentakrifkan peristiwa dalam kontrak +Faucet+:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+	event Withdrawal(address indexed to, uint amount);
+	event Deposit(address indexed from, uint amount);
+
+	[...]
+}
+----
+
+kita telah memilih untuk membuat alamat +teriindeks+, untuk membolehkan mencari dan menapis dalam mana-mana antara muka pengguna yang dibina untuk mengakses +Faucet+ ini.
+
+Seterusnya, kami menggunakan kata kunci +emit+ untuk memasukkan data acara dalam log transaksi:
+
+[source,solidity]
+----
+// Berikan ether kepada sesiapa yang bertanya
+function withdraw(uint withdraw_amount) public {
+    [...]
+    msg.sender.transfer(withdraw_amount);
+    emit Withdrawal(msg.sender, withdraw_amount);
+}
+// Menerima jumlah masuk yang masuk
+function () external payable {
+    emit Deposit(msg.sender, msg.value);
+}
+----
+
+Keputusan kontrak _Faucet.sol_ kelihatan seperti <<Faucet8_sol>>.
+
+[[Faucet8_sol]]
+.Faucet8.sol: Kontrak Faucet yang disemak, dengan peristiwa
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet8.sol[]
+----
+====
+
+===== Peristiwa Menangkap
+
+((("events","catching")))((("Faucet.sol contract (test example)","catching events")))OK, jadi kita telah menetapkan kontrak ini untuk memancarkan peristiwa. Bagaimanakah kita melihat hasil transaksi dan "tangkap" peristiwa? Pustaka web3.js menyediakan struktur data yang mengandungi log transaksi. Di dalamnya, kita dapat melihat peristiwa-peristiwa yang dihasilkan oleh transaksi.
+
+((("Truffle","running test transaction with")))Jom guna +truffle+ untuk menjalankan transaksi ujian pada kontrak +Faucet+ yang disemak semula. Ikut arahan di <<truffle>> untuk menetapkan arahan projek dan menyusun kod pass:[<span class="keep-together"><code>Faucet</code></span>]. Sumber kod boleh diperoleh dalam https://github.com/ethereumbook/ethereumbook[the book's GitHub repository] under _code/truffle/FaucetEvents_.
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+truffle(develop)> <strong>compile</strong>
+truffle(develop)> <strong>migrate</strong>
+Using network 'develop'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xb77ceae7c3f5afb7fbe3a6c5974d352aa844f53f955ee7d707ef6f3f8e6b4e61
+  Migrations: 0x8cdaf0cd259887258bc13a92c0a6da92698644c0
+Saving successful migration to network...
+  ... 0xd7bc86d31bee32fa3988f1c1eabce403a1b5d570340a3a9cdba53a472ee8c956
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xfa850d754314c3fb83f43ca1fa6ee20bc9652d891c00a2f63fd43ab5bfb0d781
+  Faucet: 0x345ca3e014aaf5dca488057592ee47305d9b3e10
+Saving successful migration to network...
+  ... 0xf36163615f41ef7ed8f4a8f192149a0bf633fe1a2398ce001bf44c43dc7bdda0
+Saving artifacts...
+
+truffle(develop)> <strong>Faucet.deployed().then(i => {FaucetDeployed = i})</strong>
+truffle(develop)> <strong>FaucetDeployed.send(web3.utils.toWei(1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+truffle(develop)> <strong>FaucetDeployed.withdraw(web3.utils.toWei(0.1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+</pre>
+++++
+
+Selepas menggunakan kontrak menggunakan fungsi +deploy+ digunakan, kami menjalankan dua urus niaga. Transaksi pertama adalah deposit (menggunakan +send+), yang memancarkan peristiwa +Deposit+ dalam log transaksi:
+
+----
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+----
+
+Seterusnya, kami menggunakan fungsi +withdraw+ untuk membuat pengeluaran. Ini memancarkan peristiwa +withdraw+:
+
+----
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+----
+
+Untuk mendapatkan peristiwa ini, kami melihat +log+ kembali sebagai hasil (+res+) urus niaga. Kemasukan log pertama (+logs[0]+) mengandungi nama acara dalam +logs[0].event+ dan hujah peristiwa dalam +logs[0].args+. Dengan menunjukkan ini pada konsol, kita dapat melihat nama acara yang dipancarkan dan hujah peristiwa.
+
+Peristiwa adalah alat bekerja yang sangat berguna, bukan sahaja untuk komunikasi antara-kontrak, tetapi juga untuk nyahpijat semasa pembangunan(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc20"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc19")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc18")))
+
+==== Memanggil Kontrak Lain (menghantar, memanggil, kod panggilan, utusan panggilan)
+
+((("smart contracts","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc21", range="startofrange")))((("Solidity","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc22", range="startofrange")))Memanggil kontrak lain dari dalam kontrak anda adalah operasi yang sangat berguna tetapi berpotensi berbahaya. Kita akan mengkaji pelbagai cara anda boleh mencapai ini dan menilai risiko setiap kaedah. Ringkasnya, risiko timbul dari fakta bahawa anda mungkin tidak tahu banyak tentang kontrak yang anda panggil atau yang memanggil kontrak anda. Apabila menulis kontrak pintar, anda harus ingat bahawa walaupun anda mungkin kebanyakan mengharapkan untuk berurusan dengan EOA, tidak ada apa-apa untuk menghentikan kontrak kompleks sewenang-wenang dan mungkin merbahayakan kontrak dari memanggil dan dipanggil oleh kod anda.
+
+===== Membuat contoh baru
+
+((("smart contracts","creating new instance")))Cara paling selamat untuk memanggil kontrak lain adalah jika anda membuat kontrak lain itu sendiri. Dengan cara itu, anda pasti antara muka dan kelakuannya. Untuk melakukan ini, anda hanya boleh mengkaji perubahannya, menggunakan kata kunci +new+, seperti dalam bahasa berlandaskan objek yang lain. Dalam Solidity, kata kunci +nee+ akan membuat kontrak pada rantai blok dan pulangkan objek yang boleh anda gunakan untuk merujuknya. Katakan anda ingin membuat dan memanggil kontrak +Faucet+ dari dalam kontrak lain yang dipanggil +Token+:
+
+[role="pagebreak-before"]
+[source,solidity]
+----
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Alat bekerja pembinaan kontrak ini memastikan anda mengetahui jenis kontrak dan antara muka yang tepat. Kontrak +Faucet+ mesti ditakrifkan dalam skop +Token+, yang boleh anda lakukan dengan pernyataan +import+ jika penjelasannya ada dalam fail lain:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Anda secara pilihan boleh menentukan +nilai+ pemindahan ether pada penciptaan, dan serah hujahan kepada pembina kontrak baru:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+}
+----
+
+Anda juga boleh memanggil fungsi +Faucet+. Dalam contoh ini, kami memanggil fungsi +destroy+ dari fungsi +Faucet+ dari dalam fungsi +token+ iaitu +destroy+:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+
+	function destroy() ownerOnly {
+		_faucet.destroy();
+	}
+}
+----
+
+Ambil perhatian bahawa semasa anda menjadi pemilik kontrak +Token+, kontrak +Token+ itu sendiri memiliki kontrak +Faucet+ baharu, jadi hanya kontrak +Token+ yang boleh memusnahkannya.
+
+===== Mengatasi contoh yang sedia ada
+
+((("smart contracts","addressing an existing instance")))Satu lagi cara yang anda boleh memanggil kontrak adalah dengan menghantar alamat contoh kontrak yang ada. Dengan kaedah ini, anda menggunakan antara muka yang diketahui dengan contoh sedia ada. Oleh itu, amat penting bahawa anda tahu, dengan pasti, bahawa contoh yang anda sedang mengalamatkannya adalah sebenarnya jenis yang dianggap. Mari lihat contoh:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+
+	Faucet _faucet;
+
+	constructor(address _f) {
+		_faucet = Faucet(_f);
+		_faucet.withdraw(0.1 ether)
+	}
+}
+----
+
+Di sini, kami mengambil alamat yang diberikan sebagai hujah kepada pembina, +_f+, dan kami membuangnya ke objek +Faucet+. Ini jauh lebih berisiko daripada alat kerja sebelumnya, kerana kita tidak tahu sama ada alamat itu sebenarnya adalah objek +Faucet+. Apabila kita memanggil +withdraw+, kita mengandaikan bahawa ia menerima hujah-hujah yang sama dan melaksanakan kod yang sama seperti pengisytiharan +Faucet+ ini, tetapi kita tidak pasti. Untuk semua yang kita tahu, fungsi +withdraw+ di alamat ini boleh melaksanakan sesuatu yang sama sekali berbeza dari apa yang kita harapkan, walaupun ia namanya sama. Dengan menggunakan alamat yang diluluskan sebagai input dan menghantarnya ke objek tertentu, itu adalah lebih berbahaya daripada membuat kontrak sendiri.
+
+===== Panggilan mentah, delegatecall
+
+Solidity menawarkan beberapa "tahap rendah" fungsi untuk memanggil kontrak lain. Ini bersesuaian langsung dengan kod operasi EVM dengan nama yang sama dan membolehkan kita membuat panggilan kontrak-kontrak. Oleh itu, ia mewakili alat kerja yang paling mudah berkira, dan paling merbahaya untuk memanggil kontrak lain.
+
+((("smart contracts","call method", id="ix_07smart-contracts-solidity-asciidoc23", range="startofrange")))Berikut ialah contoh yang sama menggunakan kaedah +call+,
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		_faucet.call("withdraw", 0.1 ether);
+	}
+}
+----
+
+((("blind calls")))Seperti yang anda dapat lihat, jenis +panggilan+ ini adalah panggilan _buta_ ke dalam fungsi, sama seperti membina transaksi mentah, hanya dari dalam konteks kontrak. ((("reentrancy attacks","blind calls and")))Ia boleh mendedahkan kontrak anda kepada beberapa risiko keselamatan, yang paling penting, yang akan dibincangkan dengan lebih terperinci dalam <<reentrancy_security>>. Fungsi +call+ akan kembali +false+ jika terdapat masalah, jadi anda boleh menganggarkan nilai pulangan untuk pengendalian ralat:
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		if !(_faucet.call("withdraw", 0.1 ether)) {
+			revert("Withdrawal from faucet failed");
+		}
+	}
+}
+----
+
+((("delegatecall method")))((("smart contracts","delegatecall method")))Satu lagi variasi +call+ ialah +delegatecall+, yang menggantikan +callcode+. pass:[<code><span class="keep-together">callcode</span></code> ] akan dimansuhkan tidak lama lagi, jadi ia tidak boleh digunakan.
+
+Seperti yang disebutkan dalam <<solidity_address_object>>, +wakil panggilan+ berbeza daripada +panggilan+ di mana konteks +msg+ tidak berubah. Contohnya, sedangkan +call+ menukar nilai +msg.sender+ menjadi kontrak panggilan, +delegatecall+ pula menyimpan +msg.sender+ yang sama seperti dalam kontrak panggilan. Pada asasnya, +delegatecall+ menjalankan kod kontrak lain dalam konteks pelaksanaan kontrak semasa. Ia paling kerap digunakan untuk memohon kod dari pustaka. Ia juga membolehkan anda mengeluarakan corak bentuk (paten) menggunakan fungsi pustaka yang disimpan di tempat lain, dalam masa yang sama mempunyai kod yang berfungsi dengan data penyimpanan kontrak anda.
+
++Perwakilan panggilan+ harus digunakan dengan berhati-hati. Ia boleh mempunyai beberapa kesan yang tidak dijangka, terutamanya jika kontrak yang anda panggil tidak direka bentuk sebagai pustaka.
+
+Mari kita gunakan kontrak contoh untuk menunjukkan pelbagai perubahan (semantik) panggilan yang digunakan oleh +call+ dan +delegatecall+ untuk memanggil pustaka dan kontrak. Dalam <<call_examples_code>>, kami menggunakan peristiwa untuk log butiran setiap panggilan dan melihat bagaimana perubahan konteks panggilan bergantung pada jenis panggilan.
+
+[[call_examples_code]]
+.CallExamples.sol: Contoh semantik panggilan yang berlainan
+====
+[source,solidity,linenums]
+----
+include::code/truffle/CallExamples/contracts/CallExamples.sol[]
+----
+====
+
+Seperti yang anda dapat lihat dalam contoh ini, kontrak utama kami ialah +pemanggil+, yang memanggil perpustakaan calledLibrary+ dan kontrak +calledContract+. Kedua perpustakaan yang dipanggil dan kontrak itu mempunyai fungsi yang sama dengan +calledFunction+, yang memancarkan peristiwa +calledEvent+. Peristiwa +calledEvent+ mendaftar tiga data: +msg.sender+, +tx.origin+, dan +this+. Setiap kali +calledFunction+ dipanggil ia mungkin mempunyai konteks pelaksanaan yang berbeza (dengan nilai yang berbeza untuk semua kepelbagaian konteks yang berpotensi), bergantung kepada sama ada ia dipanggil secara langsung atau melalui +delegatecall+.
+
+Dalam +caller+, pertama sekalinkita menghubungi kontrak dan pustaka secara langsung, dengan menggunakan +calledFunction+ di setiap satunya. Kemudian, kami secara terang, menggunakan fungsi tahap rendah +call+ dan +delegatecall+ untuk memanggil +calledContract.calledFunction+. Dengan cara ini kita dapat melihat bagaimana pelbagai alat kerja panggilan berperilaku.
+
+Mari jalankannya dalam persekitaran pembangunan Truffle dan cuba "tangkap" peristiwa, untuk melihat bagaimana ia kelihatan:
+
+++++
+<pre data-type="programlisting">
+truffle(develop)> <strong>migrate</strong>
+Using network 'develop'.
+[...]
+Saving artifacts...
+truffle(develop)> <strong>web3.eth.accounts[0]</strong>
+'0x627306090abab3a6e1400e9345bc60c78a8bef57'
+truffle(develop)> <strong>caller.address</strong>
+'0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+truffle(develop)> <strong>calledContract.address</strong>
+'0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+truffle(develop)> <strong>calledLibrary.address</strong>
+'0xf25186b5081ff5ce73482ad761db0eb0d25abfbf'
+truffle(develop)> <strong>caller.deployed().then( i => { callerDeployed = i })</strong>
+
+truffle(develop)> <strong>callerDeployed.make_calls(calledContract.address).then(res => \
+                  { res.logs.forEach( log => { console.log(log.args) })})</strong>
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+</pre>
+++++
+
+Mari lihat apa yang berlaku di sini. Kami memanggil fungsi +make_calls+ dan serah alamat +calledContract+, kemudian menangkap empat peristiwa yang dipancarkan oleh setiap panggilan yang berbeza. Mari lihat fungsi +make_calls+ dan jalankan setiap langkah.
+
+Panggilan pertama ialah:
+
+----
+_calledContract.calledFunction();
+----
+
+Di sini, kami memanggil +calledContract.calledFunction+ secara langsung, menggunakan ABI tahap tinggi untuk +calledFunction+. Acara yang dipancarkan ialah:
+
+----
+sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+----
+
+Seperti yang anda lihat, +msg.sender+ ialah alamat kontrak +caller+. Manakala +tx.origin+ adalah alamat akaun kami, +web3.eth.accounts[0]+, yang menghantar transaksi kepada +caller+. Acara itu dipancarkan oleh +calledContract+, seperti yang dapat kita lihat dari hujah terakhir dalam acara itu.
+
+Panggilan seterusnya bagi +make_calls+ ialah ke perpustakaan:
+
+----
+calledLibrary.calledFunction();
+----
+
+Ia kelihatan sama dengan cara kami memanggil kontrak, tetapi berkelakuan sangat berbeza. Mari lihat peristiwa kedua yang dipancarkan:
+
+----
+sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+----
+
+Kali ini, +msg.sender+ bukan alamat +caller+. Sebaliknya, ia adalah alamat akaun kami, dan sama dengan transaksi asal. Ini kerana, apabila anda memanggil perpustakaan, panggilan itu sentiasa +delegatecall+ dan berjalan dalam konteks pemanggil. Jadi, apabila kod +calledLibrary+ sedang dijalankan, ia mewarisi konteks pelaksanaan +caller +, seolah-olah kodnya berjalan di dalam +caller+. Pemboleh ubah +this+ (ditunjukkan sebagai +from+ dalam keadaan yang dipancarkan) ialah alamat +caller+, walaupun ia diakses dari dalam pass: [<span class="keep-together"><code>calledLibrary</code></span>].
+
+Dua panggilan seterusnya, menggunakan tahap rendah +call+ dan +delegatecall+, bagi mengesahkan jangkaan kita tadi, ia memancarkan peristiwa-peristiwa yang mencerminkan apa yang hanya kita (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc23"))) lihat(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc22")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc21"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc10")))
+
+[[gas_sec]]
+=== Pertimbangan Gas
+
+((("gas","conserving", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("smart contracts","gas considerations", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","gas considerations", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))Gas, dijelaskan dalam lebih terperinci dalam <<gas>>, adalah pertimbangan yang sangat penting dalam pengaturcaraan kontrak pintar. Gas adalah sumber yang menghalang jumlah pengiraan maksimum yang Ethereum akan membenarkan transaksi dibelanjakan. Sekiranya had gas melebihi semasa pengiraan, siri kejadian berikut berlaku:
+
+* Pengecualian "gas habis" dibuang.
+* Keadaan kontrak sebelum pelaksanaan dipulihkan (dibalikkan semula).
+* Semua ether yang digunakan untuk membayar gas diambil sebagai yuran transaksi; ia tidak dipulangkan.
+
+Kerana gas dibayar oleh pengguna yang memulakan transaksi, pengguna digalakkan untuk memanggil fungsi yang mempunyai kos gas yang tinggi. Tambahan pula, ianya faedah terbaik bagi pengaturcaraan untuk merendahkan belanja gas fungsi kontrak. Untuk tujuan ini, terdapat amalan tertentu yang dicadangkan apabila membina kontrak pintar, untuk mengurangkan lagi kos gas fungsi panggilan.
+
+==== Elakkan Susunan Berukuran Dinamik
+
+((("dynamically sized arrays")))((("gas","dynamically sized arrays and")))Sebarang gelung melalui tatasusunan bersaiz dinamik di mana fungsi melakukan operasi pada setiap unsur atau mencari unsur tertentu hanya menambahkan lagi risiko menggunakan terlalu banyak gas. Malah, kontrak mungkin kehabisan gas sebelum mencari hasil yang diingini, atau sebelum bertindak pada setiap unsur, hasilnya ia membazirkan masa dan ether tanpa memberi sebarang hasil sama sekali.
+
+==== Elakkan Panggilan ke Kontrak Lain
+
+((("gas","avoiding calls to other contracts")))Memanggil kontrak lain, terutamanya apabila kos gas fungsi tidak diketahui, mengakibatkan kebarangkalian kehabisan gas. Elakkan menggunakan pustaka yang tidak diuji dengan baik dan digunakan secara meluas. Kurangnya perhatian pustaka yang telah diterima daripada pengaturcara lain, maka bertambah besar padah menggunakannya.
+
+==== Anggaran Kos Gas
+
+((("gas","estimating cost of", id="ix_07smart-contracts-solidity-asciidoc27", range="startofrange")))Jika anda perlu menganggarkan gas yang diperlukan untuk melaksanakan kaedah tertentu bagi sesuatu kontrak yang dipertimbangkan hujah-hujahnya, anda boleh menggunakan langkah-langkah berikut:
+
+[source, javascript]
+var contract = web3.eth.contract(abi).at(address);
+var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2,
+    {from: account});
+
++gasEstimate+ akan memberitahu anda bilangan unit gas yang diperlukan untuk pelaksanaannya. Ini adalah anggaran kerana kesempurnaan Turing dari EVM&#x2014;ia agak tidak mencukupi untuk mewujudkan fungsi yang akan mengambil sejumlah besar gas untuk melaksanakan panggilan yang berbeza. Malah kod pengeluaran boleh mengubah laluan pelaksanaan dengan cara yang halus, menghasilkan kos gas yang sangat berbeza dari satu panggilan ke seterusnya. Walau bagaimanapun, kebanyakan fungsi adalah sangat halus dan +anggaran Gas+ akan memberikan anggaran yang baik sepanjang masa.
+
+Untuk mendapatkan harga gas dari rangkaian, anda boleh gunakan:
+
+[source, javascript]
+var gasPrice = web3.eth.getGasPrice();
+
+Dan dari sana anda boleh menganggarkan kos gas:
+
+[source, javascript]
+var gasCostInEther = web3.utils.fromWei((gasEstimate * gasPrice), 'ether');
+
+Mari kita gunakan fungsi anggaran gas untuk menganggar kos gas contoh +Faucet+ kami, menggunakan kod http://bit.ly/2zf0SIO[dari buku gudang].
+
+Mula Truffle dalam mod pembangunan dan laksanakan fail JavaScript dalam <<estimateGas_function>>, _gas_estimates.js_.
+
+[source, javascript]
+[[estimateGas_function]]
+.gas_estimates.js: Using the estimateGas function
+====
+[source,javascript]
+----
+var FaucetContract = artifacts.require("./Faucet.sol");
+
+FaucetContract.web3.eth.getGasPrice(function(error, result) {
+    var gasPrice = Number(result);
+    console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
+
+    // Dapatkan kontrak semisal
+    FaucetContract.deployed().then(function(FaucetContractInstance) {
+
+		// Gunakan kata kunci 'estimateGas' selepas nama fungsi untuk mendapatkan gas
+// anggaran untuk fungsi tertentu ini (aprove)
+		FaucetContractInstance.send(web3.utils.toWei(1, "ether"));
+        return FaucetContractInstance.withdraw.estimateGas(web3.utils.toWei(0.1, "ether"));
+
+    }).then(function(result) {
+        var gas = Number(result);
+
+        console.log("gas estimation = " + gas + " units");
+        console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
+        console.log("gas cost estimation = " +
+                FaucetContract.web3.utils.fromWei((gas * gasPrice), 'ether') + " ether");
+    });
+});
+----
+====
+
+Inilah caranya dalam konsol pembangunan Truffle:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+
+truffle(develop)> <strong>exec gas_estimates.js</strong>
+Using network 'develop'.
+
+Gas Price is 20000000000 wei
+gas estimation = 31397 units
+gas cost estimation = 627940000000000 wei
+gas cost estimation = 0.00062794 ether
+</pre>
+++++
+
+Adalah disyorkan agar anda menilai kos fungsi gas sebagai sebahagian daripada alur kerja pembangunan anda, untuk mengelakkan sebarang kejutan apabila mengerahkan kontrak ke mainnet(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc27"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc26")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc25")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc24")))
+
+=== Kesimpulan
+
+Dalam bab ini, kita mula bekerja dengan kontrak pintar secara terperinci dan meneroka bahasa pengaturcaraan Kontrak Solidity (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc4")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc3"))) Kita ambil contoh kontrak mudah, _Faucet.sol_, dan secara beransur-ansur membaikinya dan menjadikannya lebih rumit, menggunakannya untuk meneroka pelbagai aspek bahasa Solidity. Dalam <<vyper_chap>> kita akan bekerjasama dengan Vyper, satu lagi bahasa pengaturcaraan berlandaskan kontrak. Kita akan membandingkan Vyper ke Solidity, menunjukkan beberapa perbezaan dalam reka bentuk kedua bahasa ini dan memperdalam pemahaman kami tentang pengaturcaraan kontrak pintar.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc0")))

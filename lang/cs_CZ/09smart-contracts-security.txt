@@ -1,0 +1,2574 @@
+[[smart_contract_security]]
+== Bezpečnost chytrých kontraktů
+
+((("security (smart contracts)", id="ix_09smart-contracts-security-asciidoc0", range="startofrange")))((("smart contracts","security", id="ix_09smart-contracts-security-asciidoc1", range="startofrange")))Při psaní chytrých kontraktů je bezpečnost jedním z nejdůležitějších hledisek. V oblasti programování chytrých kontraktů jsou chyby nákladné a snadno zneužitelné. V této kapitole se podíváme na osvědčené postupy zabezpečení a návrhové vzory, jakož i na „bezpečnostní „antivzory“, což jsou postupy a vzorce, které mohou zavést zranitelnost v našich chytrých kontraktech.
+
+Stejně jako u jiných programů bude chytrý kontrakt vykonáván přesně tak,  jak je napsán, což není vždy to, co programátor zamýšlel. Kromě toho jsou všechny chytré kontrakty veřejné a každý uživatel s nimi může komunikovat jednoduše vytvořením transakce. Jakákoli zranitelnost může být zneužita a ztráty jsou téměř vždy nenapravitelné. Je proto důležité dodržovat osvědčené postupy a používat osvědčené návrhové vzory.
+
+=== Doporučené postupy zabezpečení
+
+((("defensive programming")))((("security (smart contracts)","best practices")))_Defenzivní programování_ je styl programování, který je zvláště vhodný pro chytré kontrakty. Zdůrazňuje následující, z nichž všechny jsou osvědčenými postupy:
+
+Minimalismus/jednoduchost:: Složitost je nepřítelem bezpečnosti. Čím jednodušší je kód a čím méně dělá, tím menší je pravděpodobnost výskytu chyby nebo nepředvídaného efektu. Při prvním zapojení do programování chytrých kontraktů se vývojáři často pokoušejí napsat spoustu kódu. Místo toho byste se měli podívat na svůj kód chytrého kontraktu a pokusit se najít způsoby, jak udělat méně, s méně řádky kódu, menší složitostí a méně „funkcemi“. Pokud vám někdo řekne, že jejich projekt vytvořil „tisíce řádků kódu“ pro chytré kontrakty, měli byste zpochybnit zabezpečení tohoto projektu. Jednodušší je bezpečnější.
+
+Opětovné použití kódu:: Nezkoušejte znovu vynalézat kolo. Pokud již existuje knihovna nebo kontrakt, která dělá většinu toho, co potřebujete, znovu ji použijte. V rámci svého vlastního kódu dodržujte SUCHÝ princip: Neopakujte se. Pokud vidíte, že se úryvek kódu opakuje vícekrát, zeptejte se sami sebe, zda by mohl být zapsán jako funkce nebo knihovna a znovu použit. Kód, který byl rozsáhle používán a testován, je pravděpodobně bezpečnější než jakýkoli nový kód, který píšete. Dejte si pozor na syndrom „nevytvořil jsem já sám“, kde jste v pokušení „vylepšit“ prvek nebo komponentu vytvořením od nuly. Bezpečnostní riziko je často větší než hodnota zlepšení.
+
+Kvalita kódu::  Kód chytrého kontraktu nikdy neodpouští. Každá chyba může vést k peněžním ztrátám. Neměli byste zacházet s programováním chytrého kontraktu stejně jako s univerzálním programováním. Zápis DApps v Solidity není jako vytvoření webového aplikace v JavaScriptu. Spíše byste měli použít přísné techniky a vývoj metodik, jako byste to udělali v leteckém inženýrství nebo v jakékoli podobně neodpouštějící disciplíně. Jakmile „spustíte“ svůj kód, můžete udělat jen málo pro vyřešení problémů.
+
+Čitelnost/kontrolovatelnost:: Váš kód by měl být jasný a srozumitelný. Čím snazší je číst, tím snazší je kontrolovat. Chytré kontrakty jsou veřejné, protože každý si může přečíst bajtkód a kdokoli ho může zpětně upravit. Proto je užitečné rozvíjet svou práci na veřejnosti pomocí metodologií založených na spolupráci a otevřeného zdrojového kódu, čerpat z kolektivní moudrosti vývojářské komunity a těžit z nejvyššího společného jmenovatele vývoje otevřených zdrojových kódů. Měli byste napsat kód, který je dobře zdokumentovaný a snadno čitelný, podle stylů a pojmenovávacích  konvencí, které jsou součástí Ethereum komunity.
+
+Test pokrytí:: Otestujte vše, co můžete. Chytré kontrakty probíhají ve veřejném prováděcím prostředí, kde je může provádět kdokoli s jakýmkoli vstupem, se kterým chce. Nikdy byste neměli předpokládat, že vstup, jako jsou parametry funkce, je dobře formátovaný, správně ohraničený nebo má neškodný účel. Než povolíte pokračování provádění kódu, otestujte všechny parametry, zda jsou v očekávaném rozmezí a zda jsou správně naformátovány.
+
+=== Bezpečnostní rizika a antivzory
+
+((("security (smart contracts)","risks and antipatterns", id="ix_09smart-contracts-security-asciidoc2", range="startofrange")))Jako programátor chytrých kontraktů byste měli znát nejvíce běžná bezpečnostní rizika, aby bylo možné zjistit a vyhnout se programovacím vzorům, které vaše smlouvy vystavují těmto rizikům. V následujících několika oddílech se podíváme na různá bezpečnostní rizika, příklady toho, jak mohou vzniknout zranitelnosti, a protiopatření nebo preventivní řešení, která lze použít k jejich řešení.
+
+[[reentrancy_security]]
+=== Opětovné zavolání
+
+((("reentrancy attacks", id="ix_09smart-contracts-security-asciidoc3", range="startofrange")))((("security (smart contracts)","reentrancy attacks", id="ix_09smart-contracts-security-asciidoc4", range="startofrange")))Jednou z vlastností Ethereum chytrých kontraktů je jejich schopnost volat
+a využívat kód z jiných externích kontraktů. Kontrakty také obvykle
+zpracovávají ether a často posílají ether různým externím uživatelům
+Tyto operace vyžadují, aby kontrakty odesílaly externí volání. Tyto
+externí volání mohou být uneseny útočníky, kteří mohou vynutit
+provést další kód (pomocí nouzové funkce),
+včetně zpětného volání do sebe. Útoky tohoto druhu byly použity v
+neslavném http://bit.ly/2DamSZT[The DAO útoku].
+
+Další informace o útocích opětovného volání uvádí Gus Guimareas v http://bit.ly/2zaqSEY[příspěvku na blogu] a http://bit.ly/2ERDMxV[Osvědčené postupy Ethereum chytrých kontraktů].
+
+[role="notoc"]
+==== Zranitelnost
+RNDr. Jan Lánský, Ph.D. (zizelevak@gmail.com), Vysoká škola finanční a správní, 2020;
+POZNÁMKA pro editora
+Nadpisy oddílů „Zranitelnost“ a „Preventivní techniky“ v této kapitole byly změněny z nadpisů na tučné formátování úmyslně, aby nedošlo k nepořádku obsahu opakovaným zněním.
+RNDr. Jan Lánský, Ph.D. (zizelevak@gmail.com), Vysoká škola finanční a správní, 2020;
+
+((("reentrancy attacks","vulnerability", id="ix_09smart-contracts-security-asciidoc5", range="startofrange")))Tento typ útoku může nastat, když kontrakt pošle ether na neznámou adresu.
+Útočník může pečlivě vytvořit smlouvu na externí adrese
+která obsahuje škodlivý kód v nouzové funkci. Když tedy kontrakt pošle ether na tuto adresu, bude
+vyvolán škodlivý kód. Obvykle škodlivý kód provede
+funkci zranitelného kontraktu, která nebyla očekávána vývojářem 
+Termín „opětovné volání“ (reentrancy) pochází ze skutečnosti, že
+externí škodlivé kontrakty mohou zavolat funkci zranitelného
+kontraktu a opětovně __reenters__ do cesty vykonávání kódu 
+
+Abychom to objasnili, zvažte jednoduchý zranitelný kontrakt  v 2007 <<etherstore_vulnerable>>, který pracuje jako
+Ethereum trezor,  který umožňuje vkladatelům vybrat pouze 1 ether za
+týden.
+
+[[etherstore_vulnerable]]
+.EtherStore.sol
+====
+[source,solidity,linenums]
+----
+contract EtherStore {
+
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address => uint256) public lastWithdrawTime;
+    mapping(address => uint256) public balances;
+
+    function depositFunds() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(balances[msg.sender] >= _weiToWithdraw);
+        // omezení výběru
+        require(_weiToWithdraw <= withdrawalLimit);
+        // časové omezení výběru
+        require(now >= lastWithdrawTime[msg.sender] + 1 weeks);
+        require(msg.sender.call.value(_weiToWithdraw)());
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+    }
+ }
+----
+====
+
+Tento kontrakt má dvě veřejné funkce, `depositFunds` a
+`withdrawFunds`. Funkce `depositFunds` jednoduše zvýší
+zůstatek odesilatele. Funkce `withdrawFunds` dovolí odesilateli
+určit množství vybraného wei. Tato funkce je navržena, aby uspěla
+pouze pokud požadované množství vybíraného wei je menší než 1 ether a výběr
+nenastal v posledním týdnu.
+
+Zranitelnost ja na řádce 17, kde kontrakt zasílá uživateli jím
+požadované množství etheru. Uvažujme útočníka, který vytvořil kontrakt v <<etherstore_attack>>.
+
+[[etherstore_attack]]
+.Attack.sol
+====
+[source,solidity,linenums]
+----
+import "EtherStore.sol";
+
+contract Attack {
+  EtherStore public etherStore;
+
+  // inicializujte proměnnou etherStore pomocí adresy kontraktu
+  constructor(address _etherStoreAddress) {
+      etherStore = EtherStore(_etherStoreAddress);
+  }
+
+  function attackEtherStore() external payable {
+      // útok na nejbližší ether
+      require(msg.value >= 1 ether);
+      // odešle eth do funkce depositFunds()
+      etherStore.depositFunds.value(1 ether)();
+      // začne magie
+      etherStore.withdrawFunds(1 ether);
+  }
+
+  function collectEther() public {
+      msg.sender.transfer(this.balance);
+  }
+
+  // nouzová function - kde nastane magie
+  function () payable {
+      if (etherStore.balance > 1 ether) {
+          etherStore.withdrawFunds(1 ether);
+      }
+  }
+}
+----
+====
+
+Jak by mohlo dojít k zneužití? Za prvé by útočník vytvořil škodlivou smlouvu (řekněme na
+addrese `0x0...123`) s adresou kontraktu `EtherStore`’ jako samostatným
+parametrem konstruktoru. To by inicializovalo a nasměrovalo veřejnou
+proměnou `etherStore` do konteraktu, který má být napaden.
+
+Útočník by pak zavolal funkci `attackEtherStore` s nějakým
+množstvím etheru vyšším nebo rovným 1, předpokládejme  `1 ether` prozatím
+V tomto příkladu předpokládáme také řadu dalších uživatelů,
+kteří do tohoto kontraktu vložil ether, takže jeho aktuální zůstatek je
+`10 ether`. Poté nastane následující:
+
+1. _Attack.sol_, řádek 15: Funkce `depositFunds` kontraktu `EtherStore`
+bude zavolána s hodnotou `msg.value` of `1 ether` (a hodně plynu). 
+Odesilatel (`msg.sender`) bude škodlivý kontraktu (`0x0...123`). Tedy
+       `balances[0x0..123] = 1 ether`.
+
+2. _Attack.sol_, řádek 17: Škodlivý kontrakt pak zavolá
+funkci `withdrawFunds` kontraktu `EtherStore` s parametrem `1
+ether`. ím budou splněny všechny požadavky (řádky 12–16
+    `EtherStore` kontraktu) protože nebyly provedeny žádné předchozí výběry.
+
+3. _EtherStore.sol_, řádek 17: Kontrakt pošle `1 ether` zpět
+škodlivému pass:[<span class="keep-together">kontraktu</span>].
+
+4. _Attack.sol_, řádek 25: Platba škodlivému  kontraktu bude
+poté vykonána nouzovou funkcí.
+
+5. _Attack.sol_, řádek 26: Celkový zůstate kontraktu +EtherStore+ contract byl
+`10 ether` a nyní je `9 ether`, takže +if+ podmíněný příkaz projde.
+
+6. _Attack.sol_, řádek 27: Nouzová funkce zavolá znovu `EtherStore`
+funkci `withdrawFunds` a  '__opětovně vstoupí__ do' the `EtherStore`
+kontraktu
+
+7. _EtherStore.sol_, řádek 11: V tomto druhém volání `withdrawFunds`, 
+je zůstatek útočícího kontraktu stále `1 ether`, protože řádka 18 ještě nebyla vykonána. Takže, my
+stále máme `balances[0x0..123] = 1 ether`. To je také případ
+proměnné `lastWithdrawTime`.  Znovu jsou splněny všechny požadavky.
+
+8. _EtherStore.sol_, řádka 17: Útočící kontrakt vybere další `1 ether`.
+
+9. Steps 4 je opakován dokud není porušena podmínka  `EtherStore.balance > 1`, jak uvádí řádek 26 v _Attack.sol_.
+
+10. _Attack.sol_, řádek 26: Jakmile v kontraktu `EtherStore` zbývá 1 (nebo méně) etheru, selže tato podmínka`if`. To umožní, aby byly provedeny řádky 18 a 19 kontraktu „EtherStore“ (pro každé volání funkce `drawFunds`).
+
+11. _EtherStore.sol_, řádky 18 a 19: Zůstatek `balances` a
+mapování posledního výběru `lastWithdrawTime` budou nastaveny a provádění skončí.
+
+Konečným výsledkem je, že útočník vybral vše kromě 1 etheru
+z kontraktu `EtherStore` v jediné transakci.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc5")))
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("reentrancy attacks","preventative techniques")))Existuje řada běžných technik, které pomáhají vyhýbat se možné
+zranitelnosti chytrého kontraktu útokem vícenásobného volání. ((("transfer function","to reduce reentrancy vulnerabilities")))Prvním z nich je (pokud je to možné) je použití vestavěné
+http://bit.ly/2Ogvnng[+transfer+]
+function pro zasílání etheru externím kontraktům. Funkce +transfer+ 
+pouze zašle 2300 plynu s externím voláním, což není dostatečné, aby
+cílová adresa /kontrakt byla schopna zavolat další kontrakt (např. znovu zavolat odesílající
+kontrakt).
+
+((("checks-effects-interactions pattern")))Druhou technikou je zajistit, aby veškerá logika, která mění stav
+proměnných se udála před zasláním etheru mimo kontrakt (nebo jakýmkoliv  
+externím voláním). V příkladu `EtherStore`, řádky 18 a 19 v
+_EtherStore.sol_ měly by být přesunuty před řádek 17. Je dobrým zvykem, aby byl jakýkoli kód, který provádí externí volání na neznámé adresy
+poslední operace v lokalizované funkci nebo provedeném kódu. Toto
+je známo jako
+http://bit.ly/2EVo70v[vzor kontrola, efekt,
+interakce].
+
+((("mutex")))Třetí technikou je mutex, toje přidání stavové
+proměnné, která zamyká kontrakt během vykonávná kódu, zabraňující
+vícenásobnému volání
+
+Použití všech těchto technik (použití všech tří je zbytečné, ale my to děláme)
+pro demonstrační účely) na _EtherStore.sol_, dává
+Kontrakt odolný útoku vícenásobného volání
+
+[source,solidity,linenums]
+----
+contract EtherStore {
+
+    // inicializace mutexu
+    bool reEntrancyMutex = false;
+    uint256 public withdrawalLimit = 1 ether;
+    mapping(address => uint256) public lastWithdrawTime;
+    mapping(address => uint256) public balances;
+
+    function depositFunds() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdrawFunds (uint256 _weiToWithdraw) public {
+        require(!reEntrancyMutex);
+        require(balances[msg.sender] >= _weiToWithdraw);
+        // omezení výběru
+        require(_weiToWithdraw <= withdrawalLimit);
+        // časové omezení výběru
+        require(now >= lastWithdrawTime[msg.sender] + 1 weeks);
+        balances[msg.sender] -= _weiToWithdraw;
+        lastWithdrawTime[msg.sender] = now;
+        // nastaví mutex reEntrancy před externím voláním
+        reEntrancyMutex = true;
+        msg.sender.transfer(_weiToWithdraw);
+        // uvolní mutex po externím volání
+        reEntrancyMutex = false;
+    }
+ }
+----
+
+[[real_world_example_the_dao]]
+==== Skutečný příklad: The DAO
+
+((("DAO (Decentralized Autonomous Organization)","reentrancy attack")))((("reentrancy attacks","real-world example: DAO attack")))The DAO (Decentralized Autonomous Organization) byl napaden významným útokem,
+který nastal v rané fázi vývoje Etherea. V tu dobu kontrakt
+držel přes 150 milionů dolarů. Opětovné volání hrálo hlavní roli v 
+útoku, což nakonec vedlo k tvrdému rozštěpení, která vytvořila Ethereum
+Classic (ETC). Dobrá analýza zneužití DAO viz
+http://bit.ly/2EQaLCI. Další informace o historii rozštěpení Etherea, časovém plánu DAO útoku a narození ETC v tvrdém rozštěpení naleznete v <<ethereum_standards>>.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc4")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc3")))
+
+=== Aritmetické podtečení / přetečení
+
+((("arithmetic over/underflows", id="ix_09smart-contracts-security-asciidoc6", range="startofrange")))((("overflow", id="ix_09smart-contracts-security-asciidoc7", range="startofrange")))((("security (smart contracts)","arithmetic over/underflow threat", id="ix_09smart-contracts-security-asciidoc8", range="startofrange")))((("underflow", id="ix_09smart-contracts-security-asciidoc9", range="startofrange")))Virtuální počítač Ethereum určuje datové typy pevné velikosti pro
+celá čísla. To znamená, že celočíselná proměnná může představovat pouze určitý rozsah
+čísel. Například  `uint8` může ukládat pouze
+čísla z intervalu [0,255].  Pokus o uložení `256` do `uint8` vede
+k výsledku `0`. Pokud tomu nebude věnována pozornost, mohou být proměnné v Solidity
+zneužity, pokud není zkontrolován vstup uživatele, a přesto jsou provedeny výpočty
+jejichž výsledné číslo se nachází mimo interval datového typu, 
+do kterého mají být uloženy
+
+Další čtení o aritmetických přetečeních a podtečeních, viz https://bit.ly/2nNLuOr["How to Secure Your Smart Contracts"],
+https://bit.ly/2MOfBPv[Doporučené postupy pro Ethereum chytré kontrakty], a
+https://bit.ly/2xvbx1M["Ethereum, Solidity a přetečení celých čísel: programování bločenek jako v roce 1970"].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("arithmetic over/underflows","vulnerability", id="ix_09smart-contracts-security-asciidoc10", range="startofrange")))Přetečení / podtečení nastane, když je provedena operace, která vyžaduje
+proměnnou pevné velikosti pro uložení čísla (nebo části dat), které je mimo
+rozsah datového typu proměnné
+
+((("underflow"))) Například, odečtením`1` od `uint8` (8 bitové celé číslo bez znaménka) proměnné, jejíž hodnota je `0` vede
+k číslu `255`. To je _podtečení_. Přiřadili jsme číslo
+pod dolní mezí `uint8`, takže výsledek je _přetočen_ a dává
+největší číslo `uint8`, které může být uloženo. Podobně přičtení `2^8=256` k
+`uint8` ponechá proměnnou nezměněnou, protože jsme přetočili o
+celý rozsah  `uint`. Dvě jednoduché analogie tohoto chování jsou
+Počitadla ujetých kilometrů v automobilech, která měří ujetou vzdálenost (po přetočí se na 000000 po
+překonání nejvyššího čísla, např. 999999) a o periodické matematické funkce
+(přičtení +2π+ k parametru +sin+ ponechá hodnotu nezměněnou).
+
+((("overflow","defined")))Přidání čísel větších než je rozsah datového typu se nazývá _přetečení_. Pro
+ujasnění, přičtení `257` do `uint8` s aktuální hodnotou  `0` vede
+k číslu `1`. Někdy je poučné přemýšlet o proměnných pevné velikosti
+jako cyklických, u kterých začneme znovu od nuly, pokud přičteme čísla nad
+největší možné uložené číslo a začneme odpočítávat od největšího čísla, pokud odečítáme od nuly. V případě `int` typů se znaménkem, které _mohou _ reprezentovat záporná čísla, začneme znovu, jakmile dosáhneme největší záporné hodnoty; například pokud se pokusíme odečíst `1` od` int8`, jehož hodnota je `-128`, dostaneme` 127`.
+
+Tyto druhy numerických triků umožňují útočníkům zneužívat kód.
+neočekávané logické toky. Zvažte například kontrakt +TimeLock+ v
+<<timelock_sol_security>>.
+
+[[timelock_sol_security]]
+.TimeLock.sol
+====
+[source,solidity,linenums]
+----
+contract TimeLock {
+
+    mapping(address => uint) public balances;
+    mapping(address => uint) public lockTime;
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+        lockTime[msg.sender] = now + 1 weeks;
+    }
+
+    function increaseLockTime(uint _secondsToIncrease) public {
+        lockTime[msg.sender] += _secondsToIncrease;
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}
+----
+====
+
+Tento kontrakt je navržen tak, aby fungoval jako časový trezor: uživatelé mohou
+vložit do kontraktu éter a bude tam uzamčen alespoň 
+týden. Uživatel může prodloužit dobu čekání na déle než 1 týden, pokud si zvolí,
+ale po uložení si uživatel může být jistý, že je jeho ether bezpečně uzamčen
+alespoň týden, respektive, takto to bylo zamýšleno.
+
+V případě, že je uživatel nucen předat svůj soukromý klíč,  kontrakt jako
+tento by mohl být užitečný, aby se zajistilo, že jeho ether bude na krátkou dobu nedosažitelný. Ale pokud
+uživatel se v této smlouvě zamkl v `100 etheru` a předal své klíče
+útočníkovi, mohl útočník použít přetečení k přijetí etheru, bez ohledu na
+časový zámek `lockTime`.
+
+Útočník by mohl určit aktuální `lockTime` pro adresu
+od které nyní drží klíč (je to veřejná proměnná). Zavolejme tento
+`userLockTime`. Mohl pak zavolat `increaseLockTime` funkci a
+předat ji parametr `2^256 - userLockTime`.  Toto číslo bude
+přičteno k aktuální hodnotě `userLockTime` a způsobí přetečení, nastavení
+`lockTime[msg.sender]` na `0`. Útočník by pak mohl jednoduše zavolat
+funkci `withdraw` pro získání jeho odměny.
+
+Podívejme se na další příklad (<<underflow_vulnerability_example_from_ethernaut_challenge>>), tento zhttps://github.com/OpenZeppelin/ethernaut[Ethernaut výzev].
+
+*VAROVÁNÍ: SPOILER:* _Pokud jste dosud nevyřešili  Ethernaut problémy, tohle
+dává řešení jedné z úrovní_.
+
+[[underflow_vulnerability_example_from_ethernaut_challenge]]
+.Příklad chyby podtečení z výzvy Ethernaut
+====
+[source,solidity,linenums]
+----
+pragma solidity ^0.4.18;
+
+contract Token {
+
+  mapping(address => uint) balances;
+  uint public totalSupply;
+
+  function Token(uint _initialSupply) {
+    balances[msg.sender] = totalSupply = _initialSupply;
+  }
+
+  function transfer(address _to, uint _value) public returns (bool) {
+    require(balances[msg.sender] - _value >= 0);
+    balances[msg.sender] -= _value;
+    balances[_to] += _value;
+    return true;
+  }
+
+  function balanceOf(address _owner) public constant returns (uint balance) {
+    return balances[_owner];
+  }
+}
+----
+====
+
+Jedná se o jednoduchý tokenový kontrakt, který využívá funkci `transfer`,
+umožňující účastníkům pohybovat se svými tokeny. Vidíte chybu
+v tomto kontraktu?
+
+Chyba je ve funkci `transfer`. Příkaz +require+ na
+řádku 13 lze obejít pomocí podtečení. Zvažte uživatele s nulovým
+zůstatkem. Mohl zavolat  funkci `transfer` s jakoukoli nenulovou
+hodnotou `_value` a obejít příkaz  +require+ na řádku 13. To je protože
+`balances[msg.sender]` je +0+ (a `uint256`), takže odečítání jakékoli
+kladné hodnoty (mimo `2^256`) vede ke kladnému číslu, jak bylo dříve popsáno.  To vede ke splnění podmínky na řádku 14,
+kde bude k zůstatku připsáno kladné číslo. Tak v tomto
+příkladě, útočník může získat zdarma tokeny kvůli zranitelnosti podtečení.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc10")))
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("arithmetic over/underflows","preventative techniques", id="ix_09smart-contracts-security-asciidoc11", range="startofrange")))Současná konvenční technika na ochranu proti zranitelnosti podtečení / přetečení
+je použití nebo vytváření matematických knihoven, které nahrazují
+standardní matematické operátory sčítání, odčítání a násobení
+(rozdělení je vyloučeno, protože nezpůsobuje přetečení / podtečení a EVM
+se vrací do původního stavu při dělení 0).
+
+((("OpenZeppelin")))((("SafeMath library")))https://github.com/OpenZeppelin/openzeppelin-solidity[OpenZeppelin]
+odvedli skvělou práci při vytváření a auditu zabezpečených knihoven pro komunitu Ethereum. Zejména jejich http://bit.ly/2ABhb4l[knihovna+SafeMath+] lze použít k zamezení zranitelností podtečení / přetečení.
+
+Abychom demonstrovali, jak jsou tyto knihovny použity v Solidity, opravme kontrakt „`TimeLock` pomocí knihovny „ `SafeMath`. Verze kontraktu bez přetečení je:
+
+[source,solidity,linenums]
+----
+library SafeMath {
+
+  function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    if (a == 0) {
+      return 0;
+    }
+    uint256 c = a * b;
+    assert(c / a == b);
+    return c;
+  }
+
+  function div(uint256 a, uint256 b) internal pure returns (uint256) {
+    // assert(b > 0); // Solidity automaticky vyvolá výjimku při dělení 0
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // Toto postihuje všechny případy
+    return c;
+  }
+
+  function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+    assert(b <= a);
+    return a - b;
+  }
+
+  function add(uint256 a, uint256 b) internal pure returns (uint256) {
+    uint256 c = a + b;
+    assert(c >= a);
+    return c;
+  }
+}
+
+contract TimeLock {
+    using SafeMath for uint; // použití knihovny pro typ uint 
+    mapping(address => uint256) public balances;
+    mapping(address => uint256) public lockTime;
+
+    function deposit() external payable {
+        balances[msg.sender] = balances[msg.sender].add(msg.value);
+        lockTime[msg.sender] = now.add(1 weeks);
+    }
+
+    function increaseLockTime(uint256 _secondsToIncrease) public {
+        lockTime[msg.sender] = lockTime[msg.sender].add(_secondsToIncrease);
+    }
+
+    function withdraw() public {
+        require(balances[msg.sender] > 0);
+        require(now > lockTime[msg.sender]);
+        balances[msg.sender] = 0;
+        msg.sender.transfer(balance);
+    }
+}
+----
+
+Všimněte si, že všechny standardní matematické operace byly nahrazeny těmito
+definovanými v knihovně `SafeMath`. Kontrakt `TimeLock` již dále
+neprovádí jakoukoli operaci, která je schopna přetečení / podtečení.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc11")))
+
+==== Příklady ze života: PoWHC a přetečení dávkového přenosu (CVE-2018–10299)
+
+((("arithmetic over/underflows","real-world examples: PoWHC and batch transfer overflow")))((("batchTransfer function")))((("Proof of Weak Hands Coin (PoWHC)")))Proof of Weak Hands Coin (PoWHC), volně přeloženo jako důkaz slabých rukou, byl původně vymyšlen jako vtipné, bylo
+Ponziho schéma napsané internetovým kolektivem. Bohužel se zdá, že autor (autoři) kontraktu
+předtím neviděli přetečení / podtečení a následkem toho bylo 866 etheru
+odcizeno z kontraktu. Eric Banisadr poskytuje dobrý přehled o tom, jak došlo k podtečení
+(což není příliš odlišné od výše popsané Ethernaut výzvy) na svém https://bit.ly/2wrxIFJ[příspěvku v blogu.
+
+http://bit.ly/2CUf7WG[Další příklad] přináší implementace funkce `batchTransfer()` function ze skupiny kontraktů ERC20 tokenů. Implementace obsahovala chybu přetečení; o podrobnostech si můžete přečíst na vhttps://bit.ly/2HDlIs8[PeckShield účtu].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc9")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc8")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc7")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc6")))
+
+=== Neočekávaný ether
+
+((("ether (generally)","unexpected ether security threat", id="ix_09smart-contracts-security-asciidoc12", range="startofrange")))((("security (smart contracts)","unexpected ether threat", id="ix_09smart-contracts-security-asciidoc13", range="startofrange")))((("unexpected ether","security threat from", id="ix_09smart-contracts-security-asciidoc14", range="startofrange")))Obvykle, když je ether posílán kontraktu, ten musí provést buď
+nouzovou funkci nebo jinou funkci definovanou v kontraktu.
+existují dvě výjimky, kdy kontrakt může přijmout ether bez
+vykonání kódu. Kontrakty, které se spoléhají na vykonání kódu při
+přijetí jakéhokoli etheru mohou být zranitelné útokem, při kterém
+je jim zaslán nežádoucí ether.
+
+Další informace k tomuto tématu viz https://bit.ly/2MR8Gp0["Jak zabezpčit váš chytrý kontrakt"] a http://bit.ly/2RjXmUWl["Solidity bezpečnostní vzory - vnucení etheru do kontraktu"].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("unexpected ether","vulnerability", id="ix_09smart-contracts-security-asciidoc15", range="startofrange")))Běžná ((("invariant checking")))technika defensivního programování, která je užitečná při vynucování
+správného stavu transakcí nebo ověřování operací je
+_ověřováni invariantu_. Tato technika zahrnuje definici množiny
+invariantů (metrik nebo parametrů, které by se neměli měnit) a kontrolování
+že zůstaly nezměněny po jedné nebo mnoha operacích
+Toto je obvykle dobrý návrh za předpokladu, že kontrolované invarianty jsou
+ve skutečnosti invarianty. Jedním příkladem invariantu je celkové množství `totalSupply` 
+pevné emise
+http://bit.ly/2CUf7WG[ERC20 tokenu]. Protože žádná funkce by neměla upravovat tento invariant, mohli bychom přidat kontrolu,
+že funkce `transfer` zajišťuje, že `totalSupply`
+zůstává nezměněno, k zajištění fungování funkce podle očekávání.
+
+Zejména existuje jeden zjevný invariant, který může být lákavé použít
+ale ten může ve skutečnosti manipulován externím uživatelem (bez ohledu na stanovená pravidla
+chytrým kontraktem). Toto je aktuální ether uložený v
+kontraktu. Když se vývojáři poprvé učí Solidity, mají
+mylnou představu, že kontrakt může přijmout nebo získat éter pouze pomocí funkce
+přijímající platby. Tato mylná představa může vést ke kontraktům, které mají falešné předpoklady
+o zůstatku etheru v nich, což může vést k řadě
+zranitelností. Kouřící zbraň pro tuto zranitelnost je (nesprávné) použití
+`this.balance`.
+
+Existují dva způsoby, jak lze ether (násilně) poslat na kontrakt
+bez použití platby přijímající funkce nebo provedení jakéhokoli kódu 
+kontraktu:
+
+Self-destruct/suicide::
+
+((("selfdestruct function")))Jakýkoli kontrakt je schopna implementovat
+http://bit.ly/2RovrDf[`selfdestruct`
+funkci], která odstraní všechen bajtkód z adresy kontraktu a zašle
+všechen uloženy ether na adresu specifikovanou parametrem. Pokud tato
+specifikovaná adresa je také kontrakt, žádná funkce (včetně
+záložní) není zavolána. Proto funkce `selfdestruct` může
+být použita k násilnému zaslání etheru do jakéhokoli kontraktu bez ohledu na kód, který
+může existovat v kontraktu, dokonce i do kontraktu bez platby přijímající funkce.
+To znamená, že každý útočník může vytvořit kontrakt s
+funkcí `selfdestruct`,  zaslat mu ether a zavolat `selfdestruct(target)`
+a vynutit zaslání etheru na cílový `target` kontrakt. Martin Swende napsal
+excelentní http://bit.ly/2OfLukM[příspěvek na blogu] popisující některé vtípky instrukce self-destruct (Vtípek #2) společně s
+s účtem kontrolujícím nesprávně invarianty,  
+což může vést k poněkud katastrofickému zhroucení Ethereum sítě.
+
+Předposlaný ether::
+
+Dalším způsobem, jak zaslat ether kontraktu, je předposlat ether adrese kontraktu
+Adresy kontraktů jsou deterministické, ve skutečnosti je tato adresa
+vypočtena z Keccak-256 haše (běžně označovaného SHA-3)
+adresy vytvářející kontrakt a transakční nonce použité pro vytvoření kontraktu.
+contract. Konkrétně má podobu `address = sha3(rlp.encode([account_address,transaction_nonce]))`
+(viz diskuse Adriana Manninga http://bit.ly/2EPj5Tq["Bezklíčový ether"] pro některé zábavné případy použití tohoto). To
+znamená, že kdokoli může spočítat, jaká bude adresa kontraktu, než bude
+kontrakt vytvořen a poslal ether na tuto adresu. Když je kontrakt
+vytvořen, bude mít nenulovou etherovou balanci.
+
+Pojďme prozkoumat některá úskalí, která mohou na základě těchto znalostí vzniknout. Zvažte příliš jednoduchý kontrakt v <<etherGame_security>>.
+
+[[etherGame_security]]
+.EtherGame.sol
+====
+[source,solidity,linenums]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+
+    mapping(address => uint) redeemableEther;
+    // Uživatelé platí 0,5 etheru. Na konkrétních milnících získají odměnu.
+    function play() external payable {
+        require(msg.value == 0.5 ether); // každá hra stojí 0.5 etheru
+        uint currentBalance = this.balance + msg.value;
+        // zajistit, aby po dokončení hry žádný hráč již nehrál
+        require(currentBalance <= finalMileStone);
+        // při milníku odměnit hráče
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        return;
+    }
+
+    function claimReward() public {
+        // ujistěte se, že je hra dokončena
+        require(this.balance == finalMileStone);
+        // ujistěte se, že je na vyplacení odměny
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }
+----
+====
+
+Tento kontrakt představuje jednoduchou hru (která by samozřejmě zahrnovala
+souběh), kde hráči posílají kontraktu 0,5 etheru v naději, že budou hráčem, který dosáhne jako první jednoho ze tří
+milníků. Milníky jsou uvedeny v etheru. První, kdo 
+dosáhne milníku může si vybrat část etheru, když hra skončí.
+Hra končí, když je dosažen konečný milník (10 ether).
+Uživatelé si pak mohou nárokovat své odměny.
+
+Problémy s kontraktem EtherGame pocházejí ze špatného používání
+`this.balance` na obou řádkách 14 (a odvozením 16) a 32.
+Zlomyslný útočník mohl násilně poslat malé množství etheru, řekněme 0,1 etheru, pomocí funkce  `selfdestruct` (diskutováno dříve), aby
+zabránit budoucím hráčům v dosažení milníku. `this.balance` nikdy nebude násobkem 0,5 etheru díky tomuto příspěvku 0,1 etheru,
+protože všichni legitimní hráči mohou posílat pouze 0,5-etherové přírůstky. Tím se zabrání všem podmínkám +if+ na řádcích 18, 21,
+a 24 v jejich splnění.
+
+Ještě horší je, že pomstychtivý útočník, který minul milník, mohl násilně
+poslat 10 etherů (nebo ekvivalentní množství etheru, které zvedne
+zůstatek kontraktu and `finalMileStone`), což by zamklo všechny
+odměny ve smlouvě navždy. Je to proto, že  funkce pro nárokování odměny `claimReward`
+ bude vždy neúspěšně ukončena, kvůli +require+ na řádku 32 (tj. protože
+`this.balance` is vyšší než `finalMileStone`).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc15")))
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("unexpected ether","preventative techniques")))Tento druh zranitelnosti obvykle vyplývá ze zneužití  `this.balance`.
+Logika kontraktu, pokud je to možné, by se měla vyhnout závislosti na přesné 
+hodnotě zůstatku kontraktu, protože s ním může být uměle manipulováno.
+Pokud používáte logiku založenou na `this.balance`, musíte
+se vyrovnat s neočekávanými zůstatky.
+
+Pokud jsou vyžadovány přesné hodnoty uloženého etheru, je definována proměnná, která
+by se měla používat pro načítání hodnot získaných platby přijímající funkcí,
+pro sledování uloženého etheru. Tato proměnná nebude ovlivněna
+vynuceným zasláním etheru pomocí volání `selfdestruct`.
+
+S ohledem na to mohla opravená verze kontraktu `EtherGame` mohla
+vypadat jako:
+
+[source,solidity,linenums]
+----
+contract EtherGame {
+
+    uint public payoutMileStone1 = 3 ether;
+    uint public mileStone1Reward = 2 ether;
+    uint public payoutMileStone2 = 5 ether;
+    uint public mileStone2Reward = 3 ether;
+    uint public finalMileStone = 10 ether;
+    uint public finalReward = 5 ether;
+    uint public depositedWei;
+
+    mapping (address => uint) redeemableEther;
+
+    function play() external payable {
+        require(msg.value == 0.5 ether);
+        uint currentBalance = depositedWei + msg.value;
+        // zajistit, aby po dokončení hry žádný hráč již nehrál
+        require(currentBalance <= finalMileStone);
+        if (currentBalance == payoutMileStone1) {
+            redeemableEther[msg.sender] += mileStone1Reward;
+        }
+        else if (currentBalance == payoutMileStone2) {
+            redeemableEther[msg.sender] += mileStone2Reward;
+        }
+        else if (currentBalance == finalMileStone ) {
+            redeemableEther[msg.sender] += finalReward;
+        }
+        depositedWei += msg.value;
+        return;
+    }
+
+    function claimReward() public {
+        // ujistěte se, že je hra dokončena
+        require(depositedWei == finalMileStone);
+        // ujistěte se, že je na vyplacení odměny
+        require(redeemableEther[msg.sender] > 0);
+        redeemableEther[msg.sender] = 0;
+        msg.sender.transfer(transferValue);
+    }
+ }
+----
+
+Zde jsme vytvořili novou proměnnou `depositedWei`, která sleduje
+množství vloženého etheru, a tuto proměnou používáme
+pro testování podmínek. Dále již nepoužíváme odkaz na
+`this.balance`.
+
+==== Další příklady
+
+Je uvedeno několik příkladů zneužitelných kontraktů v
+https://github.com/Arachnid/uscc/tree/master/submissions-2017/[Underhanded
+Solidity Coding Contest], která také poskytuje rozšířené příklady řady
+nástrah uvedených v této sekci..(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc14")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc13")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc12")))
+
+=== DELEGATECALL
+
+((("DELEGATECALL opcode security threat", id="ix_09smart-contracts-security-asciidoc16", range="startofrange")))((("security (smart contracts)","DELEGATECALL opcode threat", id="ix_09smart-contracts-security-asciidoc17", range="startofrange")))Instrukce `CALL` a `DELEGATECALL` jsou užitečné, aby umožnili Ethereum
+vývojářům rozdělit jejich kód na moduly. ((("CALL opcode")))Standardní externí volání zprávy
+do kontraktů je řešeno instrukcí  `CALL`, přičemž kód je spuštěn v
+kontextu externího kontraktu / funkce. Instrukce  `DELEGATECALL` je
+téměř identická, až na to, že kód provedený na cílové adrese
+běží v kontextu volajícího kontraktu, a `msg.sender` a `msg.value` zůstávají nezměněny.
+Tato funkcionalita umožňuje implementaci _knihoven_, umožňující vývojářům
+nasadit opakovaně použitelná kód a volat ho z budoucích kontraktů. 
+
+Ačkoli rozdíly mezi těmito dvěma instrukcemi jsou jednoduché a
+intuitivní, použití `DELEGATECALL` může vést k neočekávanému
+provádění kódu.
+
+Další čtení viz Loi.Luu 
+http://bit.ly/2AAElb8[Ethereum
+Stack Exchange otázky na toto téma] a
+http://bit.ly/2Oi7UlH[Solidity dokumentace].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("DELEGATECALL opcode security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc18", range="startofrange")))V důsledku kontext zachovávající povahy `DELEGATECALL`, tvorba
+uživatelských knihoven bez zranitelnosti není tak snadná, jak si člověk může myslet.
+Kód v knihovnách samotných může být bezpečný a bez zranitelnosti;
+nicméně při spuštění v kontextu jiné aplikace
+může dojít k novým zranitelnostem. ((("Fibonacci sequences", id="ix_09smart-contracts-security-asciidoc19", range="startofrange")))Uvidíme docela složitý příklad toho,
+při použití Fibonacciho čísel.
+
+Uvažujme knihovnu v <<fibonacci_security>>, která může generovat Fibonacciho posloupnosti
+a posloupnosti v podobném tvaru (Poznámka: tento kód byl
+změněn z https://bit.ly/2MReuii[].)
+
+[[fibonacci_security]]
+.FibonacciLib.sol
+====
+[source,solidity,linenums]
+----
+// knihovní kontrakt - počítá čísla podobná Fibonacciho
+contract FibonacciLib {
+    // inicializace standardní Fibonacciho posloupnosti
+    uint public start;
+    uint public calculatedFibNumber;
+
+    // změna 0-tého čísla v posloupnosti
+    function setStart(uint _start) public {
+        start = _start;
+    }
+
+    function setFibonacci(uint n) public {
+        calculatedFibNumber = fibonacci(n);
+    }
+
+    function fibonacci(uint n) internal returns (uint) {
+        if (n == 0) return start;
+        else if (n == 1) return start + 1;
+        else return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+----
+====
+
+Knihovna poskytuje funkčnost, která generuje n-té Fibonacciho číslo
+v posloupnosti. To umožňuje uživatelům změnit počáteční číslo
+posloupnosti (`start`) a spočítat the _n_-té Fibonacciho číslům podobné číslo v této
+nové posloupnosti.
+
+Podívejme se nyní náš kontrakt, která tuto knihovnu využívá, zobrazený v <<fib_balance_security>>.
+
+[[fib_balance_security]]
+.FibonacciBalance.sol
+====
+[source,solidity,linenums]
+----
+contract FibonacciBalance {
+
+    address public fibonacciLibrary;
+    // aktuální Fibonacciho číslo na výběr
+    uint public calculatedFibNumber;
+    // Počáteční číslo Fibonacci posloupnosti
+    uint public start = 3;
+    uint public withdrawalCounter;
+    // Výběr Fibonacciho funkce
+    bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
+
+    // Konstruktor - naplní kontrakt etherem
+    constructor(address _fibonacciLibrary) external payable {
+        fibonacciLibrary = _fibonacciLibrary;
+    }
+
+    function withdraw() {
+        withdrawalCounter += 1;
+        // Spočte Fibonacciho číslo pro aktuálního vybírajícího uživatele-
+        //Nastaví spočítané Fibonacciho číslo calculatedFibNumber
+        require(fibonacciLibrary.delegatecall(fibSig, withdrawalCounter));
+        msg.sender.transfer(calculatedFibNumber * 1 ether);
+    }
+
+    // umožňuje uživatelům volat knihovnu Fibonacciho funkcí
+    function() public {
+        require(fibonacciLibrary.delegatecall(msg.data));
+    }
+}
+----
+====
+
+Tento kontrakt umožňuje účastníkovi vybrat ether z kontraktu,
+jehož množství odpovídá Fibonacciho číslu
+odpovídajícího pořadovému číslo výběru účastníka. Tj. první
+účastník získá 1 ether, druhý také 1, třetí 2,
+čtvrtý dostane 3, pátý 5, a tak dále (dokud zůstatek kontraktu je vyšší
+než Fibonacciho číslo, které je vybíráno).
+
+// TODO: Andreas se rozhodne, zda je to intro nutné, nebo se jednoduše zmíní
+// jiná sekce v knize
+
+V tomto kontraktu je několik prvků, které mohou vyžadovat nějaké
+vysvětlení. Zaprvé existuje zajímavá proměnná
+`fibSig`. Ta uchovává 4 bajty Keccak-256 (SHA-3) haše
+etězce `'setFibonacci(uint256)'`. To je známé jako
+http://bit.ly/2RmueMP[selektor
+funkce] a je vložena do `calldata`, aby specifikovala, která funkce
+chytrého kontraktu bude zavolána. To je používáno funkcí `delegatecall`
+na řádku 21 pro specifikaci, že chceme spustit funkci `fibonacci(uint256)`.
+Druhý parametr v `delegatecall` je parametr, který předáváme volané funkci.
+Za druhé, předpokládáme, že adresa pro
+`FibonacciLib` knihovnu je správně zadána v konstruktoru.
+(<<external_contract_referencing>> diskutuje některé
+potenciální zranitelnosti související s tímto druhem nastavování
+odkazu na kontrakt).
+
+Vidíte v tomto kontraktu nějaké chyby? Pokud by někdo měl tento kontrakt nasadit,
+naplnit jej etherem a zavolejte`withdraw`, pravděpodobně by se neúspěšně vrátil.
+
+Možná jste si všimli, že stavová proměnná `start` se používá jak v
+knihovně, tak i v hlavním volajícím kontraktu. V knihovním kontraktu`start`
+se používá k určení začátku Fibonacciho sekvence a je nastavena na
+`0`,  zatímco je nastavena na `3` ve volajícím kontraktu.
+Možná si také všimli, že nouzová funkce v
+`FibonacciBalance` kontraktu umožňuje předávání všech volání do knihovního
+kontraktu, který umožňuje funkci `setStart` knihovního
+kontraktu, aby byla zavolána. Opakované volání zachovává stav
+kontraktu, může se zdát, že tato funkce vám umožní změnit
+stav proměnné `start` v místním `FibonnacciBalance` kontraktu.
+Pokud ano, umožnilo by to jednomu z nich odebrat další ether, což by mělo za následek
+`calculatedFibNumber` je závislé na proměnné `start` (jak vidíme v
+knihovním kontraktu). Ve skutečnosti, funkce `setStart`
+nemodifikuje (a ani nemůže) proměnou  `start`  v  `FibonacciBalance` kontraktu.
+Základní zranitelnost tohoto kontraktu je výrazně
+horší než jen modifikace proměnné `start`.
+
+// TODO: Andreas se rozhodne, zda je to intro nutné, nebo se jednoduše zmíní
+// jiná sekce v knize
+
+Než budeme diskutovat o skutečném problému, pojďme rychle odbočit
+pochopit, jak se vlastně stavové proměnné
+ukládají v kontraktech.  stavové proměnné nebo proměnné v úložišti
+(proměnné, které přetrvávají jednotlivé transakce) jsou uloženy ve _slotech_
+postupně, jak jsou uvedeny v kontraktu. (Jsou zde nějaké komplikace, podívejte se na http://bit.ly/2JslDWf[Solidity dokumentaci] pro hlubší pochopení.)
+
+Jako příklad se podívejme na knihovní kontrakt. Má dvě stavové
+proměnné, `start` a `calculatedFibNumber`. První proměnná
+`start`, je uložena v úložišti kontraktu v `slot[0]`
+(tj. první slot). Druhá proměnná `calculatedFibNumber`, je
+umístěna v druhém možném slotu úložiště `slot[1]`. 
+Funkce `setStart` vezme ze vstupu a nastaví `start`  na hodnotu
+Tato funkce proto nastavuje `slot[0]` na jakýkoli vstup
+poskytnutý funkcí `setStart`. Podobně
+Funkce `setFibonacci` nastaví `calculatedFibNumber` na výsledek
+`fibonacci(n)`. Znovu, to je prostě nastavení úložiště `slot[1]` na
+hodnotu `fibonacci(n)`.
+
+Nyní se podívejme na kontrakt `FibonacciBalance`. Úložiště `slot[0]` nyní
+odpovídá adrese `fibonacciLibrary`, a `slot[1]` odpovídá
+`calculatedFibNumber`. Tato zranitelnost nastává kvůli tomuto nesprávnému mapování.
+`delegatecall` _zachovává kontext kontraktu_. To znamená, že kód, který
+je vykonán `delegatecall` pracuje se stavem (tj. úložištěm)
+volajícího kontraktu.
+
+Nyní si všimněte, že v `withdraw` na řádku 21 provedeme
+`fibonacciLibrary.delegatecall(fibSig,withdrawalCounter)`. To volá
+Funkci `setFibonacci`, která jak jsme diskutovali modifikuje úložiště
+`slot[1]`, což je v našem současném kontextu `calculatedFibNumber`. To
+jak je očekáváno (tj. po provedení `calculatedFibNumber` změněno).
+Nezapomeňte však, že proměnná `start` v
+`FibonacciLib` kontraktu je uložena v úložišti `slot[0]`, který je
+adresou `fibonacciLibrary` v současném kontraktu. To znamená, že
+funkce `fibonacci` bude vracet neočekávané výsledky.  To je protože
+odkazuje na `start` (`slot[0]`), který v aktuálním kontextu volání
+je adresa `fibonacciLibrary` (která bude často docela velká, když je interpretována
+jako `uint`).  Je tedy pravděpodobné, že funkce `withdraw`
+bude neúspěšně vrácena, protože není k dispozici `uint(fibonacciLibrary)`
+množství etheru, které vrátí funkce `calculatedFibNumber`.
+
+Ještě hůře, `FibonacciBalance` kontrakt umožňuje uživatelům volat všechny
+funkce `fibonacciLibrary` pomocí záložní funkce na řádku 26.
+Jak jsme uvedli dříve, to zahrnuje funkci `setStart`.
+Diskutovali, že tato funkce umožňuje komukoli upravit nebo nastavit úložiště
+`slot[0]`. V tomto případě, úložiště `slot[0]` je adresa `fibonacciLibrary`
+Útočník by proto mohl vytvořit škodlivý kontrakt, převést adresu na `uint` (to lze udělat
+snadno v Pythonu použitím `int('<address>',16)`), a poté zavolat
+`setStart(<attack_contract_address_as_uint>)`. To změní
+adresu `fibonacciLibrary` na adresu útočníkova kontraktu. Pak kdykoli
+uživatel volá `withdraw` nebo nouzovou funkci, škodlivý
+contract bude běžet (což může ukrást celý zůstatek kontraktu)
+protože jsme upravili skutečnou adresu pro `fibonacciLibrary`.
+Příkladem takového kontraktu by byl:
+
+[source,solidity,linenums]
+----
+contract Attack {
+    uint storageSlot0; // odpovídá fibonacciLibrary
+    uint storageSlot1; // odpovídá calculatedFibNumber
+
+    // nouzová funkce - poběží, pokud nebude nalezena zadaná funkce
+    function() public {
+        storageSlot1 = 0; // nastavíme calculatedFibNumber na 0, takže pokud výběr
+        // je zavolán, neodešleme žádný ether
+        <attacker_address>.transfer(this.balance); // vezmeme všechen ether
+    }
+ }
+----
+
+Všimněte si, že tento útočný kontrakt mění `calculatedFibNumber`
+změnou úložiště `slot[1]`. Útočník by v zásadě mohl upravit
+další úložné sloty, které si vybere, aby na tom provedl všechny druhy útoků
+na tento kontrakt. Doporučujeme vám tyto kontrakty vložit do ttps://remix.ethereum.org[Remix] a experimentovat s různými útočnými kontrakty a změnami stavu pomocí těchto delegatecall` funkcí.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc19")))
+
+Je také důležité si toho všimnout, když to říkáme `delegatecall` je
+uchovávající stav, nemluvíme o názvech proměnných
+kontraktu, ale spíše o skutečných paměťových slotech, na které tyto názvy odkazují. 
+Jak můžete vidět z tohoto příkladu, jednoduchá chyba může vést k tomu, že útočník
+unese celý kontrakt a jeho ether.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc18")))
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("DELEGATECALL opcode security threat","preventative techniques")))Solidity poskytuje klíčové slovo `library` pro implementaci knihovovního
+kontraktu(viz http://bit.ly/2zjD8TI[dokumentace] pro další podrobnosti). To zajišťuje, že knihovní kontrakt je
+beze stavu a nemůže se sám zničit Nutí knihovny být beze stavu
+zmírňuje složitost úložného kontextu prokázanou v této
+sekci. Knihovny beze stavu také zabraňují útokům, při kterých útočník
+přímo upravuje stav knihovny, aby ovlivnil
+kontrakty, které závisí na kódu knihovny. Obecně platí,
+při používání `DELEGATECALL` věnujte pozornost možnému
+kontextu volání jak knihovního kontraktu, tak i volajícího kontraktu.
+a kdykoli je to možné, stavět bezestavové pass:[<span class="keep-together">knihovny</span>].
+
+[[multisig_secondhack]]
+==== Příklad ze života: Parity vícepodpisová peněženka (druhé napadení)
+
+((("DELEGATECALL opcode security threat","real-world example: Parity Multisig Wallet hack", id="ix_09smart-contracts-security-asciidoc20", range="startofrange")))((("Parity Multisig Wallet","second hack", id="ix_09smart-contracts-security-asciidoc21", range="startofrange")))((("wallets","Parity Multisig Wallet hacks", id="ix_09smart-contracts-security-asciidoc22", range="startofrange")))Druhé napadení Parity vícepodpisové peněženky je příkladem jak dobře napsaná knihovna může být napadena, pokud běží mimo zamýšlený kontext. 
+Existuje mnoho dobrých vysvětlení toto napadení, jako je
+http://bit.ly/2Dg7GtW["Znovu napadena Parity vícepodpisová peněženka"] a http://bit.ly/2Of06B9["Hluboký pohled na chyby Parity vícepodpisové peněženky"].
+
+Chcete-li přidat tyto reference, prozkoumejme kontrakty, které byly
+úspěšně napadeny. Knihovní a peněženkové kontrakty naleznete http://bit.ly/2OgnXQC[na GitHubu].
+
+Knihovní kontrakt je následující:
+
+[source,solidity,linenums]
+----
+contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // vyhodí výjimku dokud není kontrakt inicializován.
+  modifier only_uninitialized { if (m_numOwners > 0) throw; _; }
+
+  // konstruktor - pouze projde pole vlastníků pro více vlastnictví a
+  // omezení denním limitem
+  function initWallet(address[] _owners, uint _required, uint _daylimit)
+      only_uninitialized {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+
+  // zabije kontrakt zasláním všeho na `_to`.
+  function kill(address _to) onlymanyowners(sha3(msg.data)) external {
+    suicide(_to);
+  }
+
+  ...
+
+}
+----
+
+A tady je peněženkový kontrakt
+
+[source,solidity,linenums]
+----
+contract Wallet is WalletEvents {
+
+  ...
+
+  // METODY
+
+  // vyvolá se, když neodpovídá žádná jiná funkce
+  function() payable {
+    // právě vám byly zaslány nějaké peníze?
+    if (msg.value > 0)
+      Deposit(msg.sender, msg.value);
+    else if (msg.data.length > 0)
+      _walletLibrary.delegatecall(msg.data);
+  }
+
+  ...
+
+  // DATOVÉ POLOŽKY
+  address constant _walletLibrary =
+    0xcafecafecafecafecafecafecafecafecafecafe;
+}
+----
+
+Všimněte si, že kontrakt `Wallet` v podstatě přesměruje všechna volání 
+do knihovního kontraktu `WalletLibrary` pomocí volání delegate. Konstanta
+adresa `_walletLibrary` v této ukázce kódu funguje jako zástupný symbol pro
+aktuálně nasazený knihovní kontrakt `WalletLibrary` (která je
+`0x863DF6BFa4469f3ead0bE8f9F2AAE51c91A907b4`).
+
+Zamýšlené fungování těchto kontraktů  mělo mít jednoduché nízkonákladové 
+nasaditelné peněženkové kontrakty, jejichž kódy a hlavní funkcionalita byla
+v kontraktu `WalletLibrary`. Bohužel, kontrakt `WalletLibrary`
+je sama o sobě kontraktem a udržuje svůj vlastní stav
+Vidíte, vidíte, proč by to mohl být problém?
+
+Je možné odesílat volání pass:[<code><span class="keep-together">WalletLibrary</span></code>] samotným kontraktem.
+Konkrétně, pass:[<code><span class="keep-together">WalletLibrary</span></code>] kontrakt by mohl být inicializován a
+stát se vlastněným. Ve skutečnosti to uživatel provedl a zavolal `initWallet` funkci v
+`WalletLibrary` kontraktu a stal se majitelem knihovního kontraktu.
+stejný uživatel následně zavolall funkci `kill`. Protože uživatel
+byl vlastníkem knihovního kontraktu, modifikátor prošel a
+knihovní kontrakt se zničil. Jak všechny existující `Wallet` kontrakty odkazovali
+na tento knihovní kontrakt a neobsahují žádnou metodu pro změnu tohoto odkazu,
+veškerá jejich funkčnost, včetně schopnosti vybírat ether, byla
+ztracena spolu s kontraktem „WalletLibrary“. Výsledkem je veškerý ether
+ve všech parity vícepodpisových peněženkách tohoto typu okamžitě ztracený nebo
+trvale nedostupný(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc22")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc21")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc20"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc17")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc16")))
+
+=== Výchozí viditelnost
+
+((("default visibility specifier security problem", id="ix_09smart-contracts-security-asciidoc23", range="startofrange")))((("security (smart contracts)","default visibility specifier threat", id="ix_09smart-contracts-security-asciidoc24", range="startofrange")))((("Solidity","default visibility specifier problem", id="ix_09smart-contracts-security-asciidoc25", range="startofrange")))((("visibility specifiers", id="ix_09smart-contracts-security-asciidoc26", range="startofrange")))Funkce v Solidity mají specifikátory viditelnosti, které diktují jak
+mohou být volány. Viditelnost určuje, zda
+funkce mohou uživatelé volat externě, jinými odvozenými kontrakty,
+pouze interně, nebo pouze externě. Existují čtyři specifikátory viditelnosti,
+které jsou podrobně popsány v http://bit.ly/2ABiv7j[Solidity dokumentaci]. Výchozí specifikátor funkce je `public`, umožňující uživatelům volat je
+externě. Nyní uvidíme, jak nesprávné použití specifikátorů viditelnosti může vést k některým devastujícím zranitelnostem v chytrých kontraktech
+
+[role="notoc"]
+==== Zranitelnost
+
+((("default visibility specifier security problem","vulnerability")))Výchozí viditelnost funkcí je `public`, takže funkce
+které neuvádějí svojí viditelnost, budou moci volat externí uživatelé.
+Problém nastává, když vývojáři omylem vynechají specifikace viditelnosti
+funkcí, které by měly být soukromé (nebo viditelné pouze v rámci
+samotného kontraktu).
+
+Pojďme rychle prozkoumat triviální příklad:
+
+[source,solidity,linenums]
+----
+contract HashForEther {
+
+    function withdrawWinnings() {
+        // Vítěz, pokud posledních 8 hex znaků adresy je 0
+        require(uint32(msg.sender) == 0);
+        _sendWinnings();
+     }
+
+     function _sendWinnings() {
+         msg.sender.transfer(this.balance);
+     }
+}
+----
+
+Tento jednoduchý  kontrakt je navržena tak, aby fungoval jako hra odměnující za odhady adres
+Pro získání zůstatku kontraktu musí uživatel vygenerovat
+Ethereum adresu, jejíž posledních 8 hexadecimálních znaků je +0+. Jakmile toho dosáhne
+může zavolat funkci „drawWinnings“ a získat tak odměnu.
+
+Viditelnost funkcí bohužel nebyla stanovena.
+Zejména funkce`_sendWinnings` je `public` (výchozí), a tedy libovolná
+adresa může volat tuto funkci a ukrást odměnu.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("default visibility specifier security problem","preventative techniques")))Je dobrou praxí vždy specifikovat viditelnost všech funkcí v
+kontraktu, i když jsou úmyslně`public`. Poslední verze
++solc+ zobrazuje varování pro funkce, které
+nemají explicitně nastavenou viditelnost, aby tuto praxi podpořili.
+
+==== Příklad ze života: Parity vícepodpisová peněženka (první napadení)
+
+((("default visibility specifier security problem","real world example: Parity Multisig Wallet hack")))((("Parity Multisig Wallet","first hack")))((("wallets","Parity Multisig Wallet hacks")))V prvním napadení Parity vícepodpisové peněženky bylo ukradeno Ethereum v hodnotě okolo $31M,
+většinou ze tří peněženek. Dobrá rekapitulace toho, jak přesně se to stalo
+dává https://bit.ly/2vHiuJQ[Haseeb Qureshi].
+
+V podstatě, vícepodpisová peněženka
+je vytvořen ze základního kontraktu `Wallet`, který volá knihovnu
+kontraktu obsahující základní funkčnost (jak je popsáno v
+<<multisig_secondhack>>).
+Knihovní kontrakt obsahuje kód pro inicializaci peněženky
+jak můžeme vidět z následujícího úryvku:
+
+[source,solidity,linenums]
+----
+contract WalletLibrary is WalletEvents {
+
+  ...
+
+  // METODY
+
+  ...
+
+  // konstruktoru je dán počet podpisů potřebných k zajištění ochrany
+  // "onlymanyowners" transakce, stejně jako výběr adres
+  // schopné je potvrdit
+  function initMultiowned(address[] _owners, uint _required) {
+    m_numOwners = _owners.length + 1;
+    m_owners[1] = uint(msg.sender);
+    m_ownerIndex[uint(msg.sender)] = 1;
+    for (uint i = 0; i < _owners.length; ++i)
+    {
+      m_owners[2 + i] = uint(_owners[i]);
+      m_ownerIndex[uint(_owners[i])] = 2 + i;
+    }
+    m_required = _required;
+  }
+
+  ...
+
+  // konstruktor - pouze projde pole vlastníků pro více vlastnictví a
+  // omezení denním limitem
+  function initWallet(address[] _owners, uint _required, uint _daylimit) {
+    initDaylimit(_daylimit);
+    initMultiowned(_owners, _required);
+  }
+}
+----
+
+Všimněte si, že žádná z funkcí nespecifikuje jejich
+viditelnost, obě ji mají výchozí `public`. Funkce `initWallet`
+se nazývá konstruktor peněženky a nastavuje majitele
+vícepodpisové peněženky, jak je vidět ve funkci `initMultiowned`.
+Protože tyto funkce byly náhodně ponechány  `public`,, útočník byl
+schopen volat tyto funkce na nasazených kontraktech, nastavením
+vlastnictví na adresu útočníka. Když byl vlastníkem, útočník
+vyčerpal z peněženek všechen jejich ether.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc26")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc25")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc24")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc23")))
+
+[[entropyillusion_security]]
+=== Iluze entropie
+
+((("entropy illusion security threat")))((("security (smart contracts)","entropy illusion threat"))Všechny transakce na Ethereum bločence jsou deterministické operace
+přechodu stavu. To znamená, že každá transakce modifikuje
+globální stav ekosystému Etherea vypočítatelným způsobem,
+bez nejistoty. To má zásadní důsledek, že
+v Ethereu není žádný zdroj entropie nebo náhodnosti.
+Dosažení decentralizované entropie
+(náhodnosti) je známý problém, pro který bylo navrženo mnoho řešení, včetně https://github.com/randao/randao[RANDAO], nebo použití hašů bločenky, jak
+popsal Vitalik Buterin v blogu
+https://vitalik.ca/files/randomness.html["Validátor pořadí a náhodnosti v PoS"].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("entropy illusion security threat","vulnerability")))Některé z prvních kontraktů vytvořených na platformě Ethereum byly založeny
+kolem hazardu. Hazardní hry v zásadě vyžadují nejistotu (něco
+na co vsadit), což dělá stavění hazardního systému na bločence (a
+deterministickém systému) poněkud obtížným. Je jasné, že nejistota
+musí pocházet ze zdroje externího k bločence. To je možné pro
+Sázky mezi hráči (viz např. http://bit.ly/2CUh2KS[technika odevzdání a odhalení]); je však výrazně obtížnější, pokud chcete
+implementovat kontrakt, aby fungoval jako kasíno (jako blackjack nebo
+ruleta). Společným úskalím je použití budoucích blokových proměnných, tj.
+proměnné obsahující informace o transakčním bloku, jehož hodnoty ještě nejsou známy, například
+haše, časové značky, čísla bloků nebo limity plynu. Problém s nimi je
+že jsou ovládáni těžařem, který vytěží blok, a jako takové
+nejsou opravdu náhodné. Zvažte například chytrý kontrakt ruleta
+s logikou, která vrací černé číslo, pokud další haš bloku končí
+na sudé číslo. Těžař (nebo těžařská skupina) mohli vsadit $ 1M na černou. Pokud oni
+vyřeší další blok a najdou haš končící na liché číslo, mohou
+naštěstí nezveřejňují svůj blok a těžit další, dokud nenajdou
+řešení s hašem bloku, který končí na sudé číslo (za předpokladu, že blok
+odměna a poplatky jsou nižší než 1 milion USD). Používání minulých nebo současných proměnných může
+být ještě ničivější, jak prokazuje Martin Swende ve svém vynikajícím http://martin.swende.se/blog/Breaking_the_house.html[příspěvku na blogu].
+Navíc použití výhradně blokových proměnných znamená, že pseudonáhodné
+číslo bude stejné pro všechny transakce v bloku, tedy útočník
+může znásobit své výhry provedením mnoha transakcí v rámci bloku
+(mělo by být omezení na maximální sázku).
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("entropy illusion security threat","preventative techniques")))Zdroj entropie (náhodnost) musí být mimo bločenku.
+To lze provést mezi vrstevníky v systémech, jako je
+http://bit.ly/2CUh2KS[odevzdat–odhalit],
+nebo změnou modelu důvěry na skupinu účastníků (jako v
+https://github.com/randao/randao[RandDAO]). To lze také provést pomocí
+centralizované entity, která funguje jako orákulum náhodnosti. Blokové proměnné
+(obecně existují některé výjimky) by neměly být použity jako zdroj
+entropie, protože mohou být manipulovány těžaři
+
+==== Příklad ze života: PRNG kontrakt
+
+((("entropy illusion security threat","real world example: PRNG contracts")))((("PRNG (pseudorandom number generator) contracts")))((("pseudorandom number generator (PRNG) contracts")))V únoru 2018 Arseny Reutov
+http://bit.ly/2Q589lx[blogoval] o jeho analýze 3 649 živých chytrých kontraktů, které využívaly
+nějaký druh generátoru pseudonáhodných čísel (PRNG); našel 43 kontraktů,
+které by mohly být napadeny.
+
+[[external_contract_referencing]]
+=== Externí odkazy na kontrakty
+
+((("external contract referencing security threat", id="ix_09smart-contracts-security-asciidoc27", range="startofrange")))((("security (smart contracts)","external contract referencing threat", id="ix_09smart-contracts-security-asciidoc28", range="startofrange")))Jednou z výhod Ethereum světového počítače je schopnost
+znovu použít kód a komunikovat s kontrakty již nasazenými v síti.
+Výsledkem je, že velký počet kontraktů odkazuje na externí kontrakty,
+obvykle prostřednictvím externího volání zpráv.
+Tato externí volání zpráv mohou maskovat škodlivé záměry účastníků
+některými nenápadnými způsoby, které nyní prozkoumáme.
+
+[role="notoc"]
+==== Zranitelnost
+
+((("external contract referencing security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc29", range="startofrange")))V Solidity lze libovolnou adresu dosadit do kontraktu bez ohledu na to, zda
+kód na adrese představuje typ dosazovaného kontraktu. Tento
+může způsobit problémy, zejména pokud se autor kontraktu snaží
+skrýt škodlivý kód. Pojďme to ilustrovat příkladem.
+
+Zvažte kousek kódu jako <<rot13_security>>, který neohrabaně implementuje
+https://en.wikipedia.org/wiki/ROT13[ROT13 cipher].
+
+[[rot13_security]]
+.Rot13Encryption.sol
+====
+[source,solidity,linenums]
+----
+// šifrovací kontrakt
+contract Rot13Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-šifrování řetězce
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            // vkládaný asembler pro úpravu řetězce
+            assembly {
+                // vrátí první bajt
+                char := byte(0,char)
+                // pokud je první znak [n,z], tj. přetočení
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // odečte ASCII hodnotu 'a',
+                // rozdíl mezi znakem <char> a 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                if iszero(eq(char, 0x20)) // ignoruje mezery
+                // přičte 13 do znaku
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-dešifrování řetězce
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,13))}
+            }
+        }
+        emit Result(text);
+    }
+}
+----
+====
+
+Tento kód jednoduše vezme řetězec (písmen ++a++ až ++z++, bez ověření) and
+_zašifruje_ ho posunem každého znaku o 13 míst doprava (přetočení okolo z)
+around `z`) tj. `a` posune na `n` a `x` posune na `k`. Sestavení
+v předcházejícím kontraktu nepotřebuje být pochopena, abychom ocenili problém, který diskutujeme,
+takže čtenáři neobeznámení se sestavením to mohou bezpečně ignorovat.
+
+Nyní zvažte následující kontrakt, který používá tento kód pro jeho šifrování:
+
+[source,solidity,linenums]
+----
+import "Rot13Encryption.sol";
+
+// šifruje vaše největší tajemství
+contract EncryptionContract {
+    // knihovna pro šifrování
+    Rot13Encryption encryptionLibrary;
+
+    // konstruktor - inicializuje knihovnu
+    constructor(Rot13Encryption _encryptionLibrary) {
+        encryptionLibrary = _encryptionLibrary;
+    }
+
+    function encryptPrivateData(string privateInfo) {
+        // zde můžete provádět některé operace
+        encryptionLibrary.rot13Encrypt(privateInfo);
+     }
+ }
+----
+
+Problém s tímto kontraktem spočívá v tom, že adresa `encryptionLibrary` není
+ne veřejná nebo konstantní. Ten, kdo smlouvu nasadil, by tedy mohl v konstruktoru uvést adresu, která odkazuje na tuto smlouvu:
+
+[source,solidity,linenums]
+----
+// šifrovací kontrakt
+contract Rot26Encryption {
+
+   event Result(string convertedString);
+
+    // rot13-šifrování řetězce
+    function rot13Encrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            // vkládaný asembler pro úpravu řetězce
+            assembly {
+                // vrátí první bajt
+                char := byte(0,char)
+                // pokud je první znak [n,z], tj. přetočení
+                if and(gt(char,0x6D), lt(char,0x7B))
+                // odečte ASCII hodnotu 'a',
+                // rozdíl mezi znakem <char> a 'z'
+                { char:= sub(0x60, sub(0x7A,char)) }
+                // ignoruje mezery
+                if iszero(eq(char, 0x20))
+                // přičte 26 ke znaku!
+                {mstore8(add(add(text,0x20), mul(i,1)), add(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+
+    // rot13-dešifrování řetězce
+    function rot13Decrypt (string text) public {
+        uint256 length = bytes(text).length;
+        for (var i = 0; i < length; i++) {
+            byte char = bytes(text)[i];
+            assembly {
+                char := byte(0,char)
+                if and(gt(char,0x60), lt(char,0x6E))
+                { char:= add(0x7B, sub(char,0x61)) }
+                if iszero(eq(char, 0x20))
+                {mstore8(add(add(text,0x20), mul(i,1)), sub(char,26))}
+            }
+        }
+        emit Result(text);
+    }
+}
+----
+
+Tento kontrakt implementuje šifru ROT26, která posune každý znak o 26 míst
+(tj. nedělá nic). Opět není třeba pochopit sestavení v tomto kontraktu
+Zjednodušeně, útočník mohl propojit následující
+kontrakt se stejným účinkem:
+
+[source,solidity,linenums]
+----
+contract Print{
+    event Print(string text);
+
+    function rot13Encrypt(string text) public {
+        emit Print(text);
+    }
+ }
+----
+
+Pokud byla adresa některého z těchto kontraktů uvedena v
+konstruktoru, `encryptPrivateData` funkce ubde jednoduše vytvářet událost
+vypisující nezašifrovaná soukromá data.
+
+I když v tomto
+příkladu knihovního kontraktu byl nastaven konstruktor, je to často
+v případě, že privilegovaný uživatel (například vlastník) může změnit adresu
+knihovního kontraktu. Pokud napojený kontrakt tuto volanou funkci neobsahuje
+nouzová funkce je vykonána. Například, s
+řádkou pass:[<code>encryptionLibrary.rot13&#x200b;Encrypt()</code>], pokud kontrakt specifikován
+`encryptionLibrary` byl:
+
+[source,solidity,linenums]
+----
+ contract Blank {
+     event Print(string text);
+     function () {
+         emit Print("Here");
+         // sem vložte škodlivý kód a bude spuštěn
+     }
+ }
+----
+
+pak by byla vyslána událost s textem `Here`. Pokud tedy uživatelé mohou
+změnit knihovní kontrakt, mohou v zásadě přimět ostatní uživatele, aby nevědomky
+spustili libovolný kód.
+
+[WARNING]
+====
+Zde uvedené kontrakty jsou pouze pro demonstrační účely a
+nepředstavují správné šifrování. Neměly by být použity
+šifrování.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc29")))
+====
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("external contract referencing security threat","preventative techniques")))Jak již bylo dříve prokázáno, bezpečné kontrakty mohou (v některých případech)
+být nasazeny tak, aby se chovaly škodlivě. Auditor mohl
+veřejně ověřit kontrakt a nechat jejího majitele, aby ho nasadil škodlivým způsobem,
+což má za následek veřejně auditovaný kontrakt, který má slabé stránky
+nebo zákeřný záměr.
+
+Těmto scénářům brání řada technik.
+
+Jednou z technik je použití klíčového slova `new` pro vytváření kontraktů. V
+předchozím příkladě, konstruktor může být napsán jako:
+
+[source,solidity]
+----
+constructor() {
+    encryptionLibrary = new Rot13Encryption();
+}
+----
+
+Tímto způsobem se při nasazení vytvoří instance odkazovaného kontraktu
+a osoba, která provedla nasazení, nemůže vyměnit `Rot13Encryption` kontrakt
+bez jeho změnění.
+
+Dalším řešením je natvrdo uvést v kódu adresy externích chytrých kontraktů.
+
+Obecně by kód, který volá externí kontrakty, měl být vždy
+pečlivě prověřen. Pro vývojáře, při definování externích kontraktů, může být 
+dobrý nápad udělat adresy kontraktu veřejné (což není
+případ příkladu hrnce medu v následující sekci) case in the  example in the following section) aby uživatelé mohli snadno zkoumat
+kód uvedený v kontraktu. Naopak, pokud má kontrakt
+soukromou proměnou adresy kontraktu, může to být přiznak adresa variabilní smlouvy může být znakem, že se někdo chová
+škodlivě (jak je uvedeno v příkladu reálného světa). Pokud uživatel může změnit
+adresu kontraktu, která se používá
+pro volání externích funkcí, může to být důležité (v kontextu decentralizovaného systému)
+implementovat mechanismus časového blokování a / nebo hlasování, který uživatelům umožní
+podívat se, jaký kód se mění, nebo dát účastníkům šanci se rozhodnout pro 
+ukončení užívání tohoto kontraktu
+
+==== Příklad ze života: Hrnec medu s vícenásobným voláním
+
+((("external contract referencing security threat","real-world example: reentrancy honey pot", id="ix_09smart-contracts-security-asciidoc30", range="startofrange")))((("honey pots", id="ix_09smart-contracts-security-asciidoc31", range="startofrange")))((("reentrancy honey pot security threat", id="ix_09smart-contracts-security-asciidoc32", range="startofrange")))V poslední době na hlavní síti bylo vydáno množství hrnců medu (honey pot). Tyto
+kontrakty se snaží přechytračit Ethereum hackery, kteří se snaží využívat chyb 
+kontraktů, ale nakonec jsou to oni, kdo ztrácí ether v kontraktu,
+který plánovali vykrást. Jedním příkladem zahrnujícím tento útok náhradou
+očekávaného kontraktu, zlomyslným kontraktem v konstruktoru.
+Kód lze najít
+http://bit.ly/2JtdqRi[zde]:
+
+[source,solidity,linenums]
+----
+pragma solidity ^0.4.19;
+
+contract Private_Bank
+{
+    mapping (address => uint) public balances;
+    uint public MinDeposit = 1 ether;
+    Log TransferLog;
+
+    function Private_Bank(address _log)
+    {
+        TransferLog = Log(_log);
+    }
+
+    function Deposit()
+    public
+    payable
+    {
+        if(msg.value >= MinDeposit)
+        {
+            balances[msg.sender]+=msg.value;
+            TransferLog.AddMessage(msg.sender,msg.value,"Deposit");
+        }
+    }
+
+    function CashOut(uint _am)
+    {
+        if(_am<=balances[msg.sender])
+        {
+            if(msg.sender.call.value(_am)())
+            {
+                balances[msg.sender]-=_am;
+                TransferLog.AddMessage(msg.sender,_am,"CashOut");
+            }
+        }
+    }
+
+    function() external payable{}
+
+}
+
+contract Log
+{
+    struct Message
+    {
+        address Sender;
+        string  Data;
+        uint Val;
+        uint  Time;
+    }
+
+    Message[] public History;
+    Message LastMsg;
+
+    function AddMessage(address _adr,uint _val,string _data)
+    public
+    {
+        LastMsg.Sender = _adr;
+        LastMsg.Time = now;
+        LastMsg.Val = _val;
+        LastMsg.Data = _data;
+        History.push(LastMsg);
+    }
+}
+----
+
+Tento
+http://bit.ly/2Q58VyX[text]
+jednoho uživatele reddit vysvětluje jak přišel o 1 ether v tomto kontraktu
+tím, že se pokusili využít chybu vícenásobného volání, kterou očekávali, že bude přítomna v
+kontraktu(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc32")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc31")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc30"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc28")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc27")))
+
+=== Krátká adresa / útok na parametry
+
+((("security (smart contracts)","short address/parameter attack")))((("short address/parameter attack")))Tento útok se neprovádí u Solidity kontraktů
+samotných, ale v aplikacích třetích stran, které s nimi mohou interagovat. Tato
+sekce je přidána pro úplnost a dává čtenáři povědomí o tom, jak mohou být parametry
+zmanipulované ve kontraktech.
+
+Další čtení viz
+http://bit.ly/2yKme14["Vysvětlení ERC20 útoku krátkou
+adresou"],
+http://bit.ly/2yFOGRQ["Zranitelnost
+ICO chytrých kontraktů: útok krátkou adresou"], nebo tento
+http://bit.ly/2CQjBhc[Reddit
+příspěvek].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("short address/parameter attack","vulnerability")))Při předávání parametrů do chytrého kontraktu jsou parametry kódovány
+podle
+http://bit.ly/2Q5VIG9[ABI
+specifikace]. Je možné poslat zakódované parametry, které jsou
+kratší než očekávaná délka parametru (například odeslání
+adresy, která je pouze 38 hex znaků (19 bajtů) místo standardních 40
+hex znaků (20 bajtů). V takovém případě EVM přidá nuly na
+konec kódovaných parametrů pro vytvoření očekávané délky.
+
+To se stává problémem, když aplikace třetích stran neověřují
+vstupy. Nejjasnějším příkladem je burza, která neověřuje
+adresu
+ERC20 tokenu
+když uživatel požaduje výběr. Tento příklad je podrobněji popsán
+v příspěvku Petera Vessenese
+http://bit.ly/2Q1ybpQ["Vysvětlení ERC20
+útoků krátkou adresou"].
+
+Uvažujme standard
+http://bit.ly/2CUf7WG[ERC20]
++transfer+ funkční rozhraní s ohledem na pořadí parametrů:
+
+[source,solidity]
+----
+function transfer(address to, uint tokens) public returns (bool success);
+----
+
+Nyní zvažte burzu s velkým množstvím tokenů (řekněme
+`REP`) a uživatele, který si chce vybrat svůj podíl 100 žetonů. Uživatel
+zadá svou adresu,`0xdeaddeaddeaddeaddeaddeaddeaddeaddeaddead`,
+a množství tokenů, `100`. Burza by zakódovala tyto
+parametry v pořadí určeném funkcí pass:[<code><span class="keep-together">transfer</span></code>]; to je
+`address` následovaná `tokens`. Zakódovaným výsledkem by bylo:
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeaddead0000000000000
+000000000000000000000000000000000056bc75e2d63100000
+----
+
+První 4
+bajty (`a9059cbb`) jsou `transfer`
+http://bit.ly/2RmueMP[selektor
+selektor], dalších 32 bajtů je adresa a
+posledních 32 bytů představuje počet tokenů `uint256`.
+Všimněte si, že hex  `56bc75e2d63100000`  na konci odpovídá 100
+tokenům (s 18 desetinnými místy, jak je specifikováno `REP` tokenovým
+pass:[<span class="keep-together">kontraktem</span>]).
+
+Podívejme se nyní, co by se stalo, kdyby někdo zaslal adresu
+s chybějícím 1 bajtem (2 hexadecimální číslice). Konkrétně řekněme útočník
+zašle `0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde` jako adresu (chybí
+poslední dvě číslice) a stejných `100` žetony k výběru. Pokud
+burza neověřuje tento vstup, bude zakódována jako:
+
+----
+a9059cbb000000000000000000000000deaddeaddea \
+ddeaddeaddeaddeaddeaddeadde00000000000000
+00000000000000000000000000000000056bc75e2d6310000000
+----
+
+Rozdíl
+je jemný. Všimněte si, že `00` bylo přidáno na konec kódování, aby
+doplnilo krátkou adresu, která byla odeslána. Když se to dostane do
+chytrého kontraktu, parametr `address` bude čten jako
+`0xdeaddeaddeaddeaddeaddeaddeaddeaddeadde00` a hodnota bude čtena jako
+`56bc75e2d6310000000` (všimněte si dvou  ++0++ navíc). Tato hodnota je nyní
+`25600` tokenů (hodnota byla vynásobena `256`). V tomto příkladu,
+pokud by burza držela tolik tokenů, uživatel by vybral
+`25600` tokenů (zatímco burza si myslí, že uživatel vybral pouze
+`100`) na upravenou adresu. Útočník samozřejmě nebude mít
+adresa v tomto příkladu, ale pokud by měl útočník vygenerovat
+jakoukoli adresu, která by skončila na ++0++ (která může být snadno spočtena hrubou silou) a
+použil tuto vygenerovanou adresu, mohl ukrást tokeny z
+z nic netušící burzy
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("short address/parameter attack","preventative techniques")))Všechny vstupní parametry v externích aplikacích by měly být kontrolovány dříve
+než jsou odeslány do bločenky. Mělo by
+být také poznamenáno, že zde hraje důležitou roli uspořádání parametrů. K zarovnání
+dochází pouze na konci, pečlivé řazení parametrů v chytrém kontraktu
+může zmírnit některé formy tohoto útoku.
+
+=== Nekontrolované návratové hodnoty CALL
+
+((("calls, external", id="ix_09smart-contracts-security-asciidoc33", range="startofrange")))((("external calls", id="ix_09smart-contracts-security-asciidoc34", range="startofrange")))((("security (smart contracts)","unchecked CALL return value threat", id="ix_09smart-contracts-security-asciidoc35", range="startofrange")))((("unchecked CALL return value security threat", id="ix_09smart-contracts-security-asciidoc36", range="startofrange")))V Solidity existuje řada způsobů, jak provádět externí volání. Odesílání
+etheru na externí účet se běžně provádí metodou `transfer`.
+Lze však také použít funkci `send`  a pro více univerzální
+externí volání instrukce `CALL` může být přímo použita v Solidity.
+Funkce `call` a `send` vrací Boolean označující, zda
+volání bylo úspěšné nebo neúspěšné. Tyto funkce tedy mají jednoduché varování
+že transakce, která vykonává tyto funkce, se nevrátí, pokud
+externí volání (zahájené `call` nebo `send`)selže, spíše,
+funkce jednoduše vrátí `false`. Častou chybou je
+že vývojář očekává, že k navrácení dojde, pokud se externí volání nezdaří a nekontroluje návratovou hodnotu.
+
+Další čtení viz #4 na the http://www.dasp.co/#item-4[DASP Top 10 roku 2018] a
+http://bit.ly/2RnS1vA["Scanning
+Živých Ethereum kontraktů pro chyby nekontrolovaného odeslání"].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("unchecked CALL return value security threat","vulnerability")))Zvažte následující příklad:
+
+[source,solidity,linenums]
+----
+contract Lotto {
+
+    bool public payedOut = false;
+    address public winner;
+    uint public winAmount;
+
+    // ... další funkce zde
+
+    function sendToWinner() public {
+        require(!payedOut);
+        winner.send(winAmount);
+        payedOut = true;
+    }
+
+    function withdrawLeftOver() public {
+        require(payedOut);
+        msg.sender.send(this.balance);
+    }
+}
+----
+
+To reprezentuje kontrakt podobný Lotto, kde `winner`
+obdrží `winAmount` etheru, který obvykle ponechává trochu zbylého etheru 
+pro výběr kýmkoliv jiným
+
+Tato chyba zabezpečení existuje na řádku 11, kde je použit `send` bez kontroly
+odpovědi. V tomto triviálním příkladu `winner`, jehož transakce
+selže (buď nedostatkem plynu nebo je to kontrakt, který úmyslně
+vyhodí výjimku v nouzové funkci) umožní nastavení `payedOut` na `true` bez ohledu na to,
+zda byl odeslán ether. V takovém případě může kdokoli vybrat
+odměnu určenou `winner`’ pomocí funkce `withdrawLeftOver`.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("unchecked CALL return value security threat","preventative techniques")))Kdykoli je to možné, použijte spíše funkci `transfer` než `send`, protože
+`transfer` se neúspěšně vrátí, pokud se externí transakce neúspěšně vrátí. Pokud
+`send` požadováno, vždy zkontrolujte vrácenou hodnotu.
+
+Robustnější
+http://bit.ly/2CSdF7y[doporučení]
+je přijmout _výběrový vzor_. V tomto řešení musí každý uživatel
+volat izolovanou +withdraw+ funkci
+který zpracovává odesílání etheru z kontraktu a
+vypořádává se s důsledky neúspěšných odesílacích transakcí.
+Záměrem je logicky izolovat externí funkci odesílání od
+zbytek zdrojového kódu a zatížit břemenem potenciálního selhání
+transakci u koncového uživatele, která volá funkci +withdraw+.
+
+==== Příklad ze života: Etherpot and King of the Ether
+
+http://bit.ly/2OfHalK[Etherpot] was ((("Etherpot smart contract lottery")))((("King of the Ether")))((("unchecked CALL return value security threat","real-world example: Etherpot and King of the Ether")))Loterijní chytrý kontrakt,
+příliš odlišné od výše uvedeného vzorového kontraktu.
+Pád tohoto kontraktu byl způsoben především nesprávným použitím
+hašů bloku (je možné použít pouze posledních 256 hashů bloku, viz Aakil
+Fernandes
+http://bit.ly/2Jpzf4x[text]
+o tom, jak Etherpot toto nezohlednil správně). Nicméně, tento
+také trpěla nekontrolovanou hodnotou volání. Zvažte
+funkci `cash` v <<lotto_security>>.
+
+[[lotto_security]]
+.lotto.sol: úryvek kódu
+====
+[source,solidity,linenums]
+----
+...
+  function cash(uint roundIndex, uint subpotIndex){
+
+        var subpotsCount = getSubpotsCount(roundIndex);
+
+        if(subpotIndex>=subpotsCount)
+            return;
+
+        var decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
+
+        if(decisionBlockNumber>block.number)
+            return;
+
+        if(rounds[roundIndex].isCashed[subpotIndex])
+            return;
+        //Vedlejší výhry mohou být proplaceny pouze jednou. Tím se zabrání dvojím výplatám
+
+        var winner = calculateWinner(roundIndex,subpotIndex);
+        var subpot = getSubpot(roundIndex);
+
+        winner.send(subpot);
+
+        rounds[roundIndex].isCashed[subpotIndex] = true;
+        //Označí kolo jako proplacené
+}
+...
+----
+====
+
+Všimněte si, že na řádku 21 není návratová hodnota funkce `send`
+kontrolována, a následující řádek pak nastaví booleovský znak označující, že
+výherci byly zaslány prostředky. Tato chyba může povolit stav, ve kterém
+vítěz nedostal svůj ether, ale stav kontraktu může
+být přesvědčen, že vítěz již byl vyplacen.
+
+Vážnější verze této chyby se vyskytla v
+http://bit.ly/2ACsfi1[King of
+the Ether]. Výborná
+http://bit.ly/2ESoaub[posmrtná] analýza
+kontraktu byla napsána, že podrobnosti o tom, jak nekontrolované selhání `send`
+může být použito k útoku na pass:[<span class="keep-together">kontrakt</span>].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc36")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc35")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc34")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc33")))
+
+[[frontrunning_security]]
+=== Souběh / předbíhání
+
+((("front-running attacks", id="ix_09smart-contracts-security-asciidoc37", range="startofrange")))((("security (smart contracts)","race conditions/front running threat", id="ix_09smart-contracts-security-asciidoc38", range="startofrange")))The ((("race conditions", seealso="front-running security threat; reentrancy attack")))Kombinace externích volání jiných kontraktů a víceuživatelská
+povahy podkladové bločenky vede k různorodosti potenciálních
+úskalí Solidity, kvůli kterým uživatelé _souběžně_ vykonávající kód získají
+neočekávané stavy. Opětovné volání (diskutováno dříve v této kapitole) je jedním z příkladů takových
+souběhů (race condition). V této sekci budeme diskutovat
+jiné druhy souběhů, které se mohou vyskytnout v Ethereum
+bločence. K tomuto tématu existuje celá řada dobrých příspěvků, včetně
+Race Conditions on the http://bit.ly/2yFesFF[Ethereum
+Wiki], http://www.dasp.co/#item-7[#7 z DASP Top10 roku 2018], a
+http://bit.ly/2Q6E4lP[Osvědčené postupy Ethereum chytrých kontraktů].
+
+[role="notoc"]
+==== Zranitelnost
+
+((("front-running attacks","vulnerability")))Jako u většiny bločenek, Ethereum uzly shromažďují transakce a tvoří z nich
+bloky. Transakce jsou považovány za platné, pouze pokud těžař
+vyřešil mechanismus konsensu (v současné době
+http://bit.ly/2yI5Dv7[Ethash] PoW pro Ethereum).
+Těžař, který blok řeší, si také vybere, které z nashromážděných transakcí
+budou zahrnuty do bloku, obvykle je řadí
+podle `gasPrice` jednotlivých transakcí. Zde je potenciální možnost útoku. 
+Útočník může sledovat shromážděné transakční a vyhledávat ty, které mohou 
+obsahovat řešení problému a měnit nebo odvolávat řešitelovo 
+povolení nebo měnit stav kontraktu škodlivě vůči řešiteli.
+Útočník pak může získat data z této transakce a
+vytvořit vlastní transakci s vyšší ` `gasPrice`, tak jeho
+transakce je zahrnuta v bloku před originálem.
+
+Uvidíme, jak by to mohlo fungovat s jednoduchým příkladem. Zvažte
+kontrakt uvedený v <<findthishash_security>>.
+
+[[findthishash_security]]
+.FindThisHash.sol
+====
+[source,solidity,linenums]
+----
+contract FindThisHash {
+    bytes32 constant public hash =
+      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
+
+    constructor() external payable {} // naplnit etherem
+
+    function solve(string solution) public {
+        // Pokud najdete předobraz haše,  získáte 1000 etherů
+        require(hash == sha3(solution));
+        msg.sender.transfer(1000 ether);
+    }
+}
+----
+====
+
+Řekněme, že tento kontrakt obsahuje 1 000 etherů. Uživatel, který může najít
+předobraz následujícího SHA-3 haše:
+
+----
+0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a
+----
+
+může odeslat řešení a získat 1 000 etherů. Řekněme, že jeden uživatel
+našel řešení `Ethereum!`. Zavolá `solve` s
+`Ethereum!` jako parametrem. Útočník byl bohužel chytrý
+a sleduje nashromážděné transakce a hledá v nich transakci odesílající řešení.
+podívá se na toto řešení, zkontrolujte jeho platnost a poté odešlete
+podobnou transakci transakce s mnohem vyšší cenou „gasPrice“ než původní
+transakce. Těžař, který blok řeší, pravděpodobně dá
+přednost transakci útočníka díky vyšší `gasPrice`, a vytěží jeho transakci
+před transakcí původního řešitele. Útočník získá 1 000 etherů a
+uživatel, který problém vyřešil, nedostane nic. Mějte na paměti, že v případě tohoto typu „předbíhajících útoků“ zranitelnosti jsou těžaři jedinečně motivováni k provádění útoků jimi samými (nebo mohou být upláceni za účelem provedení těchto útoků za extravagantní poplatky). Nelze podceňovat možnost, že by útočník byl sám těžař.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("front-running attacks","preventative techniques")))Existují dvě třídy účastníků, kteří mohou provádět tyto druhy
+předbíhacích útoků: uživatelé (kteří změnili `gasPrice` jejich transakce)
+a těžaři samotní (kteří mohou přeuspořádat transakce
+v bloku, jak uznají za vhodné). Kontrakt, který je zranitelný vůči první
+ třídě (uživatelé) je výrazně horší, než je zranitelný vůči druhé (těžaři),
+protože těžaři mohou provést útok pouze tehdy, když vyřeší a
+blok, což je nepravděpodobné pro jakéhokoli jednotlivého těžaře, který cílí na konkrétní blok. 
+Zde uvádíme několik opatření ke zmírnění vztahujících se k oběma
+třídám útočníků.
+
+Jednou z metod je umístit horní hranici `gasPrice`.
+To zabraňuje uživatelům
+zvyšovat `gasPrice` za horní hranic a získávat přednost při řazení transakcí 
+Toto opatření pouze chrání před
+první třídou útočníků (libovolní uživatelé). Těžaři v tomto scénáři mohou
+stále útočit na kontrakt, protože mohou uspořádávat transakce v jejich
+bloku bez ohledu, bez ohledu na cenu plynu.
+
+Odolnější metoda je použití
+http://bit.ly/2CUh2KS[odeslat–odhalit]
+schéma. Takové schéma určuje, že uživatelé posílají
+transakce se skrytými informacemi (obvykle haš). Poté, co byla
+transakce byla zahrnuta do bloku, uživatel odešle transakci
+odhalení dat, která byla odeslána (fáze odhalení). Tato metoda
+zabraňuje jak těžařům, tak uživatelům, aby prováděli přebíhající transakce, protože
+nemůžou určit obsah transakce. Tato metoda však
+nemůže skrýt hodnotu transakce (což v některých případech je
+cenná informace, kterou je třeba skrýt).
+https://ens.domains/[ENS] chytrý kontrakt umožňuje uživatelům zaslat 
+transakce, jejichž potvrzená data zahrnovala množství etheru, který oni
+byli ochotni utratit. Uživatelé pak mohli odesílat libovolné transakce
+hodnoty. Během fáze odhalení byl uživatelům vrácen rozdíl
+mezi částkou odeslanou v transakci a částkou, která byli
+ochotni utratit.
+
+Další návrh od autorů((("submarine sends")))Lorenz Breidenbach, Phil Daian, Ari Juels, a Florian Tramèr je použití
+http://bit.ly/2SygqQx["ponorka
+zaslání"]. Účinné provedení této myšlenky vyžaduje instrukci `CREATE2`
+která v současné době nebyla přijata, ale zdá se, že pravděpodobně bude
+v nadcházejícím tvrdém rozštěpení.
+
+==== Příklady ze života: ERC20 a Bancor
+
+((("ERC20 token standard","front-running vulnerability")))((("front-running attacks","real-world examples: ERC 20 and Bancor")))http://bit.ly/2CUf7WG[ERC20
+standard] je docela dobře známý pro vytváření tokenů on Ethereu. Tento
+Standard má potenciální chybu přebíhání, která se vyskytuje v
+ve funkci `approve`. http://bit.ly/2DbvQpJ[Mikhail Vladimirov and Dmitry Khovratovich] napsali toto dobré vysvětlení
+zranitelnost (a způsoby, jak zmírnit útok).
+
+Norma specifikuje funkci `approve` jako:
+
+[source,solidity]
+----
+function approve(address _spender, uint256 _value) returns (bool success)
+----
+
+Tato funkce umožňuje uživateli povolit jiným uživatelům převod tokenů
+jejich jménem. K zranitelnosti chybou předbíhání dochází ve scénáři, kde
+uživatel Alice _schválí_ jejímu příteli Bobovi, aby utratil 100 tokenů. Alice
+se později rozhodne, že chce odvolat Bobův souhlas utratit, řekněme:
+100 tokenů, takže vytvoří transakci, která určuje Bobův příděl
+50 tokenů. Bob, který bločenku pečlivě sleduje, vidí
+tuto transakci a vytvoří transakci jeho vlastního výdaje
+100 tokenů. Na svou transakci vloží vyšší `gasPrice` než
+Alice, takže jeho transakce dostane přednost před její. Některé
+implementace `approve` by Bobovi umožnily převést jeho
+100 tokenů a poté, když je transakce Alice schválena, nastaví se
+Bobův příděl na 50 tokenů, ve skutečnosti umožňuje Bobovi přístup k
+150 tokenům.
+
+((("Bancor")))Dalším příkladem ze života je
+https://www.bancor.network/[Bancor]. Ivan Bogatyy a jeho tým
+zdokumentoval ziskový útok na počáteční implementaci Bancor. Jeho
+http://bit.ly/2EUlLzb[blog
+příspěvek] a http://bit.ly/2yHgkhs[DevCon3 řeč]
+podrobně diskutují o tom, jak se to stalo. Ceny tokenů jsou v zásadě ceny
+určené na základě hodnoty transakce; uživatelé mohou sledovat transakční úložiště
+pro Bancor transakce a útokem přebíháním vydělávat na rozdílech cen.
+Tento útok byl vyřešen týmem Bancor.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc38")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc37")))
+
+=== Odepření služby (DoS)
+
+((("denial of service (DoS) attacks", id="ix_09smart-contracts-security-asciidoc39", range="startofrange")))((("security (smart contracts)","denial of service attacks", id="ix_09smart-contracts-security-asciidoc40", range="startofrange")))Tato kategorie je velmi široká, ale v zásadě sestává z útoků, kde
+uživatelé mohou učinit smlouvu nefunkční po určitou dobu, nebo
+v některých případech trvale. To může v těchto smlouvách uvěznit ether
+navždy, jak tomu bylo v případě <<multisig_secondhack>>.
+
+[role="notoc"]
+==== Zranitelnost
+
+((("denial of service (DoS) attacks","vulnerability")))Existují různé způsoby, jak se kontrakt může stát nefunkční. Tady jsme
+zdůraznit jen několik méně zřejmých Solidity
+vzorů kódu, které mohou vést ke zranitelnosti DoS:
+
+Průchod extrémně zmanipulovaným mapováním nebo polem::
+Tento vzor se obvykle objeví, když si majitel přeje distribuovat tokeny
+investorům  pomocí funkce `distribute`
+jako v tomto příkladu kontraktu:
++
+[source,solidity,linenums]
+----
+contract DistributeTokens {
+    address public owner; // dostane se někam
+    address[] investors; // pole investorů
+    uint[] investorTokens; // množství tokenů, které každý investor dostane
+
+    // ... další funkce, včetně transfertoken()
+
+    function invest() external payable {
+        investors.push(msg.sender);
+        investorTokens.push(msg.value * 5); // pošle 5-krát wei
+        }
+
+    function distribute() public {
+        require(msg.sender == owner); // pouze majitel
+        for(uint i = 0; i < investors.length; i++) {
+            // zde transferToken(to,amount) převede "amount"
+            // tokenů adrese "to"
+            transferToken(investors[i],investorTokens[i]);
+        }
+    }
+}
+----
++
+Všimněte si, že smyčka v tomto kontraktu běží přes pole, které může být
+uměle nahuštěné. Útočník může vytvořit mnoho uživatelských účtů
+a udělat pole investorů příliš velké. V zásadě to lze provést tak, že
+plyn potřebný k provedení smyčky +for+ přesáhne limit plynu v bloku,
+v podstatě způsobuje nefunkčnost funkce  `distribute`.
+
+Operace vlastníka::
+((("Initial Coin Offerings (ICOs)","DoS attacks and")))Dalším obvyklým vzorem je, kde majitelé mají
+specifická privilegia v kontraktech a musí provést nějakou úlohu, aby
+kontrakt postoupit do dalšího stavu. Jedním příkladem by mohla být kontrakt počáteční nabídka mincí (ICO),
+který vyžaduje, aby vlastník `finalize` kontrakt, který poté
+umožňuje převody tokenů. Například:
++
+[source,solidity,linenums]
+----
+bool public isFinalized = false;
+address public owner; // dostane se někam
+
+function finalize() public {
+    require(msg.sender == owner);
+    isFinalized == true;
+}
+
+// ... extra ICO funkcionalita
+
+// přetížená převodová funkce
+function transfer(address _to, uint _value) returns (bool) {
+    require(isFinalized);
+    super.transfer(_to,_value)
+}
+
+...
+----
++
+V takových případech, pokud privilegovaný uživatel ztratí soukromé klíče nebo se stane
+neaktivní, celý tokenový kontrak se stane nefunkční. V tomto případě, pokud
+vlastník nemůže zavolat pass:[<span class="keep-together"><code>finalize</code></span>], žádné tokeny nemohou být převedeny;
+celá  obsluha tokenového ekosystému závisí na jedné
+address.
+
+Progresivní stav založený na externích voláních:: Kontrakty jsou někdy psány
+tak, že postup do nového stavu vyžaduje odeslání etheru na
+adresu nebo čekání na nějaký vstup z externího zdroje. Tyto vzory mohou
+vést k DoS útokům v případě, že externí volání selže nebo je mu zabráněno
+externím důvodem. V příkladu odesílání etheru může uživatel vytvořit kontrakt, který
+nepřijímá ether. Pokud kontrakt vyžaduje, aby byl ether vybrán, aby postupoval do nového státu (zvažte a
+kontrakt časového uzamčení, která vyžaduje, aby byl veškerý ether vybrán před tím, než bude
+znovu použitelný), kontrakt nikdy nedosáhne
+nového stavu, protože éter nemůže být nikdy zaslán na uživatelský kontrakt,
+který nepřijímá ether.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("denial of service (DoS) attacks","preventative techniques")))V prvním příkladu by kontrakty neměly procházet smyčkou datovými strukturami,
+které mohou být manipulovány externími uživateli. Výběrový
+vzor je doporučen, přičemž každý z investorů volá  funkci +withdraw+
+pro vyzvednutí tokenů nezávisle.
+
+Ve druhém příkladu byl ke změně stavu vyžadován privilegovaný uživatel
+kontraktu. V takových příkladech může být použita pojistka
+pro případ, že se majitel stane nezpůsobilým. Jedno řešení
+je, aby se majitel stal vícepodpisovým kontraktem. Další řešení
+je použití časového zámku: v daném příkladu +require+ na řádku 5 může obsahovat a
+mechanismus založený na čase, například
+`require(msg.sender == owner || now > unlockTime)`, který umožňuje libovolnému uživateli
+dokončení po uplynutí doby zadané proměnnou `unlockTime`. Tento druh
+zmírňovací techniky lze použít také ve třetím příkladu. Pokud
+externí volání jsou nutná pro postup do nového stavu, účet pro
+jejich možné selhání a případně přidat stav založený na uplynulém čase
+pro postup v případě, že požadované volání nikdy nepřijde.
+
+[NOTE]
+====
+K těmto návrhům samozřejmě existují centralizované alternativy:
+Lze přidat `maintenanceUser` kdo může přijít a opravit
+v případě potřeby problémy s útoky na bázi DoS. Typicky tyto druhy
+kontraktů mají problémy s důvěrou, kvůli moci takové entity.
+====
+
+==== Příklady ze života: GovernMental
+
+http://governmental.github.io/GovernMental/[GovernMental] ((("denial of service (DoS) attacks","real-world example: GovernMental")))((("GovernMental Ponzi scheme","DoS vulnerability")))bylo staré
+Ponziho schéma, které nashromáždilo poměrně velké množství etheru (1 100 etherů v jeden okamžik). Bohužel to bylo
+citlivé na zranitelnosti DoS zmíněné v této sekci.  A http://bit.ly/2DcgvFc[Reddit příspěvek] od etherik popisuje, jak kontrakt vyžadovala výmaz velkého
+mapování za účelem odebrání etheru. Vypuštění tohoto mapování mělo
+náklady na plyn, která v té době překračovaly hranici limitu plynu v bloku, a tak bylo
+nemožné vybrat 1 100 etherů. Adresa kontraktu je
+http://bit.ly/2Oh8j7R[+0xF45717552f12Ef7cb65e95476F217Ea008167Ae3+],
+a můžete vidět z transakce http://bit.ly/2Ogzrnn[+0x0d80d67202bd9cb6773df8dd2020e719&thinsp;0a1b0793e8ec4fc105257e8128f0506b+], že 1 100 etheru bylo nakonec získáno pomocí transakce, která použita
+2.5M plynu (když se limit plynu v bloku dostatečně zvýšil, aby umožnil takovou transakci).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc40")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc39")))
+
+=== Manipulace s časovou značkou bloku
+
+((("block timestamp manipulation security threat", id="ix_09smart-contracts-security-asciidoc41", range="startofrange")))((("security (smart contracts)","block timestamp manipulation threat", id="ix_09smart-contracts-security-asciidoc42", range="startofrange")))Časové značky bloků byla historicky používány pro rozmanité
+aplikace, jako je entropie pro náhodná čísla (viz
+<<entropyillusion_security>> pro další podrobnosti), zamykání
+finančních prostředků na časové období a různé podmíněné změny stavu,
+příkazy, které jsou časově závislé. Těžaři mají schopnost mírně přizpůsobit
+časové značky, což se ukázalo být nebezpečným, pokud časové značky
+jsou v chytrých kontraktech používány nesprávně.
+
+Užitečné odkazy k tomu zahrnují
+http://bit.ly/2OdUC9C[
+Solidity dokumentaci] a http://bit.ly/2CQ8gh4[Joris Bontje's Ethereum Stack
+Exchange otázky] na toto téma.
+
+[role="notoc"]
+==== Zranitelnost
+
+((("block timestamp manipulation security threat","vulnerability")))`block.timestamp` a její alias `now` mohou být manipulovány těžaři, pokud
+mají k tomu určitou motivaci. Pojďme postavit jednoduchou hru, ukázanou v <<roulette_security>>, která
+by byla zranitelná vůči zneužití těžaři.
+
+[[roulette_security]]
+.roulette.sol
+====
+[source,solidity,linenums]
+----
+contract Roulette {
+    uint public pastBlockTime; // vynutí jednu sázku na blok
+
+    constructor() external payable {} // počáteční financování kontraktu
+
+    // nouzová funkce použita pro položení sázky
+    function () external payable {
+        require(msg.value == 10 ether); // musí zaslat 10 etheru pro hraní
+        require(now != pastBlockTime); // pouze jedna transakce v bloku
+        pastBlockTime = now;
+        if(now % 15 == 0) { // vítěz
+            msg.sender.transfer(this.balance);
+        }
+    }
+}
+----
+====
+
+Tento kontrakt se chová jako jednoduchá loterie. Jedna transakce v bloku
+může vsadit 10 etherů na šanci získat zůstatek kontraktu.
+předpokládá se, že poslední dvě číslice `block.timestamp` jsou rovnoměrně rozděleny. Pokud by tomu tak bylo, byla by 1 ku 15
+šance vyhrát tuto loterii.
+
+Jak však víme, těžaři mohou upravit časovou značku, pokud to budou potřebovat.
+V tomto konkrétním případě, pokud je ve smlouvě dostatek etherových zdrojů,
+těžař, který řeší blok, je motivován, aby si vybral takovou časovou značku
+`block.timestamp` nebo `now`, která je modulo 15 rovna  `0`. Může tak vyhrát
+ether zamčený v tomto kontraktu spolu s blokovou odměnou. Protože
+existuje pouze jedna osoba, která může sázet v bloku, je to také zranitelné
+útokem předbíháním (viz <<frontrunning_security>> pro další detaily).
+
+V praxi se časová značky bloku monotónně zvyšují, a tak těžaři
+nemohou zvolit libovolná časové značky bloku (musí být pozdější než jejich
+předchůdci). Jsou také omezeny na nastavení časů bloků, které nejsou příliš daleko
+v budoucnu, protože tyto bloky bude síť pravděpodobně odmítat
+(uzly nebudou ověřovat bloky, jejichž časové značky jsou v budoucnosti).
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("block timestamp manipulation security threat","preventative techniques")))Časové značky bloku by neměla být použita pro entropii nebo generování náhodných
+čísel tj. neměly by být rozhodujícím faktorem (buď přímo
+nebo prostřednictvím nějakého odvození) za výhru hry nebo změnu důležitého
+stavu.
+
+Někdy je vyžadována časově citlivá logika; např. pro odblokování kontraktů
+(time-locking), dokončení ICO po několika týdnech nebo vynucení vypršení platnosti
+dat. Někdy se doporučuje použít http://bit.ly/2OdUC9C[`block.number`] a průměrný čas bloku pro odhad doby; s
+a `10 sekund`  jako dobu tvorby bloku, `1 týden` odpovídá přibližně `60480 blokům`.
+Určení čísla bloku, ve kterém lze změnit stav kontraktu, může
+být bezpečnější, protože těžaři nemohou snadno manipulovat s číslem bloku.
+http://bit.ly/2AAebFr[BAT
+ICO] kontrakt využil tuto strategii.
+
+To může být zbytečné, pokud se kontrakty zvlášť netýkají
+těžařské manipulace s časovou značkou bloku, ale je to něco,
+o čem byste měli vědět při nasazení kontraktů.
+
+==== Příklad ze života: GovernMental
+
+http://governmental.github.io/GovernMental/[GovernMental], ((("block timestamp manipulation security threat","real-world example: GovernMental")))((("GovernMental Ponzi scheme","block timestamp-based attack")))staré Ponzi schéma zmíněné výše, bylo také
+zranitelné útokem založeným na časových značkách. Kontrakt vyplácel
+hráče, který byl posledním hráčem, který se připojil (alespoň na jednu minutu) v 
+daném kole. Těžař,  který byl hráčem, tak mohl upravit časovou značku (na
+budoucí čas, aby to vypadalo, že uběhla minuta)
+aby se ukázalo, že byl posledním hráčem, který se připojil na déle než minutu (dokonce
+i když to ve skutečnosti neplatilo). Více podrobností najdete
+v
+http://bit.ly/2Q1AMA6["Historii
+Ethereum bezpečnosti a zranitelností, útoků a oprav] od Tanya pass:[<span class="keep-together">Bahrynovska</span>].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc42")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc41")))
+
+=== Konstruktory s péčí
+
+((("constructor function","contract name modification security threat")))((("security (smart contracts)","constructors and contract name-change threat")))Konstruktory jsou speciální funkce, které často vykonávají kritické,
+privilegované úkoly při inicializaci kontraktů. Před Solidity v0.4.22,
+konstruktory byli definovány jako funkce, které měly stejné jméno jako
+kontrakt, který je obsahoval. V takových případech, když se změní název kontraktu v
+vývoji, pokud se nezmění také jméno konstruktoru, stane se normální,
+volitelnou funkcí. Jak si dokážete představit, může to vést k některým
+zajímavým napadeném kontraktů.
+
+Pro další nahlédnutí může mít čtenář zájem, pokusit se o
+https://github.com/OpenZeppelin/ethernaut[Ethernaut výzvy] (
+příslušné úrovně Fallout).
+
+[role="notoc"]
+==== Zranitelnost
+
+((("constructor/contract name modification security threat","vulnerability")))((("contract name modification/constructor security threat","vulnerability")))IPokud je název kontraktu změněn nebo je v něm překlep
+jméno konstruktoru pak neodpovídá názvu
+kontraktu, konstruktor se bude chovat jako normální funkce. To může
+vést k hrozným důsledkům, zejména pokud konstruktor provádí
+privilegované operace. Zvažte následující kontrakt:
+
+[source,solidity,linenums]
+----
+contract OwnerWallet {
+    address public owner;
+
+    // konstruktor
+    function ownerWallet(address _owner) public {
+        owner = _owner;
+    }
+
+    // Nouzová funkce, přijímá ether
+    function () payable {}
+
+    function withdraw() public {
+        require(msg.sender == owner);
+        msg.sender.transfer(this.balance);
+    }
+}
+----
+
+Tento kontrakt shromažďuje ether a umožňuje jej vybrat pouze vlastníkovi,
+zavoláním funkce `withdraw`. Problém nastává, pokud konstruktor není pojmenován přesně stejně jako kontrakt:
+první písmeno je jiné! Tak, jakýkoliv
+uživatel smí zavolat funkci `ownerWallet`, nastavit sám sebe jako vlastníka,
+a poté vzít veškerý ether v kontraktu zavoláním `withdraw`.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("constructor/contract name modification security threat","preventative techniques")))((("contract name modification/constructor security threat","preventative techniques")))Tento problém byl vyřešen ve verzi 0.4.22 Solidity překladače. Tato verze představila klíčové slovo `constructor`, které
+specifikuje konstruktor, spíše než vyžadování jména
+funkce odpovídajícího jménu kontraktu. Doporučuje se  určování konstruktorů pomocí tohoto klíčového slova,
+aby se zabránilo problémům s pojmenováním.
+
+==== Příklad ze života: Rubixi
+
+http://bit.ly/2ESWG7t[Rubixi] ((("constructor/contract name modification security threat","real-world example: Rubixi")))((("contract name modification/constructor security threat","real-world example: Rubixi")))((("Rubixi pyramid scheme")))bylo další pyramidové schéma, které se vystavovalo tomuto druhu
+zranitelnosti. Bylo původně nazváno `DynamicPyramid`, ale
+název kontraktu byl změněn před nasazením na `Rubixi`. 
+jméno konstruktoru se nezměnilo, což každému uživateli umožnilo stát se
+tvůrcem. Najdete zde zajímavou diskusi týkající se této chyby
+na http://bit.ly/2P0TRWw[Bitcointalk]. Nakonec to uživatelům umožnilo bojovat o status tvůrce
+a vybírat poplatky z pyramidového schématu. Více podrobností o této konkrétní
+chybě lze nalézt v http://bit.ly/2Q1AMA6["Historii Ethereum bezpečnosti, zranitelností. útoků a jejich oprav"].
+
+=== Neinicializované ukazatele úložiště
+
+((("security (smart contracts)","uninitialized storage pointer threat", id="ix_09smart-contracts-security-asciidoc43", range="startofrange")))((("storage pointers, uninitialized", id="ix_09smart-contracts-security-asciidoc44", range="startofrange")))((("uninitialized storage pointers security threat", id="ix_09smart-contracts-security-asciidoc45", range="startofrange"))EVM ukládá data buď do úložiště nebo do paměti. Porozumění
+tomu, jak přesně se to dělá a výchozím typům lokálních proměnných
+funkcí je vysoce doporučeno při vývoji kontraktů. To je
+protože je možné vytvořit zranitelné kontrakty
+nevhodnou inicializací proměnných.
+
+Další informace o úložišti a paměti v EVM najdete v dokumentaci Solidity http://bit.ly/2OdUU0l[umístění dat], http://bit.ly/2JslDWf[rozložení stavových proměnných v úložišti], a http://bit.ly/2Dch2Hc[rozložení paměti].
+
+[NOTE]
+====
+Tato sekce je založena na vynikajícím
+http://bit.ly/2ERI0pb[textu
+od Stefana Beyera]. Další informace k tomuto tématu, inspirované Stefanem, najdete v tomto
+http://bit.ly/2OgxPtG[Reddit
+vlákně].
+====
+
+[role="notoc"]
+==== Zranitelnost
+
+((("uninitialized storage pointers security threat","vulnerability", id="ix_09smart-contracts-security-asciidoc46", range="startofrange")))Lokální proměnné ve výchozím nastavení funkcí úložiště nebo paměti
+závisí na jejich typu. Neinicializované proměnné místního úložiště
+mohou obsahovat hodnoty jiných proměnných úložiště v kontraktu; tato skutečnost
+může způsobit neúmyslné zranitelnosti nebo může být záměrně zneužita.
+
+Podívejme se relativně jednoduchý registrační kontrakt v <<nameregistrar_security>>.
+
+[[nameregistrar_security]]
+.NameRegistrar.sol
+====
+[source,solidity,linenums]
+----
+// Zamčený registr jmen
+contract NameRegistrar {
+
+    bool public unlocked = false;  // registr zamčený, nelze měnit jména
+
+    struct NameRecord { // mapa hašů na addresy
+        bytes32 name;
+        address mappedAddress;
+    }
+
+    // záznamy, kdo zaregistroval jména
+    mapping(address => NameRecord) public registeredNameRecord;
+    // překládá haše na adresy
+    mapping(bytes32 => address) public resolve;
+
+    function register(bytes32 _name, address _mappedAddress) public {
+        // nastaví nový NameRecord
+        NameRecord newRecord;
+        newRecord.name = _name;
+        newRecord.mappedAddress = _mappedAddress;
+
+        resolve[_name] = _mappedAddress;
+        registeredNameRecord[msg.sender] = newRecord;
+
+        require(unlocked); // Povolit registrace pouze v případě, že je kontrakt  odemčen
+    }
+}
+----
+====
+
+Tento registrátor jednoduchých jmen má pouze jednu funkci. Když je kontrakt
+odemčený `unlocked`, umožňuje komukoli zaregistrovat jméno (jako `bytes32` haš)
+a namapujte toto jméno na adresu. Registrátor je
+nejprve zamčený, a `require`  na řádku 25 zabraňuje `register`
+přidávat nové záznamy. Zdá se, že kontrakt je nepoužitelný
+Neexistuje žádný způsob, jak odemknout registr! Existuje však zranitelnost
+která umožňuje registraci jména bez ohledu na proměnnou `unlocked`.
+
+// TODO: Andreas zkontroluje, zda je tento úvod vyžadován jako další sekce
+// knihy nebo může být možné na ní odkazovat. Může být také nutné, aby tento jazyk byl
+// upraven
+
+K projednání této chyby zabezpečení musíme nejprve porozumět tomu, jak úložiště
+pracuje v Solidity. Jako přehled na vysoké úrovni (bez jakýchkoli
+technických podrobností doporučujeme přečíst si Solidity dokumentaci pro
+pro řádnou kontrolu, stavové proměnné jsou ukládány postupně v _slotech_ tak, jak jsou
+objeví se v kontraktu (mohou být seskupeny dohromady, ale nejsou v tomto
+příkladu, takže se tím nebudeme bát). Tedy, `unlocked` existuje v
+`slot[0]`, `registeredNameRecord` v `slot[1]`, a `resolve` v
+`slot[2]`, atd. Každý z těchto slotů má velikost 32 bajtů (jsou přidány
+složitosti s mapováním, které prozatím nebudeme ignorovat). Booleovský
+`unlocked` bude vypadat jako `0x000...0` (64 ++0++, kromě `0x`) pro
+`false` nebo `0x000...1` (63 ++0++) pro `true`. Jak vidíte, existuje
+v tomto konkrétním příkladu se značně plýtvá úložištěm.
+
+Další kousek skládačky je, že Solidity ve výchozím nastavení
+při inicializaci ukládá do úložiště složité datové typy, jako jsou ++struct++ 
+jako lokální proměnné. Takže, pass:[<span class="keep-together"><code>newRecord</code></span>] na řádce 18 jde standardně do úložiště. Tato zranitelnost je způsobena tím, že pass:[<span class="keep-together"><code>newRecord</code></span>] je
+neinicializován. Protože je výchozí úložiště, je to mapováno na
+slot úložiště +slot[0]+, který v současné době obsahuje ukazatel na `unlocked`.
+Všimněte, že na řádcích 19 a 20 jsme
+nastavili `newRecord.name` na `_name` a `newRecord.mappedAddress` na pass:[<span class="keep-together"><code>_mappedAddress</code></span>]; Tím se aktualizují umístění úložiště +slot[0]+
+a +slot[1]+, což modifikuje obojí `unlocked`a slot úložiště
+spojený s `registeredNameRecord`.
+
+To znamená, že `unlocked` lze přímo upravit jednoduše pomocí
+`bytes32 _name` parametru funkce `register`. Proto pokud
+poslední bajt `_name` je nenulový, změní poslední bajt
+storage `slot[0]` a přímo změní `unlocked` na `true`. Taková hodnota `_name`
+způsobí, že volání `require` na řádku 25 je úspěšné, protože jsme nastavili
+`unlocked` na `true`. Vyzkoušejte to v Remix. Všimněte si, že funkce projde
+pokud použijete `_name` ve tvaru:(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc46")))
+
+----
+0x0000000000000000000000000000000000000000000000000000000000000001
+----
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("uninitialized storage pointers security threat","preventative techniques")))Kompilátor Solidity zobrazuje varování pro neinicializované proměnné úložiště;
+vývojáři by měli těmto upozorněním věnovat náležitou pozornost, při
+tvorbě chytrých kontraktů. Aktuální verze Mist (0.10) 
+neumožňují kompilovat tyto kontrakty. To je často dobrá praxe
+při řešení složitých typů explicitně používat specifikátory memory` nebo `storage`,
+pro zajištění, aby se chovaly podle očekávání.
+
+==== Příklad ze života: OpenAddressLottery a CryptoRoulette hrnce medu
+
+((("OpenAddressLottery honey pot")))((("uninitialized storage pointers security threat","real-world examples: OpenAddressLottery and CryptoRoulette honey pots")))Hrnec medu pojmenovaný http://bit.ly/2AAVnWD[+OpenAddressLottery+] byl nasazen, tak že používal neinicializovanou proměnnou úložiště,
+aby vybral ether od některých nezkušených útočníků. Kontrakt je spíše
+zapojen, tak necháme analýzu na http://bit.ly/2OgxPtG[Reddit
+vlákně] kde je útok zcela jasně vysvětlen.
+
+((("CryptoRoulette honey pot")))Další hrnec medu, http://bit.ly/2OfNGJ2[+CryptoRoulette+], také využívá tento trik pass:[<span class="keep-together">pro pokus</span>] získat od vás nějaký ether. Pokud
+nemůže zjistit, jak útok funguje, viz
+http://bit.ly/2OVkSL4["
+Analýza několika Ethereum hrnců medu"] pro přehled
+tohoto kontraktu a dalších.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc45")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc44")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc43")))
+
+=== Plovoucí desetinná čárka a přesnost
+
+((("floating-point representation security risk", id="ix_09smart-contracts-security-asciidoc47", range="startofrange")))((("security (smart contracts)","floating-point problem", id="ix_09smart-contracts-security-asciidoc48", range="startofrange")))V době psaní této knihy (v0.4.24), Solidity nepodporuje reálná čísla s pevnou a plovoucí desetinnou čárku
+To znamená, že plovoucí desetinná čárka
+musí být reprezentována pomocí celočíselných typů v Solidity.
+To může vést k chybám a zranitelnosti, pokud to není implementováno správně.
+
+[NOTE]
+====
+Další čtení viz
+http://bit.ly/2Ogp2Ia[Ethereum
+kontrakty, bezpečnostní techniky a tipy wiki].
+====
+
+[role="notoc"]
+==== Zranitelnost
+
+((("floating-point representation security risk","vulnerability")))Protože není žádný datový typ s pevnou desetinou čárkou v Solidity, vývojáři jsou nuceni
+implementovat vlastní pomocí standardních celočíselných datových typů. Existuje
+množství úskalí pro vývojáře, které mohou nastat během tohoto procesu.
+Pokusíme se některé z nich zdůraznit v této sekci.
+
+Začněme příkladem kódu (pro zjednodušení budeme ignorovat problémy s přetečením / podtečením, o kterých jsme hovořili dříve v této kapitole):
+
+[source,solidity,linenums]
+----
+contract FunWithNumbers {
+    uint constant public tokensPerEth = 10;
+    uint constant public weiPerEth = 1e18;
+    mapping(address => uint) public balances;
+
+    function buyTokens() external payable {
+        // převod wei na eth, poté vynásobí kurzem tokenu
+        uint tokens = msg.value/weiPerEth*tokensPerEth;
+        balances[msg.sender] += tokens;
+    }
+
+    function sellTokens(uint tokens) public {
+        require(balances[msg.sender] >= tokens);
+        uint eth = tokens/tokensPerEth;
+        balances[msg.sender] -= tokens;
+        msg.sender.transfer(eth*weiPerEth);
+    }
+}
+----
+
+Tento jednoduchý kontrakt nakupující / prodávající tokeny má některé zřejmé problémy. Přestože matematické výpočty
+pro nákup a prodej tokenů jsou správné, nedostatek plovoucí čísel s plovoucí desetinnou čárkou
+poskytne chybné výsledky. Například při nákupu tokenů na
+řádce 8, pokud je hodnota menší než `1 ether` počáteční dělení bude
+mít výsledek `0`, výsledek konečného násobení zůstane jako `0` (např., `200 wei`
+vyděleno `1e18` `weiPerEth` se rovná `0`). Podobně při prodeji
+tokenů, libovolný počet tokenů menší než `10` bude mít také za následek ``0 ether`.
+Ve skutečnosti je zaokrouhlování vždy dolů, takže výsledkem bude prodej `29 tokens` za 
+`2 ether`.
+
+Problém s tímto kontraktem spočívá v tom, že přesnost se týká pouze
+nejbližšího etheru (tj. 1e18 wei). To může být obtížné, když
+se zabýváte desetinnými čísly v
+https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md[ERC20]
+tokenech, když potřebujete vyšší přesnost.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("floating-point representation security risk","preventative techniques")))Udržování vhodné přesnosti ve vašem chytrém kontraktu je velmi důležité,
+zejména při řešení poměrů a sazeb odrážejících ekonomická
+rozhodnutí.
+
+Měli byste zajistit, aby všechny použité poměry nebo sazby umožňovaly velká
+čísla ve zlomcích. Například jsme použili kurz `tokensPerEth` v
+našem příkladě. Bylo by lepší použít `weiPerTokens`, což bude
+velké číslo. K výpočtu odpovídajícího počtu tokenů bychom mohli udělat
+`msg.value/weiPerTokens`. To by poskytlo přesnější výsledek.
+
+Další taktika, kterou je třeba mít na paměti, je mít na paměti pořadí operací.
+V našem příkladu byl výpočet nákupu tokenů proveden
+`msg.value/weiPerEth*tokenPerEth`. Všimněte si, že k dělení dojde
+před násobením. (Solidity, na rozdíl od některých jazyků, zaručuje provádění operací v pořadí, v jakém jsou psány.) Tento příklad by dosáhl větší
+přesnost, pokud výpočet provedl nejprve násobení a poté
+dělení, tj. `msg.value*tokenPerEth/weiPerEth`.
+
+A konečně, při definování libovolné přesnosti pro čísla to může být dobrý
+nápad převést hodnoty na vyšší přesnost, provést všechny
+matematické operace, pak nakonec převést zpět na
+přesnost požadovanou pro výstup. Obvykle ++uint256++ je použit (z důvodu
+optimálního využití plynu); tyto dávají přibližně 60 řádů
+v jejich rozsahu, z nichž některé lze věnovat přesnosti
+matematických operací. Může se stát, že je lepší si to nechat
+všechny proměnné s vysokou přesností v Solidity a převést je zpět na nižší
+přesnosti v externích aplikacích (to je v podstatě jak decimals`
+proměnné fungují v ERC20 tokenových
+kontraktech). Chcete-li vidět příklad, jak toho lze dosáhnout, doporučujeme podívat se na `https://github.com/dapphub/ds-math[DS-Math]. Používá některé
+zvláštní názvy (&#x201c;wads&#x201d; a &#x201c;rays&#x201d;), ale koncept je užitečný.
+
+==== Příklad ze života: Ethstick
+
+((("Ethstick contract")))((("floating-point representation security risk","real-world example: Ethstick")))The http://bit.ly/2Qb7PSB[+Ethstick+ kontrakt] nepoužívá rozšířenou přesnost; jedná se však o wei. Tak,
+tento kontrakt bude mít problémy se zaokrouhlováním, ale pouze na úrovni wei
+přesnosti. Má některé závažnější nedostatky, ale ty se týkají
+obtížnosti získat entropii na bločence (viz
+<<entropyillusion_security>>). Pro další diskusi o
++Ethstick+ kontraktu, odkážeme vás na další příspěvek od Petera Vessenesa,
+http://bit.ly/2SwDnE0["Ethereum
+Kontraky jsou cukrovím pro útočníky"].(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc48")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc47")))
+
+=== Tx.Origin ověřování
+
+((("security (smart contracts)","tx.origin authentication threat", id="ix_09smart-contracts-security-asciidoc49", range="startofrange")))Solidity má globální proměnnou `tx.origin`, která prochází celým
+zásobníkem volání a obsahuje adresu účtu, který původně odeslal
+volání (nebo transakci). Použití této proměnné pro ověřování v chytrém kontraktu způsobí, že kontrakt bude zranitelný vůči útoku
+podvržení identity.
+
+[NOTE]
+====
+Další čtení viz dbryson Ethereum http://bit.ly/2PxU1UM[Stack
+Exchange otázky],
+http://bit.ly/2qm7ocJ[&#x201c;Tx.Origin and Ethereum Oh My!&#x201d;] od Petera Vessenese, a
+http://bit.ly/2P3KVA4[&#x201c;Solidity: Tx Origin Attacks&#x201d;]  od Chrise Coverdala.
+====
+
+[role="notoc"]
+==== Zranitelnost
+
+((("tx.origin authentication security threat","vulnerability")))Kontrakty, které uživatele opravňují pomocí proměnné `tx.origin` jsou
+obvykle jsou náchylné k útokům podvržení identity, při kterých mohou být uživatelé oklamáni, aby
+provedli ověřovací akci na zranitelném kontraktu.
+
+Zvažme jednoduchý kontrakt v <<phishable_security>>.
+
+[[phishable_security]]
+.Phishable.sol
+====
+[source,solidity,linenums]
+----
+contract Phishable {
+    address public owner;
+
+    constructor (address _owner) {
+        owner = _owner;
+    }
+
+    function () external payable {} // přijímá ether
+
+    function withdrawAll(address _recipient) public {
+        require(tx.origin == owner);
+        _recipient.transfer(this.balance);
+    }
+}
+----
+====
+
+Všimněte si, že na řádku 11 kontrakt povoluje funkci `withdrawAll`
+pomocí `tx.origin`. Tento kontrakt umožňuje útočníkovi
+vytvořit útočný kontrakt ve tvaru:
+
+[source,solidity,linenums]
+----
+import "Phishable.sol";
+
+contract AttackContract {
+
+    Phishable phishableContract;
+    address attacker; // Adresa útočníka pro získání finančních prostředků
+
+    constructor (Phishable _phishableContract, address _attackerAddress) {
+        phishableContract = _phishableContract;
+        attacker = _attackerAddress;
+    }
+
+    function () payable {
+        phishableContract.withdrawAll(attacker);
+    }
+}
+----
+
+Útočník by mohl maskovat tento kontrakt jako svojí vlastní soukromou adresu a sociálním působením donutit oběť (vlastníka +Phishable+ kontraktu), aby na adresu poslal nějakou formu transakce - možná zaslal tomuto kontraktu nějaké množství etheru. Oběť, pokud není opatrná, si toho nemusí všimnout
+zde je kód na adrese útočníka, nebo by jej mohl útočník předat
+jako peněženku s více podpisy nebo jako peněženku pro pokročilé úložiště (pamatujte
+že zdrojový kód veřejných kontraktů není ve výchozím nastavení k dispozici).
+
+V každém případě, pokud oběť odešle transakci s dostatečným množstvím plynu
+na adresu `AttackContract`, vyvolá nouzovou funkci, ve které
+se zavolá funkce `withdrawAll` kontraktu `Phishable` 
+s parametrem`attacker`. To povede ke vybrání všech
+prostředků z kontraktu `Phishable`  na adresu `attacker` . Tohle je
+protože adresa, která poprvé iniciovala volání, byla obětí
+(tj. vlastník kontraktu `Phishable` ). Proto `tx.origin`
+se bude rovnat  `owner`a `require` na řádku 11
+`Phishable` kontraktu projde.
+
+[role="notoc"]
+==== Peventivní techniky
+
+((("tx.origin authentication security threat","preventative techniques")))`tx.origin` by nemělo být použito pro autorizaci v chytrých kontraktech.
+To neznamená, že proměnná `tx.origin` by nikdy neměla být použita. To
+má nějaké legitimní případy použití v chytrých kontraktech. Například, pokud by
+někdo chtěl odmítnout externí kontrakty volané z aktuálního kontraktu,
+mohl by implementovat  `require` ve tvaru
+`require(tx.origin == msg.sender)`. To brání zprostředkujícím kontraktům,
+aby byly používány pro volání aktuálního kontraktu, čímž se kontrakt omezuje
+běžné adresy, které nejsou kontraktem.((range="endofrange", startref="ix_09smart-contracts-security-asciidoc49"))).(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc2")))
+
+[[contract_libraries_sec]]
+=== Knihovny kontraktů
+
+((("security (smart contracts)","contract libraries for")))((("smart contracts","on-platform libraries")))K dispozici je spousta existujících kódů pro opakované použití, a to jak nasazených v bločence jako dostupné knihovny, tak mimo bločenku jako knihovny šablon kódů. Platformové knihovny, které byly nasazeny, existují jako chytré kontrakty v bajtkódu, takže před jejich reálným použitím je třeba věnovat velkou pozornost. Používání dobře zavedených existujících knihoven na platformě však přináší mnoho výhod, například možnost těžit z nejnovějších rozšíření a šetří vám peníze a prospívá ekosystému Ethereum snížením celkového počtu živých kontraktů v Ethereum síti.
+
+((("frameworks","OpenZeppelin suite")))((("OpenZeppelin")))V Ethereum je nejčastěji používaným zdrojem https://openzeppelin.org/[OpenZeppelin], rozsáhlá knihovna kontraktů od implementace tokenů ERC20 a ERC721, po mnoho příchutí modelů veřejného prodeje, až po jednoduchá chování běžně vyskytující se v kontraktech, jako jsou `Ownable`, `Pausable`, nebo `LimitBalance`. Kontrakty v tomto úložišti byly důkladně testovány a v některých případech dokonce fungují jako standardní implementace. Jsou zdarma k použití a jsou vytvářeny a udržovány pomocí https://zeppelin.solutions [Zeppelin] spolu se stále rostoucím seznamem externích přispěvatelů.
+
+((("frameworks","ZeppelinOS")))((("ZeppelinOS")))Od Zeppelin je také https://zeppelinos.org/[ZeppelinOS], platforma služeb a nástrojů s otevřeným zdrojovým kódem, pro bezpečný vývoj a správu aplikací chytrých kontraktů. ZeppelinOS poskytuje vrstvu na vrcholu EVM, která vývojářům usnadňuje spuštění rozšiřitelných DApps spojených s bločenkovou knihovnou prověřených kontraktů, které jsou samy rozšiřitelné. Na platformě Ethereum mohou existovat různé verze těchto knihoven a vouching systém umožňuje uživatelům navrhovat nebo prosazovat vylepšení v různých směrech. Platforma rovněž poskytuje sadu nástrojů mimo bločenku pro ladění, testování, nasazení a sledování decentralizovaných aplikací.
+
+((("ethpm project")))Cílem projektu +ethpm+ je uspořádat různé zdroje, které se v ekosystému vyvíjejí, poskytováním systému správy balíků. Jejich registr jako takový poskytuje další příklady pro procházení:
+
+* Web: https://www.ethpm.com/
+* Úložiště: https://www.ethpm.com/registry
+* GitHub odkaz: https://github.com/ethpm
+* Dokumentace: https://www.ethpm.com/docs/integration-guide
+
+=== Závěry
+
+Každý vývojář, který pracuje v oblasti chytrých kontraktů, má toho hodně co vědět a pochopit. Dodržováním osvědčených postupů při navrhování chytrých kontraktů a psaní kódu se vyhnete mnoha vážným nástrahám a pastím.
+
+Snad nejzákladnějším principem zabezpečení softwaru je maximalizace opětovného použití důvěryhodného kódu. V kryptografii je to tak důležité, že bylo zhuštěno do přísloví: „Nevyhazujte své krypto.“ V případě chytrých kontraktů se jedná o co největší zisk z volně dostupných knihoven, které byly komunitou důkladně prověřeny.(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc1")))(((range="endofrange", startref="ix_09smart-contracts-security-asciidoc0")))

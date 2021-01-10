@@ -1,0 +1,249 @@
+[appendix]
+[[web3js_tutorial]]
+== Tutorial web3.js
+
+=== Penerangan
+((("web3.js","tutorial", id="ix_appdx-web3js-tutorial-asciidoc0", range="startofrange")))Tutorial ini bersandarkan web3@1.0.0-beta.29 web3.js. Ia bertujuan sebagai pengenalan kepada web3.js.
+
+Pustaka JavaScript web3.js adalah koleksi modul yang mengandungi fungsi khusus untuk ekosistem Ethereum, bersama-sama dengan API JavaScript yang serasi dengan Ethereum yang melaksanakan spesifikasi RPC Generik JSON.
+
+Untuk menjalankan skrip ini, anda tidak perlu menjalankan nod setempat anda sendiri, kerana ia menggunakan https://infura.io[Infura services].
+
+=== Interaksi Asas Kontrak web3.js dalam gaya Nonblocked (Async)
+
+((("web3.js","contract basic interaction in nonblocked (Async) fashion")))Periksa sama ada anda mempunyai versi +npm+ yang sah:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+Jika tidak, mulakan +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+</pre>
+++++
+
+Pasang kebergantungan asas:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm i command-line-args</strong>
+$ <strong>npm i web3</strong>
+$ <strong>npm i node-rest-client-promise</strong>
+</pre>
+++++
+
+Ini akan mengemas kini fail tetapan _package.json_ anda dengan kebergantungan baru anda.
+
+==== Penyusunan Skrip Node.js
+
+((("web3.js","node.js script execution")))Basic execution:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js</strong>
+</pre>
+++++
+
+Gunakan token Infura anda (register at https://infura.io/[] dan simpan kunci API di fail setempat yang bernama __infura_token__):
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  --infuraFileToken /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+atau:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+Ini akan membaca fail tersebut dengan token anda sendiri dan menyerahkan sebagai hujah arahan baris kepada arahan sebenar.
+
+=== Meninjau Skrip Pertunjukkan
+
+((("web3.js","reviewing demo script")))Next, let's review our demo script, _web3-contract-basic-interaction_.
+
+We use the +Web3+ object to obtain a basic web3 provider:
+
+[source,solidity]
+----
+var web3 = new Web3(infura_host);
+----
+
+Kita boleh berinteraksi dengan web3 dan mencuba beberapa fungsi asas. Mari lihat versi protokol:
+
+[source,solidity]
+----
+web3.eth.getProtocolVersion().then(function(protocolVersion) {
+      console.log(`Protocol Version: ${protocolVersion}`);
+  })
+----
+
+Sekarang mari kita lihat harga gas semasa:
+
+[source,solidity]
+----
+web3.eth.getGasPrice().then(function(gasPrice) {
+      console.log(`Gas Price: ${gasPrice}`);
+  })
+----
+
+Apakah blok yang terakhir dilombong dalam rantaian semasa?
+
+[source,solidity]
+----
+web3.eth.getBlockNumber().then(function(blockNumber) {
+      console.log(`Block Number: ${blockNumber}`);
+  })
+----
+
+=== Interaksi Kontrak
+
+((("web3.js","contract interaction", id="ix_appdx-web3js-tutorial-asciidoc1", range="startofrange")))Sekarang, mari cuba asas tindak balas kontrak. Untuk contoh berikut, kita akan menggunakan https://bit.ly/2MPZZLx[+WETH9_+ contract] dalam testnet Kovan.
+
+[role="pagebreak-before"]
+Pertama, mari kita mulakan alamat kontrak kami:
+
+[source,solidity]
+----
+var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
+----
+
+Kita boleh melihat bakinya:
+
+[source,solidity]
+----
+web3.eth.getBalance(our_contract_address).then(function(balance) {
+      console.log(`Balance of ${our_contract_address}: ${balance}`);
+})
+----
+
+dan melihat kod baitnya:
+
+[source,solidity]
+----
+web3.eth.getCode(our_contract_address).then(function(code) {
+      console.log(code);
+})
+----
+
+Seterusnya, kita akan menyediakan persekitaran untuk bertindak balas dengan API penjelajah Etherscan.
+
+Mari kita mulakan dengan kontrak URL dalam API penjelajah Etherscan bagi rantaian Kovan:
+
+[source,solidity]
+----
+var etherscan_url =
+  "https://kovan.etherscan.io/api?module=contract&action=getabi&
+  address=${our_contract_address}"
+----
+
+Dan mari kita mulakan klien REST untuk berinteraksi dengan API Etherscan:
+
+[source,solidity]
+----
+var client = require('node-rest-client-promise').Client();
+----
+
+dan dapatkan janji klien:
+
+[source,solidity]
+----
+client.getPromise(etherscan_url)
+----
+
+Sebaik sahaja kita mendapat janji klien yang sah, kita boleh mendapatkan kontrak ABI dari API Etherscan:
+
+[source,solidity]
+----
+.then((client_promise) => {
+  our_contract_abi = JSON.parse(client_promise.data.result);
+----
+
+Dan sekarang kita boleh membuat objek kontrak sebagai janji untuk digunakan kemudian:
+
+[source,solidity]
+----
+  return new Promise((resolve, reject) => {
+      var our_contract = new web3.eth.Contract(our_contract_abi,
+                                               our_contract_address);
+      try {
+        // jika semuanya berjalan lancar
+        resolve(our_contract);
+      } catch (ex) {
+        // If something goes wrong
+        reject(ex);
+      }
+    });
+})
+----
+
+Sekiranya janji kontrak kita berjaya berjaya, kita boleh bertindak balas dengannya:
+
+[source,solidity]
+----
+.then((our_contract) => {
+----
+
+Mari lihat alamat kontrak kita:
+
+[source,solidity]
+----
+console.log(`Our Contract address:
+            ${our_contract._address}`);
+----
+
+atau pilihan lainnya:
+
+[source,solidity]
+----
+console.log(`Our Contract address in another way:
+            ${our_contract.options.address}`);
+----
+
+Sekarang mari kita tanyakan kontrak ABI:
+
+[source,solidity]
+----
+console.log("Our contract abi: " +
+            JSON.stringify(our_contract.options.jsonInterface));
+----
+
+Kita dapat melihat jumlah bekalan kontrak yang menggunakan panggilan balik:
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call(function(err, totalSupply) {
+    if (!err) {
+        console.log(`Total Supply with a callback:  ${totalSupply}`);
+    } else {
+        console.log(err);
+    }
+});
+----
+
+Atau kita boleh menggunakan janji pulangkan berbanding menyerahkan kepada panggilan balik:(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc1")))
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call().then(function(totalSupply){
+    console.log(`Total Supply with a promise:  ${totalSupply}`);
+}).catch(function(err) {
+    console.log(err);
+});
+----
+
+=== Operasi Penyegerakkan Berterusan (Asynchronous) dengan Menanti (Await)
+
+((("await construct")))((("web3.js","asynchronous operation with await")))Sekarang bahawa anda telah melihat tutorial asas, anda boleh mencuba interaksi yang sama menggunakan asynchronous + . Semak skrip _web3-contract-basic-interaction-async-await.js_ di http://bit.ly/2ABrFkl[_code/web3js_] dan bandingkan dengan tutorial ini untuk melihat bagaimana ia berbeza. Async-await lebih mudah dibaca, kerana ia menjadikan interaksi asynchronous berkelakuan lebih seperti urutan panggilan pemblokan. (((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc0")))

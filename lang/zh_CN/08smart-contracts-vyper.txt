@@ -1,0 +1,319 @@
+[[vyper_chap]]
+==智能合约和Vyper语言
+
+((("Vyper", id="ix_08smart-contracts-vyper-asciidoc0", range="startofrange")))Vyper是一种针对以太坊虚拟机的，面向智能合约的实验性编程语言，致力于通过以下方式提供出色的可审计性：使开发人员更容易编写易于理解的代码。实际上，Vyper的原则之一是使开发人员几乎不可能编写误导性代码。
+
+在本章中，我们将研究智能合约的常见问题，介绍Vyper合约编程语言，并将其与Solidity进行比较，以说明差异。
+
+===漏洞和Vyper
+
+https://arxiv.org/pdf/1802.06038.pdf[A recent study] ((("vulnerabilities", seealso="security; specific attacks/vulnerabilities")))((("Vyper","contract vulnerabilities and")) 最近的一项研究分析了将近一百万部署的以太坊智能合约，发现其中许多合约存在严重漏洞。在分析过程中，研究人员概述了跟踪漏洞的三个基本类别：
+
+自杀合约:: 可以被随意地址杀死的智能合约
+
+贪婪合约:: 会导致合约中的以太坊无法释放的智能合约
+
+挥霍合约:: 将会把以太币释放到随意地址的智能合约
+
+漏洞是通过代码引入智能合约的。虽然可以有力地争辩说，这些漏洞和其他漏洞不是有意引入的。但是无论如何，不良的智能合约代码显然会意外导致以太坊用户的资金损失，而这并不是一个理想的情况。 Vyper旨在简化安全代码的编写，或者同样也使偶然编写误导性或易受攻击的代码更加困难。
+
+[[comparison_to_solidity_sec]]
+===与Solidity对比
+
+((("Solidity","Vyper compared to", id="ix_08smart-contracts-vyper-asciidoc1", range="startofrange")))((("Vyper","Solidity compared to", id="ix_08smart-contracts-vyper-asciidoc2", range="startofrange"))) Vyper试图使不安全代码更难编写的一种方法是故意忽略Solidity的某些功能。对于那些考虑在Vyper中开发智能合约的人员而言，重要的是要了解Vyper不具备的功能以及原因。因此，在本节中，我们将探讨这些功能，并讲解为什么省略它们的理由。
+
+====修饰器Modifiers
+
+((("modifiers")))((("Solidity","modifiers")))((("Vyper","modifiers")))如上一章所述，在Solidity中，你可以使用修饰器编写一个函数。例如，以下函数`changeOwner`将在名为`onlyBy`的修饰器中运行代码，作为其执行的一部分：
+
+[source,javascript]
+----
+function changeOwner(address _newOwner)
+    public
+    onlyBy(owner)
+{
+    owner = _newOwner;
+}
+----
+
+该修饰器强制执行有关所有权的规则。如你所见，这个特殊的修饰器充当一种机制来代表`changeOwner`函数执行预先检查：
+
+[source,javascript]
+----
+modifier onlyBy(address _account)
+{
+    require(msg.sender == _account);
+    _;
+}
+----
+
+但是，修饰器不仅仅用于执行检查，如此处所示。实际上，作为修饰器，它们可以在调用函数的上下文中显着更改智能合约的环境。简而言之，修饰器是有普遍性_pervasive_的。
+
+让我们来看另一个Solidity风格的例子：
+
+[source, javascript]
+----
+enum Stages {
+    SafeStage,
+    DangerStage,
+    FinalStage
+}
+
+uint public creationTime = now;
+Stages public stage = Stages.SafeStage;
+
+function nextStage() internal {
+    stage = Stages(uint(stage) + 1);
+}
+
+modifier stageTimeConfirmation() {
+    if (stage == Stages.SafeStage &&
+                now >= creationTime + 10 days)
+        nextStage();
+    _;
+}
+
+function a()
+    public
+    stageTimeConfirmation
+    // More code goes here
+{
+}
+----
+
+一方面，开发人员应始终检查自己的代码正在调用的任何其他代码。但是，在某些情况下（例如，由于时间限制或精疲力尽导致注意力不集中时），开发人员可能会忽略一行代码。如果开发人员不得不在一个大文件内跳来跳去，同时又在头脑中跟踪函数调用层次并将智能合约变量的状态提交到内存，则更有可能发生这种忽略的情况。
+
+让我们更深入地看前面的例子。想象一下，开发人员正在编写一个称为“ a”的公共函数。开发人员刚刚接手此合约，并且正在使用其他人编写的修饰器。乍一看，似乎“ stageTimeConfirmation”修饰器只是在执行一些与调用函数有关的合约期限的检查。开发人员可能不会意识到的是，修饰器还调用了另一个函数“ nextStage”。在这个简单的演示场景中，简单地调用公共功能“ a”会导致智能合约的“ stage”变量从“ SafeStage”移动到“ DangerStage”。
+
+Vyper完全取消了修饰器。 Vyper的建议如下：如果仅使用修饰器执行断言，则只需将内联检查和断言作为函数的一部分；如果修改智能合约状态等，请再次明确地将这些更改作为函数的一部分。这样做可以提高可审核性和可读性，因为读者不必费神（或手动）将修饰器代码“围绕”在函数周围即可查看其功能。
+
+====类的继承
+
+((("class inheritance")))((("inheritance")))((("Solidity","class inheritance")))((("Vyper","class inheritance"))) 继承允许程序员通过从现有软件库中获取预先存在的功能，属性和行为来利用预先编写的代码的功能。继承功能强大，可促进代码的重用。 Solidity支持多重继承以及多态性，但是尽管这些是面向对象编程的关键功能，但Vyper不支持它们。 Vyper坚持认为，继承的实现要求编码人员和审核人员在多个文件之间跳转，以了解程序在做什么。 Vyper还认为多重继承会使代码难以理解，这是Solidity文档中的默认观点，即 http://bit.ly/2Q6Azvo[documentation] ，它提供了一个如何解决多重继承问题的例子。
+
+====内联汇编
+
+((("inline assembly")))((("inline assembly","Solidity compared to Vyper")))((("Solidity inline assembly"))) 内联汇编为开发人员提供了以低级别访问以太坊虚拟机（EVM）的机会，允许Solidity程序可以直接访问EVM操作码指令来执行操作。例如，以下内联汇编代码通过使用EVM操作码mload在内存位置 +0x80+ 处添加3。
+
+----
+3 0x80 mload add 0x80 mstore
+----
+
+Vyper认为可读性的损失过于昂贵，无法弥补额外的功能，因此不支持嵌入式组装。
+
+====函数重载
+
+((("function overloading")))((("Solidity","function overloading")))((("Vyper","function overloading"))) 函数重载允许开发人员编写同名的多个函数。在给定的场合使用哪个函数取决于所提供参数的类型。以下面两个函数为例：
+
+[source,javascript]
+----
+function f(uint _in) public pure returns (uint out) {
+    out = 1;
+}
+
+function f(uint _in, bytes32 _key) public pure returns (uint out) {
+    out = 2;
+}
+----
+
+第一个函数（名为+f+）接受+uint+类型的输入参数。第二个函数（也称为+f+）接受两个参数，一个为+uint+类型，一个为+bytes32+类型。具有相同名称且使用不同参数的多个函数定义可能会造成混淆，因此Vyper不支持函数重载。
+
+====变量类型转换
+
+((("Solidity","variable typecasting")))((("typecasting")))((("Vyper","variable typecasting")))有两种类型的类型转换：_implicit_和_explicit_
+
+((("implicit typecasting"))) 隐式类型转换通常在编译时执行。例如，如果类型转换在语义上是合理的，并且可能不会丢失任何信息，则编译器可以执行隐式转换，例如将类型+uint8+的变量转换为+uint16+。 Vyper的最早版本允许变量的隐式类型转换，但最新版本不允许。
+
+((("explicit typecasting")))显示类型转换可以在Solidity中使用。不幸的是，它们可能导致意外行为。例如，将 +uint32+ 转换为较小的类型+uint16+只会删除高阶位，如此处所示：
+
+[source,javascript]
+----
+uint32 a = 0x12345678;
+uint16 b = uint16(a);
+// Variable b is 0x5678 now
+----
+
+((("convert function (Vyper)"))) Vyper具有+convert+函数来执行显式强制转换。转换函数如下（位于http://bit.ly/2P36ZKT[_convert.py_] 的第82行）：
+
+[source,python]
+----
+def convert(expr, context):
+    output_type = expr.args[1].s
+    if output_type in conversion_table:
+        return conversion_table[output_type](expr, context)
+    else:
+        raise Exception("Conversion to {} is invalid.".format(output_type))
+----
+
+注意使用+conversion_table+（位于同一文件的第90行），如下所示：
+
+[source,python]
+----
+conversion_table = {
+    'int128': to_int128,
+    'uint256': to_unint256,
+    'decimal': to_decimal,
+    'bytes32': to_bytes32,
+}
+----
+
+当开发人员调用+convert+时，它将引用+conversion_table+，以确保执行适当的转换。例如，如果开发人员将+int128+传递给+convert+函数，则将执行同一（_convert.py_）文件的第26行的+to_int128+函数。 +to_int128+函数如下：
+
+[source,python]
+----
+@signature(('int128', 'uint256', 'bytes32', 'bytes'), 'str_literal')
+def to_int128(expr, args, kwargs, context):
+    in_node = args[0]
+    typ, len = get_type(in_node)
+    if typ in ('int128', 'uint256', 'bytes32'):
+        if in_node.typ.is_literal 
+            and not SizeLimits.MINNUM <= in_node.value <= SizeLimits.MAXNUM:
+            raise InvalidLiteralException(
+                "Number out of range: {}".format(in_node.value), expr
+            )
+        return LLLnode.from_list(
+            ['clamp', ['mload', MemoryPositions.MINNUM], in_node,
+            ['mload', MemoryPositions.MAXNUM]], typ=BaseType('int128'),
+            pos=getpos(expr)
+        )
+    else:
+        return byte_array_to_num(in_node, expr, 'int128')
+----
+
+如你所见，转换过程确保不会丢失任何信息；如果信息可能丢失，将引发异常。转换代码可防止隐式类型转换导致的截断以及通常会出现的其他异常。
+
+选择显式类型转换而不是隐式类型转换，意味着开发人员负责执行所有强制转换。尽管此方法确实产生了更多的冗长代码，但它也提高了智能合约的安全性和可审计性。
+
+
+====前提条件和后置条件
+
+((("Vyper","preconditions/postconditions")))Vyper明确处理前提条件，后置条件和状态更改。虽然这会产生冗余代码，但也可以实现最大的可读性和安全性。在Vyper中编写智能合约时，开发人员应注意以下三点：
+
+条件::
+以太坊状态变量的当前状态/条件是什么？
+效果::
+这种智能合约代码在执行时会对状态变量产生什么影响？也就是说，哪些会受到影响，哪些不会受到影响？这些影响是否与智能合约的意图一致？
+相互作用::
+在彻底解决了前两个注意事项之后，就该运行代码了。在部署之前，请按逻辑顺序遍历代码，并考虑执行代码的所有可能的永久结果，后果和场景，包括与其他合约的互动。
+
+理想情况下，应仔细考虑所有这些要点，然后在代码中进行彻底记录。这样做将改善代码的设计，最终使代码更具可读性和可审计性。(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc2")))(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc1")))
+
+[[decorators_sec]]
+===装饰符
+((("decorators, Vyper")))((("Vyper","decorators")))在每个函数的开头可以使用以下装饰符：
+
++@private+:: `@private` 装饰符使该功能无法从合约外部访问。
+
++@public+:: `@public` 装饰符使该函数可见且可公开执行。例如，即使以太坊钱包在查看合约时也会显示此类功能。
+
++@constant+:: 不允许带有@constant装饰符的函数更改状态变量。实际上，如果函数试图更改状态变量，则编译器将拒绝整个程序（带有适当的错误警告）。
+
++ @ payable + ::只允许以@payable装饰符开头的函数来传递价值。
+
+Vyper明确实现了装饰符的逻辑 http://bit.ly/2P14RDq[the logic of decorators]。例如，如果函数同时具有`@payable` 装饰符和 `@constant` 修饰符，则Vyper编译过程将失败。这是有道理的，因为传递值的函数根据定义已更新了状态，因此不能为@constant。每个Vyper功能都必须用@public或@private装饰符开头（但不能两者同时存在）。
+
+[[order_of_functions_sec]]
+===函数和变量排序
+
+((("function declarations, ordering of")))((("Solidity","function ordering")))((("Solidity","variable ordering")))((("variable declarations, ordering of")))((("Vyper","function ordering")))((("Vyper","variable ordering"))) 每个单独的Vyper智能合约仅包含一个Vyper文件。换句话说，给定的Vyper智能合约的所有代码，包括所有功能，变量等，都存在于一个地方。 Vyper要求每个智能合约的功能和变量声明必须以特定顺序物理编写。Solidity根本没有这个要求。让我们快速看一下Solidity示例：
+
+[source,javascript]
+----
+pragma solidity ^0.4.0;
+
+contract ordering {
+
+    function topFunction()
+    external
+    returns (bool) {
+        initiatizedBelowTopFunction = this.lowerFunction();
+        return initiatizedBelowTopFunction;
+    }
+
+    bool initiatizedBelowTopFunction;
+    bool lowerFunctionVar;
+
+    function lowerFunction()
+    external
+    returns (bool) {
+        lowerFunctionVar = true;
+        return lowerFunctionVar;
+    }
+
+}
+----
+
+在此示例中，名为 +topFunction+ 的函数正在调用另一个函数+lowerFunction+。 +topFunction+ 还为名为 +initiatizedBelowTopFunction+ 的变量分配了一个值。如你所见，Solidity不需要在执行代码调用之前在物理上声明这些函数和变量。这是有效Solidity代码并将成功编译。
+
+Vyper的排序要求不是什么新鲜事物。实际上，这些排序要求一直存在于Python编程中。 Vyper要求的排序很简单且合乎逻辑，如下面的下一个示例所示：
+
+[source,python]
+----
+# Declare a variable called theBool
+theBool: public(bool)
+
+# Declare a function called topFunction
+@public
+def topFunction() -> bool:
+    # Assign a value to the already declared function called theBool
+    self.theBool = True
+    return self.theBool
+
+# Declare a function called lowerFunction
+@public
+def lowerFunction():
+    # Call the already declared function called topFunction
+    assert self.topFunction()
+----
+
+这显示了Vyper智能合约中功能和变量的正确排序。请注意，在变量 +theBool+ 和函数 +topFunction+ 分别被赋值和调用之前，它们是如何声明的。如果 +theBool+ 在 +topFunction+ 之下声明，或者 +topFunction+ 在 +lowerFunction+ 之下声明，则该合约无法编译。
+
+[[online_code_editor_and_compiler_sec]]
+===编译
+((("compiling","Vyper")))((("Vyper","compilation"))) Vyper拥有自己的 https://vyper.online [在线代码编辑器和编译器]，可让你仅使用Web浏览器就可以编写并将智能合约编译为字节码，ABI和LLL。为了用户的方便，Vyper在线编译器具有各种预先编写的智能合约，包括用于简单公开拍卖的合约，安全的远程购买，ERC20代币等等。该工具仅提供编译软件的一个版本。它会定期更新，但并不总是保证最新版本。 Etherscan有一个https://etherscan.io/vyper [在线Vyper编译器]，你可以通过它选择编译器版本。另外，最初为Solidity智能合约设计的Remix编译器 https://remix.ethereum.org [Remix] 中，现在在“设置”选项卡中具有Vyper插件。
+
+[NOTE]
+====
+((("ERC20 token standard","Vyper implementation of")))Vyper将ERC20实施为预编译的合约，从而使这些智能合约易于使用。 Vyper中的合约必须声明为全局变量。声明ERC20变量的示例如下：
+
+[source,javascript]
+----
+token: address(ERC20)
+----
+====
+
+您也可以使用命令行编译智能合约。每个Vyper合约都保存在扩展名为_.vy_的单个文件中。
+安装后，你可以通过运行以下命令与Vyper编译合约：
+
+----
+vyper ~/hello_world.vy
+----
+
+然后，可以通过运行以下命令来获取人类可读的ABI描述信息（JSON格式）：
+
+----
+vyper -f json ~/hello_world.v.py
+----
+
+[[protecting_against_overflows_sec]]
+===在编译器级别防止溢出错误
+
+((("compiling","protecting against overflow errors at the compiler level")))((("overflow","protecting against")))((("Vyper","overflow protection"))) 软件中的溢出错误在处理真实价值时，可能会带来灾难性的后果。例如，一个 http://bit.ly/2yHfvoF[transaction from mid-April 2018] 自2018年4月中旬开始的交易显示通过：[<span class="keep-together">恶意转移了超过57,896,044,618,658,100,000,000,000,000,000,000,000,000，</span> ] 000,000,000,000,000,000 BEC通证。此交易是BeautyChain的ERC20通证合约（_BecToken.sol_）中整数溢出问题的结果。 Solidity开发人员确实可以访问安全数学库 http://bit.ly/2ABhb4l[+SafeMath+] 之类的库以及以太坊智能合约安全分析工具，例如http://bit.ly/2CQRoGU[Mythril OSS]。但是，开发人员没有被迫使用安全工具。简而言之，如果语言没有强制执行安全性检查，则开发人员可以编写有漏洞的代码，这些代码将成功编译并随后“成功”执行。
+
+Vyper具有内置的溢出保护，以两种方式实现。首先，Vyper提供了http://bit.ly/2PuDfpB[a +SafeMath+ equivalent] 安全数学的等效项，其中包括整数算术必需的异常情况。其次，每当加载文字常量，将值传递给函数或分配变量时，Vyper都会使用钳位Clamps。钳位是通过低级类似Lisp的语言（LLL）编译器中的自定义函数实现的，不能禁用。 （Vyper编译器输出LLL而不是EVM字节码；这简化了Vyper本身的开发。）
+
+
+[[reading_and_writing_data_sec]]
+===读写数据
+((("Vyper","reading/writing data")))虽然存储，读取和修改数据的成本很高，但是这些存储操作是大多数智能合约的必要组成部分。智能合约可以将数据写入两个位置：
+
+全局状态:: ((("global state trie")))给定智能合约中的状态变量存储在以太坊的全局状态查询树trie中；智能合约只能存储，读取和修改与特定合约地址相关的数据（即，智能合约不能读取或写入其他智能合约）。
+
+日志:: ((("logs, Vyper")))智能合约还可以通过日志事件写入以太坊的链数据。 Vyper最初使用pass：[ <code>__log__</code> ]语法声明这些事件时，现在已经进行了更新并使其事件声明更符合Solidity的原始语法。例如，Vyper对事件“ MyLog”的声明最初是 `MyLog: pass:[__]logpass:[__]({arg1: indexed(bytes[3])})`。语法现在变成了 `MyLog: event({arg1: indexed(bytes[3])})`。重要的是要注意，Vyper中的log事件的执行过去和现在都仍然是：`log.MyLog("123")`。
+
+尽管智能合约可以（通过日志事件）写入以太坊的链数据，但它们无法读取其创建的链上日志事件。尽管如此，通过日志事件写入以太坊链数据的优点之一是，轻客户端可以在公共链上发现并读取日志。例如，已挖出区块中的 +logsBloom+ 值可以指示是否存在日志事件。一旦确定存在日志事件，就可以从给定的交易收据中获取日志数据。
+
+
+===本章小结
+
+Vyper是一种功能强大且有趣的面向合约的新型编程语言。它的设计偏向“正确性”，以牺牲一些灵活性为代价。这可以使程序员编写更好的智能合约，并避免导致严重漏洞的某些陷阱。接下来，我们将更详细地介绍智能合约安全性。一旦你了解了智能合约中可能出现的所有安全问题，Vyper设计的某些细微差别可能会变得更加明显。(((range="endofrange", startref="ix_08smart-contracts-vyper-asciidoc0")))

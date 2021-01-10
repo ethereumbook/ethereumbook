@@ -1,0 +1,1051 @@
+[[smart_contracts_chapter]]
+== Chytré kontrakty a Solidity
+
+((("smart contracts", id="ix_07smart-contracts-solidity-asciidoc0", range="startofrange")))Jak jsme diskutovali v <<intro_chapter>> existují dva různé typy v Ethereum účtů: ((("EOA (Externally Owned Account)","contract accounts compared to"))) Externě vlastněné účty (EOA) a účty kontraktů. EOA jsou ovládány uživateli, často prostřednictvím softwaru, jako je peněženková aplikace, která je externí pro platformu Ethereum. ((("contract accounts","EOAs compared to")))((("smart contracts","EOAs compared to"))) Na rozdíl od toho jsou účty kontraktů kontrolovány programovým kódem (také běžně označovaným jako „chytrý kontrakt“), které provádí Ethereum virtuální počítač. Stručně řečeno, EOA jsou jednoduché účty bez přidruženého kódu nebo datového úložiště, zatímco účty kontraktů mají přidružený kód i datové úložiště. EOA jsou kontrolovány transakcemi vytvořenými a kryptograficky podepsanými soukromým klíčem v „reálném světě“ vnějším a nezávislém na protokolu, zatímco účty kontraktů nemají soukromé klíče, a tak se „kontrolují samy“ předem stanoveným způsobem, který stanoví kód jejich chytrého kontraktu. Oba typy účtů jsou identifikovány Ethereum adresou. V této kapitole budeme diskutovat účty kontraktů a programový kód, který je řídí.
+
+[[smart_contracts_definition]]
+=== Co je to chytrý kontrakt?
+
+((("smart contracts","defined")))Termín _chytrý kontrakt_ se v průběhu let používá k popisu široké škály různých věcí. (((("contract creation transaction")))((("Szabo, Nick"))) V devadesátých letech kryptograf Nick Szabo vytvořil tento pojem a definoval ho jako „soubor příslibů specifikovaných v digitální podobě, včetně vnitřních protokolů, kterými strany plní přísliby.“ Od té doby se koncept chytrých kontraktů vyvinul, zejména po zavedení decentralizovaných bločenkových platforem s vynálezem Bitcoinu v roce 2009. V kontextu Etherea je tento termín ve skutečnosti trochu mylný, vzhledem k tomu, že chytrý kontrakty v Ethereu nejsou ani chytré ani zákonné smlouvy, ale termín se uchytil. V této knize používáme termín „chytré kontrakty“ pro neměnné počítačové programy, které fungují deterministicky v kontextu Ethereum virtuálního počítače jako součást Ethereum síťového protokolu - tj. Na světovém decentralizovaném Ethereum počítači.
+
+Rozbalme tuto definici:
+
+Počítačové programy::
+Chytré kontrakty jsou jednoduše počítačové programy. Slovo „kontrakt“ nemá v této souvislosti právní význam.
+
+Neměnnost::
+Po nasazení se kód chytrého kontraktu nemůže změnit. Na rozdíl od tradičního softwaru je jediným způsobem, jak změnit chytrý kontrakt, nasazení nové instance.
+
+Determinismus::
+Výsledek provedení chytrého kontraktu je stejný pro všechny, kteří ho provedou, vzhledem k danému kontextu transakce, která zahájila jeho provedení, a stavu Ethereum bločenky v okamžiku provedení.
+
+Kontext EVM::
+Chytré kontrakty pracují ve velmi omezeném kontextu. Mají přístup ke svému vlastnímu stavu, kontextu transakce, která je zavolala, a k některým informacím o posledních blocích.
+
+Decentralizovaný světový počítač::
+EVM běží jako lokální instance v každém Ethereum uzlu, ale protože všechny instance EVM pracují se stejném počátečním stavu a produkují stejný konečný stav, systém jako celek funguje jako jediný „světový počítač“.
+
+[[smart_contract_lifecycle]]
+=== Životní cyklus chytrého kontraktu
+
+((("smart contracts","life cycle of")))Chytré kontrakty jsou obvykle psány ve vysokoúrovňovém jazyce, jako je Solidity. Aby však mohly být spuštěny, musí být kompilovány do nízkoúrovňového bajtkódu, který běží v EVM. Po kompilaci jsou nasazeny na  Ethereum platformě pomocí speciální _kontrakt vytvářející_ transakce, která je jako taková identifikována odesláním na zvláštní adresu pro vytvoření kontraktu, jmenovitě +0x0+ (viz <<contract_reg>>. Každý kontrakt je označen Ethereum adresou, která je odvozena od transakce, které kontrakt vytvořila, jako funkce účtu, ze kterého byla tato transakce odeslána, a transakční nonce. Ethereum Adresa kontraktu může být použita v transakci jako příjemce, pro zasílání prostředků na kontrakt nebo vyvolání jedné z funkcí kontraktu. Upozorňujeme, že na rozdíl od EOA neexistují žádné klíče spojené s účtem vytvořeným pro nový chytrý kontrakt. Jako tvůrce kontraktu nemáte na úrovni protokolu žádná zvláštní oprávnění (i když je můžete explicitně naprogramovat v kódu chytrého kontraktu). Určitě nedostanete soukromý klíč k účtu kontraktu, který ve skutečnosti neexistuje - můžeme říci, že účet chytrého kontraktu vlastní sám sebe.
+
+((("transactions","smart contracts and")))Důležité je, že _kontrakty jsou spuštěny pouze tehdy, pokud jsou volány transakcí_. Všechny chytré kotrakty v Ethereu jsou v konečném důsledku prováděny z důvodu jejich zahájeni transakcí vyvolanou EOA. Kontrakt může volat jiný kontrakt, který může volat další kontrakt atd., Ale první kontrakt v takovém řetězci provedení bude vždy vyvolán transakcí z EOA. Kontrakty nikdy neběží „samostatně“ nebo „na pozadí“. Kontrakty ve skutečnosti spočívají v klidu, dokud je transakce nezačne vykonávat, ať už přímo nebo nepřímo jako součást řetězce volání kontraktů. Rovněž stojí za zmínku, že chytré kontrakty nejsou v žádném smyslu prováděny „paralelně“ - světový počítač Ethereum lze považovat za jednovláknový stroj.
+
+((("transactions","as atomic")))Transakce jsou _atomické_, bez ohledu na to, kolik  kontraktů volají nebo co tyto kontrakty dělají při volání. Transakce se provádějí v plném rozsahu a veškeré změny v globálním stavu (kontrakty, účty atd.) se zaznamenávají pouze v případě, že celé vykonání kontraktu se úspěšně ukončí. Úspěšné ukončení znamená, že program byl vykonán bez chyby a dosáhl konce provádění. Pokud provádění selže z důvodu chyby, všechny jeho efekty (změny stavu) jsou „vráceny zpět“, jako by transakce nikdy neproběhla. Neúspěšná transakce je stále zaznamenána jako pokus a ether utracený za plyn na její provedení se odečte od původního účtu, ale jinak nemá žádný další dopad na stav kontraktu nebo účtu.
+
+((("smart contracts","deleting")))Jak již bylo uvedeno výše, je důležité si uvědomit, že kód kontraktu nelze změnit. Kontrakt však může být „odstraněn“, odstraněním kódu a jeho vnitřního stavu (úložiště) z jeho adresy, přičemž zůstane prázdný účet. Žádné transakce odeslané na tuto adresu účtu po smazání kontraktu nevedou k provedení kódu, protože již neexistuje žádný kód, který by se měl provádět. ((("SELFDESTRUCT opcode"))) Chcete-li smazat kontrakt, provedete instrukci EVM nazvanou +SELFDESTRUCT+ (dříve nazývanou +SUICIDE+). ((("negative gas")))Tato operace stojí „negativní plyn“, navrácení plynu, čímž se stimuluje uvolnění síťových klientských zdrojů z vymazání uloženého stavu. Smazání kontraktu tímto způsobem neodstraní historii transakcí (minulost) kontraktu, protože samotná bločenka je neměnná. Je také důležité si uvědomit, že instrukce +SELFDESTRUCT+ bude k dispozici, pouze pokud autor kontraktu naprogramoval chytrý kontrakt tak, aby tuto funkčnost měla. Pokud kód kontraktu neobsahuje instrukci +SELFDESTRUCT+ nebo je tato instrukce nepřístupná, chytrý kontrakt nelze odstranit.
+
+[[high_level_languages]]
+=== Úvod do vysokoúrovňových Ethereum jazyků
+
+((("EVM (Ethereum Virtual Machine)","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc1", range="startofrange")))((("smart contracts","and Ethereum high-level languages", id="ix_07smart-contracts-solidity-asciidoc2", range="startofrange")))EVM je virtuální stroj, který spouští speciální formu ((("EVM bytecode"))) kódu s názvem _EVM bajtkód_, analogický s procesorem počítače, který spouští strojový kód, například x86_64. Budeme zkoumat fungování a jazyk EVM mnohem podrobněji v <<evm_chapter>>. V této části se podíváme na to, jak jsou psány chytré kontrakty, aby mohly být spuštěny na EVM.
+
+I když je možné programovat chytré kontrakty přímo v bajtkódu, EVM bajtkód je poněkud těžkopádný a pro programátory je velmi obtížné ho číst a porozumět mu. Místo toho většina Ethereum vývojářů  používá k psaní programů vysokoúrovňové jazyky a kompilátor, který je převádí na bajtkód.
+
+Zatímco jakýkoli  vysokoúrovňový jazyk by mohl být upraven tak, aby v něm šlo psát chytré kontrakty, přizpůsobení libovolného jazyka tak, aby byl kompatibilní s EVM bajtkódem, je tp docela těžkopádné cvičení a obecně by to vedlo k určitému množství nejasností. Chytré kontrakty fungují ve vysoce omezeném a minimalistickém běhovém prostředí (EVM). Kromě toho musí být k dispozici speciální sada systémových proměnných a funkcí EVM. Z tohoto důvodu je snazší vytvořit jazyk chytrých kontraktů od nuly, než upravit obecný jazyk, aby byl vhodný pro psaní chytrých kontraktů. V důsledku toho se objevilo mnoho speciálních jazyků pro programování chytrých kontraktů. Ethereum má několik takových jazyků, spolu s kompilátory potřebnými k vytvoření bajtkódu spustitelného EVM.
+
+((("declarative programming")))Obecně lze programovací jazyky rozdělit do dvou širokých programovacích paradigmat: _deklarativní_ a _imperativní_, také známý jako _funkcionální_ a _procedurální_. V deklarativním programování píšeme funkce, které vyjadřují _logiku_ programu, ale ne jeho _tok_. ((("side effects")))Deklarativní programování se používá k vytváření programů, ve kterých neexistují žádné vedlejší efekty, což znamená, že mimo funkci nejsou žádné změny stavu. Mezi deklarativní programovací jazyky patří Haskell a SQL. ((("hybrid programming languages")))((("imperative programming")))Naopak, v imperativním programování programátor píše sadu funkcí, které kombinují logiku a tok programu. Mezi imperativní programovací jazyky patří C ++ a Java. Některé jazyky jsou „hybridní“, což znamená, že podporují deklarativní programování, ale lze je také použít k vyjádření imperativního programovacího paradigmatu. Mezi takové hybridy patří Lisp, JavaScript a Python. Obecně lze jakýkoli imperativní jazyk použít k napsání deklarativního paradigmatu, ale často to vede k nepovolenému kódu. Pro srovnání, čisté deklarativní jazyky nelze použít k psaní v imperativním paradigmatu. V ryze deklarativních jazycích _neexistují žádné „proměnné“_.
+
+Zatímco imperativní programování je častěji používáno programátory, může být velmi obtížné psát programy, které se provádějí _ přesně podle očekávání_. Schopnost kterékoli části programu změnit stav jakékoli jiné části znesnadňuje uvažování o provádění programu a přináší mnoho příležitostí pro chyby. Deklarativní programování ve srovnání usnadňuje pochopení toho, jak se bude program chovat: protože nemá vedlejší účinky, lze jakoukoli část programu chápat izolovaně.
+
+Ve chytrých kontraktech chyby stojí peníze, a to doslovně. Výsledkem je, že je velmi důležité psát chytré kontrakty bez nezamýšlených účinků. Chcete-li to provést, musíte být schopni jasně uvažovat o očekávaném chování programu. Deklarativní jazyky tedy hrají v chytrých kontraktech mnohem větší roli než v univerzálním softwaru. Jak však uvidíte, nejpoužívanější jazyk pro chytré kontrakty (Solidity) je imperativní. Programátoři, stejně jako většina lidí, odolávají změnám!
+
+Aktuálně podporované vysokoúrovňové programovací jazyky pro chytré kontrakty zahrnují (seřazené podle přibližného věku):
+
+LLL:: ((("LLL")))Funkcionální (deklarativní) programovací jazyk se syntaxí typu Lisp. Byl to první vysokoúrovňový jazyk pro Ethereum chytré kontrakty, ale dnes se používá jen zřídka.
+
+Serpent:: ((("Serpent")))Procedurální (imperativní) programovací jazyk se syntaxí podobnou Pythonu. Lze ho také použít k zápisu funkcionálního (deklarativního) kódu, ačkoli to není zcela bez vedlejších účinků.
+
+Solidity:: ((("Solidity")))Procedurální (imperativní) programovací jazyk se syntaxí podobnou JavaScriptu, pass:[C ++] nebo Java. Nejoblíbenější a často používaný jazyk pro Ethereum chytré kontrakty.
+
+Vyper:: ((("Vyper")))Nověji vyvinutý jazyk, podobný Serpentu a opět s Pythonovou syntaxí. Zamýšlel se přiblížit k čistě funkčnímu jazyku Pythonu, na rozdíl od Serpentu, ale nikoli nahradit Serpent.
+
+Bamboo:: ((("Bamboo")))Nově vyvinutý jazyk, ovlivněný Erlangem, s explicitními stavovými přechody a bez iteračních toků (smyček). Účelem je snížit nežádoucí účinky a zvýšit ověřitelnost správnosti. Velmi nové, ale již široce přijaté.
+
+Jak vidíte, existuje mnoho jazyků, z nichž si můžete vybrat. Avšak ze všech je zdaleka nejoblíbenější  Solidity, a to do té míry, že se jedná o _fakticky_ vysokoúrovňový jazyk Etherea  a dokonce i dalších EVM podobných bločenek. Většinu času strávíme používáním Solidity, ale prozkoumáme také některé příklady v jiných vysokoúrovňových jazycích, abychom pochopili jejich různé filozofie. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc2")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc1")))
+
+[[building_a_smart_contract_sec]]
+=== Tvorba chytrého kontraktu pomocí Solidity
+
+((("smart contracts","building with Solidity", id="ix_07smart-contracts-solidity-asciidoc3", range="startofrange")))((("Solidity","building a smart contract with", id="ix_07smart-contracts-solidity-asciidoc4", range="startofrange")))Solidity ((("smart contracts","Solidity and", id="ix_07smart-contracts-solidity-asciidoc5", range="startofrange")))((("Solidity","smart contracts and", id="ix_07smart-contracts-solidity-asciidoc6", range="startofrange")))byl vytvořen ((("Wood, Dr. Gavin","and Solidity"))) Dr. Gavinem Woodem (spoluautor této knihy) jako jazyk výslovně pro psaní chytrých kontraktů s funkcemi přímo podporujícími provádění v decentralizovaném prostředí světového počítače Ethereum. Výsledné atributy jsou celkem obecné, a tak se nakonec použilo pro programování chytrých kontraktů na několika dalších bločenkových platformách. Mezi vývojáře Solidity patřili Christian Reitiwessner a poté také Alex Beregszaszi, Liana Husikyan, Yoichi Hirai a několik bývalých hlavních Ethereum přispěvatelů. Solidity je nyní vyvíjena a udržována jako nezávislý projekt https://github.com/ethereum/solidity[na GitHubu].
+
+Hlavním „produktem“ projektu Solidity je kompilátor Solidity +solc+, který převádí programy psané v jazyce Solidity na EVM bajtkód. Projekt také řídí důležitý standard aplikačního binárního rozhraní (ABI) pro Ethereum chytré kontrakty, který podrobně prozkoumáme v této kapitole. Každá verze kompilátoru Solidity odpovídá a zkompiluje konkrétní verzi Solidity pass:[<span class="keep-together">jazyka</span>].
+
+Nejprve si stáhneme binární spustitelný soubor kompilátoru Solidity. Poté vytvoříme a sestavíme jednoduchý kontrakt, navazující na příklad, který jsme začínali v <<intro_chapter>>.
+
+==== Výběr verze Solidity
+
+((("semantic versioning")))((("Solidity","selecting version of")))Solidity následuje model verzí nazvaný https://semver.org/[_sémantické verzování_], který uvádí čísla verzí strukturovaná jako tři čísla oddělená tečkami: __ ++hlavní.vedlejší.záplata ++__. „Hlavní“ číslo se zvyšuje při velkých a _ zpětně nekompatibilních_ změnách, „vedlejší“ číslo je zvýšeno při přidání zpětně kompatibilní funkce do současné hlavní verze a číslo „záplaty“ je zvyšováno při zpětně kompatibilní opravě chyb.
+
+V době psaní této knihy je Solidity ve verzi 0.4.24. Pravidla pro hlavní verzi 0, která je počáteční vývoj projektu, se liší: cokoli se může kdykoli změnit. V praxi Solidity zachází s „vedlejším“ číslem, jako by to byla hlavní verze, a s číslem „záplaty“, jako by to byla vedlejší verze. Proto je v 0.4.24, 4 považována za hlavní verzi a 24 za vedlejší verzi.
+
+V nejbližší době se očekává vydání hlavní verze Solidity 0.5.
+
+Jak jste viděli v <<intro_chapter>> mohou vaše Solidity programy obsahovat direktivu pragma, která stanoví minimální a maximální verze Solidity, s nimiž je kompatibilní, a lze je použít k sestavení vašeho kontraktu.
+
+Protože se Solidity rychle vyvíjí, je často lepší nainstalovat nejnovější verzi.
+
+==== Stáhnutí a instalace
+
+((("Solidity","downloading/installing")))Existuje několik metod, které můžete použít ke stažení a instalaci Solidity, buď jako binární vydání, nebo kompilaci ze zdrojového kódu. Podrobné pokyny naleznete v http://bit.ly/2RrZmup[Solidity dokumentaci].
+
+Zde je návod, jak nainstalovat nejnovější binární vydání Solidity do operačního systému Ubuntu / Debian pomocí správce balíčků +apt+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo add-apt-repository ppa:ethereum/ethereum</strong>
+$ <strong>sudo apt update</strong>
+$ <strong>sudo apt install solc</strong>
+</pre>
+++++
+
+Po instalaci +solc+  zkontrolujte verzi spuštěním:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --version</strong>
+solc, the solidity compiler commandline interface
+Version: 0.4.24+commit.e67f0147.Linux.g++
+</pre>
+++++
+
+Existuje řada dalších způsobů, jak nainstalovat Solidity, v závislosti na operačním systému a požadavcích, včetně přímého kompilace ze zdrojového kódu. Další informace naleznete na adrese https://github.com/ethereum/solidity[].
+
+
+
+==== Vývojové prostředí
+
+((("Solidity","development environment")))Pro vývoj v Solidity můžete použít libovolný textový editor a +solc+ na příkazovém řádku. Možná však zjistíte, že některé textové editory určené pro vývoj, jako jsou Emacs, Vim a Atom, nabízejí další funkce, jako je zvýraznění syntaxe a makra, která usnadňují vývoj v Solidity.
+
+Existují také webová vývojová prostředí, například https://remix.ethereum.org/[Remix IDE] a https://ethfiddle.com/[EthFiddle].
+
+Použijte nástroje, díky nimž budete produktivní. Nakonec jsou programy Solidity pouhé textové soubory. Zatímco vyspělé editory a vývojová prostředí mohou věci usnadnit, nepotřebujete nic jiného než jednoduchý textový editor, jako je nano (Linux / Unix), TextEdit (macOS) nebo dokonce NotePad (Windows). Jednoduše uložte zdrojový kód programu s příponou _.sol_ a kompilátor Solidity jej rozpozná jako Solidity program.
+
+==== Psaní jednoduchého programu v Solidity
+
+((("Solidity","writing a simple program in")))V <<intro_chapter>> jsme napsali náš první Solidity program. Když jsme poprvé vytvořili kontrakt kohoutek (+Faucet+), použili jsme Remix IDE ke kompilaci a nasazení kontraktu. V této sekci provedeme revizi, vylepšení a ozdobení kohoutku.
+
+Náš první pokus vypadal jako <<original_sol_faucet>>.
+
+[[original_sol_faucet]]
+.Faucet.sol: Chytrý kontrakt Kohoutek v Solidity
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet.sol[]
+----
+====
+
+==== Kompilace pomocí Solidity kompilátoru (solc)
+
+((("Faucet.sol contract (test example)","compiling")))((("solc (Solidity compiler)")))((("Solidity compiler (solc)")))Nyní budeme použijte přímo Solidity kompilátor z příkazové řádky k přímému sestavení našeho programu. Solidity kompilátor +solc+ nabízí celou řadu možností, které můžete vidět předáním parametru +--help+.
+
+Používáme +solc+ parametry +--bin+ a +--optimize+ k vytvoření optimalizovaného binárního souboru našeho vzorového kontraktu:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --optimize --bin Faucet.sol</strong>
+======= Faucet.sol:Faucet =======
+Binárně:
+6060604052341561000f57600080fd5b60cf8061001d6000396000f300606060405260043610603e5
+763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416
+632e1a7d4d81146040575b005b3415604a57600080fd5b603e60043567016345785d8a00008111156
+06357600080fd5b73ffffffffffffffffffffffffffffffffffffffff331681156108fc0282604051
+600060405180830381858888f19350505050151560a057600080fd5b505600a165627a7a723058203
+556d79355f2da19e773a9551e95f1ca7457f2b5fbbf4eacf7748ab59d2532130029
+</pre>
+++++
+
+
+Výsledkem, který produkuje +solc+, je hexadecimálně kódovaný binární kód, který lze odeslat doEthereum bločenky. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc6")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc5")))
+
+[[eth_contract_abi_sec]]
+=== ABI Ethereum kontraktu
+
+((("ABI (application binary interface)", id="ix_07smart-contracts-solidity-asciidoc7", range="startofrange")))((("application binary interface (ABI)", id="ix_07smart-contracts-solidity-asciidoc8", range="startofrange")))((("smart contracts","ABI", id="ix_07smart-contracts-solidity-asciidoc9", range="startofrange")))V počítačovém softwaru, _binární rozhraní aplikace_ (ABI) je rozhraní mezi dvěma programovými moduly; často mezi operačním systémem a uživatelskými programy. ABI definuje způsob přístupu k datovým strukturám a funkcím ve _strojovém kódu_; to by nemělo být zaměňováno s API, které definuje tento přístup ve vysoce kvalitních, často lidsky čitelných formátech, jako _zdrojovém kódu_. ABI je tedy primárním způsobem kódování a dekódování dat do a ze strojového kódu.
+
+V Ethereum se ABI používá pro kódování volání kontraktů pro EVM a pro čtení dat z transakcí. Účelem ABI je definovat funkce v kontraktu, které lze vyvolat, a popsat, jak každá funkce přijme parametry a vrátí svůj výsledek.
+
+ABI kontraktu je specifikováno jako JSON pole popisů funkcí (viz <<solidity_functions>>) a události (viz <<solidity_events>>. Popis funkce je JSON objekt  s poli type`, `name`, `inputs`, `outputs`, `constant`, and `payable`. Objekt popisu události obsahuje pole `type`, `name`, `inputs`, and `anonymous`.
+
+Pomocí  Solidity kompilátoru +solc+ z příkazové řádky vytvoříme ABI pro náš pass:[<span class="keep-together"><em>Faucet.sol</em></span>] příklad kontraktu:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --abi Faucet.sol</strong>
+======= Faucet.sol:Faucet =======
+JSON ABI kontraktu
+[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}], \
+"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable", \
+"type":"function"},{"payable":true,"stateMutability":"payable", \
+"type":"fallback"}]
+</pre>
+++++
+
+Jak vidíte, kompilátor vytvoří JSON pole popisující dvě funkce, které jsou definovány _Faucet.sol_. Tato JSON data může použít jakákoliv aplikace, která chce po nasazení získat přístup ke kontraktu +Faucet+. Pomocí ABI může aplikace, jako je peněženka nebo prohlížeč DApp, vytvářet transakce, které volají funkce v +Faucet+ se správnými parametry a jejich typy. Například peněženka by měla vědět, že pro volání funkce +withdraw+ by musela poskytnout parametr +uint256+ s názvem +withdraw_amount+. Peněženka může uživatele vyzvat k zadání této hodnoty, poté vytvořit transakci, která ji zakóduje a provede funkci +withdraw+.
+
+Vše, co aplikace potřebuje k interakci s kontrraktem, je ABI a adresa, na které byl kontrakt nasazen.
+
+[[solidity_pragma]]
+==== Výběr Solidity kompilátoru a verze jazyka
+
+((("Solidity","selecting compiler and language version")))Jak jsme viděli v předchozím kódu, náš kontrakt +Faucet+ se úspěšně kompiluje s verzí Solidity 0.4.21. Ale co kdybychom použili jinou verzi kompilátoru Solidity? Jazyk je stále v neustálém pohybu a věci se mohou neočekávaně změnit. Náš kontrakt je poměrně jednoduchý, ale co když náš program použil funkci, která byla přidána pouze ve verzi Solidity 0.4.19 a pokusili jsme se ho zkompilovat s verzí 0.4.18?
+
+((("compiler directive")))((("version pragma")))K vyřešení těchto problémů nabízí Solidity _direktivu překladače_ známou jako _pragma verze_, která instruuje kompilátoru, že program očekává konkrétní verzi kompilátoru (a jazyka). Podívejme se na příklad:
+
+[[compiler_version]]
+----
+pragma solidity ^0.4.19;
+----
+
+Solidity Kompilátor přečte pragmu verze a vytvoří chybu, pokud je verze kompilátoru nekompatibilní s pragmou verze. V našem případě pragma naší verze říká, že tento program může být kompilován kompilátorem Solidity s minimální verzí 0.4.19. Symbol +^+ však uvádí, že umožňujeme kompilaci s jakoukoli _vedlejší verzí_ nad 0.4.19; např. 0.4.20, ale ne 0.5.0 (což je hlavní verze, nikoli menší verze). Pragma direktivy nejsou kompilovány do EVM bajtkódu. Kompilátor je používá pouze ke kontrole kompatibility.
+
+Pojďme k našemu kontraktu +Faucet+ přidat direktivu pragma. Nový soubor pojmenujeme pass:[<span class="keep-together"><em>Faucet2.sol</em></span>], abychom udržovali přehled o změnách, které jsme udělali v tomto příkladu, počínaje <<add_pragma_to_faucet>>.
+
+[[add_pragma_to_faucet]]
+.Faucet2.sol: Přidání verze pragma do Faucet
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet2.sol[]
+----
+====
+
+Přidání verze pragma je osvědčeným postupem, protože zabraňuje problémům s různými kompilátory a jazykovými verzemi. V této kapitole prozkoumáme další osvědčené postupy a budeme nadále zlepšujeme kontrakt +Faucet+.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc9")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc8")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc7")))
+
+=== Programování v Solidity
+
+((("Solidity","programming with", id="ix_07smart-contracts-solidity-asciidoc10", range="startofrange")))V této sekci se podíváme na některé schopnosti jazyka Solidity. Jak jsme zmínili v <<intro_chapter>>, náš první příklad kontraktu byl velmi jednoduchý a také vadný různými způsoby. Zde to postupně zlepšíme a prozkoumáme, jak používat Solidity. Nebude to však komplexní výukový kurz Solidity, protože Solidity je poměrně složitý a rychle se vyvíjí. Pokryjeme základy a poskytneme vám dostatek základních dovedností, abyste si mohli zbytek prozkoumat sami. Dokumentaci Solidity naleznete
+https://solidity.readthedocs.io/en/latest/[na webu projektu].
+
+==== Datové typy
+
+((("Solidity","data types", id="ix_07smart-contracts-solidity-asciidoc11", range="startofrange")))Nejprve se podívejme na některé ze základních datových typů nabízených v Solidity:
+
+Boolean (+bool+):: Logický typ, nabývá jedné ze dvou hodnot,  pravda (+true+) nebo nepravda (+false+), s logickými operátory +!+ (negace), +&&+ (konjunkce; a), +||+  (disjunkce; nebo), +==+ (rovnost) a  +!=+ (nerovnost).
+
+Celé číslo (+int+, +uint+):: Celé číslo se znaménkem (+int+) a bez znaménka (+ uint +) , deklarované v přírůstcích po 8 bitech od +int8+ do +uint256+. Bez přípony velikosti se použije 256-bitová varianta, která odpovídají velikosti slova EVM.
+
+Reálné číslo (+fixed+, +ufixed+):: Reálná čísla s pevnou desetinnou čárkou, deklarované pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] kde __++M++__ je velikost v bitech (po násobcích 8 až do 256) a __++N++__ je počet desetinných míst za desetinnou čárkou (až do 18), např. +ufixed32x2+.
+
+Adresa:: 20-bajtová Ethereum adresa. Objekt +address+ má mnoho užitečných členských funkcí, přičemž hlavními funkcemi jsou +balance+ (vrací zůstatek na účtu) a pass: [<span class="keep-together"><code>transfer</code></span>] (převádí ether na účet).
+
+Bajtové pole (statické):: Pole bajtů pevné velikostideklarovaná pomocí +bytes1+ až +bytes32+.
+
+Bajtové pole (dynamické):: Pole bajtů proměnlivé délky, deklarované pomocí +bytes+ nebo +string+.  
+
+Enum:: Uživatelem definovaný typ pro výčet diskrétních hodnot: +enum název {hodnota1, hodnota2, pass:[...]}+.
+
+Obecné pole:: Pole jakéhokoli typu, buď pevné nebo dynamické: +uint32[][5]+ je pole pěti dynamických polí celých čísel bez znaménka.
+
+Struktury:: Uživatelem definované datové kontejnery pro seskupení proměnných: pass:[<code>struct název {typ1 <span class="keep-together">proměnná1</span>; typ2 proměnná2; ...}</code>].
+
+Mapování:: Hašovací vyhledávací tabulky pro dvojice __++klíč++__ +=>+ _++dvojici++_: +mapping(typ klíče => typ hodnoty) název+.
+
+Kromě těchto datových typů nabízí Solidity také řadu hodnotových konstant, které lze použít k výpočtu různých jednotek:
+
+Časové jednotky :: Jednotky sekundy (+seconds+), minuty (+minutes+),  hodiny (+hours+), a dny (+days+) lze použít jako přípony a převést je na násobky základní jednotky +seconds+.
+
+Ether units:: Jednotky +wei+, +finney+, +szabo+, a +ether+ lze použít jako přípony a převést je na násobky základní jednotky +wei+.
+
+V našem příkladu +Faucet+ jsme použili +uint+ (což je jiné označení pro +uint256+) pro proměnnou +withdraw_amount+. Také jsme nepřímo použili proměnnou +address+, kterou jsme nastavili pomocí +msg.sender+. Více těchto datových typů použijeme v našich příkladech ve zbytku této kapitoly.
+
+Použijte jeden z multiplikátorů jednotek ke zlepšení čitelnosti našeho příkladu kontraktu. Ve funkci +withdraw+ omezíme maximální výběr, vyjádříme limit ve wei, základní jednotku etheru:
+
+----
+require(withdraw_amount <= 100000000000000000);
+----
+
+To není příliš snadné číst. Náš kód můžeme vylepšit pomocí multiplikátoru jednotek +ether+, abychom vyjádřili hodnotu v etheru namísto ve wei:(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc11")))
+
+----
+require(withdraw_amount <= 0.1 ether);
+----
+
+==== Předdefinované globální proměnné a funkce
+
+((("Solidity","predefined global variables/functions", id="ix_07smart-contracts-solidity-asciidoc12", range="startofrange")))Když je kontrakt prováděn v EVM, má přístup k malému množství globálních objektů. Patří sem objekty blok (+block+), zpráva (+msg+), a transakce (+tx+). Navíc Solidity nabízí řadu instrukcí EVM jako předdefinované funkce. V této části prozkoumáme proměnné a funkce, ke kterým máte přístup v rámci chytrých kontraktů v programu Solidity.
+
+===== Kontext transakce / volání zprávy
+
+((("message call")))((("msg object")))((("transaction call"))) Objekt zpráva (+msg+) jetransakční volání (vyvolané EOA) nebo volání zprávy (vyvolané kontraktem), které zahájilo vykonávání tohoto kontraktu. Obsahuje řadu užitečných atributů:
+
++msg.sender+:: Tento už jsme použili. Představuje adresu, která zahájila toto volání kontraktu, ne nutně původní EOA, který transakci odeslal. Pokud byla naše smlouva vyvolána přímo EOA transakcí, jedná se o adresu, která transakci podepsala, jinak to bude adresa kontraktu.
+
++msg.value+:: Hodnota etheru odeslaného tímto voláním (ve wei).
+
++msg.gas+:: Množství plynu zbývající v zásobě pro toto prováděcí prostředí. Toto bylo označeno za zastaralé v Solidity v0.4.21 a nahrazeno funkcí +gasleft+.
+
++msg.data+:: Užitečné datové zatížení této zprávy v našem kontraktu.
+
++msg.sig+:: První čtyři bajty užitečného datového zatížení, což je označení funkce, která má být zavolána.
+
+[NOTE]
+====
+Kdykoli kontrakt volá jiný kontrakt, hodnoty všech atributů zprávy +msg+ se změní, aby odrážely informace o novém volajícím. Jedinou výjimkou je funkce +delegatecall+, která spouští kód jiného kontraktu / knihovny v původním +msg+ pass:[<span class="keep-together">kontextu</span>].
+====
+
+===== Kontext transakce
+
+((("tx object"))) Objekt +tx+ poskytuje prostředky pro přístup k informacím o transakci:
+
+++tx.gasprice++:: Cena plynu ve volající transakci.
+
+++tx.origin++:: Adresa EOA, který zavolal tuto transakci. VAROVÁNÍ: nebezpečné!
+
+===== Kontext bloku
+
+((("block object"))) Objekt blok  (+block+) obsahuje informace o aktuálním bloku:
+
+++block.blockhash(__blockNumber__)++:: Haš bloku zadaného čísla bloku, až 256 bloků do minulosti. Zastaralé a nahrazené funkcí +blockhash+ v Solidity v0.4.22.
+
+++block.coinbase++:: Adresa příjemce transakčních poplatků a odměny za vytěžení aktuálního bloku.
+
+++block.difficulty++: Obtížnost (důkazu práci) aktuálního bloku.
+
+++block.gaslimit++:: Maximální množství plynu, které lze utratit ve všech transakcích zahrnutých v aktuálním bloku.
+
+++block.number++:: Aktuální číslo bloku (výška bločenky).
+
+++block.timestamp++:: Časové razítko umístěné v aktuálním bloku těžařem (počet sekund od 1. ledna 1970).
+
+[[solidity_address_object]]
+===== adresa objektu
+
+(("address object")))Jakákoli adresa, předaná jako vstup nebo získaná z objektu kontraktu, má řadu atributů a metod:
+
++address.balance+:: Zůstatek adresy ve wei. Například aktuální zůstatek kontraktu je +address(this).balance+..
+
+++address.transfer(__amount__)++:: Převede částku (ve wei) na tuto adresu a vyvolá výjimku při jakékoli chybě. Tuto funkci jsme použili v našem příkladu +Faucet+ jako metodu na adrese odesilatele +msg.sender+, jako +msg.sender.transfer+.
+
+++address.send(__amount__)++:: Podobně jako +transfer+, pouze místo vyvolání výjimky vrací +false+ při chybě. VAROVÁNÍ: vždy zkontrolujte návratovou hodnotu +send+.
+
+++address.call(__payload__)++::  Funkce pro nízkoúrovňové volání +CALL+ — může vytvořit libovolné volání zprávy s užitečným datovým zatížením. Vrací +false+ při chybě. VAROVÁNÍ: nebezpečné - příjemce může (náhodně nebo úmyslně) spotřebovat veškerý plyn, což způsobí zastavení vašeho kontraktu s výjimkou +OOG+; vždy zkontrolujte návratovou hodnotu +volání+.
+
+++address.callcode(__payload__)++: Funkce pro nízkoúrovňové volání  +CALLCODE+, obdobné jako +address(this).call(pass:[...])+, ale kód kontraktu je nahrazen adresou +address+. Vrací +false+ při chybě. VAROVÁNÍ: pouze pro pokročilé!
+
++address.delegatecall()+:: Nízkoúrovňová funkce +DELEGATECALL+, jako +callcode(pass:[...])+, ale s plným kontextem zprávy +msg+ viděným aktuálním kontraktem. Vrací +false +při chybě. VAROVÁNÍ: pouze pro pokročilé!
+
+===== Vestavěné funkce
+
+Další funkce, které stojí za zmínku, jsou:
+
++addmod+, +mulmod+:: Pro sčítání a násobení, na výsledek je aplikována operace zbytku po celočíselném dělení. Například +addmod(x,y,k)+ počítá +pass:[(x + y) % k]+
+
++keccak256+, +sha256+, +sha3+, +ripemd160+:: Funkce pro výpočet hašů s různými standardními hačovacími algoritmy.
+
++ecrecover+:: Obnoví adresu použitou k podepsání zprávy z podpisu.
+
+++selfdestruct(__recipient_address__)++:: Odstraní aktuální kontrakt a odešle zbývající ether v účtu na adresu příjemce.
+
++this+:: Adresa účtu aktuálně prováděného kontraktu. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc12")))
+
+==== Definice kontraktu
+
+((("contract data type")))((("contract definition, Solidity")))((("Solidity","contract definition")))Hlavní typ dat v Solidity je +kontrakt+; náš příklad +Faucet+ jednoduše definuje objekt pass:[<span class="keep-together"><code>kontraktu</code></span> ]. Podobně jako u jakéhokoli objektu v objektově orientovaném jazyce je kontrakt kontejnerem, který obsahuje data a metody.
+
+Solidity nabízí dva další typy objektů, které jsou podobné kontraktu:
+
++interface+:: ((("interface object type")))((("stub")))Definice rozhraní je strukturována přesně jako kontrakt, kromě toho, že žádná z funkcí není definována, jsou pouze deklarovány. Tento typ deklarace se často nazývá _pahýl_; vysvětluje argumenty funkcí a typy návratových hodnot bez jakékoli implementace. Rozhraní specifikuje „tvar“ kontraktu; po zdědění musí každá z funkcí deklarovaných v  rozhraním být definována v dítěti.
+
++knihovna+:: ((("library contract"))) Kontrakt typu knihovna je pouze jednou nasazen a následně je využíván jinými kontrakty pomocí metody +delegatecall+ (viz <<solidity_address_object>>).
+
+[[solidity_functions]]
+==== Funkce
+
+((("Solidity","functions", id="ix_07smart-contracts-solidity-asciidoc13", range="startofrange")))V rámci kontraktu definujeme funkce, které lze volat EOA transakcí nebo jiným kontraktem. V našem příkladu +Faucet+ máme dvě funkce: +withdraw+ a (nepojmenovaná) _nouzovou_ funkce.
+
+((("Solidity","function syntax")))Syntaxe, kterou používáme k deklarování funkce v Solidity, je následující:
+
+++++
+<pre data-type="programlisting">
+function JménoFunkce ([<em>parametry</em>]) {public | private | internal | external}
+[pure|constant|view|payable] [<em>midifikátory</em>] [returns (<em>typ návratové hodnoty</em>)]
+</pre>
+++++
+
+
+Podívejme se na každou z těchto složek:
+
+++NázevFunkce++:: Název funkce, která se používá k zavolání funkce pomocí transakce (z EOA), z jiné smlouvy nebo dokonce z téže smlouvy. ((("fallback function"))) Jedna funkce v každém kontraktu může být definována bez názvu, v tom případě je to funkce _nouzová_, která se volá, když není pojmenována žádná jiná funkce. Nouzová funkce nemůže mít žádné argumenty ani nic vrátit.
+
+__++parametry++__:: Za jménem funkce specifikujeme parametry, které musí být předány funkci, s jejich jmény a typy. V našem příkladu +Faucet+ jsme definovali +uint withdraw_amount+ jako jediný parametr funkce pass: [<code><span class="keep-together">withdraw</span></code>].
+
+Následující sada klíčových slov (+public+, +private+, +internal+, +external+) určuje _viditelnost_ funkce:
+
++public+:: ((("public function")) Veřejná (public) je výchozí nastavení; takové funkce mohou být vyvolány jinými kontrakty nebo transakcemi EOA, nebo z kontraktu. V našem příkladu +Faucet+ jsou obě funkce definovány jako veřejné.
+
++external+:: ((("external function"))) Externí funkce jsou jako veřejné funkce, s výjimkou, že je nelze vyvolat v rámci kontraktu, pokud není výslovně uvedeno s předponou klíčovým slovem +this+.
+
++internal+:: ((("internal function")))Vnitřní funkce jsou přístupné pouze z kontraktu - nemohou být vyvolány jinou smlouvou nebo EOA transakcí. Mohou být volány odvozenými kontrakty, které jsou potomky tohoto kontraktu. Obdoba klíčového slova protected z C++.
+
++private+:: ((("private function")))Soukromé funkce jsou jako vnitřní funkce, ale nelze volat odvozenými pass:[<span class="keep-together">kontrakty</span>].
+
+Mějte na paměti, že pojmy _internal_ a _private_ jsou poněkud zavádějící. Jakákoli funkce nebo data uvnitř smlouvy jsou vždy _ viditelná_ na veřejné bločence, což znamená, že kdokoli může vidět kód nebo data. Zde popsaná klíčová slova ovlivňují pouze to, jak a kdy může být funkce _volána_.
+
+Druhá sada klíčových slov (+pure+, +constant+, +view+, +payable+) ovlivňuje chování funkce:
+
++constant+ or +view+:: ((("view (function keyword)")))Funkce označená jako _view_ slibuje, že neupravuje žádný stav. ((("constant (function keyword)"))) Termín _constant_ je jiné označení pro _view_, které bude v budoucí verzi zastaralé. V tuto chvíli kompilátor nevynucuje modifikátor +view+, pouze vydává varování, ale očekává se, že _view_se stane vynucovaným klíčovým slovem v Solidity v0.5.
+
++pure+:: ((("pure function")))Čistá funkce je taková funkce, která v paměti nečte ani nezapisuje žádné proměnné. Může pracovat pouze s argumenty a vracet data, bez odkazu na jakákoli uložená data. Účelem čistých funkcí je podpořit programování v deklarativním stylu bez vedlejších účinků nebo stavu.
+
++payable+:: ((("payable function"))) Platby přijímající funkce je taková funkce, která může přijímat příchozí platby. Funkce, které nejsou deklarovány jako +payable+, odmítnou příchozí platby. Existují dvě výjimky z důvodu návrhových rozhodnutí v EVM: mincetvorné (+coinbase+) platby  a +SELFDESTRUCT+ dědictví budou vyplaceny, i když nouzová funkce není deklarována jako +platby přijímající+, ale to dává smysl, protože provádění kódu není pass:[<span class="keep-together">stejně</span>] součástí těchto plateb.
+
+Jak vidíte v našem příkladu +Faucet+, máme jednu platby přijímající funkci (nouzová funkce), což je jediná funkce, která může přijímat příchozí platby.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc13")))
+
+==== Konstruktor kontraktu a samozničení
+
+((("constructor function")))((("smart contracts","constructor function")))((("Solidity","contract constructor function"))) Existuje speciální funkce, která se používá pouze jednou . Po vytvoření kontraktu se také  spustí funkce _constructor_, pokud existuje, k počátečnímu nastavení stavu kontraktu. Konstruktor je spuštěn ve stejné transakci jako vytvoření kontraktu. Funkce konstruktoru je volitelná; všimnete si, že náš příklad +Faucet+ ji nemá.
+
+Konstruktory lze specifikovat dvěma způsoby. Až do a včetně Solidity v0.4.21 je konstruktor funkcí, jejíž název odpovídá názvu kontraktu, jak můžete vidět zde:
+
+[source,solidity]
+----
+contract MEContract {
+	function MEContract() {
+		// This is the constructor
+	}
+}
+----
+
+
+Problém tohoto formátu spočívá v tom, že pokud se změní název kontraktu a název funkce konstruktoru se nezmění, nejedná se o konstruktor. Podobně, pokud dojde k náhodnému překlepu v pojmenování kontraktu nebo konstruktoru, funkce již nadále není konstruktorem. To může způsobit některé docela ošklivé, neočekávané a obtížně vyhledatelné chyby. Představte si například, že konstruktor nastavuje vlastníka kontrolu pro účely ovládání kontraktu. Pokud funkce ve skutečnosti není konstruktorem kvůli chybě pojmenování, zůstane majitel nejen v okamžiku vytvoření smlouvy nenastavený, ale funkce může být také nasazena jako trvalá a „volitelná“ částí kontraktu, jako například normální funkce, která umožňuje jakékoli třetí straně unést kontrakt a stát se je jeho „vlastníkem“ kdykoli po jeho vytvoření.
+
+Aby bylo možné řešit potenciální problémy s funkcemi konstruktoru založenými na nutnosti stejného názvu jako je název kontraktu, Solidity v0.4.22 zavádí klíčové slovo +constructor+, které funguje jako funkce konstruktoru, ale nemá jméno. Přejmenování kontraktu nemá na konstruktor vůbec žádný vliv. Rovněž je snazší určit, která funkce je konstruktor. Vypadá to takto:
+
+[source,solidity]
+----
+pragma ^0.4.22
+contract MEContract {
+	constructor () {
+		// This is the constructor
+	}
+}
+----
+
+Stručně řečeno, životní cyklus kontraktu začíná kontrakt vytvářející transakcí zaslanou z EOA účtu nebo kontraktu. Pokud existuje konstruktor, je prováděn jako součást vytváření kontraktu, aby inicializoval stav kontraktu po jeho vytvoření. Konstruktor následně již nejde zavolat. 
+
+((("contract destruction")))((("selfdestruct function")))((("Solidity","contract destruction")))((("Solidity","selfdestruct function")))The other end of the contract's life cycle is _contract destruction_. ((("SELFDESTRUCT opcode")))Kontrakty jsou ničeny zvláštní EVM instrukcí s názvem +SELFDESTRUCT+. Dříve to bylo nazýváno pass:[<span class="keep-together"><code>SUICIDE</code></span>], ale toto jméno bylo označené za zastaralé kvůli negativním asociacím slova. V programu Solidity je tato instrukce zpřístupněna na vyšší úrovni jako vestavěná funkce s názvem +selfdestruct+, která vyžaduje jeden parametr: adresu, na kterou má být zaslán zůstatek etheru na účtu kontraktu. Vypadá to takto:
+
+[source,solidity]
+----
+selfdestruct(address recipient);
+----
+
+Note that you must explicitly add this command to your contract if you want it to be deletable&#x2014;this is the only way a contract can be deleted, and it is not present by default. In this way, users of a contract who might rely on a contract being there forever can be certain that a contract can't be deleted if it doesn't contain a pass:[<span class="keep-together"><code>SELFDESTRUCT</code></span>] instrukci.
+
+==== Přidání konstruktoru a sebezničení do našeho příkladu kohoutku
+
+((("constructor function","adding to faucet example")))((("Faucet.sol contract (test example)","adding constructor and selfdestruct to")))((("Solidity","adding constructor/selfdestruct to faucet example"))) Příklad kontraktu +Faucet+ jsme zavedli v  <<intro_chapter>>; nemá konstruktor ani +selfdestruct+ funkci. Je to věčná smlouva, kterou nelze odstranit. Pojďme to změnit přidáním konstruktoru a +selfdestruct+ funkce. Pravděpodobně chceme, aby +selfdestruct+ byl zavolatelný _pouze_ EOA, který původně vytvořil kontrakt. Obvykle je to podle konvence uloženo v adresové proměnné nazvané +owner+. Náš konstruktor nastaví proměnnou +owner+ a funkce +selfdestruct+ nejprve zkontroluje, zda ji volal přímo vlastník.
+
+Nejprve náš konstruktor:
+
+[source,solidity]
+----
+// Verze kompilátoru Solidity, pro který byl tento program napsán
+pragma solidity ^0.4.22;
+
+// Náš první kontrakt je kohoutek!
+contract Faucet {
+
+	address owner;
+
+// Inicializovat kontraktu kohoutek: nastavit vlastníka
+	constructor() {
+		owner = msg.sender;
+	}
+
+[...]
+----
+
+Změnili jsme direktivu pragma tak, aby byla v tomto příkladu specifikována verze 0.4.22 jako minimální verze, protože používáme nové klíčové slovo +constructor+ zavedené v Solidity v0.4.22. Náš kontrakt nyní obsahuje proměnnou typu +adresa+ pojmenovanou +owner+. Jméno „vlastníka“ není nijak zvláštní proměnná. Tuto adresní proměnnou bychom mohli nazvat „brambor“ a stále ji používat stejným způsobem. Jméno +owner+ jednodušeji objasní svůj účel.
+
+Dále náš konstruktor, který běží jako součást transakce vytvoření smlouvy, přiřadí adresu z +msg.sender+ k proměnné +owner+. Pro identifikaci iniciátora žádosti o výběr jsme použili funkci +msg.sender+ ve funkci pass: [<span class="keep-together"><code>withdraw</code></span>] V konstruktoru je však +msg.sender+ EOA nebo adresa kontraktu, která iniciovala vytvoření kontraktu. Víme, že se jedná o tento případ, _protože_ to je funkce konstruktoru: spustí se pouze jednou, během vytváření kontraktu.
+
+Nyní můžeme přidat funkci zničení kontraktu. Musíme se ujistit, že tuto funkci může spustit pouze vlastník, takže k řízení přístupu použijeme příkaz +require+. Takto to bude vypadat:
+
+[source,solidity]
+----
+// Zničení kontraktu, destruktor
+function destroy() public {
+	require(msg.sender == owner);
+	selfdestruct(owner);
+}
+----
+
+Pokud někdo volá tuto funkci +destroy+ z jiné adresy než +owner+, funkce selže. Pokud je však tato funkce zavolána stejnou adresou, jaká byla uložená konstruktorem do proměnné +owner+, kontrakt se zničí a zbývající zůstatek etheru odešle na adresu +owner+. Upozorňujeme, že jsme nepoužili nebezpečný +tx.origin+ k určení, zda vlastník chtěl kontrakt zničit - pomocí +tx.origin+ by zlovolné kontrakty mohly váš kontrakt zničit bez vašeho svolení.
+
+==== Modifikátory funkcí
+
+((("function modifiers")))((("Solidity","function modifiers")))Solidity nabízí speciální typ funkce zvaný _modifikátor funkce_. Modifikátory použijete na funkce přidáním názvu modifikátoru do deklarace funkce. Modifikátory se nejčastěji používají k vytváření omezujících podmínek, které mají aplikovat v mnoha funkcí v rámci kontraktu. V naší funkci  +destroy+  již máme podmínku pro řízení přístupu. Vytvořme modifikátor funkce, který vyjadřuje tuto podmínku:
+
+[source,solidity]
+----
+modifier onlyOwner {
+    require(msg.sender == owner);
+    _;
+}
+----
+
+
+Tento modifikátor funkce, nazvaný +onlyOwner+, nastavuje podmínku pro jakoukoli funkci, kterou upravuje, a vyžaduje, aby adresa uložená jako +vlastník+ kontraktu byla stejná jako adresa odesilatele transakce +msg.sender+. Toto je základní návrhový vzor pro řízení přístupu, který umožňuje pouze vlastníkovi kontraktu vykonávat jakoukoli funkci, která má modifikátor +onlyOwner+.
+
+Možná jste si všimli, že náš modifikátor funkce má zvláštní syntaktický „zástupný symbol“, podtržítko následované středníkem (+_;+). Tento zástupný symbol je nahrazen kódem funkce, která je upravována. Modifikátor je v podstatě „omotán kolem“ modifikované funkce a umístí její kód na místo identifikované znakem podtržítka.
+
+Chcete-li použít modifikátor, přidejte jeho název do deklarace funkce. Na funkci lze použít více než jeden modifikátor; aplikují se v pořadí, v jakém jsou deklarovány, jako seznam oddělený čárkami.
+
+Přepíšeme naši funkci +destroy+ tak, abychom použili modifikátor +onlyOwner+:
+
+[source,solidity]
+----
+function destroy() public onlyOwner {
+    selfdestruct(owner);
+}
+----
+
+Název modifikátoru funkce (+onlyOwner+) následuje za klíčovým slovem +public+ a říká nám, že funkce +destroy+ je modifikována modifikátorem +onlyOwner+. V podstatě si to můžete přečíst jako „Tento kontrakt může zničit pouze vlastník.“ V praxi je výsledný kód ekvivalentní „zabalení“ kódu z +onlyOwner+ okolo +destroy+.
+
+Modifikátory funkcí jsou velmi užitečným nástrojem, protože nám umožňují psát předpoklady pro funkce a důsledně je používat, což usnadňuje čtení kódu a v důsledku toho snadnější audit zabezpečení. Nejčastěji se používají pro řízení přístupu, ale jsou velmi univerzální a lze je použít pro různé jiné účely.
+
+Uvnitř modifikátoru máte přístup ke všem hodnotám (proměnným a argumentům) viditelným pro modifikovanou funkci. V takovém případě máme přístup k proměnné +owner+, která je deklarována v kontraktu. Inverzní však není pravda: nemůžete získat přístup k žádné z proměnných modifikátoru uvnitř modifikované funkce.
+
+==== Dědičnost kontraktu
+
+((("contract object", id="ix_07smart-contracts-solidity-asciidoc14", range="startofrange")))((("inheritance", id="ix_07smart-contracts-solidity-asciidoc15", range="startofrange")))((("smart contracts","inheritance", id="ix_07smart-contracts-solidity-asciidoc16", range="startofrange")))((("Solidity","contract inheritance", id="ix_07smart-contracts-solidity-asciidoc17", range="startofrange")))Solidity objekt +contract+ podporuje _dědičnost_, což je mechanismus pro rozšíření základního kontraktu o další funkčnost. Chcete-li použít dědičnost, zadejte rodičovský kontrakt s klíčovým slovem +is+:
+
+[source,solidity]
+----
+contract Child is Parent {
+  ...
+}
+----
+
+S tímto konstruktem zdědí kontrakt +Child+ všechny metody, funkčnost a proměnné svého rodiče +Parent+. Solidity také podporuje vícenásobnou dědičnost, kterou lze specifikovat názvy kontraktů oddělených čárkami za klíčovým slovem +is+:
+
+[source,solidity]
+----
+contract Child is Parent1, Parent2 {
+  ...
+}
+----
+
+Dědičnost kontraktu nám umožňuje psát naše kontrakty tak, abychom dosáhli modularity, rozšiřitelnosti a opětovného použití. Začínáme s kontrakty, které jsou jednoduché a implementují nejobecnější funkce, a poté je rozšiřujeme zděděním těchto schopností ve specializovanějších kontraktech.
+
+V našem kontraktu +Faucet+ jsme představili konstruktor a destruktor spolu s kontrolou přístupu pro majitele, nastaveným v konstruktoru. Tyto schopnosti jsou celkem obecné: mnoho kontraktů je bude mít. Můžeme je definovat jako obecné kontrakty, ty pak pomocí dědičnosti rozšířit na kontrakt +Faucet+.
+
+Začneme definováním základního kontraktu vlastněný (+owned+), který má proměnnou vlastník (+owner+), kterou nastavíme v konstruktoru kontraktu:
+
+[source,solidity]
+----
+contract owned {
+	address owner;
+
+// Konstruktor kontraktu: nastaví vlastníka
+	constructor() {
+		owner = msg.sender;
+	}
+
+// Modifikátor řízení přístupu
+	modifier onlyOwner {
+	    require(msg.sender == owner);
+	    _;
+	}
+}
+----
+
+Dále definujeme základní kontrakt smrtelný (+mortal+), který je potomkem +owned+:
+
+[source,solidity]
+----
+contract mortal is owned {
+// Zničení kontraktu, destruktor
+	function destroy() public onlyOwner {
+		selfdestruct(owner);
+	}
+}
+----
+
+Jak vidíte, kontrakt +mortal+ může použít modifikátor funkce +onlyOwner+, definovaný v +owned+. Nepřímo také používá adresovou proměnnou +owner+ a konstruktor definovaný v +owned+. Dědičnost zjednodušuje každý kontrakt a zaměřuje se na její konkrétní funkčnost, což nám umožňuje spravovat podrobnosti modulárním způsobem.
+
+Nyní můžeme dále rozšířit kontrakt +owned+, vytvořit jeho potomka +Faucet+, který zdědí jeho schopnosti:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+// Vydává ether každému, kdo o to požádá
+    function withdraw(uint withdraw_amount) public {
+// Limit výběru
+        require(withdraw_amount <= 0.1 ether);
+// Zašle částku na adresu, která o ni požádala
+        msg.sender.transfer(withdraw_amount);
+    }
+// Přijme jakoukoliv příchozí částku
+    function () external payable {}
+}
+----
+
+Díky tomu, že je kontrakt +Faucet+ potomkem +mortal+, který je zase potomkem +owned+, má kontrakt konstruktor a funkci +destroy+ a definovaného vlastníka. Funkčnost je stejná jako v případě, kdy tyto funkce byly v rámci +Faucet+, ale nyní můžeme tyto funkce znovu použít v jiných kontraktech, aniž bychom je znovu psali. Opětovné použití kódu a modularita činí náš kód čistějším, čitelnějším a snáze kontrolovatelným.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
+
+==== Zpracování chyb (assert, require, revert)
+
+((("error handling, Solidity")))((("Solidity","error handling")))Volání kontraktu může být ukončeno a vrátit chybu. Zpracování chyb v Solidity je řešeno čtyřmi funkcemi: +assert+, +require+, +revert+, a +throw+ (nyní zastaralá).
+
+Když kontrakt skončí s chybou, všechny změny stavu (změny proměnných, zůstatků atd.) budou vráceny zpět, a to až do konce řetězce volání kontraktů, pokud byl vyvolána více než jeden kontrakt. Tím je zajištěno, že transakce jsou _atomické_, což znamená, že jsou úspěšně dokončeny nebo nemají žádný vliv na stav a jsou zcela vráceny.
+
+((("assert function","Solidity and")))((("require function")))Funkce +assert+ a +require+ fungují stejným způsobem, vyhodnocují stav a zastavují provádění s chybou, pokud je podmínka nepravdivá. Obvykle se +assert+ používá, když se očekává, že výsledek bude pravdivý, což znamená, že pomocí +assert+ testujeme vnitřní podmínky. Pro srovnání, +require+ se používá při testování vstupů (jako jsou argumenty funkcí nebo transakční pole), které nastavují naše očekávání pro tyto pass:[<span class="keep-together">podmínky</span>].
+
+Použili jsme +require+ v našem modifikátoru funkce +onlyOwner+, abychom otestovali, že odesílatel zprávy je vlastníkem kontraktu:
+
+[source,solidity]
+----
+require(msg.sender == owner);
+----
+
+Funkce +require+ funguje jako _podmínková brána_, brání vykonání zbytku funkce a způsobí chybu, pokud není splněna.
+
+Od verze Solidity v0.4.22 může +require+ obsahovat také pomocnou textovou zprávu, kterou lze použít k zobrazení příčiny chyby. Chybová zpráva je zaznamenána v protokolu transakcí. Takže můžeme vylepšit náš kód přidáním chybové zprávy do funkce +require+ :
+
+[source,solidity]
+----
+require(msg.sender == owner, "Only the contract owner can call this function");
+----
+
+((("revert function")))((("throw function")))Funkce +revert+ a +throw+ zastaví provádění kontraktu a vrátí jakékoli změny stavu. Funkce +throw+ je zastaralá a bude odstraněna v budoucích verzích Solidity; místo toho byste měli použít +revert+. Funkce +revert+ může také přijmout chybovou zprávu jako svůj jediný argument, který je zaznamenán v protokolu transakcí.
+
+Určité podmínky v kontraktech generují chyby bez ohledu na to, zda je výslovně kontrolujeme. Například v našem kontraktu +Faucet+ nekontrolujeme, zda je dostatek etheru k uspokojení žádosti o výběr. Je to proto, že funkce +transfer+ selže s chybou a transakci vrátí, pokud není k provedení převodu dostatečný zůstatek:
+
+[source,solidity]
+----
+msg.sender.transfer(withdraw_amount);
+----
+
+Může však být lepší explicitně zkontrolovat a poskytnout jasnou chybovou zprávu o selhání. Můžeme to provést přidáním příkazu +require+ před převodem:
+
+[source,solidity]
+----
+require(this.balance >= withdraw_amount,
+	"Insufficient balance in faucet for withdrawal request");
+msg.sender.transfer(withdraw_amount);
+----
+
+Další kód pro kontrolu chyb, jako je tento, mírně zvýší spotřebu plynu, ale nabízí lepší hlášení chyb než v případě vynechání. Budete muset najít správnou rovnováhu mezi spotřebou plynu a podrobnou kontrolou chyb na základě očekávaného využití vašeho kontraktu. V případě kontraktu +Faucet+ určené pro testovací síť bychom se pravděpodobně nedopustili chyby přidáním zvláštního hlášení, i když to stojí více plynu. Oproti tomu na hlavní síti by kontrakt měl být v používání plynu skromnější.
+
+[[solidity_events]]
+==== Události
+
+((("events","Solidity", id="ix_07smart-contracts-solidity-asciidoc18", range="startofrange")))((("Solidity","event objects", id="ix_07smart-contracts-solidity-asciidoc19", range="startofrange")))Když ((("transaction receipt"))) se transakce dokončí (úspěšně nebo ne), vytvoří se _transakční účtenka_, jak uvidíme v <<evm_chapter>>. Účtenka transakce obsahuje záznamy _protokolu_ které poskytují informace o akcích, ke kterým došlo během provádění transakce. _Události_ (Events) jsou vysokoúrovňové objekty v Solidity, které se používají k vytváření těchto protokolů.
+
+Události jsou zvláště užitečné pro odlehčené klienty a služby DApp, které mohou „sledovat“ konkrétní události a nahlásit je do uživatelského rozhraní nebo změnit stav aplikace tak, aby odrážely událost v podkladovém kontraktu.
+
+Objekty událostí berou parametry, které jsou naformátovány a zaznamenávány v protokolech transakcí, v bločence. Můžete zadat klíčové slovo +indexed+ před parametrem, abyste vytvořili hodnotovou část indexovací tabulky (hašovací tabulky), kterou může aplikace prohledávat nebo filtrovat.
+
+((("Faucet.sol contract (test example)","adding events to", id="ix_07smart-contracts-solidity-asciidoc20", range="startofrange")))Do našeho příkladu +Faucet+ jsme do současné doby nepřidali žádné události, udělejme to. Přidáme dvě události, jednu pro přihlášení všech výběrů a jednu pro hlášení všech vkladů. Tyto události budeme nazývat výběr (+Withdrawal+) a vklad (+Deposit+). Nejprve definujeme události v kontraktu +Faucet+:
+
+[source,solidity]
+----
+contract Faucet is mortal {
+	event Withdrawal(address indexed to, uint amount);
+	event Deposit(address indexed from, uint amount);
+
+	[...]
+}
+----
+
+Rozhodli jsme se udělat adresy indexované (+indexed+) abychom umožnili vyhledávání a filtrování v jakémkoli uživatelském rozhraní vytvořeném pro přístup k našemu +Faucet+.
+
+Dále pomocí klíčového slova +emit+ začleníme data událostí do protokolů transakcí:
+
+[source,solidity]
+----
+// Vydejte ether každému, kdo o to požádá
+function withdraw(uint withdraw_amount) public {
+    [...]
+    msg.sender.transfer(withdraw_amount);
+    emit Withdrawal(msg.sender, withdraw_amount);
+}
+// Přijměte veškerou příchozí částku
+function () external payable {
+    emit Deposit(msg.sender, msg.value);
+}
+----
+
+Výsledný kontrakt _Faucet.sol_ vypadá jako <<Faucet8_sol>>.
+
+[[Faucet8_sol]]
+.Faucet8.sol: Upravený kontrakt kohoutek, s událostmi
+====
+[source,solidity,linenums]
+----
+include::code/Solidity/Faucet8.sol[]
+----
+====
+
+===== Zachytávání událostí
+
+((("events","catching")))((("Faucet.sol contract (test example)","catching events")))Dobře, už jsme vytvořili náš kontrakt na vysílání událostí. Jak se podívat výsledky transakce a „zachytit“ události? Knihovna web3.js poskytuje datovou strukturu, která obsahuje protokoly transakcí. V nich vidíme události způsobené transakcí.
+
+((("Truffle","running test transaction with")))Použijeme +truffle+ k provedení testovací transakce na upraveném kontraktu +Faucet+. Postupujte podle pokynů v <<truffle>> pro nastavení adresáře projektu a kompilaci kódu pass:[<span class="keep-together"><code>Faucet</code></span>]. Zdrojový kód naleznete v https://github.com/ethereumbook/ethereumbook[úložišti knihy na GitHubu] pod _code/truffle/FaucetEvents_.
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+truffle(develop)> <strong>compile</strong>
+truffle(develop)> <strong>migrate</strong>
+Using network 'develop'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xb77ceae7c3f5afb7fbe3a6c5974d352aa844f53f955ee7d707ef6f3f8e6b4e61
+  Migrations: 0x8cdaf0cd259887258bc13a92c0a6da92698644c0
+Saving successful migration to network...
+  ... 0xd7bc86d31bee32fa3988f1c1eabce403a1b5d570340a3a9cdba53a472ee8c956
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xfa850d754314c3fb83f43ca1fa6ee20bc9652d891c00a2f63fd43ab5bfb0d781
+  Faucet: 0x345ca3e014aaf5dca488057592ee47305d9b3e10
+Saving successful migration to network...
+  ... 0xf36163615f41ef7ed8f4a8f192149a0bf633fe1a2398ce001bf44c43dc7bdda0
+Saving artifacts...
+
+truffle(develop)> <strong>Faucet.deployed().then(i => {FaucetDeployed = i})</strong>
+truffle(develop)> <strong>FaucetDeployed.send(web3.utils.toWei(1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+truffle(develop)> <strong>FaucetDeployed.withdraw(web3.utils.toWei(0.1, "ether")).then(res => \
+                  { console.log(res.logs[0].event, res.logs[0].args) })</strong>
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+</pre>
+++++
+
+Po nasazení  kontraktu pomocí funkce +deployed+ provedeme dvě transakce. První transakcí je vklad (pomocí +send+), který v protokolech transakcí vysílá událost +Deposit+ v transakčním logu:
+
+----
+Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
+----
+
+Dále použijeme funkci +withdraw+ pro výběr. Toto vysílá událost +Withdrawal+:
+
+----
+Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
+----
+
+K získání těchto událostí jsme se podívali na pole protokolu (+log) + vrácené jako výsledek (+res+) transakcí. První položka protokolu (+logs[0]+) obsahuje název události v ++logs[0].event+ a parametry události v +logs[0].args+. Jejich zobrazením v příkazové řádce vidíme název vyslané události a její parametry.
+
+Události jsou velmi užitečným mechanismem, nejen pro komunikaci uvnitř kontraktu, ale také pro ladění během vývoje (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc20"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc19")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc18")))
+
+==== Volání dalších kontraktů (send, call, callcode, delegatecall)
+
+(("smart contracts","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc21", range="startofrange")))((("Solidity","calling other contracts from within a contract", id="ix_07smart-contracts-solidity-asciidoc22", range="startofrange")))Volání dalších kontraktů z vašeho kontraktu je velmi užitečnou, ale potenciálně nebezpečnou operací. Prověříme různé způsoby, jak toho dosáhnout, a vyhodnotíme rizika každé metody. Stručně řečeno, rizika vyplývají ze skutečnosti, že možná nevíte mnoho o kontraktu, který voláte nebo který volá váš kontrakt. Při psaní chytrých kontraktů musíte mít na paměti, že i když většinou můžete očekávat, že se budete zabývat EOA, nic nebrání tomu, aby svévolně složité a možná zhoubné kontrakty byly volány z vašeho kódu nebo váš kód volaly. 
+
+===== Vytvoření nové instance
+
+((("smart contracts","creating new instance")))Nejbezpečnějším způsobem, jak zavolat další kontrakt, je, pokud tento druhý kontrakt vytvoříte sami. Tímto způsobem jste si jisti jeho rozhraními a chováním. Chcete-li to provést, můžete jej jednoduše vytvořit pomocí klíčového slova +new+, jako v jiných objektově orientovaných jazycích. V Solidity klíčové slovo +new+ vytvoří kontrakt na bločence a vrátí objekt, který můžete použít k odkazování se na tento kontrakt. Řekněme, že chcete vytvořit a zavolat kontrakt +Faucet+  z jiného kontraktu nazvané +Token+:
+
+[role="pagebreak-before"]
+[source,solidity]
+----
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Tento mechanismus konstrukce kontraktů zajišťuje, že znáte přesný typ kontraktu a její rozhraní. Kontrakt +Faucet+ musí být definován v rámci +Token+, což můžete udělat s příkazem +import+, pokud je definice v jiném souboru:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = new Faucet();
+	}
+}
+----
+
+Při vytváření můžete volitelně zadat +hodnotu+ přenosu etheru a předat argumenty parametry novému kontraktu:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+}
+----
+
+Můžete také zavolat funkce +Faucet+. V tomto příkladu zavoláme funkci +destroy+ na +Faucet+. uvnitř funkce  +destroy+ v +Token+:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+	Faucet _faucet;
+
+	constructor() {
+		_faucet = (new Faucet).value(0.5 ether)();
+	}
+
+	function destroy() ownerOnly {
+		_faucet.destroy();
+	}
+}
+----
+
+Přestože jste vlastníkem kontraktu +Token+, kontrakt +Token+ vlastní nový kontrakt +Faucet+, takže ji může zničit pouze kontrakt +Faucet+.
+
+===== Adresování existující instance
+
+((("smart contracts","addressing an existing instance")))Dalším způsobem, jak můžete volat kontrakty, je použitím adresy existující instance kontraktu. U této metody použijete známé rozhraní na existující instanci. Je proto velmi důležité, abyste jistě věděli, že instance, kterou adresujete, je ve skutečnosti typu, který předpokládáte. Podívejme se na příklad:
+
+[source,solidity]
+----
+import "Faucet.sol";
+
+contract Token is mortal {
+
+	Faucet _faucet;
+
+	constructor(address _f) {
+		_faucet = Faucet(_f);
+		_faucet.withdraw(0.1 ether)
+	}
+}
+----
+
+Zde vezmeme adresu poskytnutou jako parametr konstruktoru +_f+ a vložíme ji do objektu +Faucet+. To je mnohem riskantnější než předchozí mechanismus, protože nevíme s jistotou, zda je tato adresa ve skutečnosti objektem +Faucet+. Když voláme +withdraw+, předpokládáme, že přijímá stejné parametry a provádí stejný kód jako naše deklarace +Faucet+, ale nemůžeme si být jisti. Víme pouze, že by funkce +withdraw+ zavolaná na této adrese mohla provést něco úplně jiného, než co očekáváme, i když je pojmenováno stejně. Použití adres předaných jako vstup a jejich vkládání do konkrétních objektů je proto mnohem nebezpečnější než, když si vytvoříme kontrakt sami.
+
+===== Call, delegatecall
+
+Solidity nabízí ještě více funkcí „nízké úrovně“ pro volání dalších kontraktů. Ty odpovídají přímo instrukcím EVM se stejným názvem a umožňují nám sestavit volání kontraktu z kontraktu ručně. Představují tedy nejflexibilnější a nejnebezpečnější mechanismy pro volání dalších smluv.
+
+((("smart contracts","call method", id="ix_07smart-contracts-solidity-asciidoc23", range="startofrange")))Zde je stejný příklad, při použití metody +call+:
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		_faucet.call("withdraw", 0.1 ether);
+	}
+}
+----
+
+((("blind calls")))Jak vidíte, tento typ volání +call+ je _slepé_ volání funkce, podobně jako při vytváření surové transakce, pouze z kontextu kontraktu. ((("reentrancy attacks","blind calls and")))Může to vystavit váš kontrakt řadě bezpečnostních rizik, zejména _opakovaného volání_, o nichž budeme podrobněji diskutovat v <<reentrancy_security>>. Funkce +call+  vrátí +false+, pokud dojde k problému, takže můžete vyhodnotit návratovou hodnotu pro zpracování chyb:
+
+[source,solidity]
+----
+contract Token is mortal {
+	constructor(address _faucet) {
+		if !(_faucet.call("withdraw", 0.1 ether)) {
+			revert("Withdrawal from faucet failed");
+		}
+	}
+}
+----
+
+((("delegatecall method")))((("smart contracts","delegatecall method")))Další variantou volání je +delegatecall+, která nahradila nebezpečnější +callcode+. Metoda pass:[<code><span class="keep-together">callcode</span></code>] bude brzy nepodporována, takže by se neměla používat.
+
+Jak je uvedeno v <<solidity_address_object>>, +delegatecall+ se liší od +call+ v tom, že se kontext zprávy +msg+ se nezmění. Například zatímco +call+ mění hodnotu +msg.sender+ na volací kontrakt, +delegatecall+ zachovává stejné +msg.sender+ jako ve volacím kontraktu. +Delegatecall+ v podstatě spouští kód jiného kontraktuv kontextu provádění aktuálního kontraktu. Nejčastěji se používá k vyvolání kódu z knihovny. Také vám umožňuje čerpat ze vzoru používání knihovních funkcí uložených jinde, ale nechat tento kód pracovat s datovým úložiště vašeho kontraktu.
+
+Volání +delegate+ by mělo být používáno s velkou opatrností. Může to mít neočekávané účinky, zejména pokud kontrakt, který voláte, nebyl navržena jako knihovna.
+
+Použijeme příklad kontraktu, abychom demonstrovali různé sémantiky volání, které používají +call+ a +delegatecall+ pro volání knihoven a kontrraktů. V <<call_examples_code>> pomocí události zaznamenáváme podrobnosti každého volání a sledujeme, jak se mění kontext volání v závislosti na typu volání.
+
+[[call_examples_code]]
+.CallExamples.sol: Příklad jiné sémantiky volání
+====
+[source,solidity,linenums]
+----
+include::code/truffle/CallExamples/contracts/CallExamples.sol[]
+----
+====
+
+Jak vidíte v tomto příkladu, naším hlavním kontraktem je +caller+, který volá knihovnu +calledLibrary+ a kontrakt +calledContract+. Jak volaná knihovna, tak smlouva mají identické funkce +calledFunction+, které vydávají událost +calledEvent+. Událost +calledEvent+ zaznamenává tři data: +msg.sender+, +tx.origin+, a +this+. Pokaždé, když je +calledFunction+ zavolána, může mít jiný  kontext volání (s potenciálně různými hodnotami pro všechny kontextové proměnné) v závislosti na tom, zda je volána přímo nebo prostřednictvím +delegatecall+.
+
+V +caller+ voláme nejprve kontrakt a knihovnu přímo zavoláním +calledFunction+ v každém z nich. Potom explicitně používáme nízkoúrovňové funkce +call+ a +delegatecall+ pro volání +calledContract.calledFunction+. Tímto způsobem můžeme vidět, jak se různé volající mechanismy chovají.
+
+Pojďme to spustit ve vývojovém prostředí Truffle a zachytit události, abychom viděli, jak to vypadá:
+
+++++
+<pre data-type="programlisting">
+truffle(develop)> <strong>migrate</strong>
+Using network 'develop'.
+[...]
+Saving artifacts...
+truffle(develop)> <strong>web3.eth.accounts[0]</strong>
+'0x627306090abab3a6e1400e9345bc60c78a8bef57'
+truffle(develop)> <strong>caller.address</strong>
+'0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+truffle(develop)> <strong>calledContract.address</strong>
+'0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+truffle(develop)> <strong>calledLibrary.address</strong>
+'0xf25186b5081ff5ce73482ad761db0eb0d25abfbf'
+truffle(develop)> <strong>caller.deployed().then( i => { callerDeployed = i })</strong>
+
+truffle(develop)> <strong>callerDeployed.make_calls(calledContract.address).then(res => \
+                  { res.logs.forEach( log => { console.log(log.args) })})</strong>
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+{ sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10' }
+{ sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+  from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f' }
+</pre>
+++++
+
+Uvidíme, co se tady stalo. Zavolali jsme funkci +make_calls+ a předali jsme adresu +calledContract+, pak jsme zachytili čtyři události, každá odvysílaná jiným voláním. Pojďme se podívat na funkci +make_calls+ a projít si každý krok.
+
+První volání je:
+
+----
+_calledContract.calledFunction();
+----
+
+Zde voláme přímo +calledContract.calledFunction+ pomocí vysokoúrovňového ABI pro +calledFunction+. Vysílaná událost je:
+
+----
+sender: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x345ca3e014aaf5dca488057592ee47305d9b3e10'
+----
+
+Jak vidíte, +msg.sender+ je adresa  kontraktu +caller+. V +tx.origin+ je adresa našeho účtu, +web3.eth.accounts [0]+, který odeslal transakci +caller+. Událost byla vyslána +calledContract+, jak můžeme vidět z posledního argumentu v události.
+
+Další volání  +make_calls+ je do knihovny:
+
+----
+calledLibrary.calledFunction();
+----
+
+Vypadá to identicky s tím, jak jsme volali kontrakt, ale chová se úplně jinak. Podívejme se na druhou odvysílanou událost:
+
+----
+sender: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+origin: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+from: '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
+----
+
+Tentokrát +msg.sender+ není adresa +caller+. Místo toho je to adresa našeho účtu a je stejná jako odesilatel transakce. Je to proto, že když zavoláte knihovnu, volání je vždy +delegatecall+ a probíhá v kontextu volajícího. Když tedy byl spuštěn kód +calledLibrary+, zdědil kontext provádění volajícího +caller+, jako by jeho kód běžel uvnitř +caller+. Proměnná +this+ (zobrazená jako +from+  v odvysílané události) je adresa +caller+, i když je přístupná z pass:[<span class="keep-together"><code>calledLibrary</code></span>].
+
+Další dvě nízkoúrovňová voláníi +call+ a +delegatecall+ ověřují naše očekávání a vysílají události, které odrážejí to, co jsme právě provedli.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc23"))) saw(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc22")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc21"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc10")))
+
+[[gas_sec]]
+=== Úvahy o plynu
+
+((("gas","conserving", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("smart contracts","gas considerations", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","gas considerations", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))Plyn, podrobněji popsaný v <<gas>>, je neuvěřitelně důležitým faktorem při programování chytrých kontraktů. Plyn je zdroj omezující maximální množství výpočtu, které Ethereum umožní transakci spotřebovat. Pokud je při výpočtu překročen limit plynu, dojde k následující sérii událostí:
+
+* Vyhodí se výjimka „došel plyn“.
+* Je obnoven (vrácen) stav kontraktu, jaký byl před jeho provedením. 
+* Veškerý ether používaný k platbě za plyn se považuje za transakční poplatek; _není_ vrácen.
+
+Protože plyn platí uživatel, který zahajuje transakci, uživatelé jsou odrazováni od volání funkcí, které mají vysoké náklady na plyn. Je tedy v nejlepším zájmu programátora minimalizovat náklady na plyn na funkce kontraktu. Za tímto účelem existují určité postupy, které se při vytváření chytrých kontraktů doporučují, aby se minimalizovaly náklady na plyn při volání funkce.
+
+==== Vyhněte se dynamické velikosti polí
+
+((("dynamically sized arrays")))((("gas","dynamically sized arrays and")))Jakýkoli cyklus skrz pole dynamické velikosti, kde funkce provádí operace s každým prvkem nebo hledá konkrétní prvek, zavádí riziko použití příliš velkého množství plynu. Ve skutečnosti může kontraktu dojít plyn před nalezením požadovaného výsledku nebo před  zpracování všech prvků, čímž ztrácí čas a ether, aniž by dával jakýkoli výsledek.
+
+==== Vyhněte se volání jiných kontraktů
+
+((("gas","avoiding calls to other contracts")))Volání jiných kontraktů, zejména pokud nejsou známy náklady na jejich funkce, představuje riziko vyčerpání plynu. Nepoužívejte knihovny, které nejsou dobře testovány a široce používány. Čím méně kontroly knihovna získala od jiných programátorů, tím větší je riziko jejího použití.
+
+==== Odhad nákladů na plyn
+
+((("gas","estimating cost of", id="ix_07smart-contracts-solidity-asciidoc27", range="startofrange")))Pokud potřebujete odhadnout plyn nezbytný k provedení určité metody kontraktu s ohledem na jeho parametry, můžete použít následující postup:
+
+[source, javascript]
+var contract = web3.eth.contract(abi).at(address);
+var gasEstimate = contract.myAweSomeMethod.estimateGas(arg1, arg2,
+    {from: account});
+
+Proměnná +gasEstimate+ vám řekne počet jednotek plynu potřebných k jeho provedení. Je to odhad kvůli Turingovské úplnosti EVM - je relativně jednoduché vytvořit funkci, která bude vyžadovat  naprosto různá množství plynu k provádění různých volání. Dokonce i rozumný kód může jemně změnit způsoby provádění, což vede k velmi rozdílným nákladům na plyn od jednoho volání k druhému. Většina funkcí je však rozumná a +estimateGas+ dá většinu času dobrý odhad.
+
+K získání ceny plynu ze sítě můžete použít:
+
+[source, javascript]
+var gasPrice = web3.eth.getGasPrice();
+
+A odtud můžete odhadnout náklady na plyn:
+
+[source, javascript]
+var gasCostInEther = web3.utils.fromWei((gasEstimate * gasPrice), 'ether');
+
+Použijeme naše funkce pro odhad ceny plynu na odhad nákladů na plyn našeho příkladu +Faucet+ pomocí kódu http://bit.ly/2zf0SIO[z úložiště knihy].
+
+Spusťte Truffle ve vývojovém režimu a spusťte JavaScript soubor v <<estimateGas_function>>, _gas_estimates.js_.
+
+[source, javascript]
+[[estimateGas_function]]
+.gas_estimates.js: Použití funkce estimateGas
+====
+[source,javascript]
+----
+var FaucetContract = artifacts.require("./Faucet.sol");
+
+FaucetContract.web3.eth.getGasPrice(function(error, result) {
+    var gasPrice = Number(result);
+    console.log("Gas Price is " + gasPrice + " wei"); // "10000000000000"
+
+// Získání instance smlouvy
+    FaucetContract.deployed().then(function(FaucetContractInstance) {
+
+		// K získání plynu použijte klíčové slovo „estimateGas“ za názvem funkce
+		// odhad pro tuto konkrétní funkci (aprove)
+		FaucetContractInstance.send(web3.utils.toWei(1, "ether"));
+        return FaucetContractInstance.withdraw.estimateGas(web3.utils.toWei(0.1, "ether"));
+
+    }).then(function(result) {
+        var gas = Number(result);
+
+        console.log("gas estimation = " + gas + " units");
+        console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
+        console.log("gas cost estimation = " +
+                FaucetContract.web3.utils.fromWei((gas * gasPrice), 'ether') + " ether");
+    });
+});
+----
+====
+
+Takto to vypadá vTruffle vývojářské příkazové řádce:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle develop</strong>
+
+truffle(develop)> <strong>exec gas_estimates.js</strong>
+Using network 'develop'.
+
+Gas Price is 20000000000 wei
+gas estimation = 31397 units
+gas cost estimation = 627940000000000 wei
+gas cost estimation = 0.00062794 ether
+</pre>
+++++
+
+Doporučujeme, abyste v rámci vývojového pracovního postupu vyhodnotili náklady na plyn na funkce, abyste předešli jakýmkoli překvapením při nasazování kontraktu do hlavní sítě.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc27"))).(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc26")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc25")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc24")))
+
+=== Závěry
+
+V této kapitole jsme začali podrobně pracovat s chytrými kontrakty a zkoumali jsme programovací jazyk kontraktů Solidity. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc4")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc3"))) Vzali jsme jednoduchý příklad kontraktu, _Faucet.sol_, a postupně jsme ho vylepšili a zkomplikovali, abychom ho použili k prozkoumání různých aspektů jazyka Solidity. V <<vyper_chap>> budeme pracovat s Vyperem, dalším smluvně orientovaným programovacím jazykem. Porovnáme Vyper se Soliditu, ukážeme některé rozdíly v designu těchto dvou jazyků a prohloubíme naše porozumění programování chytrých kontraktů. (((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc0")))

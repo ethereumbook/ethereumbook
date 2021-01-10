@@ -1,0 +1,286 @@
+[[oracles_chap]]
+== Oracles
+
+((("oracles", id="ix_11oracles-asciidoc0", range="startofrange")))在本章中，我们讨论_oracles_，这是可以为以太坊智能合约提供外部数据源的系统。 预言机“Oracles”一词来自希腊神话，在希腊神话中是指与众神交流的人，他们可以看到未来的愿景。在区块链的背景下，Oracle是一个可以回答以太坊外部问题的系统。 ((("trustless systems", seealso="oracles")))理想情况下，oracle是一个无需信任_trustless_的系统，这意味着它们不需要被信任，因为它们基于分布式的原则进行操作。
+
+[[why_oracles]]
+===为什么需要预言机Oracles
+
+((("oracles","reasons for using")))以太坊虚拟机的一个关键组件是Ethereum虚拟机，它能够在遵从共识规则的前提下在以太坊分布式网络的任何节点上执行程序并更新以太坊状态。为了保持共识状态，EVM的执行必须是完全确定性的，并且仅基于以太坊的共享状态和已签名的交易。这有两个特别重要的结果：首先，EVM和智能合约无法使用任何内在的随机性源；第二点是，外部数据只能作为一个交易的数据引入。
+
+让我们进一步剖析这两个结果。要了解在EVM中禁止使用真正的随机函数为智能合约提供随机性的情况，请考虑执行此函数后对达成共识的尝试的影响：节点A将执行命令并代表 +3+ 智能合约在其存储中，而执行相同智能合约的节点B会存储 +7+。因此，尽管节点A和节点B在相同的上下文中运行了完全相同的代码，但它们对结果状态应该得出的结论是不同的。确实，每次评估智能合约时，都有可能获得不同的结果状态。如此一来，网络（其众多节点在世界各地独立运行）将无法就结果状态应达成分布式共识。在实践中，它将很快变得比本示例差得多，因为包括以太币ether转移在内的连锁效应将成倍增加。
+
+请注意，伪随机函数，例如密码安全的哈希函数（具有确定性，因此可以用于并且确实是EVM的一部分），对于许多应用程序来说还不够。以一个模拟硬币翻转以解决赌注的赌博游戏为例，这需要使正面或反面随机化-矿工可以通过玩游戏并仅将其交易包括在将赢得的区块中来获得优势。那么我们如何解决这个问题呢？好吧，所有节点都可以在已签名交易的内容上达成一致，因此可以将外部信息（包括随机性源，价格信息，天气预报等）引入发送到网络的交易的数据部分。但是，此类数据根本无法信任，因为它们来自无法验证的来源。因此，我们只是推迟了这个问题。我们使用Oracle来尝试解决这些问题，我们将在本章的其余部分中详细讨论这些问题。
+
+[[oracle_use_cases]]
+=== Oracle用例和示例
+
+((("oracles","use cases/examples")))理想情况下，Oracle最好能提供一种无需信任（或至少接近无需信任）的方式来获取外部（即“真实世界”或链下）信息，例如足球比赛的结果，黄金价格或真正的随机数，以便以太坊平台上的智能合约使用。它们还可以直接将数据安全地中继到DApp前端。因此，可以将Oracle视为一种弥合链下世界与智能合约之间的鸿沟的机制。允许智能合约根据实际事件和数据执行合约会极大地扩大其应用范围。但是，这也会给以太坊的安全模型带来外部风险。考虑一个“智能遗嘱”的合约，该合约在一个人死亡时分配资产。这是智能合约世界中经常讨论的问题，也突显了受信任的Oracle的风险。如果此类合约控制的可继承金额足够高，那么在所有者死亡之前，破解Oracle并触发资产分配的动机就非常高。
+
+请注意，某些Oracle提供基于特定私有数据源的信息，例如学历证书或政府证件。此类信息的来源（例如大学或政府部门）是完全可信任的，并且信息的真实性是主观的（真实性仅取决于对来源权威的确定）。这种情况下，由于不存在可独立验证的客观事实，所以无法可靠地（即无需信任源）提供此类数据。因此，我们将这些数据源包括在我们所谓的“ oracle”定义中，因为它们也为智能合约提供了数据桥梁。他们提供的数据通常采用证明形式，例如护照或成就记录。基于区块链的认证将成为未来区块链平台成功的重要部分，尤其是在验证身份或声誉的相关问题上，因此，探索如何由区块链平台来提供此类服务非常重要。
+
+oracle可能提供的其他一些数据示例包括：
+
+*来自物理来源（例如量子/热过程）的随机数/熵：例如，公平地选择彩票智能合约的赢家
+*与自然灾害相关的参数触发：例如，触发灾害相关的智能合约，例如用于地震相关的里氏标度测量。
+*汇率数据：例如，用于将加密货币与法定货币精确挂钩
+*资本市场数据：例如，通证化资产/证券的定价篮子
+*基准参考数据：例如，将利率纳入智能金融衍生工具中
+*静态/伪静态数据：安全标识符，国家/地区代码，货币代码等。
+*时间和间隔数据：用于基于精确时间测量的事件触发
+*气象数据：例如，基于天气预报的保险费计算
+*政治事件：用于预测市场解决方案
+*体育赛事：用于预测市场方案和虚拟体育项目的合约
+*地理位置数据：例如，用于跟踪供应链的数据
+*损害验证：用于保险合同
+*其他区块链上发生的事件：互操作性功能
+*以太币市场价格：例如，用法定货币定价燃料gas的预言机
+*航班统计信息：例如，团体和俱乐部用于机票拼单的统计信息
+
+
+在以下各节中，我们将研究可实现oracle的一些方法，包括基本oracle模式，计算型oracle，分散式oracle和如何在Solidity中实现oracle客户端。
+
+[[oracle_design_patterns]]
+=== Oracle设计模式
+
+((("oracles","design patterns", id="ix_11oracles-asciidoc1", range="startofrange")))根据定义，所有的预言机Oracles都需要提供一些关键功能。这些功能包括：
+
+*从链外来源收集数据。
+*通过签名消息在链上传输数据。
+*通过将数据放在智能合约的存储中来使其可被使用。
+
+一旦数据在智能合约的存储中可用，其他智能合约就可以通过oracle智能合约的“检索”功能中的消息调用来访问这些数据。以太坊节点或启用网络的客户端也可以通过“查看” oracle的存储直接访问这些数据。
+
+设置oracle的三种主要方法可以分为请求-响应_request-response_，传递pass：[ <span class="keep-together"><em>publish-subscribe</em></span> ]和实时读取_immediate-read_。
+
+((("immediate-read oracles")))((("oracles","immediate-read")))首先介绍最简单的实时读取_immediate-read_ Oracles。这类Oracle提供仅需立即做出决定的数据，例如“ __ethereumbook.info__的地址是什么？”或“此人是否超过18岁？”。那些希望查询此类数据的人倾向于“及时”查询。这类需求仅在需要信息时进行查找，而且可能不再会需要了。此类oracle的例子包括保存有关组织或由组织发布的数据的oracle，例如学历证书，拨号代码，机构成员身份，机场标识符，自我主权ID等。此类oracle在智能合约存储中一次性存储数据，由此其他智能合约可以使用对oracle合约的请求调用来查找它。这些oracle中的数据可能会更新。Oracle存储中的数据还可以通过启用了区块链的（例如，以太坊通过：[<span class="keep-together">客户端连接</span>]）应用程序直接查找，而不必经过交易程序，也不会产生交易的燃料gas成本。想要检查希望购买酒精饮料的顾客的年龄的商店可以以这种方式使用oracle。这种类型的oracle对可能需要运行和维护服务器来回答此类数据请求的组织或公司很有吸引力。注意，例如由于效率或隐私原因，由oracle存储的数据可能不是oracle正在提供的原始数据。一所大学可能会为过去的学生的学业成就证书设立一个oracle。但是，存储证书的全部详细信息（可能会占用所学课程的页面和达到的成绩）将是多余的。而是，证书的哈希就足够了。同样，政府可能希望将公民身份ID放到以太坊平台上，在此平台上，显然其中的细节需要保密。同样，对数据进行哈希处理（更仔细地讲，在带有随机数的Merkle树中）并将根哈希仅存储在智能合约的存储中将是构建此类服务的有效方法。
+
+((("oracles","publish-subscribe")))((("publish-subscribe oracles")))下一种设置是传递，即发布-订阅模式_publish–subscribe_，此类oracle可以有效地为数据的更改（可能定期或频繁）发送广播服务，不仅可以为链上的智能合约提供轮询服务，也可以由链下监控程序监测数据的更新。此类别的模式类似于RSS提要，WebSub等，当oracle中有信息更新时，会标志指示新数据，并通知“已订阅”的用户。感兴趣的各方必须轮询oracle以检查最新信息是否已更改，或者订阅oracle合约的更新并在更新发生时进行响应。例子包括价格信息，天气信息，经济或社会统计数据，交通数据等。在Web服务器的世界中，轮询效率非常低，但在区块链平台的点对点环境中却并非如此：以太坊客户端必须跟上状态更改，包括合约存储的更改，因此轮询数据更改是对同步客户端的本地调用。以太坊事件日志使应用程序特别容易查找oracle更新，因此该模式在某些方面甚至可以被视为“推送”服务。但是，如果轮询是通过智能合约完成的，这对于某些分散的应用程序可能是必需的（例如，在不可能有激活激励措施的情况下），则可能会产生大量的燃料gas支出。
+
+((("oracles","request-response")))((("request-response oracles"))) 请求-响应_request-response_类型最复杂。这种类型一般用于当数据空间太大而无法存储在智能合约之内，而且预计用户一次只需要整个数据集的一小部分的情况。同时也适用于数据提供商业务的模型。实际上，这样的oracle可以作为一个为链上智能合约和链下的基础架构提供数据监听、检索和返回服务的系统。分布式应用程序的数据请求通常是一个涉及多个步骤的异步过程。在这种模式下，首先，EOA调用分布式应用程序，从而与oracle智能合约中定义的函数功能进行交互。该函数向oracle发送请求，包括详细说明所请求数据的相关参数，和可能包括回调函数和调度参数的补充信息。一旦该请求被验证，oracle的请求即可以被视为oracle合约发出的EVM事件或状态变更；请求的参数就可以被用于执行链下数据源的实际查询。Oracle可能还需要为处理请求付费，为回调提供燃料费以及访问所请求数据的权限。最后，结果数据由oracle所有者签名，以证明数据在给定时间的有效性，并以事务处理方式直接或通过oracle合约交付给提出请求的去中心化应用程序。依照调度参数，oracle可以广播后续的交易，以规定的时间间隔更新数据（例如，日末价格信息）。
+
+请求-响应预言机的运行步骤可以总结如下：
+
+1.接收来自DApp的查询请求。
+2.解析查询请求。
+3.检查请求中是否提供了付款和数据访问的权限。
+4.从链外源检索相关数据（并在必要时对其进行加密）。
+5.签署包含数据的交易。
+6.将交易广播到网络。
+7.安排其他进一步的交易操作，例如通知等。
+
+一系列其他方案也是可能的。例如，可以从EOA请求数据并直接由EOA返回数据，从而无需使用Oracle智能合约。同样，请求和响应模式可以与启用了物联网的硬件传感器进行交互。因此，oracle可以是人员，软件或硬件。
+
+此处描述的请求-响应模式在客户端-服务器体系结构中很常见。尽管这是允许应用程序进行双向对话的有用消息传递模式，但在某些情况下可能不合适。例如，要求oracle提供利率的智能债券可能必须每天在请求-响应模式下请求数据，以确保利率始终正确。考虑到利率变化不频繁，这里的发布-订阅模式可能更合适，尤其是考虑到以太坊的有限带宽时。
+
+发布－订阅是一种模式，其中发布者（在此情况下为oracle）不直接将消息发送给接收者，而是将发布的消息归类为不同的类别。订户能够选择对一个或多个类别的兴趣，并仅检索那些感兴趣的消息。在这种模式下，oracle可能会在每次更改时将利率写入其自己的内部存储中。多个订阅的DApp可以简单地从oracle合约中读取它，从而减少对网络带宽的影响，同时最大程度地降低存储成本。
+
+((("broadcast (multicast) oracle")))((("multicast (broadcast) oracle")))((("oracles","broadcast/multicast")))I在广播或多播模式中，会将所有消息发布到某个频道，并且订阅合约将在各种订阅模式下收听该频道。例如，oracle可能会将消息发布到加密货币汇率通道。如果订阅智能合约需要按时间排序的信息（例如，移动平均计算），则可以请求频道的全部内容；另一个可能只需要最新价格即可计算现货价格。甲骨文不需要知道订阅通行证的身份时，可以使用广播模式：[<span class="keep-together">合约</span>]。(((range="endofrange", startref="ix_11oracles-asciidoc1")))
+
+[[data_authentication_sec]]
+===数据认证
+
+((("data authentication, oracles and")))((("oracles","and data authentication")))((("oracles","data authentication with")))假设我们通过 DApp查询到的数据既权威又值得信赖（一个重要的假设），仍然存在一个悬而未决的问题：鉴于oracle和请求-响应机制可能是由不同的实体操作的，我们如何才能信任该机制？数据在传输过程中极有可能被篡改，因此链下方法能够证明返回的数据的完整性至关重要。数据认证的两种常见方法是真实性证明_authenticityproofs_和可信赖运行环境_trusted execution environment_（TEE）。
+
+((("authenticity proofs")))真实性证明是未篡改数据的加密保证。基于各种证明技术（例如，数字签名的证明），它们有效地将信任从数据传送者转移到证明者（即证明的提供者）。通过在链上验证真实性证明，智能合约能够在对数据进行操作之前验证数据的完整性。 ((("Oraclize"))) http://www.oraclize.it/ [Oraclize]是利用各种真实性证明的oracle服务的示例。 (("TLSNotary proofs"))) TLSNotary证明是当前可用于从以太坊主网络进行数据查询的一种此类证明。 TLSNotary证明允许客户端向第三方提供客户端和服务器之间发生HTTPS Web流量的证据。虽然HTTPS本身是安全的，但它不支持数据签名。结果，TLSNotary证明依赖TLSNotary（通过PageSigner）签名。 TLSNotary证明利用传输层安全性（TLS）协议，使TLS主密钥（在访问数据后对数据进行签名）可以在以下三个方之间分配：服务器（oracle），被审核方（Oraclize）和审核员。 Oraclize使用Amazon Web Services（AWS）虚拟机实例作为审核器，可以验证该实例自实例化以来未经修改。该AWS实例存储TLSNotary机密，从而允许其提供诚实证明。尽管它提供了比纯粹的请求-响应机制更高的数据篡改保证，但这种方法确实需要假设Amazon本身不会篡改VM实例。
+
+((("TEEs (trusted execution environments)")))((("Town Crier")))((("trusted execution environments (TEEs)"))) http://www.town-crier.org/ [Town Crier]是基于TEE方法的经过身份验证的数据馈送的Oracle系统；这种方法利用基于硬件的安全区域来确保数据完整性。 Town Crier使用Intel的((("SGX (Software Guard eXtensions)")))((("Software Guard eXtensions (SGX)"))) Software Guard eXtensions（SGX）确保来自HTTPS查询的响应可以被验证为真实。 SGX提供完整性保证，确保在非本地环境中运行的应用程序受到CPU的保护，以防止被其他任何进程篡改。它还提供机密性，确保在安全区域内运行时应用程序的状态对于其他进程是不透明的。最后，SGX通过生成数字签名证明来证明应用程序（该应用程序通过其构建的哈希值安全地标识）实际上在某个区域中运行。通过验证此数字签名，分布式应用程序可以证明Town Crier实例在SGX的非本地环境中安全运行。反过来，这证明该实例未被篡改，因此Town Crier发出的数据是真实的。机密性属性还允许Town Crier处理数据，方法是允许使用Town Crier实例的公钥对数据查询进行加密。在诸如SGX之类的飞地中运行oracle的查询/响应机制，可以有效地使我们认为它在受信任的第三方硬件上安全运行，从而确保返回的请求数据不受任何篡改（假设我们信任Intel / SGX）。
+
+[[computation_oracles_sec]]
+===计算型Oracle
+
+((("oracles","computation oracles", id="ix_11oracles-asciidoc2", range="startofrange")))到目前为止，我们仅讨论了oracle在请求和传递数据的上下文中的作用。但是，oracle也可以用于执行各种计算工作。如果考虑到以太坊固有的区块燃料gas限制和相对昂贵的计算成本，那么该功能将特别有用。计算型oracle不仅可以传递查询结果，还可以对一组输入进行计算，并返回计算结果，而这些计算可能无法在链上进行。例如，可以使用计算型oracle来执行计算繁重的回归计算，以估算债券合约的收益。
+
+((("Oraclize")))如果你愿意信任中心化但可审核的服务，则可以再次访问Oraclize。他们提供的服务允许分布式应用程序请求在沙盒式AWS虚拟机中执行的计算输出。 AWS实例从用户配置的Dockerfile中创建一个可执行容器，该Dockerfile打包在一个归档文件中，该归档文件已上载到行星际文件系统（IPFS；请参阅<<data_storage_sec>>）。根据要求，Oraclize使用其哈希值检索此存档，然后在AWS上初始化并执行Docker容器，将提供给应用程序的所有参数作为环境变量传递。容器化的应用程序在受时间限制的情况下执行计算，并将结果写入标准输出，Oraclize可以在其中将结果检索出来并返回给分布式应用程序。 Oraclize当前在可审核的t2.micro AWS实例上提供此服务，因此，如果计算的价值微不足道，则可以检查是否执行了正确的Docker容器。但是，这不是真正的去中心化解决方案。
+
+((("cryplet")))“小密码”作为可验证的oracle事实的标准的概念已正式确定为Microsoft更广泛的ESC框架的一部分。 Cryptlet在加密的胶囊中执行，该胶囊抽象化基础结构（例如I / O），并附加了CryptoDelegate，因此可以自动签名，验证和验证传入和传出的消息。 Cryptlet支持分布式事务，因此合约逻辑可以以ACID方式进行复杂的多步骤，多区块链和外部系统事务。这允许开发人员创建用于智能合约的可移植的，独立的和私有的真实性解决方案。加密程序遵循此处显示的格式：
+
+[source,solidity]
+----
+public class SampleContractCryptlet : Cryptlet
+  {
+        public SampleContractCryptlet(Guid id, Guid bindingId, string name,
+            string address, IContainerServices hostContainer, bool contract)
+            : base(id, bindingId, name, address, hostContainer, contract)
+        {
+            MessageApi = new CryptletMessageApi(GetType().FullName,
+                new SampleContractConstructor())
+----
+
+((("TrueBit")))有关更去中心化的解决方案，我们可以参考 https://truebit.io/[TrueBit]，它提供了可伸缩且可验证的链外计算解决方案。它是由一系列解答器和验证器组成的系统，分别受到激励来执行计算和验证这些计算。如果解决方案受到挑战，则会在链上执行对计算子集的迭代验证过程，这是一种“验证游戏”。游戏进行一系列回合，每个回合都递归检查越来越小的计算子集。游戏最终进入最后一轮，在那一轮的挑战中，挑战变得微不足道，以至于以太坊矿工的裁判们可以最终确定是否在链上应对挑战。实际上，TrueBit是计算市场的一种实现，它允许分布式的应用程序为在网络外部执行的可验证计算付费，但要依靠以太坊来执行验证游戏的规则。从理论上讲，这使无需信任的智能合约能够安全地执行任何计算任务。
+
+True机器之类的系统存在广泛的应用，范围涵盖从机器学习到工作量证明。后者的一个示例是Doge-Ethereum桥，该桥使用TrueBit来验证Dogecoin的工作量证明（Scrypt），这是一种难以存储且计算量大的功能，无法在以太坊区块限制范围内进行计算。通过在TrueBit上执行此验证，可以在以太坊的Rinkeby测试网上的智能合约中安全地验证Dogecoin交易。(((range="endofrange", startref="ix_11oracles-asciidoc2")))
+
+[[decentralized_orackes_sec]]
+===分布式的Oracle
+
+((("oracles","decentralized")))虽然集中式数据或计算型oracles可以满足许多应用程序的需求，但它们代表了以太坊网络中的单点故障。围绕分布式oracle的想法已经提出了许多方案，以确保数据的可用性以及使用链上数据聚合系统创建单个数据提供者的网络。
+
+((("ChainLink"))) https://www.smartcontract.com/link [ChainLink]提出了一个分布式的oracle网络，该网络由三个关键的智能合约组成：信誉合约，订单匹配合约和聚合合约；以及数据提供商的链下注册表。信誉合约用于跟踪数据提供者的绩效。信誉合约中的分数用于填充链下注册表。订单匹配合同使用信誉合约从Oracle中选择出价。然后，它最终确定一个服务级别协议，其中包括查询参数和所需的Oracle数量。这意味着购买者无需直接与各个Oracle进行交易。聚合合约从多个预言机收集响应（使用提交-披露方案提交），计算查询的最终汇总结果，最后将结果反馈回信誉合约。
+
+这种去中心化方法的主要挑战之一是聚合函数的制定。 ChainLink建议计算加权响应，从而允许为每个预言响应报告有效性分数。在这里检测“无效”分数是不平凡的，因为它依赖于这样一个前提，即通过与对等方提供的响应的偏差来衡量的外围数据点是错误的。根据响应分布中oracle响应的位置来计算有效性分数可能会给正确答案带来超过平均答案的惩罚。因此，ChainLink提供了一组标准的聚合合约，但也允许指定自定义的聚合合约。
+
+((("SchellingCoin protocol"))) 一个相关的想法是SchellingCoin协议。协议要求多个参与者报告值，并且中位数被视为“正确”答案。参与者提交报告时需要支付保证金，保证金将被用于支付给更接近中位数的值，从而激励报告类似于其他值的值。一个普通的值，也称为Schelling点，被调查者可能会认为这是自然且显而易见的目标，围绕该目标进行协调可望接近实际值。
+
+TrueBit的Jason Teutsch最近提出了一种用于分布式脱链数据可用性oracle的新设计。该设计利用了专用的工作量证明区块链，该区块链能够正确报告在给定时期内是否有注册数据可用。矿工将通过下载，存储和传播所有当前注册的数据，从而保证数据在本地可用。尽管每个挖掘节点存储和传播所有注册数据会导致这样的系统很昂贵，但是该系统允许在注册期结束后通过释放数据来重用存储。
+
+[[oracle_client_interfaces_in_solidity_sec]]
+=== Solidity中的Oracle客户端接口
+
+((("oracles","client interfaces in Solidity", id="ix_11oracles-asciidoc3", range="startofrange")))((("Oraclize", id="ix_11oracles-asciidoc4", range="startofrange")))((("Solidity","oracle client interfaces in", id="ix_11oracles-asciidoc5", range="startofrange"))) <<using_oraclize_to_update_the_eth_usd>>是一个Solidity的例子，演示如何使用Oraclize从API连续轮询ETH/USD价格并以可用方式存储结果。
+
+[[using_oraclize_to_update_the_eth_usd]]
+.使用Oraclize从外部来源更新ETH/USD汇率
+====
+[source,solidity]
+----
+/*
+   ETH/USD price ticker leveraging CryptoCompare API
+
+   This contract keeps in storage an updated ETH/USD price,
+   which is updated every 10 minutes.
+ */
+
+pragma solidity ^0.4.1;
+import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
+
+/*
+   "oraclize_" prepended methods indicate inheritance from "usingOraclize"
+ */
+contract EthUsdPriceTicker is usingOraclize {
+
+    uint public ethUsd;
+
+    event newOraclizeQuery(string description);
+    event newCallbackResult(string result);
+
+    function EthUsdPriceTicker() payable {
+        // signals TLSN proof generation and storage on IPFS
+        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+
+        // requests query
+        queryTicker();
+    }
+
+    function __callback(bytes32 _queryId, string _result, bytes _proof) public {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        newCallbackResult(_result);
+
+        /*
+         * Parse the result string into an unsigned integer for on-chain use.
+         * Uses inherited "parseInt" helper from "usingOraclize", allowing for
+         * a string result such as "123.45" to be converted to uint 12345.
+         */
+        ethUsd = parseInt(_result, 2);
+
+        // called from callback since we're polling the price
+        queryTicker();
+    }
+
+    function queryTicker() external payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH
+                to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the
+                answer...");
+
+            // query params are (delay in seconds, datasource type,
+            // datasource argument)
+            // specifies JSONPath, to fetch specific portion of JSON API result
+            oraclize_query(60 * 10, "URL",
+                "json(https://min-api.cryptocompare.com/data/price?\
+                fsym=ETH&tsyms=USD,EUR,GBP).USD");
+        }
+    }
+}
+----
+====
+
+要与Oraclize集成，合约 +EthUsdPriceTicker+ 必须是pass的子合约：[ <span class="keep-together"><code>usingOraclize</code></span> ]; +usingOraclize+ 合约在_oraclizeAPI_文件中定义。数据请求使用 +oraclize_query+ 函数进行，该函数继承自 +usingOraclize+ 合约。这是一个重载函数，至少需要两个参数：
+
+*支持可用的数据源，例如URL，WolframAlpha，IPFS或计算
+*给定数据源的参数，可能包括使用JSON或XML解析帮助器
+
+价格查询在+queryTicker+函数中执行。为了执行查询，Oraclize要求支付一小笔以太币的费用，以支付处理结果并将其传输到 +pass：[__] callback+ 函数的燃料gas成本以及该服务的附加费用。此数量取决于数据源以及（在指定的情况下）所需的真实性证明的类型。检索到数据后，由Oraclize控制的帐户有权执行 +pass：[__] callback+ 函数进行回调；它传入响应值和一个唯一的查询 +queryId+ 参数，例如，该参数可用于处理和跟踪来自Oraclize的多个等待的回调。
+
+((("BlockOne IQ")))金融数据提供商Thomson Reuters还为以太坊提供了一项称为BlockOne IQ的oracle服务，允许在专用或许可网络上运行的智能合约请求市场和参考数据。 <<contract_calling_the_blockone_iq_service_for_market_data>> 显示oracle的界面，以及将发出请求的客户合约。
+
+[[contract_calling_the_blockone_iq_service_for_market_data]]
+.合约调用BlockOne IQ服务获取市场数据
+====
+[source,solidity]
+----
+pragma solidity ^0.4.11;
+
+contract Oracle {
+    uint256 public divisor;
+    function initRequest(
+       uint256 queryType, function(uint256) external onSuccess,
+       function(uint256
+    ) external onFailure) public returns (uint256 id);
+    function addArgumentToRequestUint(uint256 id, bytes32 name, uint256 arg) public;
+    function addArgumentToRequestString(uint256 id, bytes32 name, bytes32 arg)
+        public;
+    function executeRequest(uint256 id) public;
+    function getResponseUint(uint256 id, bytes32 name) public constant
+        returns(uint256);
+    function getResponseString(uint256 id, bytes32 name) public constant
+        returns(bytes32);
+    function getResponseError(uint256 id) public constant returns(bytes32);
+    function deleteResponse(uint256 id) public constant;
+}
+
+contract OracleB1IQClient {
+
+    Oracle private oracle;
+    event LogError(bytes32 description);
+
+    function OracleB1IQClient(address addr) external payable {
+        oracle = Oracle(addr);
+        getIntraday("IBM", now);
+    }
+
+    function getIntraday(bytes32 ric, uint256 timestamp) public {
+        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
+        oracle.addArgumentToRequestString(id, "symbol", ric);
+        oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
+        oracle.executeRequest(id);
+    }
+
+    function handleSuccess(uint256 id) public {
+        assert(msg.sender == address(oracle));
+        bytes32 ric = oracle.getResponseString(id, "symbol");
+        uint256 open = oracle.getResponseUint(id, "open");
+        uint256 high = oracle.getResponseUint(id, "high");
+        uint256 low = oracle.getResponseUint(id, "low");
+        uint256 close = oracle.getResponseUint(id, "close");
+        uint256 bid = oracle.getResponseUint(id, "bid");
+        uint256 ask = oracle.getResponseUint(id, "ask");
+        uint256 timestamp = oracle.getResponseUint(id, "timestamp");
+        oracle.deleteResponse(id);
+        // Do something with the price data
+    }
+
+    function handleFailure(uint256 id) public {
+        assert(msg.sender == address(oracle));
+        bytes32 error = oracle.getResponseError(id);
+        oracle.deleteResponse(id);
+        emit LogError(error);
+    }
+
+}
+----
+====
+
+数据请求使用 +initRequest+ 函数启动，该函数除了两个回调函数外，还可以指定查询类型（在此示例中，为盘中价格请求）。
+这将返回 +uint256+ 标识符，该标识符随后可用于提供其他参数。 +addArgumentToRequestString+ 函数用于指定路透工具代码（RIC）（此处为IBM股票），并通过：[ <span class="keep-together"><code>addArgumentToRequestUint</code></span> ]允许指定时间戳。现在，为 +block.timestamp+ 传递别名将检索IBM的当前价格。然后，该请求由 +executeRequest+ 函数执行。处理完请求后，oracle合同将使用查询标识符调用 +onSuccess+ 回调函数，从而允许检索结果数据；如果检索失败，则pass：[ <span class="keep-together"><code>onFailure</code></span> ]回调将返回错误代码。成功获取的可用字段包括 +open+，+high+，+low+，+close+（OHLC）和 +bid+ / +ask+ 价格。(((range="endofrange", startref="ix_11oracles-asciidoc5")))(((range="endofrange", startref="ix_11oracles-asciidoc4")))(((range="endofrange", startref="ix_11oracles-asciidoc3")))
+
+
+===本章小结
+
+如你所见，Oracle为智能合约提供了至关重要的服务：它们将外部事实带到了合约执行中。当然，这也给Oracle带来了巨大的风险。如果Oracle被信任的同时，遭到破坏，则可能导致依赖于它们的智能合约的执行受到破坏。
+
+通常而言，在考虑使用Oracle时，请特别注意_trust model_。如果你默认Oracle是可以信任的，则可能将智能合约暴露给潜在的错误输入，从而破坏了合约的安全性。就是说，如果能够仔细考虑并保证安全性，Oracle将非常有用。
+
+去中心化的Oracle可以解决上面提到的一些问题，并为以太坊智能合约提供不受信任的外部数据。如果你仔细使用，就可以通过Oracle为以太坊和“真实世界”之间建立起桥梁。(((range="endofrange", startref="ix_11oracles-asciidoc0")))

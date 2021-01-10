@@ -1,0 +1,685 @@
+[[evm_chapter]]
+== Mesin Maya Ethereum
+
+((("EVM (Ethereum Virtual Machine)", id="ix_13evm-asciidoc0", range="startofrange")))Di tengah-tengah protokol Ethereum dan operasi ialah Mesin Maya Ethereum atau EVM untuk jangka pendek. Seperti yang anda boleh meneka dari namanya, ia adalah enjin pengiraan, tidak terlalu berbeza dengan mesin maya Microsoft. NET Framework, atau penterjemah bahasa pemprograman kod bait-tersusun lain seperti Java. Dalam bab ini kita melihat rupa terperinci EVM, termasuk set arahan, struktur, dan operasi, dalam konteks kemas kini tingkah laku Ethereum.
+
+[[evm_description]]
+=== Apakah EVM itu?
+((("EVM (Ethereum Virtual Machine)","about")))EVM adalah sebahagian daripada Ethereum yang mengendalikan penggunaan kontrak pintar dan pelaksanaan. Transaksi pemindahan nilai mudah dari satu EOA kepada yang lain tidak perlu melibatkannya, secara praktikal, tetapi segala-galanya akan melibatkan kemas kini penyata yang dikira oleh EVM. Pada tahap yang tinggi, EVM yang berjalan di blok Ethereum boleh dianggap sebagai komputer yang bukan terpusat secara global yang mengandungi berjuta-juta objek yang boleh melaksanakan, masing-masing mempunyai stor data tetapnya sendiri.
+
+((("Turing completeness","EVM and")))EVM ialah mesin tingkah laku kuasi-Turing-sempurna; "kuasi" (quasi) kerana semua proses pelaksanaan adalah terhad kepada beberapa langkah pengiraan terhingga dengan jumlah gas yang tersedia untuk pelaksanaan kontrak pintar yang diberikan. Oleh itu, masalah sistem terhenti dapat "diselesaikan"(semua pelaksanaan program akan dihentikan) dan situasi di mana pelaksanaan mungkin (secara tidak sengaja atau dengan jahat) berjalan selama-lamanya, sehingga membawa platform Ethereum berhenti keseluruhannya, dapat dielakkan.
+
+EVM mempunyai senibina berdasarkan longgokan, menyimpan semua nilai ingatan pada timbunan. Ia berfungsi dengan saiz perkataan 256 bit (terutamanya untuk memudahkan operasi cincangan asli dan lengkung elips) dan mempunyai beberapa komponen data yang dapat dialamatkan:
+
+[role="pagebreak-before"]
+* _Kod program ROM_ tidak berubah, dimuatkan dengan kod bait kontrak pintar untuk dilaksanakan
+* Sebuah _memori_ yang bergerak tidak menentu (votaliti), dengan setiap lokasi secara terang-terangan dimulakan menjadi sifar
+* Sebuah _penyimpanan_ kekal yang merupakan sebahagian daripada penyata Ethereum, juga bersifat sifar
+
+Terdapat juga satu set pembolehubah persekitaran dan data yang tersedia semasa pelaksanaan. Kami akan meneruskannya dengan lebih terperinci kemudian dalam bab ini.
+
+<<evm_architecture>> menunjukkan senibina EVM dan konteks pelaksanaan.
+
+[[evm_architecture]]
+.Senibina dan Konteks Pelaksanaan Mesin Mayar Ethereum (EVM)
+image::images/evm-architecture.png["Senibina dan Pelaksanaan Konteks Mesin Maya Ethereum (EVM)"]
+
+[[evm_comparison]]
+==== Perbandingan dengan Teknologi Sedia Ada
+
+((("EVM (Ethereum Virtual Machine)","comparison with existing technology")))Istilah "mesin maya" sering digunakan untuk memayakan komputer sebenar, biasanya oleh pengurusan mesin maya yakni "hypervisor" seperti VirtualBox atau QEMU, atau contoh keseluruhan sistem operasi, seperti KVM Linux. Ia haruslah menyediakan perkakasan sebenar perisian abstrak masing-masing, serta panggilan sistem dan fungsi kernel yang lain.
+
+EVM beroperasi di dalam domain yang lebih terhad: ia hanya enjin pengiraan, antaranya menyediakan abstraks hanya pengiraan dan penyimpanan, sama dengan ukuran Java Virtual Machine (JVM), sebagai contoh. Dari sudut pandangan tinggi, JVM direka untuk menyediakan persekitaran waktu-jalan (runtime) yang berupa kebendaan dari OS atau perkakasan hos yang mendasari, yang membolehkan keserasian merentasi pelbagai sistem. Bahasa pengaturcaraan peringkat tinggi seperti Java atau Scala (yang menggunakan JVM) atau C# (yang menggunakan .NET) disusun ke dalam set arahan kod bait mesin maya masing-masing. Dengan cara yang sama, EVM melaksanakan sendiri arahan kandungan kod bait (diterangkan dalam bahagian seterusnya), yang mana bahasa pengaturcaraan kontrak pintar peringkat tinggi seperti LLL, Serpent, Mutan, atau Solidity dikumpulkan.
+
+Oleh itu, EVM tidak mempunyai keupayaan penjadualan, kerana pesanan pelaksanaan diatur secara luaran untuk klien Ethereum yang dijalankan melalui urus niaga blok yang disahkan untuk menentukan kontrak pintar mana yang perlu dilaksanakan dan di mana pesanan. Dalam pengertian ini, komputer dunia Ethereum adalah satu-unsur, seperti JavaScript. EVM juga tidak mempunyai "antara muka sistem" yang mengendalikan atau &#x201c;sokongan perkakasan&#x201d;&#x2014; tidak ada mesin fizikal untuk memaparkan antara muka. Komputer dunia Ethereum benar-benar maya.
+
+[[evm_bytecode_overview]]
+==== Kumpulan Arahan EVM (Operasi Kod Bait)
+
+((("bytecode operations", id="ix_13evm-asciidoc1", range="startofrange")))((("EVM (Ethereum Virtual Machine)","instruction set (bytecode operations)", id="ix_13evm-asciidoc2", range="startofrange")))((("EVM bytecode","instruction set", id="ix_13evm-asciidoc3", range="startofrange")))Set arahan EVM menawarkan operasi yang mungkin dijangkakan, termasuklah:
+
+* Operasi logik aritmetik dan bitwise
+* Pertanyaan konteks pelaksanaan
+* Longgokan, memori, dan akses storan
+* Mengawal aliran operasi
+* Mendaftar, memanggil, dan pengendali lain
+
+Sebagai tambahan kepada operasi kod bait yang sama, EVM juga mempunyai akses kepada maklumat akaun (misalnya, alamat dan keseimbangan) dan maklumat blok (misalnya, nombor blok dan harga gas semasa).
+
+Mari kita mulakan penjelajahan EVM dengan lebih terperinci dengan melihat pilihan yang tersedia dan apa yang mereka lakukan. Seperti yang anda jangkakan, semua pengendali diambil dari timbunan (stack), dan kerap hasilnya (jika berkenaan).
+diletakkan kembali di bahagian atas timbunan.
+
+[NOTA]
+====
+Senarai lengkap kos operasi dan kos gas sepadannya boleh didapati di <<evm_opcodes>>.
+====
+
+Opsyen yang tersedia boleh dibahagikan kepada kategori berikut:
+
+[[arithmetic_opcodes]]
+Operasi aritmetik :: Petunjuk opcode aritmetik:
++
+----
+TAMBAH // Tambah dua item stack teratas
+MUL // Multiply dua item stack teratas
+SUB // Kurangkan dua item stack teratas
+DIV // Pembahagian integer
+SDIV // Pembahagian integer yang ditandatangani
+Mod // Modulo (baki) operasi
+SMOD // Memulakan modulo operasi
+ADDMOD // Penambahan modulo sebarang nombor
+MULMOD // Pendalikan modulo sebarang nombor
+EXP // Operasi eksponen
+SIGNEXTEND // Memperpanjang panjang pelengkap dua yang ditandatangani integer
+SHA3 // Hitung kecacatan keccak-256 blok memori
+----
++
+Perhatikan bahawa semua aritmetik dilakukan modulo 2 ^ 256 ^ (melainkan dinyatakan sebaliknya), dan bahawa kuasa zeroth sifar, 0 ^ 0 ^, diambil untuk menjadi 1.
+
+
+[[stack_opcodes]]
+Operasi tumpukan: • Stack, memori, dan arahan pengurusan storan:
++
+----
+POP // Alih keluar item teratas dari timbunan
+Move // Muatkan perkataan dari ingatan
+MSTORE // Menyimpan kata ke ingatan
+MSTORE8 // Simpan bait ke ingatan
+SLOAD // Muatkan perkataan dari storan
+SSTORE // Simpan perkataan untuk simpanan
+MSIZE // Dapatkan saiz memori aktif dalam bait
+PUSHx // Letakkan item x byte pada timbunan, di mana x boleh menjadi bilangan integer dari
+// 1 hingga 32 (kata penuh) inklusif
+DUPx // Duplikat item tumpukan x-th, di mana x boleh menjadi sebarang integer dari
+// 1 hingga 16 termasuk
+SWAPx // Pindah item 1st dan (x + 1) -th stack, di mana x boleh menjadi apa-apa
+// integer dari 1 ke 16 inklusif
+----
+
+
+[[flow_opcodes]]
+Operasi aliran proses :: Arahan untuk aliran kawalan:
++
+----
+STOP // Menghentikan pelaksanaan
+JUMP // Tetapkan kaunter program untuk sebarang nilai
+JUMPI // Mengubah keadaan di kaunter program
+PC // Dapatkan nilai kaunter program (sebelum kenaikan
+// sepadan dengan arahan ini)
+JUMPDEST // Tandakan destinasi yang sah untuk melompat
+----
+
+[[system_opcodes]]
+Operasi sistem :: Opcodes untuk sistem yang melaksanakan program:
++
+----
+LOGx // Tambah rekod log dengan topik x, di mana x adalah sebarang integer
+// dari 0 hingga 4 termasuk
+LAKUKAN // Buat akaun baru dengan kod yang berkaitan
+CALL // Panggilan mesej ke dalam akaun lain, iaitu menjalankan yang lain
+// // akaun akaun
+CALLCODE // Mesej panggilan ke akaun ini dengan yang lain
+// // akaun akaun
+Kembalikan // Menamatkan pelaksanaan dan kembali data output
+DELEGATECALL // Panggilan mesej ke dalam akaun ini dengan alternatif
+/ // kod akaun, tetapi berterusan nilai semasa untuk
+// pengirim dan nilai
+STATICCALL // Mesej statik-memanggil ke akaun
+REVERT // Menghentikan pelaksanaan, memulihkan perubahan keadaan tetapi kembali
+// data dan gas yang tinggal
+INVALID // Arahan tidak sah yang ditetapkan
+SELFDESTRUCT // Menghentikan pelaksanaan dan mendaftarkan akaun untuk penghapusan
+----
+
+[[logic_opcides]]
+Operasi logik :: Opcodes untuk perbandingan dan logik bitwise:
++
+----
+LT // Kurang daripada perbandingan
+GT // Greater-than comparison
+SLT // Menandatangani kurang daripada perbandingan
+SGT // Menandatangani lebih besar daripada perbandingan
+EQ // perbandingan kesetaraan
+ISZERO // Pengendali TIDAK TIDAK
+DAN // Bitwise AND operation
+ATAU // Bitwise ATAU operasi
+XOR // Operasi Bitwise XOR
+TIDAK / / Bitwise BUKAN operasi
+BYTE // Ambil satu byte dari perkataan 256-bit lebar lebar
+----
+
+[[environment_opcodes]]
+Operasi alam sekitar :: Opcodes berurusan dengan maklumat persekitaran pelaksanaan:
++
+----
+GAS // Dapatkan jumlah gas yang ada (selepas pengurangan untuk
+// arahan ini)
+ADDRESS // Dapatkan alamat akaun yang sedang dijalankan
+BAKI // Dapatkan baki akaun mana-mana akaun yang diberikan
+ORIGIN // Dapatkan alamat EOA yang memulakan EVM ini
+// pelaksanaan
+PANGGILAN // Dapatkan alamat pemanggil yang bertanggungjawab dengan segera
+// untuk pelaksanaan ini
+CALLVALUE // Dapatkan jumlah eter yang disimpan oleh pemanggil yang bertanggungjawab
+// untuk pelaksanaan ini
+CALLDATALOAD // Dapatkan data input yang dihantar oleh pemanggil yang bertanggungjawab
+// pelaksanaan ini
+CALLDATASIZE // Dapatkan saiz data input
+CALLDATACOPY // Salin data input ke memori
+CODESIZE // Dapatkan saiz kod yang berjalan dalam persekitaran semasa
+CODECOPY // Salin kod yang berjalan dalam lingkungan semasa ke
+// memori
+GASPRICE // Dapatkan harga gas yang ditentukan oleh yang berasal
+//transaksi
+EXTCODESIZE // Dapatkan saiz apa-apa kod akaun
+EXTCODECOPY // Salin sebarang kod akaun ke ingatan
+RETURNDATASIZE // Dapatkan saiz data output dari panggilan sebelumnya
+// dalam persekitaran semasa
+RETURNDATACOPY // Salin output data dari panggilan sebelumnya ke memori
+----
+
+[[block_opcodes]]
+Operasi blok :: Opcodes untuk mengakses maklumat pada blok semasa: (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc3&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc2&quot;)) ) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc1&quot;)))
++
+----
+BLOCKHASH // Dapatkan hash salah satu daripada 256 yang paling baru siap
+// blok
+COINBASE // Dapatkan alamat benefisiari blok untuk ganjaran blok
+TIMESTAMP // Dapatkan cap waktu blok
+NUMBER // Dapatkan nombor blok
+KEBERKESAN // Dapatkan kesulitan blok
+GASLIMIT // Dapatkan had gas blok
+----
+
+[[evm_state_descriptions]]
+==== Negeri Ethereum
+
+Tugas EVM ialah mengemaskini keadaan Ethereum dengan mengira peralihan keadaan yang sah hasil daripada pelaksanaan kod kontrak pintar, seperti yang ditakrifkan oleh Ethereum (Ethereum state Ethereum) protokol. Aspek ini membawa kepada deskripsi Ethereum sebagai mesin negara berasaskan _transaksi, yang mencerminkan hakikat bahawa pelaku luar (iaitu, pemegang akaun dan pelombong) memulakan peralihan negeri dengan membuat, menerima, dan memerintahkan transaksi. Ia berguna pada ketika ini untuk mempertimbangkan apa yang membentuk keadaan Ethereum.
+
+(((&quot;negara dunia&quot;))) Di peringkat teratas, kita mempunyai keadaan Ethereum _world. Negara dunia adalah pemetaan alamat Ethereum (nilai 160-bit) ke (((&quot;akaun&quot;, &quot;negara dunia dan&quot;))) _ akaun_. Pada tahap yang lebih rendah, setiap alamat Ethereum mewakili sebuah akaun yang terdiri daripada _balance_ eter (disimpan sebagai bilangan unggun), (&quot;&quot; &quot;and and and and and and and and and and the the the the the the yang dimiliki oleh akaun), _nonce_ (mewakili bilangan urus niaga yang berjaya dihantar dari akaun ini jika EOA, atau bilangan kontrak yang dibuat olehnya jika akaun kontrak), _storage_ (yang merupakan data tetap menyimpan, hanya digunakan oleh kontrak pintar), dan kod program _ akaun (sekali lagi, hanya jika akaun adalah akaun kontrak pintar). EOA akan sentiasa tidak mempunyai kod dan simpanan kosong.
+
+////
+TODO: gambarajah asas yang menunjukkan struktur pemetaan negara dan struktur akaun negara
+////
+
+Apabila hasil transaksi dalam pelaksanaan kod kontrak pintar, EVM diberikan instantiated dengan semua maklumat yang diperlukan berkaitan blok yang sedang dibuat dan transaksi tertentu diproses. Khususnya, kod program ROM EVM dimuatkan dengan kod akaun kontrak yang dipanggil, kaunter program ditetapkan ke sifar, penyimpanan dimuatkan dari penyimpanan akaun kontrak, memori ditetapkan kepada semua sifar, dan semua blok dan pembolehubah persekitaran ditetapkan. Pemboleh ubah utama ialah bekalan gas untuk pelaksanaan ini, yang ditetapkan kepada jumlah gas yang dibayarkan oleh pengirim pada permulaan transaksi (lihat &lt; <gas> &gt; untuk maklumat lanjut). Apabila pelaksanaan kod berlangsung, bekalan gas dikurangkan mengikut kos gas operasi yang dilaksanakan. Jika pada bila-bila masa bekalan gas dikurangkan kepada sifar, kami mendapat pengecualian &quot;Out of Gas&quot; (OOG); pelaksanaan segera dihentikan dan urus niaga ditinggalkan. Tidak ada perubahan pada keadaan Ethereum yang diterapkan, kecuali untuk nonce penghantar yang semakin meningkat dan baki eter mereka turun untuk membayar benefisiari blok untuk sumber yang digunakan untuk melaksanakan kod ke titik berhenti. Pada ketika ini, anda boleh memikirkan EVM berjalan pada salinan kotak pasir dunia Ethereum, dengan versi kotak pasir ini dibuang sepenuhnya jika pelaksanaan tidak dapat diselesaikan dengan alasan apa pun. Walau bagaimanapun, jika pelaksanaan dilaksanakan dengan jayanya, maka keadaan dunia sebenar dikemaskini agar sesuai dengan versi kotak pasir, termasuk apa-apa perubahan pada data penyimpanan kontrak yang dipanggil, sebarang kontrak baru yang dibuat, dan sebarang pemindahan baki eter yang dimulakan.
+
+Ambil perhatian bahawa kerana kontrak pintar dapat dengan berkesan memulakan transaksi, pelaksanaan kod adalah proses rekursif. Kontrak boleh memanggil kontrak lain, dengan setiap panggilan yang menghasilkan EVM yang lain disampaikan di sekitar target panggilan yang baru. Setiap instantiasi mempunyai keadaan dunia kotak pasir diasaskan dari kotak pasir EVM di peringkat di atas. Setiap instantiasi juga diberikan sejumlah gas untuk bekalan gasnya (tidak melebihi jumlah gas yang tersisa di peringkat di atas, tentu saja), dan oleh itu mungkin berhenti dengan pengecualian kerana diberi sedikit gas untuk menyelesaikan pelaksanaannya . Sekali lagi, dalam keadaan sedemikian, keadaan kotak pasir dibuang, dan pelaksanaan kembali ke EVM di tingkat atas.
+
+[[compiling_solidity_to_evm]]
+==== Menggabungkan Kepantasan kepada EVM Bytecode
+
+[[solc_help]]
+(&quot;(EVM (Mesin Maya Ethereum)&quot;, &quot;menyusun Soliditi ke EVt bytecode&quot;, id = &quot;ix_13evm-asciidoc4&quot;, range = &quot;startofrange&quot;)) , id = &quot;ix_13evm-asciidoc5&quot;, julat = &quot;startofrange&quot;))) (((&quot;Padanan&quot;, &quot;menyusun fail sumber ke EVt bytecode&quot;, id = &quot;startxrange&quot; Fail sumber pepejal ke EVt bytecode boleh dicapai melalui beberapa kaedah. Dalam &lt; <intro_chapter> &gt; kami menggunakan pengompil Remix dalam talian. Dalam bab ini, kami akan menggunakan + solc + yang boleh dieksekusi pada baris arahan. Untuk senarai opsyen, jalankan pas berikut: [ <span class="keep-together">command</span> ]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc - membantu</strong>
+</pre>
+++++
+
+[[solc_opcodes_option]]
+Menjana aliran opcode mentah fail sumber Soliditi dengan mudah dicapai dengan + - opcodes + pilihan baris perintah. Aliran opcode ini meninggalkan beberapa maklumat (pilihan + - asm + menghasilkan maklumat penuh), tetapi cukup untuk perbincangan ini. Sebagai contoh, menyusun contoh fail Pepejal, _Example.sol_, dan menghantar output opcode ke direktori bernama _BytecodeDir_ yang telah dicapai dengan arahan berikut:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --opcodes Example.sol</strong>
+</pre>
+++++
+
+atau:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --asm Example.sol</strong>
+</pre>
+++++
+
+[[solc_bin_option]]
+Perintah berikut akan menghasilkan biner bytecode untuk program contoh kami:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --bin Example.sol</strong>
+</pre>
+++++
+
+Fail opcode keluaran yang dihasilkan akan bergantung pada kontrak tertentu yang terkandung dalam fail sumber Solidity. Fail Pepejal mudah kami _Example.sol_ hanya mempunyai satu kontrak, bernama + contoh +:
+
+[[simple_solidity_example]]
+[source,solidity]
+----
+pragma solidity ^0.4.19;
+
+contract example {
+
+  address contractOwner;
+
+  function example() {
+    contractOwner = msg.sender;
+  }
+}
+----
+
+Seperti yang dapat anda lihat, semua kontrak ini adalah memegang satu pemboleh ubah keadaan yang berterusan, yang ditetapkan sebagai alamat akaun terakhir untuk menjalankan kontrak ini.
+
+Jika anda melihat direktori _BytecodeDir_ anda akan melihat fail opcode _example.opcode_, yang mengandungi arahan opcode EVM dari + contoh + kontrak. Membuka fail _example.opcode_ dalam editor teks akan menunjukkan perkara berikut:
+
+[[opcode_output]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1
+REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1
+0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1
+0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP
+0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5
+0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27
+EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
+----
+
+Menyusun contoh dengan pilihan + - asm + menghasilkan fail bernama _example.evm_ dalam direktori _BytecodeDir_ kami. Ini mengandungi penerangan peringkat sedikit lebih tinggi dari arahan bytecode EVM, bersama-sama dengan beberapa anotasi yang berguna:
+
+[[asm_output]]
+[source,solidity]
+----
+/* "Example.sol":26:132  contract example {... */
+  mstore(0x40, 0x60)
+    /* "Example.sol":74:130  function example() {... */
+  jumpi(tag_1, iszero(callvalue))
+  0x0
+  dup1
+  revert
+tag_1:
+    /* "Example.sol":115:125  msg.sender */
+  caller
+    /* "Example.sol":99:112  contractOwner */
+  0x0
+  dup1
+    /* "Example.sol":99:125  contractOwner = msg.sender */
+  0x100
+  exp
+  dup2
+  sload
+  dup2
+  0xffffffffffffffffffffffffffffffffffffffff
+  mul
+  not
+  and
+  swap1
+  dup4
+  0xffffffffffffffffffffffffffffffffffffffff
+  and
+  mul
+  or
+  swap1
+  sstore
+  pop
+    /* "Example.sol":26:132  contract example {... */
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x0
+  codecopy
+  0x0
+  return
+stop
+
+sub_0: assembly {
+        /* "Example.sol":26:132  contract example {... */
+      mstore(0x40, 0x60)
+      0x0
+      dup1
+      revert
+
+    auxdata: 0xa165627a7a7230582056b99dcb1edd3eece01f27c9649c5abcc14a435efe3b...
+}
+----
+
+The +--bin-runtime+ option produces the machine-readable hexadecimal bytecode:
+
+[[bin_output]]
+----
+60606040523415600e57600080fd5b336000806101000a81548173
+ffffffffffffffffffffffffffffffffffffffff
+021916908373
+ffffffffffffffffffffffffffffffffffffffff
+160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b...
+----
+
+Anda boleh menyiasat apa yang berlaku di sini secara terperinci menggunakan senarai opcode yang diberikan di &lt; <evm_bytecode_overview> &gt;. Walau bagaimanapun, itu tugas yang cukup, jadi mari kita mulakan dengan mengkaji empat arahan pertama:
+
+[[opcode_analysis_1]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE
+----
+
+Di sini kita ada + PUSH1 + diikuti oleh bait mentah nilai + 0x60 +. Arahan EVM ini mengambil satu byte berikut opcode dalam kod program (sebagai nilai literal) dan menolaknya ke timbunan. Adalah mungkin untuk menolak nilai saiz sehingga 32 bait ke timbunan, seperti dalam:
+
+----
+PUSH32 0x436f6e67726174756c6174696f6e732120536f6f6e20746f206d617374657221
+----
+
+Kedua + PUSH1 + opcode dari _example.opcode_ kedai + 0x40 + ke bahagian atas timbunan (menolak + 0x60 + sudah hadir di sana satu slot).
+
+Seterusnya ialah + MSTORE +, iaitu operasi kedai memori yang menjimatkan nilai kepada memori EVM. Ia memerlukan dua hujah dan, seperti kebanyakan operasi EVM, memperolehnya dari timbunan. Untuk setiap hujah timbunan itu lulus: [&quot;muncul&quot;;] iaitu, nilai teratas pada timbunan dimatikan dan semua nilai lain pada timbunan dipindahkan satu kedudukan. Argumen pertama untuk + MSTORE + ialah alamat perkataan dalam ingatan di mana nilai untuk disimpan akan diletakkan. Untuk program ini kita mempunyai + 0x40 + di bahagian atas timbunan, supaya dikeluarkan dari timbunan dan digunakan sebagai alamat ingatan. Hujah kedua adalah nilai untuk disimpan, iaitu + 0x60 + di sini. Selepas operasi + MSTORE + dilaksanakan, stack kami kosong sekali lagi, tetapi kami mempunyai nilai + 0x60 + (+96+ dalam perpuluhan) di lokasi memori + 0x40 +.
+
+Kod opsyen seterusnya ialah + CALLVALUE +, yang merupakan kod opcode alam sekitar yang menolak ke atas timbunan jumlah eter (diukur dalam wei) yang dihantar dengan panggilan mesej yang memulakan pelaksanaan ini.
+
+Kita boleh terus melangkah menerusi program ini dengan cara ini sehingga kita mempunyai pemahaman yang penuh mengenai perubahan keadaan peringkat rendah bahawa kesan kod ini, tetapi tidak akan membantu kita pada tahap ini. Kami akan kembali kepadanya kemudian dalam bab ini. (((Range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc6&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc5&quot; (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc4&quot;)))
+
+[[contract_deployment_code]]
+==== Kod Pelesenan Kontrak
+
+, (&quot;(EVM (Mesin Maya Ethereum)&quot;, &quot;kod penempatan kontrak&quot;, id = &quot;ix_13evm-asciidoc7&quot;, range = &quot;startofrange&quot; &quot;ix_13evm-asciidoc8&quot;, range = &quot;startofrange&quot;))) Terdapat perbezaan penting dan halus antara kod yang digunakan semasa membuat dan menggunakan kontrak baru pada platform Ethereum dan kod kontrak itu sendiri. Untuk membuat kontrak baru, transaksi khusus diperlukan yang mempunyai + untuk + bidang ditetapkan ke alamat + 0x0 + khas dan + data +nya ditetapkan ke kod _initiasi kontrak. Apabila urusniaga penciptaan kontrak tersebut diproses, kod untuk akaun kontrak baru adalah _not_ kod dalam bidang + data + transaksi. Sebaliknya, EVM diterjemahkan dengan kod dalam + data + bidang urusniaga yang dimuatkan ke dalam ROM kod programnya, dan kemudian output pelaksanaan kod penempatan itu diambil sebagai kod untuk akaun kontrak baru. Ini adalah supaya kontrak baru boleh dimulakan secara programatik menggunakan keadaan dunia Ethereum pada masa penggunaan, menetapkan nilai-nilai dalam simpanan kontrak dan juga menghantar eter atau membuat kontrak baru lagi.
+
+Apabila menyusun kontrak di luar talian, contohnya, menggunakan + solc + pada baris arahan, anda boleh mendapatkan _deployment bytecode_ atau _ bytecode_ _untuk.
+
+(bytecode penyebaran))) Penggunaan bytecode digunakan untuk setiap aspek inisialisasi akaun kontrak baru, termasuk bytecode yang sebenarnya akan dilaksanakan apabila transaksi memanggil kontrak baru ini (ie, runtime bytecode) dan kod untuk memulakan semua berdasarkan pembina kontrak.
+
+((&quot;runtime bytecode&quot;))) The bytecode runtime, sebaliknya, adalah bytecode yang akhirnya akan dilaksanakan apabila kontrak baru dipanggil, dan tidak ada lagi; ia tidak termasuk bytecode yang diperlukan untuk memulakan kontrak semasa penggunaan.
+
+Mari ambil kontrak _Faucet.sol_ yang kami buat tadi sebagai contoh:
+
+[[faucet_example]]
+[source,solidity]
+----
+// Versi pengkompilasi Soliditi program ini ditulis untuk
+pragma solidity ^0.4.19;
+
+// Kontrak pertama kita adalah faucet!
+contract Faucet {
+
+// Berikan ether kepada sesiapa yang bertanya
+fungsi menarik balik (withdraw_amount saya) awam {
+
+/ / Had jumlah pengeluaran
+      require(withdraw_amount <= 100000000000000000);
+
+      // Send the amount to the address that requested it
+      msg.sender.transfer(withdraw_amount);
+    }
+
+/ / Menerima jumlah masuk yang masuk
+  function () external payable {}
+
+}
+----
+
+Untuk mendapatkan penyebaran bytecode, kami akan menjalankan `solc --bin Faucet.sol`. Jika kita sebaliknya mahu hanya bytecode runtime, kita akan lulus pas: [ <code>solc --bin-runtime <span class="keep-together">Faucet.sol</span></code> ].
+
+Jika anda membandingkan output arahan ini, anda akan melihat bahawa runtime bytecode adalah subset dari bytecode penyebaran. Dengan kata lain, bytecode runtime sepenuhnya terkandung dalam penggunaan bytecode. (((Range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc8&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc7&quot; )))
+
+[[disassembling_the_bytecode]]
+==== Membongkar Bytecode
+
+(&quot;(EVM (Ethereum Virtual Machine)&quot;, &quot;bytecode disassembling&quot;, id = &quot;ix_13evm-asciidoc9&quot;, range = &quot;startofrange&quot;))) () asciidoc10 &quot;, range =&quot; startofrange &quot;))) Pembongkaran bytecode EVM adalah satu cara yang baik untuk memahami bagaimana tahap ketumpatan tinggi dalam EVM. Terdapat beberapa pembantah yang boleh anda gunakan untuk melakukan ini:
+
+- https://github.com/comaeio/porosity[_Porosity_] is a popular open source decompiler.
+- https://github.com/trailofbits/ethersplay[_Ethersplay_] adalah plug-in EVM untuk Binary Ninja, disassembler.
+- https://github.com/trailofbits/ida-evm[_IDA-Evm_] adalah plugin EVM untuk IDA, pembajak lain.
+
+Dalam bahagian ini, kami akan menggunakan pemalam Ethersplay untuk Ninja Binari dan untuk memulakan &lt; <Faucet_disassembled> &gt;. Selepas mendapat runtime bytecode _Faucet.sol_, kita boleh memberi suapan kepada Ninja Binary (selepas memuatkan plug-in Ethersplay) untuk melihat apa arahan EVM kelihatan seperti.
+
+[[Faucet_disassembled]]
+. Menyusun runtuh bytecode Faucet
+image :: images / Faucet_disassembled.png [&quot;Faucet.sol runtime bytecode disassembled&quot;]
+
+Apabila anda menghantar urus niaga kepada kontrak pintar yang sesuai dengan ABI (yang anda boleh menganggap semua kontrak adalah), urus niaga ini berinteraksi terlebih dahulu dengan _dispatcher_ kontrak pintar itu. Pengirim membaca dalam bidang + data + transaksi dan menghantar bahagian yang relevan kepada fungsi yang sesuai. Kita dapat melihat contoh penghantar di awal runtime _Faucet.sol_ runtime bytecode. Selepas arahan + biasa MSTORE +, kami dapat melihat arahan berikut:
+
+[[faucet_instructions]]
+----
+PUSH1 0x4
+CALLDATASIZE
+LT
+PUSH1 0x3f
+JUMPI
+----
+
+Seperti yang telah kita lihat, + PUSH1 0x4 + tempat + 0x4 + ke atas timbunan, yang jika tidak kosong. + CALLDATASIZE + mendapat saiz dalam bait data yang dihantar dengan urus niaga (dikenali sebagai _calldata_) dan menolak nombor itu ke dalam timbunan. Setelah operasi-operasi ini dijalankan, timbunannya kelihatan seperti ini:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<length of calldata from tx>
+|+0x4+
+|======================
+
+Arahan seterusnya ialah + LT +, pendek untuk &quot;kurang daripada.&quot; Arahan + LT + memeriksa sama ada item teratas pada timbunan kurang daripada item seterusnya pada timbunan. Dalam kes kami, ia menyemak untuk melihat jika hasil + CALLDATASIZE + kurang daripada 4 bait.
+
+Kenapa cek EVM melihat bahawa calldata transaksi sekurang-kurangnya 4 bait? Kerana bagaimana fungsi pengenal berfungsi. Setiap fungsi dikenalpasti oleh 4 bait pertama iaitu hash keccak-256. Dengan meletakkan nama fungsi dan hujah-hujah yang diambil ke dalam fungsi + keccak256 + hash, kita dapat menyimpulkan pengenal fungsinya. Dalam kes kita, kita ada:
+
+[[faucet_function_identifier]]
+```
+keccak256("withdraw(uint256)") = 0x2e1a7d4d...
+```
+
+Oleh itu, pengenalpasti fungsi untuk + menarik balik (uint256) + fungsi ialah + 0x2e1a7d4d +, kerana ini adalah 4 bait pertama hash yang terhasil. Pengecam fungsi sentiasa 4 bait panjang, jadi jika seluruh + data + medan transaksi dihantar ke kontrak adalah kurang dari 4 bait, maka tidak ada fungsi yang mana transaksi mungkin dapat berkomunikasi, kecuali fungsi _fallback_ ditentukan. Kerana kami melaksanakan fungsi sandaran dalam _Faucet.sol_, EVM melompat ke fungsi ini apabila panjang calldata kurang dari 4 bait.
+
++ LT + muncul dua nilai teratas dari timbunan dan, jika bidang transaksi + data + kurang dari 4 bait, tekan +1 + ke sana. Jika tidak, ia menolak +0+. Dalam contoh kami, mari kita perolehi + data + bidang urusniaga yang dihantar ke kontrak kami kurang daripada 4 bait.
+
+Arahan + PUSH1 0x3f + menekankan byte + 0x3f + ke dalam timbunan. Selepas arahan ini, timbunan kelihatan seperti ini:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x3f+
+|+1+
+|======================
+
+Arahan seterusnya ialah + JUMPI +, yang bermaksud &quot;melompat jika.&quot; Ia berfungsi seperti itu:
+
+[[faucet_jump_instruction_text]]
+----
+jumpi(label, cond) // Jump to "label" if "cond" is true
+----
+
+Dalam kes kami, + label + ialah + 0x3f +, di mana fungsi sandaran kami tinggal dalam kontrak pintar kami. Hujah + cond + adalah +1 +, hasil daripada arahan + LT + lebih awal. Untuk meletakkan keseluruhan urutan ini ke dalam kata-kata, kontrak melompat ke fungsi sandaran jika data urus niaga kurang dari 4 bait.
+
+Pada + 0x3f +, hanya arahan + STOP + yang berikut, kerana walaupun kami mengisytiharkan fungsi sandaran, kami menyimpannya kosong. Seperti yang anda boleh lihat di &lt; <Faucet_jumpi_instruction> &gt;, jika kita tidak melaksanakan fungsi sandaran, kontrak itu akan membuang pengecualian sebaliknya.
+
+[[Faucet_jumpi_instruction]]
+.JUMPI arahan yang membawa kepada fungsi sandaran
+image::images/Faucet_jumpi_instruction.png["JUMPI instruction leading to fallback function"]
+
+Mari kita periksa blok utama penghantar itu. Dengan mengandaikan kami menerima calldata yang lebih panjang daripada 4 bait, arahan + JUMPI + tidak akan melompat ke fungsi sandaran. Sebaliknya, pelaksanaan kod akan meneruskan arahan berikut:
+
+[[faucet_instructions2]]
+----
+PUSH1 0x0
+CALLDATALOAD
+PUSH29 0x1000000...
+SWAP1
+DIV
+PUSH4 0xffffffff
+AND
+DUP1
+PUSH4 0x2e1a7d4d
+EQ
+PUSH1 0x41
+JUMPI
+----
+
++ PUSH1 0x0 + menolak +0+ ke timbunan, yang sekarang kosong lagi. + CALLDATALOAD + menerima sebagai argumen indeks dalam calldata yang dihantar ke kontrak pintar dan membaca 32 bait dari indeks tersebut, seperti:
+
+[[faucet_calldataload_instruction_text]]
+----
+calldataload (p) // beban 32 bait calldata bermula dari posisi byte p
+----
+
+Oleh kerana +0 + adalah indeks yang dihantar kepadanya dari perintah + PUSH1 0x0 +, + CALLDATALOAD + membaca 32 bytes calldata bermula pada bait 0, dan kemudian menolaknya ke bahagian atas timbunan (selepas muncul asal + 0x0 +). Selepas ++ PUSH29 0x1000000 ++ ... arahan, timbunan itu kemudian:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|++0x1000000++... (29 bytes in length)
+|<32 bytes of calldata starting at byte 0>
+|======================
+
++ SWAP1 + mengalihkan elemen teratas pada timbunan dengan unsur __i __- th selepasnya. Dalam kes ini, ia menukar ++ 0x1000000 ++ ... dengan calldata. Tumpukan baru adalah:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<32 bytes of calldata starting at byte 0>
+|++0x1000000++... (29 bytes in length)
+|======================
+
+Arahan seterusnya ialah + DIV +, yang berfungsi seperti berikut:
+
+[[faucet_div_instruction_text]]
+----
+div(x, y) // integer division x / y
+----
+
+Dalam kes ini, + x + = 32 bait calldata bermula pada bait 0, dan + y + = ++ 0x100000000 ++ ... (jumlah 29 bait). Bolehkah anda memikirkan mengapa pengirim melakukan pembahagian? Berikut adalah petunjuk: kita membaca 32 bait dari calldata lebih awal, bermula pada indeks 0. 4 byte pertama calldata itu ialah pengenal fungsi.
+
+
++ + 0x100000000 ++ ... kami menolak lebih awal ialah 29 bait yang panjang, yang terdiri daripada +1 + pada mulanya, diikuti oleh semua ++ 0 ++ s. Membahagikan 32 bytes calldata kami dengan nilai ini akan meninggalkan kami hanya paling tinggi 4 bytes_ dari beban calldata kami, bermula pada indeks 0. 4 bait ini-4 bait pertama dalam calldata bermula pada indeks 0-adalah pengenal fungsi, dan ini adalah bagaimana EVM mengekstrak medan itu.
+
+Jika bahagian ini tidak jelas kepada anda, fikirkannya seperti ini: di asas 10, 1234000/1000 = 1234. Dalam asas 16, ini tidak berbeza. Daripada mana-mana tempat menjadi gandaan 10, ia adalah berganda daripada 16. Sama seperti membahagikan 10 ^ 3 ^ (1000) dalam contoh yang lebih kecil kita hanya menyimpan digit paling tinggi, membahagikan asas 32 32 bait kita dengan 16 ^ 29 ^ melakukan perkara yang sama.
+
+Hasil dari + DIV + (pengenal fungsi) akan ditolak ke timbunan, dan timbunan kami sekarang:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|<function identifier sent in +data+>
+|======================
+
+Oleh kerana arahan + PUSH4 0xffffffff + dan + AND + adalah berlebihan, kita boleh mengabaikannya sepenuhnya, kerana timbunan akan tetap sama selepas selesai. Arahan + DUP1 + menduplikasi item pertama pada timbunan, yang merupakan pengenal fungsi. Arahan seterusnya, + PUSH4 0x2e1a7d4d +, menolak pengenal fungsi yang dihitung sebelumnya: [ <code><span class="keep-together">withdraw</span> (uint256)</code> ] ke stack. Tumpukan kini:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x2e1a7d4d+
+|<function identifier sent in +data+>
+|<function identifier sent in +data+>
+|======================
+
+Arahan seterusnya, + EQ +, keluar dua item teratas dari timbunan dan membandingkannya. Ini adalah di mana penghantar melakukan tugas utamanya: ia membandingkan sama ada pengenal fungsi yang dihantar dalam + msg.data + bidang transaksi sepadan dengan lulus: [ <code><span class="keep-together">withdraw</span> (uint256)</code> ]. Jika mereka sama, + EQ + menolak +1+ ke timbunan, yang pada akhirnya akan digunakan untuk melompat ke fungsi pengeluaran. Jika tidak, + EQ + menolak +0+ ke timbunan.
+
+Dengan mengandaikan transaksi yang dihantar ke kontrak kami sememangnya bermula dengan pengenal fungsi untuk + menarik balik (uint256) +, timbunan kami telah menjadi:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+1+
+|<function identifier sent in +data+> (sekarang menjadi +0x2e1a7d4d+)
+|======================
+
+Seterusnya, kami mempunyai + PUSH1 0x41 +, yang merupakan alamat di mana fungsi + menarik balik (uint256) + tinggal dalam kontrak. Selepas arahan ini, timbunan kelihatan seperti ini:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Stack
+|+0x41+
+|+1+
+|function identifier sent in +msg.data+
+|======================
+
+Arahan + JUMPI + seterusnya, dan sekali lagi menerima dua elemen teratas pada timbunan sebagai argumen. Dalam kes ini, kita mempunyai + jumpi (0x41, 1) +, yang memberitahu EVM untuk melaksanakan lompat ke lokasi + menarik balik (uint256) + fungsi, dan pelaksanaan kod fungsi itu boleh diteruskan. = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc10&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc9&quot;)))
+
+[[turing_completeness_and_gas]]
+=== Turing Kesempurnaan dan Gas
+
+(((&quot;EVM (Mesin Maya Ethereum)&quot;, &quot;Turing kesempurnaan dan Gas&quot;))) (((&quot;Turing kesempurnaan&quot;, &quot;EVM dan&quot;))) Seperti yang kita telah menyentuh, bahasa pengaturcaraan adalah _Turing lengkap_ jika ia boleh menjalankan mana-mana program. Keupayaan ini, bagaimanapun, datang dengan kaveat yang sangat penting: beberapa program mengambil selamanya untuk dijalankan. Satu aspek penting dalam hal ini ialah kita tidak boleh memberitahu, hanya dengan melihat program, sama ada ia akan mengambil masa yang lama atau tidak untuk dilaksanakan. Kita harus benar-benar meneruskan pelaksanaan program ini dan tunggu sehingga selesai untuk mengetahui. (((&quot;masalah terhenti&quot;))) Sudah tentu, jika ia akan mengambil selama-lamanya untuk melaksanakan, kita perlu menunggu selama-lamanya untuk mengetahui. Ini dipanggil masalah _halting dan akan menjadi masalah besar untuk Ethereum jika tidak ditangani.
+
+Kerana masalah yang sepatutnya, komputer dunia Ethereum berisiko diminta untuk melaksanakan program yang tidak pernah berhenti. Ini mungkin secara tidak sengaja atau niat jahat. Kami telah membincangkan bahawa Ethereum bertindak seperti mesin tunggal-benang, tanpa penjadual mana-mana, jadi jika ia terperangkap dalam gelung tak terhingga ini bermakna ia akan menjadi tidak dapat digunakan.
+
+Walau bagaimanapun, dengan gas, terdapat penyelesaian: jika selepas jumlah maksimum pengiraan telah dilakukan, pelaksanaan belum selesai, pelaksanaan program dihentikan oleh EVM. Ini menjadikan EVM sebagai mesin __quasi __- Turing-lengkap: ia boleh menjalankan mana-mana program yang anda pakai ke dalamnya, tetapi hanya jika program itu tamat dalam jumlah pengiraan tertentu. Had itu tidak ditetapkan dalam Ethereum-anda boleh membayar untuk meningkatkannya sehingga maksimum (dipanggil &quot;had gas blok&quot;), dan semua orang boleh bersetuju untuk meningkatkan maksimum itu dari masa ke masa. Walau bagaimanapun, pada satu-satu masa, terdapat had di tempat, dan urus niaga yang mengambil terlalu banyak gas semasa melaksanakan adalah lulus: [ <span class="keep-together">dihentikan</span> ].
+
+Dalam bahagian berikut, kita akan melihat gas dan memeriksa bagaimana ia berfungsi secara terperinci.
+
+[[gas]]
+=== Gas
+
+, (&quot;(Gas&quot;, &quot;EVM dan&quot;, id = &quot;ix_13evm-&quot; (&quot;(EVM (Mesin Maya Ethereum) asciidoc12 &quot;, range =&quot; startofrange &quot;))) _ Gas_ ialah unit Ethereum untuk mengukur sumber pengiraan dan penyimpanan yang diperlukan untuk melakukan tindakan pada blok Ethereum. Berbeza dengan Bitcoin, yuran urus niaganya hanya mengambil kira saiz urusniaga dalam kilobytes, Ethereum mesti menjelaskan setiap langkah pengiraan dilakukan oleh transaksi dan pelaksanaan kod kontrak pintar.
+
+Setiap operasi yang dilakukan oleh suatu transaksi atau kos kontrak adalah jumlah gas yang tetap. Beberapa contoh, dari Kertas Kuning Ethereum:
+
+* Menambah dua nombor kos 3 gas
+* Menghitung kecacatan keccak-256 30 gas + 6 gas untuk masing-masing 256 bit data yang dikehendaki
+* Menghantar kos transaksi 21,000 gas
+
+Gas adalah komponen penting dalam Ethereum, dan berfungsi sebagai peranan ganda: sebagai penyangga antara harga Ethereum dan ganjaran kepada pelombong untuk kerja yang mereka lakukan, dan sebagai pertahanan terhadap serangan denial-of-service. Untuk mengelakkan gelung tak terhingga yang tidak disengajakan atau berniat jahat atau pembaziran komputasi lain dalam rangkaian, pemula setiap transaksi dikehendaki menetapkan batas kepada jumlah pengiraan yang mereka sanggup bayar. Sistem gas itu disincentivikasi penyerang daripada menghantar transaksi &quot;spam&quot;, kerana mereka harus membayar secara proporsional untuk sumber perhitungan, bandwidth, dan penyimpanan yang mereka konsumsi.
+
+[[gas_accounting_execution]]
+==== Perakaunan Gas Semasa Pelaksanaan
+(&quot;(Gas&quot;, &quot;perakaunan semasa pelaksanaan&quot;)))) Apabila EVM diperlukan untuk menyelesaikan transaksi, dalam contoh pertama (&quot;(EVM (Mesin Maya Ethereum) ia diberi bekalan gas yang sama dengan jumlah yang ditentukan oleh had gas dalam transaksi. Setiap opcode yang dilaksanakan mempunyai kos dalam gas, jadi bekalan gas EVM dikurangkan sebagai langkah EVM melalui program ini. Sebelum setiap operasi, EVM memeriksa bahawa terdapat cukup gas untuk membayar pelaksanaan operasi. Jika tidak ada gas yang cukup, pelaksanaan dihentikan dan urusniaga dikembalikan.
+
+Sekiranya EVM mencapai penghujung pelaksanaan dengan jayanya, tanpa kehabisan gas, kos gas yang digunakan dibayar kepada pelombong sebagai bayaran transaksi, ditukarkan kepada eter berdasarkan harga gas yang dinyatakan dalam urus niaga:
+
+----
+tambang pelombong = harga gas * harga gas
+----
+
+
+Gas yang tersisa dalam bekalan gas dikembalikan kepada penghantar, sekali lagi ditukar kepada eter berdasarkan harga gas yang dinyatakan dalam transaksi:
+
+----
+baki gas = had gas - kos gas
+dikembalikan eter = baki gas * harga gas
+----
+
+Sekiranya urus niaga itu &quot;kehabisan gas&quot; semasa pelaksanaan, operasi itu ditamatkan dengan serta-merta, menaikkan pengecualian &quot;keluar gas&quot;. Urusniaga dikembalikan semula dan semua perubahan kepada negeri itu digulung semula.
+
+Walaupun urus niaga itu tidak berjaya, penghantar akan dikenakan bayaran urus niaga, kerana pelombong telah melakukan kerja pengkomputeran hingga ke titik itu dan harus diberi pampasan untuk melakukannya.
+
+==== Pertimbangan Perakaunan Gas
+
+(((&quot;EVM (Mesin Maya Ethere)&quot;, &quot;pertimbangan perakaunan gas&quot;))) ((&quot;gas&quot;, &quot;pertimbangan perakaunan&quot;))) Kos gas relatif pelbagai operasi yang boleh dilakukan oleh EVM telah dipilih dengan teliti untuk melindungi pelindung blok Ethereum daripada serangan. Anda boleh melihat jadual kos gas terperinci untuk opsyen EVM yang berbeza di &lt; <evm_opcodes_table> &gt;.
+
+Operasi lebih intensif dengan kos lebih banyak gas. Contohnya, melaksanakan fungsi + SHA3 + adalah 10 kali lebih mahal (30 gas) daripada operasi + ADD + (3 gas). Lebih penting lagi, beberapa operasi, seperti + EXP +, memerlukan pembayaran tambahan berdasarkan saiz pengendalian. Terdapat juga kos gas untuk menggunakan memori EVM dan untuk menyimpan data dalam simpanan rantaian kontrak.
+
+Pentingnya kos gas yang sepadan dengan kos sumber dunia nyata ditunjukkan pada 2016 apabila penyerang mendapati dan mengeksploitasi ketidakpadanan dalam kos. Serangan itu menghasilkan urus niaga yang sangat mahal, dan menjadikan Ethereum mainnet hampir mengisar dengan berhenti. Kesilapan ini telah diselesaikan oleh garpu keras (yang diberi nama &quot;Whistle Tangerine&quot;) yang memperagakan kos gas relatif.
+
+==== Harga Gas berbanding Harga Gas
+(((&quot;EVM (Mesin Maya Ethereum)&quot;, &quot;harga gas berbanding harga gas&quot;))) (((&quot;gas&quot;, &quot;kos vs harga&quot;))) () &quot;))) Walaupun gas _cost_ adalah ukuran perhitungan dan penyimpanan yang digunakan dalam EVM, gas itu sendiri juga mempunyai harga yang diukur dalam eter. Apabila melakukan transaksi, penghantar menentukan harga gas yang mereka bersedia bayar (dalam eter) untuk setiap unit gas, membenarkan pasaran memutuskan hubungan antara harga eter dan kos operasi pengkomputeran (seperti diukur dalam gas) :
+
+----
+yuran transaksi = jumlah gas yang digunakan * harga gas yang dibayar (dalam eter)
+----
+
+Apabila membina blok baru, pelombong di rangkaian Ethereum boleh memilih antara transaksi yang belum selesai dengan memilih mereka yang menawarkan untuk membayar harga gas yang lebih tinggi. Dengan menawarkan harga gas yang lebih tinggi maka akan mendorong insan peniaga untuk memasukkan transaksi anda dan mendapatkannya lebih cepat.
+
+Dalam amalan, pengirim transaksi akan menetapkan had gas yang lebih tinggi daripada atau sama dengan jumlah gas yang dijangka akan digunakan. Sekiranya had gas ditetapkan lebih tinggi daripada jumlah gas yang digunakan, penghantar akan menerima bayaran balik jumlah yang berlebihan, kerana pelombong hanya dibayar untuk kerja yang sebenarnya mereka lakukan.
+
+Adalah penting untuk menjadi jelas mengenai perbezaan antara harga _gas dan harga _gas. Untuk merakam:
+
+* Gas adalah jumlah unit gas yang diperlukan untuk melakukan operasi tertentu.
+
+* Harga gas adalah jumlah eter yang anda sanggup bayar seunit gas apabila anda menghantar transaksi anda ke rangkaian Ethereum.
+
+[PETUA]
+====
+Walaupun gas mempunyai harga, ia tidak boleh &quot;dimiliki&quot; atau &quot;dibelanjakan.&quot; Gas wujud hanya di dalam EVM, sebagai kiraan berapa banyak kerja pengkomputeran dilakukan. Pengirim dikenakan caj transaksi dalam eter, yang kemudian ditukar kepada gas untuk perakaunan EVM dan kemudian kembali ke eter sebagai bayaran transaksi yang dibayar kepada pelombong.
+====
+
+
+===== Kos gas negatif
+
+(((&quot;gas&quot;, &quot;kos negatif&quot;))) Ethereum menggalakkan pemansuhan pembolehubah storan dan akaun yang digunakan dengan membayar balik beberapa gas yang digunakan semasa pelaksanaan kontrak.
+
+Terdapat dua operasi di EVM dengan kos gas negatif:
+
+* Memotong kontrak (+ SELFDESTRUCT +) bernilai pengembalian 24,000 gas.
+* Menukar alamat simpanan dari nilai nonzero kepada sifar (+ SSTORE [x] = 0+) bernilai pengembalian sebanyak 15,000 gas.
+
+Untuk mengelakkan eksploitasi mekanisme pembayaran balik, bayaran balik maksimum untuk transaksi ditetapkan kepada separuh jumlah gas yang digunakan (dibulatkan).
+
+==== Had Block Gas
+
+((&quot;blok gas&quot;))) () () (&quot;EVM (Mesin Maya Ethereum)&quot;, &quot;batasan gas blok&quot; adalah jumlah maksimum gas yang boleh dimakan oleh semua urus niaga dalam satu blok, dan mengehadkan berapa banyak urus niaga yang boleh dimuatkan ke dalam blok.
+
+Sebagai contoh, katakan kami mempunyai 5 urus niaga yang had gas ditetapkan kepada 30,000, 30,000, 40,000, 50,000, dan 50,000. Sekiranya had gas blok adalah 180,000, maka mana-mana empat urus niaga itu boleh dimuatkan dalam satu blok, manakala yang kelima perlu menunggu blok masa depan. Seperti yang telah dibincangkan sebelum ini, pelombong memutuskan urus niaga mana yang termasuk dalam satu blok. Pelombong yang berlainan mungkin memilih kombinasi yang berbeza, terutamanya kerana mereka menerima transaksi dari rangkaian dalam susunan yang berbeza.
+
+Jika pelombong cuba memasukkan transaksi yang memerlukan lebih banyak gas daripada batasan gas blok semasa, blok tersebut akan ditolak oleh rangkaian. Kebanyakan pelanggan Ethereum akan menghalang anda daripada mengeluarkan transaksi sedemikian dengan memberikan amaran di sepanjang garisan &quot;transaksi melebihi had gas blok.&quot; Batasan gas blok pada Ethereum mainnet adalah 8 juta gas pada saat menulis sesuai dengan https://etherscan.io, yang berarti sekitar 380 transaksi dasar (masing-masing menggunakan 21.000 gas) dapat masuk ke dalam blok.
+
+===== Siapa yang memutuskan apa had blok gas?
+
+Pelombong di rangkaian secara kolektif menentukan had gas blok. Individu yang ingin melombong pada rangkaian Ethereum menggunakan program perlombongan, seperti Ethminer, yang menghubungkan kepada pelanggan Geth atau Parity Ethereum. Protokol Ethereum mempunyai mekanisme terbina dalam di mana pelombong boleh mengundi pada had gas supaya kapasiti boleh ditingkatkan atau berkurangan dalam blok berikutnya. Penambang blok boleh mengundi untuk melaraskan had gas blok dengan faktor 1 / 1,024 (0.0976%) dalam arah yang sama. Hasilnya adalah saiz blok laras berdasarkan keperluan rangkaian pada masa itu. Mekanisme ini ditambah pula dengan strategi perlombongan lalai di mana pelombong mengundi pada had gas yang sekurang-kurangnya 4,7 juta gas, tetapi yang menargetkan nilai 150% dari jumlah rata-rata penggunaan gas per blok terakhir (dengan menggunakan eksponensial blok 1,024 blok purata). (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc12&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc11&quot;
+
+=== Kesimpulan
+
+Dalam bab ini kita telah meneroka Mesin Maya Ethereum, mengesan pelaksanaan pelbagai kontrak pintar dan melihat bagaimana EVM melaksanakan bytecode. Kami juga melihat gas, mekanisme perakaunan EVM, dan melihat bagaimana ia menyelesaikan masalah yang terhenti dan melindungi Ethereum dari serangan penafian perkhidmatan. Seterusnya, dalam &lt; <consensus> &gt;, kita akan melihat mekanisme yang digunakan oleh Ethereum untuk mencapai konsensus yang terdesentralisasi. (((range = &quot;endofrange&quot;, startref = &quot;ix_13evm-asciidoc0&quot;)))

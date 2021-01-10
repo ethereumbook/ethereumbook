@@ -1,0 +1,795 @@
+[[tx_chapter]]
+==交易
+
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange"))) 交易是由外部拥有的帐户发起，由以太坊网络传输并记录在以太坊区块链上的签名信息。这个基本定义掩盖了许多令人惊讶和迷人的细节。查看交易的另一种方法是，它们是唯一可以触发状态更改或导致合约在EVM中执行的事物。以太坊是一个全球性的单例状态机，而交易使该状态机“滴答作响”，从而改变了其状态。智能合约不是独立运行的。以太坊不是自动运行的。一切都始于交易。
+
+在本章中，我们将仔细剖析交易，显示其工作方式并检查细节。请注意，本章的大部分内容是针对那些希望在较低级别上管理自己交易的人，比如他们正在编写钱包应用程序。如果你满意现有的钱包应用程序，则不必深究这些内容，尽管你可能会发现细节很有趣！
+
+[[tx_struct]]
+===交易的结构
+
+((("transactions","basic structure"))) 首先让我们看一下交易的基本结构，因为它是在以太坊网络上序列化和传输的。接收序列化交易的每个客户端和应用程序都将使用其自己的内部数据结构将其存储在内存中，可能还会使用网络序列化交易本身中不存在的元数据进行修饰。交易的唯一标准格式是网络序列化的格式。
+
+交易是包含以下数据的序列化二进制消息：
+
+交易临时数 Nonce:: 始发EOA发出的序列号，用于防止消息重播
+
+燃料价格 Gas price:: 发起人愿意支付的燃料价格（以wei为单位）
+
+燃料上限 Gas limit::发起方愿意为此交易购买的最大燃料上限量
+
+接受者 Recipient:: 目标以太坊地址
+
+货币数量 Value::发送到目的地的以太币数量
+
+数据 Data::可变长度的有效二进制数据
+
+v,r,s:: 原始EOA的ECDSA数字签名的三个组成部分
+
+((("Recursive Length Prefix (RLP)")))((("RLP (Recursive Length Prefix)"))) 交易信息的结构是使用递归长度前缀Recursive Length Prefix（RLP）的编码方案进行序列化，该方案是专门为创建以太坊中简单，字节完美的数据序列化。以太坊中的所有数字均被编码为大端序形式big-endian的整数，其长度是8比特的倍数。
+
+请注意，此处为清楚起见显示了字段标签（+ to +，+ gas limit +等），但它们不是序列化交易数据的一部分，该数据包含RLP编码的字段值。通常，RLP不包含任何字段定界符或标签。 RLP的长度前缀用于标识每个字段的长度。超出定义长度的任何内容均属于该结构的下一个字段。
+
+虽然这是实际传输的交易结构，但在大多数内部呈现时和可视化用户界面中显示交易信息时，都用来自交易或区块链的其他信息来加以说明。
+
+例如，你可能会注意到，在标识发起方EOA的地址中没有“发起方”的数据。这是因为EOA的公钥可以从ECDSA签名的+ v，r，s +组件派生出。该地址又可以从公钥派生。当你看到显示“发件方”字段的交易时，该字段是由用于交易可视化的软件添加的。客户端软件经常添加到交易中的其他元数据包括区块号（一旦被开采并包含在区块链中）和交易ID（计算出的哈希）。同样，此数据是从交易中获取的，并不构成交易信息本身的一部分。
+
+[[tx_nonce]]
+===交易的计数
+
+((("nonces", id="ix_06transactions-asciidoc1", range="startofrange")))((("transactions","nonces", id="ix_06transactions-asciidoc2", range="startofrange")))交易中的计数是交易中最重要和了解最少的组成部分之一。黄皮书中的定义（请参阅<<references>>）写到：
+
+____
++nonce+: 英文原意为临时造的事务，有的文章中被译为“随机数”，是与此地址发送的交易数量相等的标量值，或者，对于具有关联代码的帐户，表示此帐户创建的合约数量。
+____
+
+严格来说，交易计数是原始地址的属性；也就是说，它仅在发送地址的上下文中才有意义。但是，现时没有作为帐户状态的一部分明确存储在区块链上。相反，它是通过计算源自某个地址的已确认交易数来动态生成的。
+
+一个统计交易的计数在两种情况下很重要：在创建交易时按产生顺序排列的功能，以及重要的保护交易复制的功能。让我们看一下两种情况的场景示例：
+
+1.假设你希望进行两次交易。你有一笔6个以太币的重要付款，和另外一笔普通的8个以太币付款。你首先签署并广播6个以太币的交易，因为它更重要，然后再签署并广播第二笔8个以太币的交易。可问题是，你忽略了你的帐户仅包含10个以太币的情况，因此网络无法同时接受这两项交易：其中一项交易将失败。因为你首先发送了更重要的6个以太币的交易，所以你希望这笔交易首先通过，而后续的8个以太币的交易则被拒绝。但是，在像以太坊这样的去中心化系统中，节点可能按任一顺序接收交易。也就是不能保证一个交易比另一个交易更早传播到一个特定节点。这样，几乎可以肯定的是，某些节点首先接收6个以太币的交易，而另一些节点首先接收8个以太币的交易。如果没有临时数，哪个交易被接受和哪个被拒绝将是随机的。但是，在包含临时数的情况下，你发送的第一个交易将具有3的临时数，而8个以太币的交易具有下一个临时数（即4）。因此，该交易将被忽略，直到处理了临时数从0到3的交易为止，即使先收到也是如此。 ！
+
+
+2.现在想象你有一个帐户包含100个以太币的资金。太棒了！你在网上找到一家商家有你真正想要购买的mcguffin-widget，他们会接受以太币支付。你给他们发送了2个以太币，他们给你发送了mcguffin-widget。可爱。为了支付2个以太币，你签署了一项交易，将2个以太币从你的账户发送到他们的账户，然后将其广播到以太坊网络进行验证并写入到区块链中。现在，在交易中没有临时计数的情况下，第二笔向同一地址发送2个以太币的交易看起来与第一笔交易完全相同。这意味着任何在以太坊网络上看到你的交易的人（这意味着每个人，包括接收者或你的敌人）都可以一次又一次地“重播”交易，直到你所有的以太币都通过复制和粘贴原始交易而消失了。重新发送到网络。但是，使用交易数据中包含的临时计数值，即使每次多次向相同的收件人地址发送相同数量的以太，_每笔交易也是唯一的_。因此，通过将递增的临时计数作为交易的一部分，任何人都不可能“复制”你的付款。
+
+总而言之，需要特别注意的是，与基于比特币的协议的“未使用交易输出”（UTXO）机制相比，使用交易计数对于基于帐户的协议实际上至关重要。
+
+[[tracking_nonce]]
+====跟踪交易计数的值
+
+((("nonces","keeping track of")))实际上，nonce是源自一个帐户的已确认（即链上已经存在的）交易数量的最新计数。要找出现时是什么，你可以查询区块链，例如通过web3界面。在Ropsten测试网上的Geth（或你喜欢的web3界面）中打开一个JavaScript控制台界面，然后键入：
+
+++++
+<pre data-type="programlisting">
+<<strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")</strong>
+40
+</pre>
+++++
+
+[TIP]
+====
+交易计数是一个从零开始的计数器，这意味着第一个交易的计数为0。在本示例中，我们的交易计数为40，这意味着可以看到交易计数0到39。下一笔交易时的计数必须为40。
+====
+
+你的钱包将跟踪其管理的每个地址的交易计数。只要你仅从单个点发起交易，这样做就非常简单。假设你正在编写自己的钱包软件或其他可以发起交易的应用程序。你如何跟踪交易的计数？
+
+创建新交易时，请分配序列中的下一个交易计数。但在确认之前，它不会计入+ getTransactionCount +总数。
+
+[[get_tx_count_bug]]
+[WARNING]
+====
+使用+getTransactionCount+函数计算待处理的交易时要小心，因为如果连续发送一些交易，可能会遇到一些问题。
+====
+
+让我们看一个例子：
+
+++++
+<pre data-type="programlisting">
+<<strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+40
+><strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+<<strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+><strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+<<strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+><strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+<<strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+</pre>
+++++
+[TIP]
+====
+如果你试图自己在Geth的javascript控制台中重新创建这些代码示例，则应使用web3.toWei（）而不是web3.utils.toWei（）。这是因为Geth使用了较旧版本的web3库。
+====
+
+如你所见，我们发送的第一笔交易将交易计数增加到41，显示了待处理的交易。但是，当我们又连续快速发送了三笔交易时，+ getTransactionCount +调用没有计算它们。即使你可能知道内存池中有三个待处理的交易，它也只算一个。如果我们等待几秒钟以允许网络通信稳定下来，则+getTransactionCount+ 调用将返回预期的计数值。但是在此期间，同时有多个交易正在处理中，并无法帮助我们获取正确的交易计数值。
+
+当你构建用于构造交易的应用程序时，它不能依赖pass：[ <span class="keep-together"><code>getTransactionCount</code></span> ]来计算未处理的交易。只有在待处理交易数和已确认交易数相等（已确认所有未完成的交易）时，你才能相信+ getTransactionCount +的输出结果来计算交易计数。此后，请跟踪应用程序中的交易计数，直到每笔交易确认为止。
+
+((("Parity","nonce counting"))) Parity的JSON RPC接口提供+ parity_nextNonce +函数，该函数返回交易中应使用的下一个交易计数。 + parity_nextNonce +函数可正确计算交易计数，即使你不经确认就快速连续构造多个交易也是如此：
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl --data '{"method":"parity_nextNonce", \
+  "params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],\
+  "id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST \
+  localhost:8545</strong>
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+</pre>
+++++
+
+[[parity_curl]]
+[TIP]
+====
+Parity有一个用于访问JSON RPC接口的Web控制台，但是这里我们使用HTTP客户端的命令行来访问它。
+====
+
+[[gaps_nonce]]
+====交易计数中的间隙，重复的计数和交易确认
+
+((("nonces","gaps in sequence of")))如果你使用程序来创建交易，那么正确跟踪交易计数的值是很重要的，特别是你如果是从多个独立进程来创建交易pass：[<span class="keep-together">同步</span>]。
+
+以太坊网络基于交易计数的值来依次处理交易。这意味着，如果你传输一个计数为0的交易，然后传输一个计数为2的交易，则第二个交易将不会被打包到任何块中。当以太坊网络等待缺失的计数出现时，交易将存储在内存池中。所有节点将假定丢失的交易计数已被简单地延迟，并且计数为2的交易是按顺序接收的。
+
+之后，如果你发起缺失的计数为1的交易，则两个交易（交易计数值为1和2）都将被处理并被包括（当然，如果有效）到以太坊网络上。当交易计数被填补上空白后，以太坊网络可以将在内存池中保留的交易挖出并完成上链。
+
+这意味着，如果你依次创建多个交易，但其中一个未正式包含在任何块中，则所有后续交易将被“卡住”，等待缺失的交易计数。由于交易本身无效或没有足够的燃料gas来支付交易费用，交易可能在计数序列中造成无意的“缺口”。为了使交易能够重新发起，您必须发送带有丢失计数的有效交易以覆盖无效交易。你应该同样注意，一旦网络验证了带有“丢失”计数的交易，所有带有后续交易计数的已经广播出去的交易将变为有效；这里无法“撤回”交易！
+
+(("nonces","confirmation")))((("nonces","duplicated")))另一方面，如果你不小心复制了一个交易计数，例如通过传输两个具有相同计数的交易，但是不同的接收者或值，那么其中一个将被确认，而一个将被拒绝。确认哪一个将由它们到达接收它们的第一个验证节点的顺序来确定，即这将是相当随机的。
+
+如你所见，跟踪交易计数是必要的，如果你的应用程序不能正确地管理该过程，你将遇到问题。麻烦的是，如果你尝试同时进行交易操作，情况会变得更加糟糕，这将在下一节中谈到。
+
+[[concurrency]]
+====并发，交易的发起和交易计数
+
+((("concurrency, nonces and")))((("nonces","concurrency")))((("nonces","transaction origination")))并发在计算机科学中是一个复杂问题，它有时会导致意外的出现，特别是在诸如pass：[ <span class="keep-together">Ethereum</span> ]之类的去中心化和分布式实时系统中。
+
+简单来说，并发是指您有多个独立系统同时进行计算的情况。这些可以在同一程序中（例如，多线程），在同一CPU中（例如，多处理）或在不同的计算机上（即，分布式pass：[<span class="keep-together">系统</span>]）。根据定义，以太坊是一个允许操作（节点，客户端，DApp）并发但通过共识强制执行单例状态的系统。
+
+现在，假设你有多个独立的钱包应用程序，这些应用程序从同一地址或多个地址生成交易。这种情况的一个例子是交易所处理从交易所的热钱包（一种密钥在线存储的钱包，而不是密钥从不在线的冷钱包）中提款的交易。理想情况下，你希望有多台计算机来处理提款，以免它成为瓶颈或出现单点故障。但是，这很快就成为问题，因为拥有多台计算机进行提现会导致一些棘手的并发问题，其中最重要的是交易计数的选择。多台计算机如何通过同一个热钱包帐户生成，签名和广播交易？
+
+你可以使用一台计算机以先到先得的方式将交易计数分配给签署交易的计算机。但是，此计算机现在是就是故障点。更糟糕的是，如果分配了多个交易计数，但其中一个永远都没有使用过（由于处理该交易计数有关的计算机出现故障），则所有后续交易都会卡住。
+
+另一种方法是生成交易，但不为它们分配交易计数（因此将它们设为未签名-请记住，交易计数是交易数据的组成部分，因此需要包含在对交易进行身份验证的数字签名中） 。然后，你可以将它们排队到一个对它们进行签名并跟踪交易计数的节点上。同样，这将是过程中的一个瓶颈：作为操作的一部分，交易计数的签名和跟踪在高负载下可能会变得很拥挤，而生成未签名的交易的部分则实际上并不真正需要并行处理。这种处理方式将具有一些并发性，但是在关键部分将缺少。
+
+最后，这些并发问题，除了在独立流程中跟踪帐户余额和交易确认的困难之外，还迫使大多数实现方式避免并发并产生瓶颈，例如单个流程处理交易所中的所有提款交易，或设置多个可以完全独立地用于提款的热钱包，只需要间歇性地进行重新平衡。(((range="endofrange", startref="ix_06transactions-asciidoc2")))(((range="endofrange", startref="ix_06transactions-asciidoc1")))
+
+[[tx_gas]]
+===交易的燃料消耗
+
+((("gas","transactions and", id="ix_06transactions-asciidoc3", range="startofrange")))((("transactions","gas", id="ix_06transactions-asciidoc4", range="startofrange")))我们已经在前几章中讨论了燃料gas，并在<<gas>>中进行详细介绍。这里，让我们介绍一下交易组件燃料价格+gasPrice+和燃料上限+gasLimit+的一些基础知识。
+
+燃料gas是以太坊的燃料。燃料不是以太币-它是一种独立的虚拟货币，具有自己与以太币的汇率。以太坊使用燃料gas来控制交易可以使用的资源量，因为它会在全球数千台计算机上进行处理。开放式（图灵完备 Turing-complete）计算模型需要某种形式的度量，以便避免拒绝服务攻击或无意中消耗资源的交易。
+
+燃料与以太币的分离是为了保护系统免受随着以太币价格快速变化而引起的波动性，并以此作为管理燃料所用各种资源成本之间重要而敏感的比率的一种方式（即计算，内存和存储）。
+
+((("gasPrice field"))) 交易中的燃料价格 +gasPrice+ 字段允许交易发起人设置他们愿意为换取燃料而支付的价格。价格以每燃气单位wei为单位。例如，在<<intro_chapter>>中，你的钱包将+ gasPrice +设置为3 gwei（3 gigawei或30亿wei）。
+
+[TIP]
+====
+一个受欢迎的以太坊燃料价格网站 https://ethgasstation.info/[ETH Gas Station] 提供有关以太坊主网络的当前燃料价格和其他相关燃料指标的信息。
+====
+
+钱包可以调整其发起的交易中的+ gasPrice +，以更快地确认交易。 +gasPrice+ 越高，可能会确认交易越快。相反，优先级较低的交易可以降低价格，导致确认速度变慢。 + gasPrice +可以设置为最小值，这表示免费交易。在区块空间需求低的时期，很可能会挖掘此类交易。
+
+[NOTE]
+====
+最低可接受的燃料价格 +gasPrice+ 为零。这意味着钱包可以产生完全免费的交易。取决于区块容量，这些交易可能永远无法确认，但是协议中没有禁止免费交易的内容。你可以找到以太坊区块链上包含此类交易的几个成功例子。
+====
+
+[[gas_price_suggestion]]
+通过计算多个区块的中位数价格，web3界面提供了+gasPrice+ 建议（我们可以使用truffle控制台或任何JavaScript web3控制台执行此操作）：
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(console.log)</strong>
+> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+</pre>
+++++
+
+[[calc_gas_price]]
+((("gasLimit field"))) 与燃料有关的第二个重要字段是+ gasLimit +。简而言之，+ gasLimit +给出了交易发起人愿意购买以完成交易的最大燃料单位数量。对于简单支付交易，这意味着将以太币从一个EOA转移到另一个EOA的交易，所需的燃料量固定为21,000个gas单位。要计算将要花费的以太币，你可以将21,000乘以你愿意支付的+ gasPrice +。例如：
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )</strong>
+> 210000000000000
+</pre>
+++++
+
+如果你的交易的目的地址是合约，则可以估算所需的燃料量，但无法准确确定。那是因为合约可以评估不同的条件，这些条件导致不同的执行路径以及不同的燃料总成本。合约的执行可能只包括简单的计算，或者执行更复杂的计算，具体取决于你无法控制且无法预测的条件。为了说明这一点，让我们看一个例子：我们可以编写一个智能合约，该合约在每次调用计数器时都会递增一个计数器，并执行一个等于调用次数的特定循环。也许在第100次调用中，它会发出特别的奖金，就像抽奖一样，但需要进行额外的计算才能计算出奖金。如果你调用该合约99次，则产生一种返回，而在第100次调用时，则发生了非常不同的返回。你要为此支付的燃料额度取决于在将交易包含在区块中之前有多少其他交易调用了该功能。也许你的估算是基于第99次交易，但是在确认交易之前，其他人会完成第99次调用合约。现在你是发起第100个合约的调用，那么计算工作量（和燃料成本）要高得多。
+
+借用以太坊中一个常见的类比，您可以将+ gasLimit +视为你汽车油箱的容量（你的汽车就是交易本身）。在每次旅程开始之前，你需要向油箱中填充所需的汽油量（验证交易所需的计算量）。虽然你可以在某种程度上估算出燃油量，但是你的旅程可能会发生意想不到的变化，例如改道（更复杂的执行路径）会增加油耗。
+
+不过，用油箱的类比在某种程度上具有误导性。实际上，燃料上限更像是加油站公司的信用帐户，你可以在旅途完成后根据实际使用的汽油量在这里付款。传输交易时，第一个验证步骤是检查其来源帐户是否有足够的以太币支付+ gasPrice * gas +限额。但是直到交易完成执行后，这笔款项才真正从你的帐户中扣除。你只需要为交易实际消耗的燃料付费，但是在发送交易之前，你必须有足够的余额支付你同意支付的最高金额。(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+
+[[tx_recipient]]
+===交易的接收者
+
+((("transactions","recipient of")))交易的收件人在+ to +字段中指定。它包含一个20字节的以太坊地址。该地址可以是EOA或合约地址。
+
+以太坊没有对该字段做进一步的验证。任何20字节的值均视为有效。如果20字节的值对应于没有相应私钥或没有相应合约的地址，则该交易仍然有效。以太坊无法知道一个地址是否是正确地从存在的公钥（因此是私钥）派生而来的。
+
+[WARNING]
+====
+以太坊协议中不验证交易中的收件人地址。你可能将地址发送到没有相应私钥或合约的地址，从而“烧掉”以太币，使其永远无法使用。验证应在用户界面级别进行。
+====
+
+((("ether burn"))) 将交易发送到错误的地址可能会销毁发送的以太币，从而使其永远无法访问（无法花费），因为大多数地址没有公开已知的私钥，因此无法通过生成签名支付。因此一般认为地址需要在用户界面级别验证（请参见<<EIP55>>）。实际上，销毁以太币有很多正当的理由（例如，作为对在支付渠道和其他智能合约中作弊的一种控制措施），并且由于以太币的数量是有限的，销毁以太币的价值将有效地分配到所有以太币持有人（与它们所容纳的以太币量成比例）。
+
+[[tx_value_data]]
+===交易的价值和数据
+
+((("transactions","value and data fields", id="ix_06transactions-asciidoc5", range="startofrange")))The main "payload" of a transaction is contained in ((("data field", id="ix_06transactions-asciidoc6", range="startofrange")))((("value field", id="ix_06transactions-asciidoc7", range="startofrange"))) 交易的主要“内容”包含在两个字段中：+ value +和+ data +。交易可以同时具有价值和数据，只有价值，只有数据，或者既没有价值也没有数据。所有四个组合均有效。
+
+((("invocation")))((("payment")))只有价值的交易是支付_payment_。仅包含数据的交易是调用_invocation_。具有价值和数据的交易既是支付又是调用。既没有价值也没有数据的交易-可能只是浪费燃料gas！但是还是有可能存在的。
+
+让我们尝试所有这些组合。首先，我们将从钱包中设置源地址和目标地址，只是为了使演示易于阅读：
+
+[source,javascript]
+----
+src = web3.eth.accounts[0];
+dst = web3.eth.accounts[1];
+----
+
+我们的第一笔交易仅包含一个值（支付款项），没有数据有效载荷：
+
+[[tx_value_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: ""});
+----
+
+我们的钱包显示一个确认屏幕，标明要发送的值，如<<parity_txdemo_value_nodata>>。
+
+[[parity_txdemo_value_nodata]]
+.Parity钱包展示一个有价值传递，但不包括数据的交易 
+image::images/parity_txdemo_value_nodata.png["Parity wallet showing a transaction with value, but no data"]
+
+
+下一个例子同时指定了值和有效数据负载：
+
+[[tx_value_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: "0x1234"});
+----
+
+我们的钱包显示一个确认屏幕，指示要发送的值以及数据有效负载，如<<parity_txdemo_value_data>>。
+
+[[parity_txdemo_value_data]]
+. Parity钱包显示具有价值和数据的交易
+image::images/parity_txdemo_value_data.png["Parity 钱包软件展示一个包含价值和数据的交易"]
+
+下一个交易包括有效数据，但交易的值为零：
+
+[[tx_novalue_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
+----
+
+我们的钱包显示一个确认屏幕，显示零价值和数据有效负载，如<<parity_txdemo_novalue_data>>。
+
+[[parity_txdemo_novalue_data]]
+.Parity钱包显示一个没有价值传递，但有数据的交易
+image::images/parity_txdemo_novalue_data.png["Parity wallet showing a transaction with no value, only data"]
+
+[role =“ pagebreak-before”]
+最后，一个交易既不包含要发送的值，也不包含有效数据载荷：
+
+[[tx_novalue_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
+----
+
+我们的钱包显示一个确认屏幕，指示零值，如<<parity_txdemo_novalue_nodata>>。
+
+[[parity_txdemo_novalue_nodata]]
+.Parity钱包显示一个没有价值传递，没有数据的交易
+image::images/parity_txdemo_novalue_nodata.png["Parity wallet showing a transaction with no value, and no data"]
+
+[[value_EOA_contracts]]
+====将价值转移到EOA和合约
+
+((("EOA (Externally Owned Account)","transmitting value to")))((("smart contracts","transmitting value to")))((("transactions","transmitting value to EOAs and contract"))) 构建包含价值的以太坊交易时，它等同于支付_payment_。根据目的地址是否为合约，此类交易的行为有所不同。
+
+对于EOA地址，或者对于在区块链上未标记为合约的任何地址，以太坊将记录状态更改，并将你发送的值添加到该地址的余额中。如果以前没有看到该地址，它将被添加到客户的状态内部表示中，并且其余额会初始化为你的付款金额。
+
+如果目标地址（+ to +）是合约，则EVM将执行合约并尝试调用交易有效数据负载中命名的函数。如果你的交易中没有数据，则EVM将调用后备_fallback_函数，如果该函数是可收款的，则将执行该函数以确定下一步要执行的操作。如果后备功能中没有代码，则交易的效果将是增加合同的余额，就像向钱包付款一样。如果没有后备功能或不付款后备功能，交易则将回退。
+
+合约可以在调用函数时立即抛出异常，也可以根据函数中编码的条件确定，从而拒绝传入的付款。如果函数成功终止（无异常），则合约状态将更新以反映合约以太币余额的增加。(((range="endofrange", startref="ix_06transactions-asciidoc7")))(((range="endofrange", startref="ix_06transactions-asciidoc6")))
+
+[[data_EOA]]
+====将数据发送到EOA或合约
+
+((("data payload, transmitting to EOAs and contracts", id="ix_06transactions-asciidoc8", range="startofrange")))((("EOA (Externally Owned Account)","transmitting data payload to", id="ix_06transactions-asciidoc9", range="startofrange")))((("smart contracts","transmitting data payload to", id="ix_06transactions-asciidoc10", range="startofrange")))((("transactions","transmitting data payload to EOAs and contracts", id="ix_06transactions-asciidoc11", range="startofrange"))) 当你的交易包含数据时，最有可能将其发送到合约地址。这并不意味着你不能将有效数据载荷发送到EOA，这在以太坊协议中是完全有效的。但是，在这种情况下，对这些数据的解释取决于你用于访问EOA的钱包。以太坊协议中忽略了对EOA交易中数据载荷的解释。大多数钱包也忽略了在其控制的EOA交易中收到的任何数据。将来，可能会出现一些标准，允许钱包以合约方式解释数据，从而允许交易调用用户钱包内部运行的功能。关键区别是由EOA的数据有效载荷的任何解释不受共识规则的限制，不同于合约pass：<span class="keep-together">执行</span>。
+
+现在，让我们假设你的交易正在将数据传递到合约地址。 ((("contract invocation")))((("invocation")))大多数合约更具体地将此数据用作函数_function调用_，调用命名的函数并将任何编码参数传递给该函数。
+
+发送到兼容ABI的合约（您可以假定所有合约都是）的有效数据载荷是以下内容的十六进制序列化编码：
+
+函数选择器：：函数原型的Keccak-256哈希的前4个字节。这使合约可以明确地标识你要调用的功能。
+
+函数参数：：函数的参数，根据ABI规范中定义的各种基本类型的规则进行编码。
+
+在<<solidity_faucet_example>>，我们定义了提款功能：
+
+[[withdraw_function_src]]
+[source,solidity]
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+((("prototype of a function"))) 函数的原型_prototype_定义为包含函数名称的字符串，其后是每个参数的数据类型，并用括号括起来并以逗号分隔。这里的函数名称是+ withdraw +，它接受一个单独的参数+ uint +（这是+ uint256 +的别名），因此+ withdraw +的原型为：
+
+[source,solidity]
+----
+withdraw(uint256)
+----
+
+让我们计算该字符串的Keccak-256哈希值：
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.utils.sha3("withdraw(uint256)");</strong>
+'0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
+</pre>
+++++
+
+哈希值的前4个字节为 +0x2e1a7d4d+。那就是我们的“函数选择器”值，它将告诉合约我们要调用哪个函数。
+
+接下来，让我们计算一个值作为参数传递到函数 +withdraw_amount+ 中。我们要提取0.01以太币。让我们将其编码为十六进制序列化的big-endian无符号256位整数，以wei表示：
+
+++++
+<pre data-type="programlisting">
+> <strong>withdraw_amount = web3.utils.toWei(0.01, "ether");</strong>
+'10000000000000000'
+> <strong>withdraw_amount_hex = web3.utils.toHex(withdraw_amount);</strong>
+'0x2386f26fc10000'
+</pre>
+++++
+
+现在，我们将函数选择器添加到数量中（填充为32个字节）：
+
+----
+2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000
+----
+
+这就是我们交易的有效数据负载，调用+ withdraw +函数并请求0.01以太币作为+ withdraw_amount +(((range="endofrange", startref="ix_06transactions-asciidoc11")))(((range="endofrange", startref="ix_06transactions-asciidoc10")))(((range="endofrange", startref="ix_06transactions-asciidoc9")))(((range="endofrange", startref="ix_06transactions-asciidoc8"))).(((range="endofrange", startref="ix_06transactions-asciidoc5")))
+
+[[contract_reg]]
+===特殊交易：创建智能合约
+
+((("contract creation transaction", id="ix_06transactions-asciidoc12", range="startofrange")))((("transactions","contract creation", id="ix_06transactions-asciidoc13", range="startofrange"))) 我们应该提到的一种特殊情况是在区块链上_创建一个新合约_并将其部署以供将来使用的交易。 ((("zero address","contract creation"))) 合约创建交易被发送到称为零地址_zero address_的特殊目标地址；合约注册交易中的+ to +字段包含地址 +0x0+。该地址既不代表EOA（没有对应的私钥-公钥对）也不代表合约。它永远不会花费以太币或发起交易。它仅用作目的地，其特殊含义是“创建此合约”。
+
+虽然零地址仅用于合约创建，但有时会从各种地址接收付款。 ((("ether burn"))) 对此有两种解释：要么是偶然的，导致了以太币的丢失，要么是故意的销毁_ether burn_（故意将以太币发送到某个永远无法消费的地址来销毁它）。但是，如果要进行故意的以太币销毁，则应向网络明确意图并使用专门指定的销毁地址：
+
+[[burn_address]]
+----
+0x000000000000000000000000000000000000dEaD
+----
+
+[WARNING]
+====
+发送到指定销毁地址的所有以太币将变得无法使用并且永远丢失。
+====
+
+用于创建合约的交易只需包含一个有效数据载荷，该有效数据载荷中包含将创建合约的已编译二进制码。此交易的唯一作用是创建合约。如果要以期初余额设置新合约，可以在+ value +字段中包含以太币数量，但这完全是可选的。如果将值（以太币）发送到没有有效数据负载的合约创建地址（即没有合约），则效果与发送到销毁地址相同：没有合约可以接收以太币，会导致以太币丢失。
+
+举例来说，我们可以手动创建一个<<intro_chapter>>中用的_Faucet.sol合约，通过创建一个到零地址的交易，并在数据有效负载中使用合约来完成。合约需要编译为二进制码表示形式。这可以通过Solidity编译器完成：
+
+++++
+<pre data-type="programlisting" class="pagebreak-before">
+$ <strong>solc --bin Faucet.sol</strong>
+
+二进制：
+6060604052341561000f57600080fd5b60e58061001d6000396000f30060606040526004361060...
+</pre>
+++++
+
+也可以从Remix在线编译器获得相同的信息。
+
+现在我们可以创建交易了：
+
+++++
+<pre data-type="programlisting">
+> <strong>src = web3.eth.accounts[0];</strong>
+> <strong>faucet_code = \
+  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606...f0029";</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, \
+  gas: 113558, gasPrice: 200000000000});</strong>
+
+"0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
+</pre>
+++++
+
+即使在创建零地址合约的情况下，始终指定+ to +参数是一个好习惯，因为意外将以太币发送到 +0x0+ 并永久丢失的代价太大。你还应该指定+ gasPrice +和+ gasLimit +。
+
+合约被挖出后，我们可以在Etherscan区块浏览器中看到它，如<<publish_contract_from_web3>>。
+
+[[publish_contract_from_web3]]
+.Etherscan显示合约被成功挖出
+image::images/contract_published.png["Etherscan showing the contract successfully mined"]
+
+我们可以查看交易的收据以获取有关合约的信息：
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getTransactionReceipt( \
+  "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");</strong>
+
+{
+  blockHash: "0x6fa7d8bf982490de6246875deb2c21e5f3665b4422089c060138fc3907a95bb2",
+  blockNumber: 3105256,
+  contractAddress: "0xb226270965b43373e98ffc6e2c7693c17e2cf40b",
+  cumulativeGasUsed: 113558,
+  from: "0x2a966a87db5913c1b22a59b0d8a11cc51c167a89",
+  gasUsed: 113558,
+  logs: [],
+  logsBloom: \
+    "0x00000000000000000000000000000000000000000000000000...00000",
+  status: "0x1",
+  to: null,
+  transactionHash: \
+    "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b",
+  transactionIndex: 0
+}
+</pre>
+++++
+
+这包括合约的地址，我们可以使用该地址向合约发送资金或从合同接收资金，如上一部分所示：
+
+++++
+<pre data-type="programlisting">
+> <strong>contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, \
+  value: web3.utils.toWei(0.1, "ether"), data: ""});</strong>
+
+"0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
+
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: \
+  "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
+
+"0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
+</pre>
+++++
+
+一段时间后，两个交易在Etherscan上都可见，如<<publish_contract_transactions>>. (((range="endofrange", startref="ix_06transactions-asciidoc13")))(((range="endofrange", startref="ix_06transactions-asciidoc12")))
+
+[[publish_contract_transactions]]
+.Etherscan显示发送和接收资金的交易
+image::images/published_contract_transactions.png["Etherscan showing the transactions for sending and receiving funds"]
+
+
+[[digital_sign]]
+===数字签名
+
+((("digital signatures", id="ix_06transactions-asciidoc14", range="startofrange")))((("transactions","digital signatures and", id="ix_06transactions-asciidoc15", range="startofrange"))) 到目前为止，我们尚未深入研究有关数字签名的任何细节。在本节中，我们将研究数字签名的工作原理，以及如何在不公开该私钥的情况下将其用于提供私钥所有权的证明。
+
+[[ecdsa]]
+====椭圆曲线数字签名算法
+
+((("digital signatures","ECDSA and")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","about"))) 以太坊中使用的数字签名算法是_椭圆曲线数字签名算法_（ ECDSA）。它基于椭圆曲线上的私钥-公钥对，如<<elliptic_curve>>。
+
+数字签名在以太坊中具有三个目的（请参阅以下边栏）。首先，签名证明私钥的所有者（即以太坊账户的所有者）已经授权以太币的支出或合约的执行。 ((("non-repudiation"))) 其次，它保证交易不可否认_non-repudiation_：即不可否认的授权证明。第三，签名证明交易签名之后，任何人都没有交易数据，并且不能被任何人修改。
+
+[[digital_signature_definition]]
+.Wikipedia对数字签名的定义
+****
+((("digital signatures","Wikipedia definition"))) 数字签名是一种数学方案，用于表示数字信息或文档的真实性。有效的数字签名使收件人有理由相信该信息是由已知发件人创建的（身份验证），发件人不能拒绝已发送该信息（不可否认），并且该信息在传输过程中未发生更改（完整性） 。
+
+_Source: https://en.wikipedia.org/wiki/Digital_signature_
+****
+
+[[digital_sign_work]]
+====数字签名的工作方式
+
+((("digital signatures","mechanism of operation"))) 数字签名是一种数学方案，由两部分组成。第一部分是一种算法，该算法使用私钥（签名密钥）从信息（在我们的情况下为交易）中创建签名。第二部分是一种算法，该算法允许任何人仅通过使用信息和公钥来验证签名。
+
+[[digital_sign_create]]
+=====创建数字签名
+
+((("digital signatures","creating")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","signature creation"))) 在以太坊的ECDSA实现中，被签名的“信息”就是交易或更准确地说，是来自交易的RLP编码数据的Keccak-256哈希。签名密钥是EOA的私钥。结果是签名：
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <msub><mi>F</mi> <mrow><mi>s</mi><mi>i</mi><mi>g</mi></mrow> </msub>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>F</mi> <mrow><mi>k</mi><mi>e</mi><mi>c</mi><mi>c</mi><mi>a</mi><mi>k</mi><mn>256</mn></mrow> </msub>
+      <mrow>
+        <mo>(</mo>
+        <mi>m</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>,</mo>
+      <mi>k</mi>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+其中：
+
+* _k_ 是签名用的私钥。
+* _m_是RLP编码的交易。
+* _F_~_keccak256_~ 是Keccak-256哈希函数。
+* _F_~_sig_~是签名算法。
+* _Sig_是签名结果。
+
+[[sign_function]]
+函数_F_~_sig_~生成签名__Sig__，该签名由两个值组成，通常称为_r_和_s_：
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <mo>(</mo>
+    <mi>r</mi>
+    <mo>,</mo>
+    <mi>s</mi>
+    <mo>)</mo>
+  </mrow>
+</math>
+</div>
+++++
+
+[[verify_sign]]
+====签名的验证
+
+((("digital signatures","verifying"))) 要验证签名，必须具有签名（_r_和_s_），序列化的交易以及与用于创建签名的私钥相对应的公钥。本质上，签名的验证意味着“只有生成此公钥的私钥的所有者才能在此交易中生成此签名”。
+
+签名验证算法获取消息（即，供我们使用的交易的哈希值），签名者的公钥和签名（_r_和_s_值），如果签名对此消息和公钥有效，则返回+ true + 。
+
+[[ecdsa_math]]
+==== ECDSA数学算法
+
+((("digital signatures","ECDSA math", id="ix_06transactions-asciidoc16", range="startofrange")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","mathematics of", id="ix_06transactions-asciidoc17", range="startofrange"))) 如前所述，签名是由数学函数_F_〜_sig_〜创建的，该函数生成由两个值_r_和_s_组成的签名。在本节中，我们将详细介绍函数_F_〜_sig_〜。
+
+((("ephemeral private key"))) 签名算法首先以加密安全的方式生成_ephemeral_（临时）私钥。该临时密钥用于计算_r_和_s_值，以确保攻击者无法查看以太坊网络上已签名的交易，从而无法计算发送者的实际私钥。
+
+我们从<<pubkey>>，临时专用密钥用于派生相应的（临时）公共密钥，因此我们有：
+
+*密码学安全的随机数_q_，用作临时私钥
+*从_q_和椭圆曲线生成器点_G_生成的对应的临时公钥_Q_
+
+然后，数字签名的_r_值就是临时公共密钥_Q_的_x_坐标。
+
+从那里，算法计算签名的_s_值，这样：
+
+++++
+<ul class="simplelist">
+<li><em>s</em> &#8801; <em>q</em><sup>-1</sup> (<em>Keccak256</em>(<em>m</em>) + <em>r</em> * <em>k</em>)  &nbsp;  &nbsp; (<em>mod p</em>)</li>
+</ul>
+++++
+
+其中：
+
+* _q_是临时私钥。
+* _r_是临时公钥的_x_坐标。
+* _k_是签名（EOA所有者）的私钥。
+* _m_是交易数据。
+* _p_是椭圆曲线的素数阶。
+
+验证是签名生成函数的逆函数，使用_r_和_s_值以及发送者的公钥来计算值_Q_，该值是椭圆曲线上的点（签名创建中使用的临时公钥）。步骤如下：
+
+1.检查所有输入的格式是否正确
+2.计算_w_ = __s __ ^-1 ^ _mod p_
+3.计算_u〜1〜_ = __Keccak256 __（__ m__）* _w_ _mod p_
+4.计算_u〜2〜_ = _r_ * _w_ _mod p_
+5.最后，计算椭圆曲线_Q_≡_u〜1〜_ * _G_ + _u〜2〜_ * * _K_ {nbsp} {nbsp}（_mod p_）
+
+其中：
+
+* _r_和_s_是签名值。
+* _K_是签名者（EOA所有者）的公共密钥。
+* _m_是已签名的交易数据。
+* _G_是椭圆曲线的生成点。
+* _p_是椭圆曲线的素数阶。
+
+如果所计算的点_Q_的_x_坐标等于_r_，则验证者可以得出签名有效的结论。
+
+请注意，在验证签名时，既不需要知道也不需要公开私钥。
+
+[TIP]
+====
+ECDSA算法是相当复杂的数学；对其完整的解释超出了本书的范围。网上有很多很棒的指南，逐步指导您：搜索“解释的ECDSA”或尝试以下链接：http://bit.ly/2r0HhGB[].(((range="endofrange", startref="ix_06transactions-asciidoc17")))(((range="endofrange", startref="ix_06transactions-asciidoc16")))
+====
+
+[[tx_sign]]
+====交易签名实践练习
+
+((("digital signatures","signing in practice")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","transaction signing in practice")))((("transactions","signing in practice"))) 为了产生有效的交易，发起者必须使用椭圆曲线数字签名算法对信息进行数字签名。当我们说“签署交易”时，我们实际上是指“签署RLP序列化交易数据的Keccak-256哈希”。签名应用于交易数据的哈希，而不是交易本身。
+
+要在以太坊中签署交易，发起者必须：
+
+1. 创建一个交易的数据结构，包括9个栏目: +nonce+, +gasPrice+, +gasLimit+, +to+, +value+, +data+, +chainID+, +0+, +0+.
+2.使用RLP编码方式将交易数据结构转换为序列化信息。
+3.计算该序列化信息的Keccak-256哈希值。
+4.计算ECDSA签名，使用原始EOA的私钥对哈希签名。
+5.将ECDSA签名的计算出的+ v +，+ r +和+ s +值追加到交易中。
+
+特殊的签名变量+ v +表示两件事：链识别符 ID和用于帮助+ ECDSArecover +函数检查签名的恢复标识符。它是27或28之一，或者是链ID的两倍加35或36的值。有关链ID的更多信息，请参见<<raw_tx_eip155>>。恢复标识符（“旧式”签名中为27或28，或在完整的Spurious Dragon式交易中为35或36）用于指示公钥的+ y +组件的奇偶性（请参见<<sign_prefix>>了解更多信息）。
+
+
+[NOTE]
+====
+((("Spurious Dragon"))) 在区块＃2,675,000中，以太坊实施了“ Spurious Dragon”的硬分叉，除其他更改外，它引入了一种新的签名方案，该方案包括交易重放攻击保护（防止旨在重放一个网络的交易到其他的网络上）。此新的签名方案在EIP-155中指定。此更改影响交易的形式及其签名，因此必须注意三个签名变量（即+ v +）中的第一个，它采用两种形式之一，并指示要对包含在交易消息中的数据字段进行哈希处理。
+====
+
+
+[[raw_tx]]
+====原始交易创建和签名
+
+((("EthereumJS")))((("transactions","raw transaction creation/signing"))) 在本节中，我们将使用+ ethereumjs-tx +库创建一个原始交易并对其进行签名，该库可以用npm安装。这演示了通常在钱包或代表用户签名交易的应用程序内部使用的功能。该示例的源代码位于该书的GitHub存储库 http://bit.ly/2yI2GL3[GitHub repository]:中的文件__raw_tx_demo.js__中：
+
+[[raw_tx_demo_source]]
+[source,javascript]
+----
+include::code/web3js/raw_tx/raw_tx_demo.js[]
+----
+
+[[raw_tx_demo_run]]
+运行示例代码将产生以下结果：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node raw_tx_demo.js</strong>
+RLP-Encoded Tx: 0xe6808609184e72a0008303000094b0920c523d582040f2bcb1bd7fb1c7c1...
+Tx Hash: 0xaa7f03f9f4e52fcf69f836a6d2bbc7706580adce0a068ff6525ba337218e6992
+Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1...
+</pre>
+++++
+
+[[raw_tx_eip155]]
+====创建使用EIP-155标准的原始交易
+
+((("chain identifier")))((("EIP-155 Simple Replay Attack Protection standard")))((("transactions","raw transaction creation with EIP-1455"))) EIP-155”标准，即 “简单重播攻击保护”标准规定了受重放攻击保护的交易编码，该交易编码在签名之前在交易数据内包括“区块链标识符”。这确保了为一个区块链（例如，以太坊主网络）创建的交易在另一区块链（例如，以太坊经典或Ropsten测试网络）上无效。因此，在一个网络上广播的交易不能在另一个网络上重放，这就是标准名称的由来。
+
+EIP-155在交易数据结构的六个主要字段中添加了三个字段，即链标识符 +0+ 和 +0+。这三个字段在对数据进行编码和哈希处理之前添加到交易数据中。这样它们就会更改了交易的哈希值，该哈希值稍后将应用于签名。通过在要签名的数据中包含链标识符，交易签名可以防止任何更改，因为如果链标识符被修改，签名将失效。因此，EIP-155使得不可能在另一条链上重播交易，因为签名的有效性取决于链标识符。
+
+
+区块链标识符字段根据交易所针对的网络获取一个值，如<<chain_id_table>>。
+
+[[chain_id_table]]
+.区块链标识符
+[options =“ header”]
+|======
+| Chain | Chain ID
+| Ethereum mainnet | 1
+| Morden (obsolete), Expanse | 2
+| Ropsten | 3
+| Rinkeby | 4
+| Rootstock mainnet | 30
+| Rootstock testnet | 31
+| Kovan | 42
+| Ethereum Classic mainnet | 61
+| Ethereum Classic testnet | 62
+| Geth private testnets | 1337
+|======
+
+生成的交易结构经过RLP编码，哈希处理和签名。对签名算法进行了稍微修改，并且可以在 +v+ 前缀中编码链标识符。
+
+有关更多详细信息，请参见http://bit.ly/2CQUgne[the EIP-155 specification]。(((range="endofrange", startref="ix_06transactions-asciidoc15")))(((range="endofrange", startref="ix_06transactions-asciidoc14")))
+
+[[sign_prefix]]
+===签名前缀值（v）和恢复公钥
+
+((("digital signatures","signature prefix value (v) and public key recovery")))((("public key recovery")))((("transactions","signature prefix value (v) and public key recovery")))，如<<tx_struct>>所指出的，交易消息不包含“发件人”字段。这是因为可以直接从ECDSA签名中计算出发起者的公钥。拥有公钥后，就可以轻松计算地址。恢复签名者的公钥的过程称为公钥恢复_public key recovery_。
+
+给定在<<ecdsa_math>>中计算的值+ r +和+ s +，我们可以计算两个可能的公钥。
+
+首先，我们根据签名中的_x_坐标+ r +值计算两个椭圆曲线点_R_和__R __ ^ __'__ ^。因为椭圆曲线在x轴上是对称的，所以有两个点，因此对于任何+ x +值，都有两个适合曲线的可能值，在x轴的每一侧。
+
+从+ r +，我们还计算__r __ ^-1 ^，它是+ r +的乘法逆。
+
+最后，我们计算_z_，这是信息哈希值的_n_最低位，其中_n_是椭圆曲线的阶数。
+
+然后，两个可能的公钥为：
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>1</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+和：
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>2</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em><sup>'</sup> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+其中：
+
+* __K__~1~ 和__K__~2~是签名者公钥的两种可能性。
+* __r __ ^-1 ^是签名的+ r +值的乘法逆。
+* _s_是签名的+ s +值。
+* __R__和__R __ ^'^是临时公钥_Q_的两种可能性。
+* _z_是信息哈希值的__n__个最低位。
+* _G_是椭圆曲线的生成点。
+
+为了使事情更有效，交易签名包括一个前缀值+ v +，该值告诉我们两个可能的_R_值中的哪一个是临时公共密钥。如果+ v +是偶数，则_R_是正确的值。如果+ v +为奇数，则为__R __ ^'^。这样，我们只需要为_R_计算一个值，为_K_计算一个值。
+
+[[offline_sign]]
+===分开签名和传输（脱机签名）
+
+((("digital signatures","separating signing and transmission", id="ix_06transactions-asciidoc18", range="startofrange")))((("offline signing", id="ix_06transactions-asciidoc19", range="startofrange")))((("transactions","separating signing and transmission", id="ix_06transactions-asciidoc20", range="startofrange"))) 一旦签署了交易，就可以传输到以太坊网络。创建，签名和广播交易的三个步骤通常是单个操作，例如，使用+ web3.eth.sendTransaction +。但是，正如你在<<raw_tx>>中看到的，你可以在两个单独的步骤中创建并签署交易。签署交易后，你可以使用+ web3.eth.sendSignedTransaction +进行传输，该交易将接受十六进制编码和签署的交易，并在以太坊网络上进行传输。
+
+为什么要分离交易的签名和传输？最常见的原因是安全性。签署交易的计算机必须已将解锁的私钥加载到内存中。进行传输的计算机必须连接到互联网（并且正在运行以太坊客户端）。如果这两个功能都在一台计算机上，则你的在线系统上有私钥，这非常危险。将签名，传输和在不同机器上（分别在离线设备和在线设备上）执行的功能分开，称为“离线签名”，这是一种常见的安全做法。
+
+<<offline_signing>>显示了这一过程：
+
+1.在在线计算机上创建未签名的交易，可以在其中检索帐户的当前状态，尤其是当前的交易计数和可用资金。
+2.例如通过QR码或USB闪存驱动器将未签名的交易转移到“空白的”离线设备以进行交易签名。
+3.将签名的交易（返回）传输到在线设备，例如通过QR码或USB闪存盘在以太坊区块链上广播。
+
+[[offline_signing]]
+.以太坊交易的脱机签名
+image::images/offline_signing.png["以太坊交易的脱机签名"]
+
+根据所需的安全级别，你的“脱机签名”计算机与在线计算机的隔离程度可能有所不同，范围从带有隔离功能和防火墙的子网络（联机但隔离）到完全脱机的系统（称为_air-gapped_系统） 。 ((("air-gapped system"))) 在一个气隙式的系统中根本没有网络连接：计算机与在线环境之间存在“ 空气”间隙。要签署交易，你可以使用数据存储介质或（更好）网络摄像头和QR码在气隙计算机之间进行交易。当然，这意味着你必须手动转移要签名的每个交易，并且这种方式无法扩展。
+
+尽管没有多少环境可以使用完全隔离的系统，但即使是很小程度的隔离也具有明显的安全优势。例如，带有防火墙的隔离子网仅允许通过消息队列协议，与在在线系统上签名相比，可以大大减少攻击面，并提供更高的安全性。 ((("ZeroMQ (0MQ)"))) 许多公司为此使用诸如ZeroMQ（0MQ）之类的协议。通过这样的设置，交易将被序列化并排队等待签名。排队协议以类似于TCP套接字的方式将序列化的消息传输到签名计算机。签名计算机（仔细地）从队列中读取序列化的交易，使用适当的密钥应用签名，并将其放置在传出队列中。传出队列将已签名的交易传输到带有以太坊客户端的计算机，以太坊客户端将其提出并向网络广播。(((range="endofrange", startref="ix_06transactions-asciidoc20")))(((range="endofrange", startref="ix_06transactions-asciidoc19")))(((range="endofrange", startref="ix_06transactions-asciidoc18")))
+
+[[tx_propagation]]
+===交易的广播
+
+((("flood routing")))((("node","transaction propagation")))((("propagation of transactions")))((("transactions","propagation of")))以太坊网络使用“洪泛路由”协议。每个以太坊客户端都充当peer-to-peer（P2P）_网络中的节点_node_，该网络（理想情况下）形成网状_mesh_网络。没有一个网络节点是特殊的：它们都充当同等的对等体。我们将使用术语“节点”来指代连接到并参与P2P网络的以太坊客户端。
+
+交易的传播开始于最初创建（或从离线接收）已签名的交易的起始以太坊节点。交易经过验证，然后传输到直接连接到起始节点的所有其他以太坊节点。 ((("neighbor nodes"))) 平均而言，每个以太坊节点保持与至少13个其他节点的连接，这些节点称为邻居节点_neighbors_。每个邻居节点在收到交易后都会立即对其进行验证。如果它们同意该交易有效，则会存储一份副本并将其传播给所有邻居（交易的来源除外）。结果，交易从发起节点按照漫水方式_flooding_跨网络向外波动，直到网络中的所有节点都具有交易的副本。节点可以过滤它们传播的信息，但是默认设置是传播它们接收的所有有效交易信息。
+
+在短短的几秒钟内，以太坊交易就会传播到全球所有以太坊节点。从每个节点的角度来看，无法识别交易的起源。将其发送到该节点的邻居可能是交易的始发者，或者可能已从其邻居之一接收到它。为了能够跟踪交易的起源或干扰传播，攻击者必须控制所有节点的很大一部分。这是P2P网络安全和隐私设计的一部分，尤其是应用于区块链网络时。
+
+[[chain_record]]
+===记录到区块链上
+
+((("blockchain","recording transactions on")))((("miners")))((("mining farms")))((("transactions","recording on the blockchain"))) 虽然以太坊中的所有节点都是同等的对等节点，但是其中一些节点由矿工_miners_操作，并将交易和区块馈送到矿池_mining farms_，这是具有高性能图形处理单元（GPU）的计算机。采矿计算机将交易添加到候选区块，并尝试找到使候选区块有效的工作证明。我们将在<<consensus>>中详细讨论这一过程。
+
+无需赘述，有效交易将最终包含在交易块中，并因此记录在以太坊区块链中。一旦被挖掘成一个区块，交易还会通过修改账户余额（在简单付款的情况下）或通过调用更改其内部状态的合约来修改以太坊单例的状态。这些更改以交易收据_receipt_的形式记录在交易旁边，该交易也可以包含事件_events_。我们将在<<evm_chapter>>中详细解释这些内容。
+
+一个交易的完整旅程是从使用EOA签名创建交易，链上传播，再到通过挖矿改变了单例的状态，最终在区块链上留下了不可磨灭的标记。
+
+===多重签名（Multisig）交易
+
+((("multiple-signature (multisig) transactions")))((("transactions","multiple-signature"))) 如果你熟悉比特币的脚本编写功能，则可以创建比特币的多签名账户，即仅当多方签署交易（例如2个签名中的2个或4个签名中的3个）时才能花费资金的帐户。以太坊的普通EOA中的价值交易没有多重签名的规定;但是，可以通过智能合约在你可以想到的任何条件下强制执行任意签名限制，以同样地处理以太币和通证的转移。
+
+要利用此功能，必须将以太币转移到“钱包合约”，该钱包已使用所需的支出规则进行编程，例如多签名要求或支出限制（或两者的组合）。一旦满足支出条件，钱包合约就会在授权的EOA提示下发送资金。例如，要在多重签名条件下保护你的以太币，请将以太币转移至多重签名合约。每当你想将资金发送到另一个帐户时，所有需要的用户都需要使用常规的钱包应用程序将交易发送到合约，从而有效地授权合约执行最终交易：[ <span class="keep-together">transaction</span> ]。
+
+这些合约也可以设计为需要多个签名才能执行本地代码或触发其他合约。该方案的安全性最终由多重签名合约的代码确定。
+
+作为智能合约实现多重签名交易的能力证明了以太坊的灵活性。但是，这是一把双刃剑，因为额外的灵活性可能会导致可以破坏多签名方案安全性的错误。实际上，有许多在EVM中创建多签名命令的提案，从而至少对于简单的M-of-N多签名方案来说，不再需要智能合约。这将等同于比特币的多重签名系统，该系统是核心共识规则的一部分，并已被证明是可靠且安全的。
+
+===本章小结
+
+交易是以太坊系统中每个活动的起点。交易是使以太坊虚拟机运行智能合约，更新账户余额并更广泛地修改以太坊区块链状态的“输入”方法。接下来，我们将更详细地了解智能合约，并学习如何使用面向Solidity合约的语言进行编程。((range="endofrange", startref="ix_06transactions-asciidoc0")))

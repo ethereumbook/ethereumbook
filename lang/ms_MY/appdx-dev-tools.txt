@@ -1,0 +1,762 @@
+[appendix]
+[[dev_tools_frameworks]]
+== Alat Pembangunan, Rangka Kerja, lulus: [ <span class="keep-together">dan Perpustakaan</span> ]
+
+=== Rangka Kerja
+
+(((&quot;rangka kerja&quot;, id = &quot;ix_appdx-dev-tools-asciidoc0&quot;, pelbagai = &quot;startofrange&quot;))) Rangka kerja boleh digunakan untuk meringankan pembangunan kontrak pintar Ethereum. Dengan melakukan segala-galanya sendiri, anda akan mendapat pemahaman yang lebih baik tentang bagaimana semuanya bersatu bersama, tetapi banyak kerja yang membosankan, berulang. Rangka kerja yang diterangkan dalam bahagian ini boleh mengautomasikan tugas-tugas tertentu dan membuat pembangunan lebih mudah.
+
+[[truffle]]
+==== Truffle
+
+(&quot;(framework&quot;, &quot;Truffle&quot;, id = &quot;ix_appdx-dev-tools-asciidoc1&quot;, range = &quot;startofrange&quot;))) (((&quot;Truffle&quot;, id = &quot;ix_appdx-dev-tools-asciidoc2&quot; julat = &quot;startofrange&quot;))) GitHub: https://github.com/trufflesuite/truffle
+
+Laman web: https://truffleframework.com
+
+Documentation: https://truffleframework.com/docs
+
+Truffle Boxes: http://truffleframework.com/boxes/
+
++npm+ package repository: https://www.npmjs.com/package/truffle
+
+
+[[installing_truffle]]
+===== Memasang rangka kerja Truffle
+
+(((&quot;Node.js&quot;))) (((&quot;Truffle&quot;, &quot;memasang&quot;))) Rangka Truffle terdiri daripada beberapa pakej Node.js. Sebelum memasang + truffle +, anda perlu mempunyai pemasangan Node.js yang terkini dan berfungsi dan Pengurus Pakej Node (+ npm +).
+
+Cara yang disyorkan untuk memasang Node.js dan + npm + ialah menggunakan Pengurus Versi Node (+ nvm +). Sebaik sahaja anda memasang + nvm +, ia akan mengendalikan semua kebergantungan dan kemas kini untuk anda. Ikut arahan yang terdapat di http://nvm.sh [].
+
+Setelah + nvm + dipasang pada sistem pengendalian anda, memasang Node.js adalah mudah. Gunakan + - lts + bendera untuk memberitahu + nvm + yang anda mahukan versi terbaru &quot;sokongan jangka panjang&quot; (LTS) Node.js:
+
+++++
+<pre data-type="programlisting">
+$ <strong>nvm install --lts</strong>
+</pre>
+++++
+
+Sahkan anda mempunyai + nod + dan + npm + dipasang:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v</strong>
+v8.9.4
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+Seterusnya, buat fail yang tersembunyi, _.nvmrc_, yang mengandungi versi Node.js yang disokong oleh DApp anda supaya pemaju hanya perlu menjalankan `nvm install` dalam akar direktori projek dan ia secara automatik akan memasang dan bertukar untuk menggunakan versi itu :
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v &gt; .nvmrc</strong>
+$ <strong>nvm install</strong>
+</pre>
+++++
+
+Nampak baik. Sekarang untuk memasang + truffle +:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install truffle</strong>
+
++ truffle@4.0.6
+installed 1 package in 37.508s
+</pre>
+++++
+
+[[truffle_box]]
+===== Mengintegrasikan projek Truffle prebuilt (Kotak Truffle)
+
+(&quot;Truffle&quot;, &quot;mengintegrasikan projek Truffle prebuilt&quot;))) ((&quot;Kotak Truffle&quot;))) Jika anda ingin menggunakan atau mencipta DApp yang dibina di atas boilerplate prebuilt, pergi ke laman web Truffle Boxes, projek Truffle sedia ada, dan kemudian jalankan arahan berikut untuk memuat turun dan mengeluarkannya:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle unbox <em>BOX_NAME</em></strong>
+</pre>
+++++
+
+[[truffle_project_directory]]
+===== Mencipta direktori projek truffle
+
+Untuk setiap projek di mana anda akan menggunakan + truffle +, buat direktori projek dan inisikan (&quot;(Truffle&quot;, &quot;membuat direktori projek&quot;, id = &quot;ix_appdx-dev-tools-asciidoc3&quot;, range = &quot;startofrange&quot; + truffle + dalam direktori itu. + truffle + akan membuat struktur direktori yang diperlukan di dalam direktori projek anda. Adalah lazim untuk memberikan direktori projek nama yang menggambarkan projek itu. Untuk contoh ini, kami akan menggunakan + truffle + untuk menggunakan kontrak + Faucet + dari &lt; <simple_contract_example> &gt;, dan oleh itu kami akan menamakan folder projek __Faucet__:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir Faucet</strong>
+$ <strong>cd Faucet</strong>
+Faucet $
+</pre>
+++++
+
+Sekali di dalam direktori _Faucet_, kita mulakan + truffle +:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle init</strong>
+</pre>
+++++
+
++ truffle + membuat struktur direktori dan beberapa fail lalai:
+
+----
+Faucet
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- test
++---- truffle-config.js
+`---- truffle.js
+----
+
+Kami juga akan menggunakan beberapa pakej sokongan JavaScript (Node.js), sebagai tambahan kepada truffle + sendiri. Kita boleh memasangnya dengan + npm +. Kami memulakan struktur direktori + npm + dan menerima lalai yang dicadangkan oleh + npm +:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+
+package name: (faucet)
+version: (1.0.0)
+description:
+entry point: (truffle-config.js)
+test command:
+git repository:
+keywords:
+author:
+license: (ISC)
+About to write to Faucet/package.json:
+
+{
+  "name": "faucet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" &amp;&amp; exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+
+
+Adakah ini ok? (ya)
+</pre>
+++++
+
+Sekarang, kita boleh memasang dependencies yang akan kita gunakan untuk membuat kerja dengan + truffle + lebih mudah:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install dotenv truffle-wallet-provider ethereumjs-wallet</strong>
+</pre>
+++++
+
+Kami kini mempunyai direktori __node_modules__ dengan beberapa ribu fail di direktori _Faucet_ kami.
+
+Sebelum menggunakan DApp untuk penghasilan awan atau persekitaran integrasi yang berterusan, adalah penting untuk menentukan bidang + enjin + supaya DApp anda dibina dengan versi Node.js yang betul dan kebergantungan yang berkaitan dipasang. Untuk butiran mengenai mengkonfigurasi bidang ini, lihat http://bit.ly/2zp2GPF[documentation].(((range=&quot;endofrange &quot;, startref =&quot; ix_appdx-dev-tools-asciidoc3 &quot;)))
+
+===== Mengkonfigurasi truffle
+
+(((&quot;Truffle&quot;, &quot;mengkonfigurasi&quot;))) + truffle + membuat beberapa fail konfigurasi kosong, _truffle.js_ dan _truffle-config.js_. Pada sistem Windows, nama _truffle.js_ boleh menyebabkan konflik apabila anda cuba menjalankan perintah + truffle + dan Windows cuba untuk menjalankan _truffle.js_ sebaliknya. Untuk mengelakkan ini, kami akan memadamkan _truffle.js_ dan menggunakan _truffle-config.js_ (menyokong pengguna Windows, yang, jujur, cukup menderita):
+
+++++
+<pre data-type="programlisting">
+$ <strong>rm truffle.js</strong>
+</pre>
+++++
+
+Sekarang kita edit _truffle-config.js_ dan gantikan kandungan dengan contoh yang dijelaskan di sini:
+
+[source,javascript]
+----
+module.exports = {
+  networks: {
+localnode: {// Mana-mana rangkaian node tempatan kita menyambung ke
+network_id: &quot;*&quot;, // Padaskan sebarang ID rangkaian
+      host: "localhost",
+      port: 8545,
+    }
+  }
+};
+----
+
+Konfigurasi ini adalah titik permulaan yang baik. Ia menubuhkan satu rangkaian Ethereum lalai (bernama + localnode +), yang menganggap kita menjalankan klien Ethereum seperti Parity, sama ada sebagai nod penuh atau sebagai klien ringan. Konfigurasi ini akan mengarahkan + truffle + untuk berkomunikasi dengan nod tempatan di atas RPC, di port 8545. + truffle + akan menggunakan rangkaian Ethereum mana pun rangkaian setempat disambungkan, seperti rangkaian utama Ethereum, atau rangkaian ujian seperti Ropsten. Node tempatan juga akan menyediakan fungsi dompet.
+
+Dalam bahagian berikut, kami akan mengkonfigurasi rangkaian tambahan untuk + truffle + untuk digunakan, seperti blok + ujian ganache + tempatan dan Infura, penyedia rangkaian yang dihoskan. Apabila kami menambah lebih banyak rangkaian, fail konfigurasi akan menjadi lebih kompleks, tetapi ia juga akan memberi kami lebih banyak pilihan untuk aliran kerja ujian dan pembangunan kami.
+
+===== Menggunakan truffle untuk menggunakan kontrak
+
+Kami menggunakan direktori kerja asas untuk projek _Faucet_ kami, dan kami mempunyai + truffle + dan (truffle) dependensinya dikonfigurasikan. Kontrak masuk dalam subdirektori _contracts_ projek kami. Direktori ini mengandungi kontrak &quot;pembantu&quot;, _Migrations.sol_, yang menguruskan peningkatan kontrak untuk kami. Kami akan mengkaji penggunaan _Migrations.sol_ dalam bahagian seterusnya.
+
+Mari salin kontrak _Faucet.sol_ (dari &lt; <solidity_faucet_example> &gt;) ke subdirektori _contracts_, supaya direktori projek kelihatan seperti ini:
+
+----
+Faucet
++---- contracts
+|   +---- Faucet.sol
+|   `---- Migrations.sol
+...
+----
+
+Kami kini boleh meminta + truffle + untuk menyusun kontrak untuk kami:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle compile</strong>
+Compiling ./contracts/Faucet.sol...
+Compiling ./contracts/Migrations.sol...
+Writing artifacts to ./build/contracts
+</pre>
+++++
+
+[[truffle_migrations_understanding_deployment_scripts]]
+===== Migrasi truffle-memahami skrip penempatan
+
+(&quot;skrip penempatan&quot;, id = &quot;ix_appdx-dev-tools-asciidoc4&quot;, range = &quot;startofrange&quot;))) (((&quot;migrasi&quot;, id = &quot;ix_appdx-dev-tools-asciidoc5&quot; startofrange &quot;))) Truffle menawarkan sistem penyebaran yang dipanggil _migrasi_ () () (&quot; (Truffle &quot;,&quot; migrasi &quot;, id =&quot; ix_appdx-dev-tools-asciidoc6 &quot; Jika anda telah bekerja dalam rangka kerja lain, anda mungkin melihat sesuatu yang serupa: Ruby on Rails, Python Django, dan banyak lagi bahasa dan kerangka kerja lain yang mempunyai migrasi + arahan.
+
+Dalam semua rangka kerja tersebut, tujuan penghijrahan adalah untuk mengendalikan perubahan dalam skema data antara versi perisian yang berlainan. Tujuan penghijrahan di Ethereum sedikit berbeza. Kerana kontrak Ethereum tidak berubah dan gas kos untuk digunakan, Truffle menawarkan mekanisme penghijrahan untuk mengesan kontrak (dan versi mana) yang telah digunakan. Dalam projek yang rumit dengan berpuluh-puluh kontrak dan ketergantungan yang kompleks, anda tidak perlu membayar untuk memindah semula kontrak yang tidak berubah. Anda juga tidak mahu menjejak secara manual versi mana kontrak yang telah dikerahkan. Mekanisme penghijrahan Truffle melakukan semua itu dengan menggunakan kontrak pintar _Migrations.sol_, yang kemudian menjejaki semua penyebaran kontrak yang lain.
+
+Kami hanya mempunyai satu kontrak, _Faucet.sol_, yang bermaksud bahawa sistem penghijrahan berlebihan, untuk mengatakan paling sedikit. Malangnya, kita perlu menggunakannya. Tetapi, dengan mempelajari cara menggunakannya untuk satu kontrak, kita boleh mula mengamalkan tabiat yang baik untuk aliran kerja pembangunan kita. Usaha itu akan dibayar apabila perkara menjadi lebih rumit.
+
+Direktori _migrations_ Truffle adalah tempat skrip migrasi ditemui. Sekarang hanya ada satu skrip, __1_initial_migration.js__, yang melancarkan kontrak _Migrations.sol_ itu sendiri:
+
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/1_initial_migration.js[]
+----
+
+Kami memerlukan skrip penghijrahan kedua, untuk menggunakan _Faucet.sol_. Mari kita panggil __2_deploy_contracts.js__. Ia sangat mudah, seperti __1_initial_migration.js__, dengan hanya beberapa perubahan kecil. Sebenarnya, anda boleh menyalin kandungan __1_initial_migration.j__ dan hanya menggantikan semua contoh + Migrasi + dengan + Faucet +:
+
+[source,javascript,linenums]
+----
+termasuk :: kod / truffle / keran / migrasi / 2_deploy_contracts.js []
+----
+
+Skrip ini memulakan variasi + Faucet +, mengenal pasti _Faucet.sol_ Kod sumber pepejal sebagai artefak yang mentakrifkan + Faucet +. Kemudian ia memanggil fungsi `deploy` untuk menggunakan kontrak ini.
+
+Kita sudah siap. Mari kita gunakan + truffle bermigrasi + untuk menggunakannya. Kami perlu menentukan rangkaian yang digunakan untuk menggunakan kontrak, menggunakan + - rangkaian + hujah. Kami hanya mempunyai satu rangkaian yang dinyatakan dalam fail konfigurasi, yang kami namakan + localnode +. Pastikan klien Ethereum tempatan anda berjalan dan kemudian taipkan:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle migrate --network localnode</strong>
+</pre>
+++++
+
+Kerana kita menggunakan simpul tempatan untuk menyambung ke rangkaian Ethereum dan menguruskan dompet kita, kita perlu memberi kuasa transaksi yang + membuat truffle +. Kami menjalankan + pariti + disambungkan ke blok Rolsten ujian block, jadi semasa migrasi kami akan melihat pop timbul seperti yang ada di &lt; <parity_deployment_confirmation> &gt; pada konsol web Parity.
+
+[[parity_deployment_confirmation]]
+.Pariti meminta pengesahan untuk menggunakan keran
+image :: images / parity_deployment_confirmation.png [&quot;Pariti meminta pengesahan untuk menggunakan keran&quot;]
+
+Terdapat empat urus niaga: satu untuk menggunakan + Migrasi +, satu untuk mengemas kini kaunter penyebaran untuk +1 +, satu untuk menggunakan + Faucet +, dan satu untuk mengemas kini kaunter penyebaran ke +2+.
+
+Truffle akan menunjukkan migrasi melengkapkan, menunjukkan setiap transaksi dan menunjukkan alamat kontrak: (((range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc6&quot;))) (((range = &quot;endofrange&quot; , startref = &quot;ix_appdx-dev-tools-asciidoc5&quot;))) () (range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc4&quot;
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle migrate --network localnode</strong>
+Menggunakan &#39;localnode&#39; rangkaian.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xfa090db179d023d2abae543b4a21a1479e70ca7d35a469a5d1a98bfc6bd80fe8
+  Migrations: 0x8861c27715550bed8362c0345add158489df6db0
+Saving successful migration to network...
+  ... 0x985c4a32716826ddbe4eae284104bef8bc69e959899f62246a1b27c9dfcd6c03
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xecdbeef77f0558edc689440e34b7bba0a3ba7a45e4b680b071b47c30a930e9d6
+  Faucet: 0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300
+Saving successful migration to network...
+  ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
+Saving artifacts...
+</pre>
+++++
+
+===== Menggunakan konsol Truffle
+
+Truffle menawarkan konsol JavaScript yang boleh kita gunakan untuk berinteraksi dengan rangkaian Ethereum (melalui (setempat) (dengan menggunakan &quot;Truffle&quot;, &quot;console&quot;, id = &quot;ix_appdx-dev-tools-asciidoc7&quot; nod), berinteraksi dengan kontrak yang digunakan, dan berinteraksi dengan pembekal dompet. Dalam konfigurasi semasa kami (+ localnode +), pembekal nod dan dompet adalah pelanggan Pariti setempat kami.
+
+Mari mulakan konsol Truffle dan cuba beberapa arahan:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle console --network localnode</strong>
+truffle(localnode)>
+</pre>
+++++
+
+Truffle membentangkan prompt, menunjukkan konfigurasi rangkaian yang dipilih (+ localnode +).
+
+[PETUA]
+====
+Penting untuk diingat dan sedar rangkaian mana yang anda gunakan. Anda tidak mahu secara tidak sengaja menggunakan kontrak ujian atau membuat transaksi pada rangkaian utama Ethereum. Itu boleh jadi kesilapan yang mahal!
+====
+
+Konsol Truffle menawarkan fungsi autocomplete yang memudahkan kita meneroka alam sekitar. Jika kita tekan Tab selepas arahan selesai, Truffle akan melengkapkan perintah untuk kita. Menekan Tab dua kali akan menunjukkan semua penyelesaian yang mungkin jika lebih daripada satu arahan sepadan dengan input kami. Sebenarnya, jika kita menekan Tab dua kali pada prompt kosong, Truffle menyenaraikan semua perintah yang ada:
+
+++++
+<pre data-type="programlisting" class="codewrap">
+truffle(localnode)&gt;
+Array Boolean Tarikh Ralat EvalError Fungsi Infinity JSON Matematik NaN Nombor Rentang ObjekError ReferenceError Syntax String RegExpError TypeError URIError decodeURI decodeURIC encodURI encodeURI encodeURIC component eval isFinite isNaN parseFloatInt undefined
+
+Lapangan Terbang Antarabangsa ArrayBuffer Buffer DataView keran Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Peta Migrations Promise Proxy Menggambarkan Set StateManager Simbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ ceritakan async_hooks penampan global child_process clearImmediate clearInterval clearTimeout konsol kelompok crypto dgram domain dns anda melarikan diri dari peristiwa fs http http2 https modul bersih os path perf_hooks proses punycode querystring readline repl memerlukan root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
+
+__defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
+</pre>
+++++
+
+Sebilangan besar fungsi berkaitan dompet dan nod disediakan oleh + web3 + objek, yang merupakan contoh perpustakaan web3.js. Objek + web3 + mengagihkan antara muka RPC ke nod Parity kami. Anda juga akan melihat dua objek dengan nama biasa: + Migrasi + dan + Faucet +. Mereka mewakili kontrak yang kami gunakan. Kami akan menggunakan konsol Truffle untuk berinteraksi dengan kontrak. Pertama, mari kita periksa dompet kami melalui + web3 + objek:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.accounts</strong>
+[ '0x9e713963a92c02317a681b9bb3065a8249de124f',
+  '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
+</pre>
+++++
+
+Pelanggan Pariti kami mempunyai dua dompet, dengan beberapa ujian eter pada Ropsten. + Web3.eth.accounts + atribut mengandungi senarai semua akaun. Kami boleh menyemak baki akaun pertama menggunakan fungsi + getBalance +:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(web3.eth.accounts[0]).toNumber()</strong>
+191198572800000000
+truffle(localnode)&gt;
+</pre>
+++++
+
+web3.js adalah perpustakaan JavaScript yang besar yang menawarkan antara muka komprehensif kepada sistem Ethereum, melalui pembekal seperti pelanggan tempatan. Kami akan memeriksa web3.js dengan lebih terperinci dalam &lt; <web3js_tutorial> &gt;. Sekarang mari kita berinteraksi dengan kontrak kami:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.address</strong>
+'0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+0
+truffle(localnode)&gt;
+</pre>
+++++
+
+Seterusnya, kami akan menggunakan + sendTransaction + untuk menghantar beberapa ujian eter untuk membiayai kontrak + Faucet +. Perhatikan penggunaan + web3.utils.toWei + untuk menukar unit eter untuk kami. Menaip 18 sifar tanpa membuat kesilapan adalah sukar dan berbahaya, jadi lebih baik menggunakan penukar satuan untuk nilai-nilai. Begini cara kami menghantar transaksi:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
+                    to:Faucet.address, value:web3.utils.toWei(0.5, 'ether')});</strong>
+'0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
+</pre>
+++++
+
+Jika kita beralih ke antara muka web Parity, kita akan melihat pop timbul yang meminta kami mengesahkan transaksi ini. Apabila urus niaga ditambang, kami dapat melihat baki kontrak + Faucet + kami:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+500000000000000000
+</pre>
+++++
+
+Mari kita panggil fungsi + tarik balik + sekarang, untuk menarik balik beberapa ujian eter dari kontrak:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                       {instance.withdraw(web3.utils.toWei(0.1,
+                       'ether'))}).then(console.log)</strong>
+</pre>
+++++
+
+Sekali lagi, kami perlu meluluskan transaksi dalam antara muka web Parity. Jika kita menyemak semula, kita akan melihat bahawa baki kontrak + Faucet + telah menurun, dan dompet ujian kami telah menerima 0.1 eter (((range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc7&quot;))) : (((range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc2&quot;))) () (range = &quot;endofrange&quot;, startref = &quot;ix_appdx- dev-tools-asciidoc1&quot;
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+400000000000000000
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                    {instance.withdraw(web3.utils.toWei(1, 'ether'))})</strong>
+StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c 
+  exited with an error (status 0).
+</pre>
+++++
+
+==== Memulakan
+
+(((&quot;Memulakan&quot;))) (((&quot;rangka kerja&quot;, &quot;Memulakan&quot;))) GitHub: https://github.com/embark-framework/embark/ []
+
+Dokumentasi: https://embark.status.im/docs/ []
+
++npm+ package repository: https://www.npmjs.com/package/embark[]
+
+Embark adalah rangka kerja yang dibina untuk membolehkan pemaju mudah membangun dan menggunakan aplikasi yang terdesentralisasi.
+Memulakan mengintegrasikan dengan Ethereum, IPFS, Whisper, dan Swarm untuk menawarkan ciri-ciri berikut:
+
+* Secara automatik menyerahkan kontrak dan menjadikannya tersedia dalam kod JS.
+* Tonton perubahan dan kemas kini kontrak untuk redeploy jika diperlukan.
+* Menguruskan dan berinteraksi dengan rantai yang berbeza (contohnya, testnet, tempatan, utama).
+* Menguruskan sistem kompleks kontrak saling bergantung.
+* Simpan dan dapatkan semula data, termasuk memuat naik dan mengambil semula fail yang dihoskan dalam IPFS.
+* Kemudahan proses menggunakan aplikasi penuh kepada IPFS atau Swarm.
+* Menghantar dan terima mesej melalui Whisper.
+
+Anda boleh memasangnya dengan + npm +:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install embark</strong>
+</pre>
+++++
+
+[role="pagebreak-before"]
+==== OpenZeppelin
+
+(&quot;(kerangka&quot;, &quot;OpenZeppelin suite&quot;, id = &quot;ix_appdx-dev-tools-asciidoc8&quot;, range = &quot;startofrange&quot; , julat = &quot;startofrange&quot;))) GitHub: https://github.com/OpenZeppelin/openzeppelin-solidity []
+
+Website: https://openzeppelin.org/[]
+
+Dokumentasi: https://openzeppelin.org/api/docs/open-zeppelin.html []
+
+https://openzeppelin.org/[OpenZeppelin] adalah rangka kerja terbuka bagi kontrak cerdas yang boleh diguna semula dan selamat dalam bahasa Pepejal.
+
+Ia didorong oleh komuniti, yang dipimpin oleh pasukan https://zeppelin.solutions/[Zeppelin], dengan lebih daripada seratus penyumbang luar. Fokus utama kerangka kerja adalah keamanan, dicapai dengan menerapkan corak keamanan kontrak standard dan amalan terbaik, melukiskan semua pengalaman yang diperoleh Zeppelin devs dari https://blog.zeppelin.solutions/tagged/security[auditing] a jumlah kontrak yang besar, dan melalui ujian dan pengauditan berterusan dari komuniti yang menggunakan rangka kerja sebagai asas untuk aplikasi dunia sebenar mereka.
+
+Rangka kerja OpenZeppelin adalah penyelesaian yang paling banyak digunakan untuk kontrak pintar Ethereum. Rangka kerja kini mempunyai perpustakaan yang banyak kontrak termasuk pelaksanaan ERC20 dan ERC721 token, banyak perisa model crowdsale, dan tingkah laku mudah yang biasa dijumpai dalam kontrak seperti `Dimiliki`,` Pausable`, atau `LimitBalance`. Kontrak dalam repositori ini dalam beberapa kes berfungsi sebagai pelaksanaan standard _de facto_.
+
+Rangka kerja ini dilesenkan di bawah lesen MIT, dan semua kontrak telah dirancang dengan pendekatan modular untuk menjamin kemudahan penggunaan semula dan peluasan. Ini adalah blok bangunan yang bersih dan asas, sedia untuk digunakan dalam projek Ethereum seterusnya anda. Mari kita sediakan rangka kerja dan buat orang ramai mudah menggunakan kontrak OpenZeppelin, untuk menunjukkan betapa mudahnya digunakan. Contoh ini juga menekankan pentingnya menggunakan komponen selamat dan bukannya menulis sendiri.
+
+Pertama, kita perlu memasang + openzeppelin-solidity + library ke dalam ruang kerja kita. Pembebasan terkini pada masa penulisan ini adalah v1.9.0, jadi kami akan menggunakannya:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir sample-crowdsale</strong>
+$ <strong>cd sample-crowdsale</strong>
+$ <strong>npm install openzeppelin-solidity@1.9.0</strong>
+$ <strong>mkdir contracts</strong>
+</pre>
+++++
+
+Pada masa penulisan, OpenZeppelin merangkumi pelbagai kontrak token asas yang mengikuti piawaian ERC20, ERC721, dan ERC827, dengan ciri-ciri yang berbeza untuk pelepasan, had, peletakan hak, kitaran hayat, dan sebagainya.
+
+Mari kita buat token ERC20 yang dapat dikemukakan, yang bermaksud bahawa bekalan awal bermula pada 0 dan token baru boleh dibuat oleh pemilik token (dalam kes kami, pass crowdsale: [ <span class="keep-together">kontrak</span> ]) dan dijual kepada pembeli. Untuk melakukan ini, kami akan membuat file _contracts / SampleToken.sol_ dengan kandungan berikut:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleToken.sol[]
+----
+
+OpenZeppelin sudah menyediakan kontrak + MintableToken + yang dapat kami gunakan sebagai pangkalan untuk token kami, jadi kami hanya menentukan butiran yang khusus untuk kes kami. Seterusnya, mari membuat kontrak crowdsale. Sama seperti token, OpenZeppelin sudah menyediakan pelbagai rasa khasiat. Pada masa ini, anda akan mencari kontrak untuk pelbagai senario yang melibatkan pengedaran, pelepasan, harga, dan pengesahan. Oleh itu, katakan bahawa anda ingin menetapkan matlamat untuk orang ramai anda dan jika ia tidak dipenuhi pada saat jualan selesai, anda ingin mengembalikan semua pelabur anda. Untuk itu, anda boleh menggunakan kontrak http://bit.ly/2yHoh65[+RefundableCrowdsale+]. Atau mungkin anda ingin menentukan orang ramai dengan harga yang semakin meningkat untuk memberi insentif kepada pembeli awal; terdapat kontrak http://bit.ly/2PtWOys[+IncreasingPriceCrowdsale+] hanya untuk itu. Anda juga boleh menamatkan crowdsale apabila jumlah eter yang telah ditentukan oleh kontrak (http://bit.ly/2OVsCN8[+CappedCrowdsale+]), atau menetapkan waktu penamat dengan http://bit.ly/2zp2Nuz Kontrak + + TimedCrowdsale +, atau membuat senarai putih pembeli dengan kontrak http://bit.ly/2CN8Hc9[+WhitelistedCrowdsale+].
+
+Seperti yang kita katakan sebelum ini, kontrak OpenZeppelin adalah blok bangunan asas. Kontrak crowdsale ini telah direka untuk digabungkan; hanya baca kod sumber asas http://bit.ly/2ABIQSI[+Crowdsale+] untuk mendapatkan arahan tentang cara untuk memperluasnya. Bagi orang ramai kami, kami perlu memberi tanda apabila ether diterima oleh kontrak crowdsale, jadi mari kita gunakan http://bit.ly/2Sx3HOc[+MintedCrowdsale+] sebagai pangkalan. Dan untuk menjadikannya lebih menarik, mari juga menjadikannya http://bit.ly/2Qef0Jm[+PostDeliveryCrowdsale+] supaya token hanya boleh ditarik balik selepas orang ramai berakhir. Untuk melakukan ini, kami akan menulis perkara berikut ke _contracts / SampleCrowdsale.sol_:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleCrowdsale.sol[]
+----
+
+Sekali lagi, kita hampir tidak perlu menulis sebarang kod; kami hanya menggunakan semula kod peperangan yang diperjuangkan supaya komuniti OpenZeppelin disediakan. Walau bagaimanapun, adalah penting untuk ambil perhatian bahawa kes ini adalah berbeza daripada kontrak `SampleToken` kami. Jika anda pergi ke http://bit.ly/2Q8lQ3o[Crowdsale ujian automatik] anda akan melihat bahawa ia diuji secara berasingan. Apabila anda menyatukan unit kod yang berbeza ke dalam komponen yang lebih besar, ia tidak mencukupi untuk menguji semua unit secara berasingan, kerana interaksi di antara mereka mungkin menyebabkan tingkah laku yang tidak anda harapkan. Khususnya, anda akan melihat bahawa di sini kami memperkenalkan banyak warisan, yang boleh mengejutkan pemaju jika mereka tidak memahami butiran Ketumpatan. Pas kami: [ <span class="keep-together"><code>SampleCrowdsale</code></span> ] kontrak adalah mudah, dan ia akan berfungsi seperti yang kita harapkan kerana rangka kerja itu direka untuk membuat kes seperti ini langsung; tetapi jangan rindu kewaspadaan anda kerana kesederhanaan yang diperkenalkan oleh kerangka ini. Setiap kali anda mengintegrasikan sebahagian daripada kerangka OpenZeppelin untuk membina penyelesaian yang lebih kompleks, anda mesti menguji sepenuhnya setiap aspek penyelesaian anda untuk memastikan bahawa semua interaksi unit berfungsi seperti yang anda inginkan.
+
+Akhirnya, apabila kami senang dengan penyelesaian kami dan telah mengujinya dengan teliti, kami perlu menggunakannya. OpenZeppelin terintegrasi dengan baik dengan Truffle, jadi kita boleh menulis file migrasi seperti berikut (_migrations / 2_deploy_contracts.js_), seperti yang dijelaskan dalam &lt; <truffle_migrations_understanding_deployment_scripts> &gt;:
+
+[source,js]
+----
+include::code/OpenZeppelin/migrations/2_deploy_contracts.js[]
+----
+
+[NOTA]
+====
+Ini hanya gambaran ringkas mengenai beberapa kontrak yang merupakan sebahagian daripada rangka kerja OpenZeppelin. Anda boleh menyertai komuniti pembangunan OpenZeppelin untuk belajar dan menyumbang. -dev-tools-asciidoc8 &quot;)))
+====
+
+==== ZeppelinOS
+
+(((&quot;kerangka&quot;, &quot;ZeppelinOS&quot;))) (((&quot;ZeppelinOS&quot;))) GitHhub: https://github.com/zeppelinos []
+
+Website: https://zeppelinos.org[]
+
+Blog: https://blog.zeppelinos.org[]
+
+https://github.com/zeppelinos[ZeppelinOS] adalah &quot;sumber terbuka, platform alat dan perkhidmatan diedarkan di atas EVM
+untuk membangunkan dan mengurus aplikasi kontrak pintar dengan selamat. &quot;
+
+Tidak seperti kod OpenZeppelin, yang perlu digunakan semula dengan setiap aplikasi setiap kali ia digunakan, kod ZeppelinOS hidup di rantai. Aplikasi yang memerlukan fungsi tertentu-kata, isyarat ERC20-bukan sahaja tidak perlu membuat reka bentuk dan mengkaji semula pelaksanaannya (sesuatu yang OpenZeppelin diselesaikan) tetapi tidak perlu menggunakannya. Dengan ZeppelinOS, aplikasi berinteraksi dengan pelaksanaan rantaian token secara langsung, dengan cara yang sama seperti aplikasi desktop berinteraksi dengan komponen OS yang mendasarinya.
+
+(((&quot;proksi&quot;))) Pada inti ZeppelinOS terdapat kontrak yang sangat pintar yang dikenali sebagai proksi. Proksi adalah kontrak yang mampu membungkus mana-mana kontrak lain, mendedahkan antara muka tanpa perlu melaksanakan secara manual setter dan getter untuknya, dan boleh meningkatkannya tanpa kehilangan keadaan. Dalam istilah Keteguhan, ia boleh dilihat sebagai kontrak biasa yang logik perniagaannya terkandung dalam perpustakaan, yang boleh ditukar untuk perpustakaan baru pada bila-bila masa tanpa kehilangan keadaannya. Cara di mana pautan proksi kepada pelaksanaannya sepenuhnya diautomatikkan dan diringkaskan untuk pemaju. Secara praktiknya, mana-mana kontrak boleh dibuat boleh ditingkatkan dengan sedikit tanpa perubahan dalam kodnya. Lebih lanjut mengenai mekanisme proksi ZeppelinOS boleh didapati di http://bit.ly/2OfuNpu[blog], dan contoh cara menggunakannya boleh didapati http://bit.ly/2OfuE5q[on GitHub].
+
+Membangunkan aplikasi menggunakan ZeppelinOS adalah serupa dengan mengembangkan aplikasi JavaScript menggunakan + npm +. An + AppManager + mengendalikan pakej aplikasi untuk setiap versi aplikasi. Pakej hanyalah direktori kontrak, yang masing-masing boleh mempunyai satu atau lebih proksi yang dapat ditingkatkan. + AppManager + bukan sahaja menyediakan proksi untuk kontrak khusus aplikasi, tetapi juga untuk pelaksanaan ZeppelinOS, dalam bentuk perpustakaan biasa. Untuk melihat contoh penuh ini, sila lawati http://bit.ly/2PtyJb3[examples/complex].
+
+Walaupun kini sedang dalam pembangunan, ZeppelinOS berhasrat untuk menyediakan pelbagai ciri tambahan, seperti alat pemaju, penjadual yang mengautomasikan operasi latar belakang dalam kontrak, kurnia pembangunan, pasaran yang memudahkan komunikasi dan pertukaran nilai antara aplikasi, dan banyak lagi. Semua ini dijelaskan dalam ZeppelinOS http://bit.ly/2QcxV7K[whitepaper].(((range=&quot;endofrange &quot;, startref =&quot; ix_appdx-dev-tools-asciidoc0 &quot;)))
+
+
+
+
+=== Utiliti
+
+==== EthereumJS membantu: Utiliti Talian Perintah
+
+((("EthereumJS helpeth")))((("helpeth command-line tool")))((("utilities")))((("utilities","EthereumJS helpeth")))GitHub: https://github.com/ethereumjs/helpeth[]
+
++ membantu + adalah alat baris arahan untuk manipulasi kunci dan transaksi yang menjadikan pekerjaan pemaju lebih mudah.
+
+Ia adalah sebahagian dari koleksi dan perpustakaan alat-alat berasaskan JavaScript EthereumJS:
+
+
+
+----
+Usage: helpeth [command]
+
+Commands:
+  signMessage <message>                     Sign a message
+  verifySig <hash> <sig>                    Verify signature
+  verifySigParams <hash> <r> <s> <v>        Verify signature parameters
+  createTx <nonce> <to> <value> <data>      Sign a transaction
+  <gasLimit> <gasPrice>
+  assembleTx <nonce> <to> <value> <data>    Assemble a transaction from its
+  <gasLimit> <gasPrice> <v> <r> <s>         components
+  parseTx <tx>                              Parse raw transaction
+  keyGenerate [format] [icapdirect]         Generate new key
+  keyConvert                                Convert a key to V3 keystore format
+  keyDetails                                Print key details
+  bip32Details <path>                       Print key details for a given path
+  addressDetails <address>                  Print details about an address
+  unitConvert <value> <from> <to>           Convert between Ethereum units
+
+Options:
+  -p, --private      Private key as a hex string                        [string]
+  --password         Password for the private key                       [string]
+  --password-prompt  Prompt for the private key password               [boolean]
+  -k, --keyfile      Encoded key file                                   [string]
+  --show-private     Show private key details                          [boolean]
+  --mnemonic         Mnemonic for HD key derivation                     [string]
+  --version          Show version number                               [boolean]
+  --help             Show help                                         [boolean]
+----
+
+==== dapp.tools
+
+((("dapp.tools")))((("utilities","dapp.tools")))Website: https://dapp.tools/[]
+
+dapp.tools adalah suite komprehensif alat pemaju berorientasikan blok yang dibuat dalam semangat falsafah Unix. Alat yang disertakan adalah:
+
+
+Dapp::
+Dapp adalah alat yang digunakan pengguna asas, untuk membuat DApps baru, menjalankan ujian unit Solidity, debug dan mengerahkan kontrak, melancarkan testimet, dan banyak lagi.
+
+Seth::
+Seth digunakan untuk menyusun urus niaga, menanyakan blok block, menukarkan format data, melakukan panggilan jauh, dan tugas sehari-hari yang serupa.
+
+Hevm::
+Hevm adalah pelaksanaan EVM Haskell dengan debugger Solidity berasaskan terminal lincah. Ia digunakan untuk menguji dan mengunduh DApps.
+
+evmdis::
+evmdis adalah disassembler EVM; ia melakukan analisis statik pada bytecode untuk memberikan abstraksi tahap yang lebih tinggi daripada operasi EVM mentah.
+
+
+==== SputnikVM
+
+https://github.com/etcdevteam/sputnikvm[SputnikVM] (((&quot;SputnikVM&quot;))) ((&quot;utiliti&quot;, &quot;SputnikVM&quot;))) adalah mesin maya yang tersendiri yang berdiri sendiri untuk blokter berasaskan Ethereum yang berbeza. Ia ditulis dalam Rust dan boleh digunakan sebagai peti binari, kargo, atau perpustakaan yang dikongsi, atau disepadukan melalui antaramuka FFI, Protobuf, dan JSON. Ia mempunyai binary berasingan, + sputnikvm-dev +, yang dimaksudkan untuk tujuan pengujian, yang meniru kebanyakan API JSON-RPC dan pertambangan blok.
+
+=== Libraries
+
+==== web3.js
+
+web3.js (&quot;(perpustakaan&quot;, id = &quot;ix_appdx-dev-tools-asciidoc10&quot;, range = &quot;startofrange&quot;))) web3.js () .js &quot;))) adalah API JavaScript yang serasi Ethereum untuk berkomunikasi dengan pelanggan melalui JSON-RPC, yang dibangunkan oleh Yayasan Ethereum.
+
+GitHub: https://github.com/ethereum/web3.js[]
+
++npm+ package repository: https://www.npmjs.com/package/web3[]
+
+Documentation for web3.js API 0.2x.x: http://bit.ly/2Qcyq1C[]
+
+Documentation for web3.js API 1.0.0-beta.xx: http://bit.ly/2CT33p0[]
+
+[role="pagebreak-before"]
+==== web3.py
+
+web3.py &quot;))) (web3.py))) web3.py adalah perpustakaan Python untuk berinteraksi dengan blok Ethereum yang dikendalikan oleh Yayasan Ethereum.
+
+GitHub: https://github.com/ethereum/web3.py[]
+
+PyPi: https://pypi.python.org/pypi/web3/4.0.0b9[]
+
+Documentation: https://web3py.readthedocs.io/[]
+
+==== EthereumJS
+
+(((&quot;EthereumJS&quot;))) EthereumJS adalah koleksi perpustakaan dan utiliti untuk Ethereum.
+
+GitHub: https://github.com/ethereumjs[]
+
+Website: https://ethereumjs.github.io/[]
+
+==== web3j
+
+(((&quot;perpustakaan&quot;, &quot;web3j&quot;))) (((web3j &quot;))) web3j adalah perpustakaan Java dan Android untuk mengintegrasikan dengan pelanggan Ethereum dan bekerja dengan kontrak pintar.
+
+GitHub: https://github.com/web3j/web3j[]
+
+Website: https://web3j.io[]
+
+Documentation: https://docs.web3j.io[]
+
+==== EtherJar
+
+(((&quot;EtherJar&quot;))) (((&quot;perpustakaan&quot;, &quot;EtherJar&quot;))) EtherJar adalah satu lagi perpustakaan Java untuk mengintegrasikan dengan Ethereum dan bekerja dengan kontrak pintar. Ia direka untuk projek sisi pelayan berdasarkan Java 8+ dan menyediakan akses peringkat rendah dan pelapis peringkat tinggi di sekitar RPC, struktur data Ethereum, dan akses kontrak pintar.
+
+GitHub: https://github.com/infinitape/etherjar[]
+
+==== Nethereum
+
+(((&quot;perpustakaan&quot;, &quot;Nethereum&quot;))) (((&quot;Nethereum&quot;))) Nethereum adalah perpustakaan integrasi Bersih untuk Ethereum.
+
+GitHub: https://github.com/Nethereum/Nethereum[]
+
+Website: http://nethereum.com/[]
+
+Documentation: https://nethereum.readthedocs.io/en/latest/[]
+
+==== ethers.js
+
+(&quot;(eters.js&quot;))) ((&quot;perpustakaan&quot;, &quot;ethers.js&quot;))) Perpustakaan ether.js adalah perpustakaan Ethereum berlesen MIT yang lengkap, lengkap, telah menerima geran DevEx dari Ethereum Foundation terhadap pelanjutan dan penyelenggaraannya.
+
+GitHub link: https://github.com/ethers-io/ethers.js[]
+
+Documentation: https://docs.ethers.io[]
+
+
+==== Emerald Platform
+
+((&quot;Emerald Platform&quot;))) (((&quot;perpustakaan&quot;, &quot;Emerald Platform&quot;))) Emerald Platform menyediakan perpustakaan dan komponen UI untuk membina DApps di atas Ethereum. Emerald JS dan Emerald JS UI menyediakan set modul dan komponen React untuk membina aplikasi dan laman web JavaScript; Ikon Emerald SVG adalah satu set ikon berkaitan blokchain. Sebagai tambahan kepada perpustakaan JavaScript Emerald mempunyai perpustakaan Rust untuk mengendalikan kunci peribadi dan tandatangan transaksi. Semua perpustakaan dan komponen Emerald dilesenkan di bawah Lesen Apache, versi 2.0. (((Range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc10&quot;)))
+
+GitHub: https://github.com/etcdevteam/emerald-platform[]
+
+Documentation: https://docs.etcdevteam.com[]
+
+[[testing_frameworks]]
+=== Menguji Kontrak Pintar
+
+(&quot;framework&quot;, &quot;for development contract smart&quot;, id = &quot;ix_appdx-dev-tools-asciidoc11&quot;, range = &quot;startofrange&quot;))) () ix_appdx-dev-tools-asciidoc12 &quot;, range =&quot; startofrange &quot;))) (((&quot; rangka kerja ujian &quot;,&quot; untuk pembangunan kontrak pintar &quot;, id =&quot; ix_appdx-dev-tools-asciidoc13 &quot; )) Terdapat beberapa rangka kerja ujian yang sering digunakan untuk pembangunan kontrak pintar, dirangkum dalam &lt; <testing_frameworks_table> &gt;:
+
+[[testing_frameworks_table]]
+[options="header"]
+Ringkasan rangka kerja ujian kontrak yang awal
+|=======
+| Kerangka | Bahasa ujian | Rangka kerja ujian | Emulator rantai | Laman web
+| Truffle | JavaScript / Soliditi | Mocha | TestRPC / Ganache | https://truffleframework.com/ []
+| Embark | | JavaScript | Mocha | TestRPC / Ganache | https://embark.status.im/docs/ []
+| Dapp | Kekukuhan | + ds-test + (adat) | + etrun + (Pariti) | https://dapp.tools/dapp/ []
+| Populus | Python | + pytest + | Emulator rantai Python | https://populus.readthedocs.io []
+|=======
+
+
+Truffle :: (((&quot;Truffle&quot;, &quot;sebagai kerangka ujian&quot;))) Truffle membolehkan ujian unit ditulis dalam JavaScript (berasaskan Mocha) atau Pepejal. Ujian ini dijalankan terhadap Ganache.
+
+Memulakan :: (((&quot;Memulai&quot;))) Memulai mengintegrasikan dengan Mocha untuk menjalankan ujian unit yang ditulis dalam JavaScript. Ujian ini kemudiannya dijalankan terhadap kontrak yang digunakan pada TestRPC / Ganache. Rangka Embark secara automatik melancarkan kontrak pintar, dan secara automatik akan meletakkan semula kontrak apabila mereka berubah. Ia juga menjejaki kontrak yang digunakan dan menyerahkan kontrak hanya apabila benar-benar diperlukan. Memulakan termasuk perpustakaan ujian untuk menjalankan dengan pantas dan menguji kontrak anda dalam EVM, dengan fungsi seperti + assert.equal +. Perintah + memulakan ujian + akan menjalankan sebarang fail ujian di bawah direktori _test_.
+
+Dapp :: (Dapp menggunakan kod padu asli (pustaka yang dipanggil + ds-test +) dan perpustakaan Rust yang dibina Parity yang dipanggil + ethrun + untuk melaksanakan Ethereum bytecode dan kemudian menegaskan kebenaran. + + Ds-test + library menyediakan fungsi penegasan untuk mengesahkan ketepatan dan peristiwa untuk data logging di konsol.
++
+Fungsi penegasan termasuk:
++
+----
+assert(bool condition)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+----
++
+Perintah pembalakan akan log maklumat ke konsol, menjadikannya berguna untuk penyahpepijatan:
++
+----
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+----
+
+Populus :: (((&quot;Populus&quot;))) Populus menggunakan Python dan emulator rantainya sendiri untuk menjalankan kontrak yang ditulis dalam Soliditi. Ujian unit ditulis dalam Python dengan perpustakaan + pytest +. Populus menyokong kontrak penulisan khusus untuk ujian. Nama fail kontrak ini sepadan dengan corak globe _Test * .sol_ dan berada di mana-mana di bawah direktori ujian projek, _tests_.
+
+
+[[on_blockchain_testing_sec]]
+==== Ujian On-Blockchain
+
+((&quot;blockchain&quot;, &quot;on-blockchain testing&quot;))) (((&quot;rangka kerja ujian&quot;, &quot;ujian on-blockchain&quot;))) Walaupun kebanyakan ujian tidak boleh berlaku pada kontrak yang digunakan, melalui pelanggan Ethereum. Perintah berikut boleh digunakan untuk menilai keadaan kontrak pintar. Perintah ini harus ditaip di terminal + geth +, walaupun mana-mana konsol web3 juga akan menyokongnya.
+
+Untuk mendapatkan alamat kontrak di __ ++ txhash ++ __, gunakan:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getTransactionReceipt(<em>txhash</em>);
+</pre>
+++++
+
+
+Perintah ini mendapat kod kontrak yang dikerahkan pada __ ++ contractaddress ++ __; ini boleh digunakan untuk mengesahkan penggunaan yang betul:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getCode(<em>contractaddress</em>)
+</pre>
+++++
+
+Ini mendapat log penuh kontrak yang terletak di alamat yang dinyatakan dalam __ ++ options ++ __, yang berguna untuk melihat sejarah panggilan kontrak:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getPastLogs(<em>options</em>)
+</pre>
+++++
+
+Akhirnya, arahan ini mendapat storan yang terletak di alamat __ ++ ++ __ dengan kedudukan offset __ ++ ++ __:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getStorageAt(<em>address</em>, <em>position</em>)
+</pre>
+++++
+
+[[ganache]]
+==== Ganache: Blockchain Ujian Tempatan
+
+(((&quot;Ganache&quot;, &quot;ujian blockchain tempatan dengan&quot;))) Ganache adalah blok ujian tempatan yang boleh anda gunakan untuk menggunakan kontrak, membangunkan aplikasi anda, dan menjalankan ujian. Ia boleh didapati sebagai aplikasi desktop (dengan antara muka pengguna grafik) untuk Windows, macOS, dan Linux. Ia juga tersedia sebagai utiliti baris perintah yang dipanggil + ganache-cli +. Untuk maklumat lanjut dan arahan pemasangan untuk aplikasi desktop Ganache, lihat https://truffleframework.com/ganache [].
+
+Kod + ganache-cli + boleh didapati di https://github.com/trufflesuite/ganache-cli/ [].
+
+Untuk memasang baris arahan + ganache-cli +, gunakan + npm +:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g ganache-cli</strong>
+</pre>
+++++
+
+Anda boleh menggunakan + ganache-cli + untuk memulakan blockchain setempat untuk ujian seperti berikut:
+
+++++
+<pre data-type="programlisting">
+$ <strong>ganache-cli \
+  --networkId=3 \
+  --port="8545" \
+  --verbose \
+  --gasLimit=8000000 \
+  --gasPrice=4000000000;</strong>
+</pre>
+++++
+
+Nota beberapa baris arahan ini:
+
+* [] Periksa `flag`dalam` dan` --port &#39;nilai bendera sepadan dengan konfigurasi anda dalam _truffle.js_.
+* [] Semak nilai bendera `--gasLimit` sepadan dengan had gas utama (contohnya, 8,000,000 gas) yang ditunjukkan di https://ethstats.net untuk mengelakkan daripada pengecualian pengecualian&quot; keluar dari gas &quot;yang tidak diperlukan. Perhatikan bahawa `--Parasan Malam` +4000000000 + mewakili harga gas 4 gwei.
+* [] Anda boleh memilih untuk memasukkan nilai bendera `--mememonik &#39;untuk mengembalikan dompet HD dan alamat yang berkaitan. (((Range =&quot; endofrange &quot;, startref =&quot; ix_appdx-dev-tools-asciidoc13 &quot; (range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc12&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_appdx-dev-tools-asciidoc11&quot;

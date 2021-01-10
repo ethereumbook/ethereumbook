@@ -1,0 +1,685 @@
+[[evm_chapter]]
+== Ethereum virtuální stroj
+
+((("EVM (Ethereum Virtual Machine)", id="ix_13evm-asciidoc0", range="startofrange")))V jádru Ethereum protokolu a funkčnosti je Ethereum, virtuální stroj (Ethereum Virtual Machine; EVM). Jak byste asi mohli uhodnout ze jména, jedná se o výpočetní stroj, který není nijak výrazně odlišný od virtuálních strojů Microsoft .NET Framework nebo interpretů jiných programovacích jazyků kompilovaných podle bajtkódu, jako je Java. V této kapitole se podrobně podíváme na EVM, včetně jeho instrukční sady, struktury a fungování, v kontextu aktualizací Ethereum stavu.
+
+[[evm_description]]
+=== Co je EVM?
+((("EVM (Ethereum Virtual Machine)","about")))EVM je součást Etherea, která zajišťuje nasazení a provádění chytrých kontraktů. Transakce s jednoduchým převodem hodnot z jednoho EOA do druhého nemusí prakticky EVM zahrnovat, ale všechno ostatní bude zahrnovat aktualizaci stavu vypočítanou EVM. Na vysoké úrovni lze EVM běžící na Ethereum bločence považovat za globální decentralizovaný počítač obsahující miliony spustitelných objektů, každý s vlastním trvalým datovým úložištěm.
+
+((("Turing completeness","EVM and")))EVM je stroj kvazi – Turingovsky úplný stavový stroj; „kvazi“, protože všechny procesy provádění jsou omezeny na konečný počet výpočtových kroků množstvím plynu dostupného pro jakékoli dané vykonání chytrého kontraktu. Jako takový je vyřešen problém zastavení Turingova stroje (všechna spuštění programu se zastaví) a je zabráněno situaci, kdy by provádění (náhodně nebo škodlivě) mohlo běžet navždy, čímž by se zastavila Ethereum platforma jako celek.
+
+EVM má architekturu založenou na zásobníku, která ukládá všechny hodnoty v paměti do zásobníku. Pracuje s velikostí slova 256 bitů (hlavně pro usnadnění nativního hašování a operací eliptických křivek) a má několik adresovatelných datových komponent:
+
+[role="pagebreak-before"]
+* Neměnný _programový kód ROM_, s načteným bajtovým kódem chytrého kontraktu, který má být proveden
+* Dočasná _paměť_, s každým paměťovým místem explicitně inicializovaným na nulu
+Trvalé _úložiště_, které je součástí Ethereum stavu , také inicializované nulami
+
+Během provádění je k dispozici také sada proměnných prostředí a dat. Podrobněji je projdeme dále v této kapitole.
+
+<<evm_architecture>>  zobrazuje kontext architektury a provádění EVM.
+
+[[evm_architecture]]
+.Architektura a prováděcí kontext Ethereum virtuálního počítače (EVM)
+image::images/evm-architecture.png["Architektura a prováděcí kontext Ethereum virtuálního počítače (EVM)"]
+
+[[evm_comparison]]
+==== Srovnání se stávající technologií
+
+((("EVM (Ethereum Virtual Machine)","comparison with existing technology")))Termín „virtuální stroj“ se často používá pro virtualizaci skutečného počítače, obvykle pomocí „hypervizora“, jako je VirtualBox nebo QEMU, nebo celé instance operačního systému, například KVM Linuxu. Musí poskytovat softwarovou abstrakci skutečného hardwaru a systémových volání a dalších funkcí jádra.
+
+EVM pracuje v mnohem omezenější doméně: je to pouze výpočetní stroj, a jako takový poskytuje abstrakci pouze výpočetního a úložného prostoru, podobně jako například specifikace Java Virtual Machine (JVM). Z pohledu na vysoké úrovni je JVM navržen tak, aby poskytoval běhové prostředí, které je nezávislý na hostitelskému operačnímu systému nebo hardwaru a umožňuje kompatibilitu v celé řadě systémů. Vysokoúrovňové programovací jazyky, jako je Java nebo Scala (které používají JVM) nebo C# (které používají .NET), jsou kompilovány do sady bajtód instrukcí jejich příslušného virtuálního stroje. Stejně tak EVM vykonává svou vlastní instrukční sadu bajtkódu (popsanou v následující části), do které jsou kompilovány nadřazené inteligentní programovací jazyky kontraktů, jako jsou LLL, Serpent, Mutan nebo Solidity.
+
+EVM proto nemá žádnou možnost plánování, protože pořadí vykonávání instrukcí je organizováno externě - Ethereum  klienti procházejí ověřenými bloky transakcí, aby určili, které chytré kontrakty je třeba provést a v jakém pořadí. V tomto smyslu je světový počítač Ethereum jednovláknový, jako JavaScript. EVM také nemá žádnou manipulaci se „systémovým rozhraním“ ani „hardwarovou podporu“ - neexistuje žádný fyzický stroj, s nímž by bylo možné propojit. Počítač světa Ethereum je zcela virtuální.
+
+[[evm_bytecode_overview]]
+==== Instrukční sada EVM (bajtkódové operace)
+
+((("bytecode operations", id="ix_13evm-asciidoc1", range="startofrange")))((("EVM (Ethereum Virtual Machine)","instruction set (bytecode operations)", id="ix_13evm-asciidoc2", range="startofrange")))((("EVM bytecode","instruction set", id="ix_13evm-asciidoc3", range="startofrange"))) Instrukční sada EVM nabízí většinu operací, které můžete očekávat, zahrnuje:
+
+* Aritmetické a bitové logické operace
+* Provedení kontextových dotazů
+* Přístup k zásobníku, paměti a úložišti
+* Řízení toku operací
+* Protokolování, volání a další operátory
+
+Kromě typických operací s bajtkódem má EVM také přístup k informacím o účtu (např. adresa a zůstatek) a informacím o blocích (např. číslo bloku a aktuální cena plynu).
+
+Začněme podrobněji zkoumáním EVM, když se podíváme na dostupné instrukce a co dělají. Jak byste mohli očekávat, všechny operandy jsou převzaty ze zásobníku a výsledek (pokud je použitelný) je často
+dát zpět na vrchol zásobníku.
+
+[NOTE]
+====
+Kompletní seznam instrukcí a k ním odpovídající ceny plynu jsou uvedeny v <<evm_opcodes>>.
+====
+
+Dostupné instrukce lze rozdělit do následujících kategorií:
+
+[[arithmetic_opcodes]]
+Aritmetické operace:: Aritmetické instrukce:
++
+----
+ADD        //Sečte dvě vrchní položky v zásobníku
+MUL        //Vynásobí dvě vrchní položky v zásobníku
+SUB        //Odečte dvě vrchní položky v zásobníku
+DIV        //celočíselné dělení
+SDIV       //celočíselné dělené znaménkových čísel
+MOD        //zbytek po celočíselném dělení (modulo)
+SMOD       //zbytek po celočíselném dělení znaménkových čísel
+ADDMOD     //sčítání, na které je následně aplikován zbytek po celočíselném dělení
+MULMOD     //násobení, na které je následně aplikován zbytek po celočíselném dělení
+EXP        //mocnina
+SIGNEXTEND //Zvětší délku celého čísla se znaménkem zapsaného ve dvojkovém doplňku
+SHA3       //Spočte Keccak-256 haš bloku paměti
+----
++
+Všimněte si, že veškerá aritmetika se provádí modulo 2^256^ (pokud není uvedeno jinak) a že nula na nultou, 0^0^, je považována za 1.
+
+
+[[stack_opcodes]]
+Operace zásobníku:: Instrukce pro správu zásobníku, paměti a úložiště:
++
+----
+POP     //Odebere položku z vrcholu zásobníku
+MLOAD   //Načte slovo z paměti
+MSTORE  //Uloží slovo do paměti
+MSTORE8 //Uloží byte do paměti
+SLOAD   //Načte slovo z úložiště
+SSTORE  //Uloží slovo do úložiště
+MSIZE   //Vrátí velikost aktivní paměti v bytech
+PUSHx   //Vloží x-bytovou položku do zásobníku, kde x může být celé číslo
+        // od 1 do 32 (plné slovo) včetně
+DUPx    //Zdvojí x-tou položku zásobníku, kde x může být celé číslo
+        // od 1 do 16 včetně
+SWAPx   //Vymění první a (x+1)-ní položku zásobníku, kde x může být 
+        // celé číslo od 1 to 16 včetně
+----
+
+
+[[flow_opcodes]]
+Operace řízení toku:: Instrukce pro řízení toku
++
+----
+STOP      //Ukončí provádění
+JUMP      //Nastaví programový čítač na libovolnou hodnotu
+JUMPI     //Podmíněně nastaví programový čítač
+PC        //Vrátí hodnotu čítače instrukcí, před zvýšením
+          //odpovídajícímu provedení této instrukce
+JUMPDEST  //Označí platný cíl pro skoky
+----
+
+[[system_opcodes]]
+Systémové operace:: Instrukce systém vykonávající program
++
+----
+LOGx          //Připojí x záznamů do protokolu, kde x je celé číslo
+              //od 0 do 4 včetně
+CREATE        //Vytvoří nový účet s přiřazeným zdrojovým kódem
+CALL          //Volání zprávy jiným účtem, např. spuštění kódu 
+              //jiného účtu
+CALLCODE      //Vyvolání zprávy do tohoto účtu pomocí jiného účtu
+              //jiného účtu
+RETURN        //Zastavení provádění a vrácení výstupních dat
+DELEGATECALL  //Volání zprávy do tohoto účtu s alternativním
+              //zdrojovým kódem účtu, ale zachováním současných 
+              //hodnot odesilatele a hodnoty
+STATICCALL    //Statické volání zpráv do účtu
+REVERT        //Provádění zastavení, vrácení změn stavu, ale vrácení
+              //dat a zbývajícího plynu
+INVALID       //Úmyslná neplatná instrukce
+SELFDESTRUCT  //Zastavení provádění a označení účtu k odstranění
+----
+
+[[logic_opcides]]
+Logické operace:: Instrukce pro porovnání a bitovou logiku:
++
+----
+LT     //Porovnání menší než
+GT     //Porovnání větší než
+SLT    //Porovnání menší než pro čísla se znaménkem
+SGT    //Porovnání větší než pro čísla se znaménkem
+EQ     //Porovnání rovnosti
+ISZERO //Logický operátor negace (NOT)
+AND    //Operace bitové konjunkce (AND)
+OR     //Operace bitové negace (OR)
+XOR    //Operace bitové exkuluzivní disjunkce (XOR)
+NOT    //Operace bitové negace (NOT)
+BYTE   //Načte jeden bajt z 256-bitového slova (plné šířky)
+----
+
+[[environment_opcodes]]
+Operace prostředí:: Instrukce zabývající se informacemi o prostředí provádění:
++
+----
+GAS            //Vrátí množství dostupného plynu (po snížení za
+               //tuto instrukci)
+ADDRESS        //Vrátí adresu aktuálně provádějícího účtu
+BALANCE        //Vrátí zůstatek na zadaném účtu
+ORIGIN         //Vrátí adresu EOA, která zahájila toto EVM
+               //vykonávání EVM
+CALLER         //Vrátí adresu bezprostředně odpovědného volajícího
+               //za toto vykonání EVM
+CALLVALUE      //Vrátí množství etheru uloženého odpovědným volajícím 
+               //za toto vykonání EVM
+CALLDATALOAD   //Vrátí vstupní data zaslaná volajícím odpovědným
+               //za toto vykonání
+CALLDATASIZE   //Vrátí velikost vstupních dat
+CALLDATACOPY   //Okopíruje vstupní data do paměti
+CODESIZE       //Vrátí velikost kódu běžícího v tomto prostředí
+CODECOPY       //Okopíruje kód běžící v tomto prostředí do
+               //paměti
+GASPRICE       //Vrátí cenu plynu určenou počáteční
+               //transakcí
+EXTCODESIZE    //Vrátí velikost kódu účtu
+EXTCODECOPY    //Okopíruje kód účtu do paměti
+RETURNDATASIZE //Vrátí velikost výstupních dat z předchozího volání
+               //v současném prostředí
+RETURNDATACOPY //Okopíruje výstupní data předchozího volání do paměti
+----
+
+[[block_opcodes]]
+Blokové operace:: Instrukce pro přístup k informacím o aktuálním bloku: (((range="endofrange", startref="ix_13evm-asciidoc3")))(((range="endofrange", startref="ix_13evm-asciidoc2")))(((range="endofrange", startref="ix_13evm-asciidoc1")))
++
+----
+BLOCKHASH  //Vrátí haš jednoho z 256 posledních bloků
+           //bločenky
+COINBASE   //Vrátí adresu příjemce odměny za vytvoření bloky
+TIMESTAMP  //Vrátí časovou značku bloku
+NUMBER     //Vrátí číslo bloku
+DIFFICULTY //Vrátí obtížnost bloku
+GASLIMIT   //Vrátí omezení na množství plynu v bloku
+----
+
+[[evm_state_descriptions]]
+==== Ethereum stav
+
+((("EVM (Ethereum Virtual Machine)","Ethereum state updating"))) Úkolem EVM je aktualizovat stav Etherea výpočtem platných přechodů stavu v důsledku provádění kódu chytrého kontraktu, jak je definováno Ethereum protokolem. Tento aspekt vede k popisu Ethereum jako _transakčního stavového stroje_, což odráží skutečnost, že externí aktéři (tj. majitelé účtů a těžaři) iniciují přechody stavu vytvářením, přijímáním a zařazováním transakcí. V tomto bodě je užitečné zvážit, co představuje stav Etherea.
+
+((("world state")))Na nejvyšší úrovni máme  _světový stav_ Ethereua. Světový stav je mapování Ethereum adres (160-bitové hodnoty) na _účty_.((("account","world state and")))_accounts_. ((("balance, world state and")))((("nonces","world state and"))) Na spodní úrovni každá Ethereum adresa představuje účet obsahující _zůstatek_  etheru (uložený jako počet wei ve vlastnictví účtu), _nonci_ (představující počet transakcí úspěšně odeslaných z tohoto účtu, pokud jde o EOA, nebo počet kontraktů vytvořených tímto účtem. Účty chytrých kontraktů navíc obsahují  _úložiště_ účtu (což jsou trvale uložené údaje) a _zdrojový kód_ účtu. EOA nemá nikdy zdrojový kód a má vždy prázdné úložiště.
+
+////
+TODO: základní diagram ukazující strukturu mapování světového stavu a strukturu účtů
+////
+
+Když transakce vyústí v provedení kódu chytrého kontraktu, EVM je inicializován všemi požadovanými informacemi ve vztrahu k aktuálně vytvářenému bloku a konkrétní právě vytvářené transakci. Zejména je programový ROM kód EVM načten s kódem volaného účtu kontraktu, čítač programu je nastaven na nulu, úložiště je načteno z úložiště účtu kontraktu, paměť je zcela vynulována a všechny proměnné prostředí a bloku jsou nastaveny. Klíčovou proměnnou je zásoba plynu pro toto provedení, která je nastavena na množství plynu zaplacené odesílatelem na začátku transakce (viz <<gas>> pro více informací). Jak postupuje provádění kódu, je zásoba plynu snižována v závislosti na nákladech na plyn na provedené operace. Pokud je v kterémkoli okamžiku zásoba plynu snížena na nulu, dostaneme výjimku „došel plyn“ (Out of Gas; OOG); provádění se okamžitě zastaví a transakce je přerušena. Stav Etherea se nezmění, s výjimkou zvýšení nonce odesílatele a snížení zůstatku etheru, aby se tvůrci bloku zaplatily prostředky použité k provedení kódu do okamžiku jeho zastavení. V tomto okamžiku si můžete představit, že EVM běží na kopii světového stavu Etherea v karanténě, přičemž změny dosažené v této karanténě je zcela anulovány, pokud provedení nelze z jakéhokoli důvodu dokončit. Pokud se však provádění úspěšně dokončí, aktualizuje se skutečný stav tak, aby odpovídal stavu karantény, včetně jakýchkoli změn v datech úložiště volaného kontraktu, všech vytvořených nových kontraktů a všech iniciovaných převodů zůstatku etheru.
+
+Všimněte si, protože chytrý kontrakt může sám účinně iniciovat transakce, je provádění kódu rekurzivním procesem. Kontrakt může zavolat jiné kontrakty přičemž každé volání má za následek, že další EVM karanténa je vytvořena kolem nového cíle volání. Každá instance má svůj světový stav v karanténě inicializovaný z karantény EVM na vyšší úrovni volání. Každé instanci je také dáno určité množství plynu jako její zásoba plynu (samozřejmě nepřekračující množství plynu zbývajícího nad vyšší úrovní volání), a tak se může sama zastavit s výjimkou kvůli příliš malému množství plynu, menšímu než je nutné k dokončení jeho provádění . V takových případech je opět stav karantény smazán a provádění se vrací ke keranténě EVM na vyšší úrovni volání.
+
+[[compiling_solidity_to_evm]]
+==== Kompilace Solidity EVM bajtkódu
+
+[[solc_help]]
+((("EVM (Ethereum Virtual Machine)","compiling Solidity to EVM bytecode", id="ix_13evm-asciidoc4", range="startofrange")))((("EVM bytecode","compiling source file to", id="ix_13evm-asciidoc5", range="startofrange")))((("Solidity","compiling source file to EVM bytecode", id="ix_13evm-asciidoc6", range="startofrange")))Kompilaci Solidity zdrojového kódu do bajtkódu EVM lze provést několika způsoby. V <<intro_chapter>> jsme použili  online překladač Remix. V této kapitole použijeme spustitelný soubor +solc+ na příkazové řádce. Chcete-li zobrazit seznam možností, spusťte následující pass:[<span class="keep-together">příkaz</span>]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --help</strong>
+</pre>
+++++
+
+[[solc_opcodes_option]]
+Vytváření surového proudu instrukcí ze Solidity  zdrojového kódu lze snadno dosáhnout pomocí volby příkazového řádku +--opcodes+ . Tento proud instrukcí vynechává některé informace (volba +--asm+  poskytuje úplné informace), ale pro tuto diskusi je to dostačující. Například kompilace vzorového souboru Solidity _Example.sol_ a odeslání výstupních instrukcí do adresáře s názvem _BytecodeDir_ se provede pomocí následujícího příkazu:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --opcodes Example.sol</strong>
+</pre>
+++++
+
+nebo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --asm Example.sol</strong>
+</pre>
+++++
+
+[[solc_bin_option]]
+Následující příkaz vytvoří binární bajtkód pro náš příkladový program:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --bin Example.sol</strong>
+</pre>
+++++
+
+Vytvářené výstupní soubory instrukčního kódu budou záviset na konkrétních kontraktech obsažených v Solidity zdrojovém souboru. Náš jednoduchý Solidity soubor _Example.sol_ má pouze jeden kontrakt s názvem +example+:
+
+[[simple_solidity_example]]
+[source,solidity]
+----
+pragma solidity ^0.4.19;
+
+contract example {
+
+  address contractOwner;
+
+  function example() {
+    contractOwner = msg.sender;
+  }
+}
+----
+
+Jak vidíte, celý tento kontrakt obsahuje jednu trvalou stavovou proměnnou, která je nastavena jako adresa posledního účtu, který  tento kontrakt spouští.
+
+Pokud se podíváte do adresáře _BytecodeDir_, uvidíte soubor instrukcí _example.opcode_, který obsahuje EVM instrukce kontraktu +example+. Otevřením souboru _example.opcode_ v textovém editoru se zobrazí následující:
+
+[[opcode_output]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1
+REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1
+0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1
+0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP
+0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5
+0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27
+EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
+----
+
+Kompilace příkladu s volbou +--asm+ vytvoří v našem adresáři _BytecodeDir_ soubor s názvem _example.evm_. Obsahuje mírně vyšší úroveň instrukcí bajtkódu EVM spolu s některými užitečnými popisy:
+
+[[asm_output]]
+[source,solidity]
+----
+/* "Example.sol":26:132  contract example {... */
+  mstore(0x40, 0x60)
+    /* "Example.sol":74:130  function example() {... */
+  jumpi(tag_1, iszero(callvalue))
+  0x0
+  dup1
+  revert
+tag_1:
+    /* "Example.sol":115:125  msg.sender */
+  caller
+    /* "Example.sol":99:112  contractOwner */
+  0x0
+  dup1
+    /* "Example.sol":99:125  contractOwner = msg.sender */
+  0x100
+  exp
+  dup2
+  sload
+  dup2
+  0xffffffffffffffffffffffffffffffffffffffff
+  mul
+  not
+  and
+  swap1
+  dup4
+  0xffffffffffffffffffffffffffffffffffffffff
+  and
+  mul
+  or
+  swap1
+  sstore
+  pop
+    /* "Example.sol":26:132  contract example {... */
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x0
+  codecopy
+  0x0
+  return
+stop
+
+sub_0: assembly {
+        /* "Example.sol":26:132  contract example {... */
+      mstore(0x40, 0x60)
+      0x0
+      dup1
+      revert
+
+    auxdata: 0xa165627a7a7230582056b99dcb1edd3eece01f27c9649c5abcc14a435efe3b...
+}
+----
+
+Volba +--bin-runtime+ vytváří strojově čitelný hexadecimální bajtkód:
+
+[[bin_output]]
+----
+60606040523415600e57600080fd5b336000806101000a81548173
+ffffffffffffffffffffffffffffffffffffffff
+021916908373
+ffffffffffffffffffffffffffffffffffffffff
+160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b...
+----
+
+Podrobně si můžete prohlédnout, co se zde děje, pomocí seznamu instrukcí uvedených v <<evm_bytecode_overview>>. Je to však docela úkol, takže začněme prozkoumáním prvních čtyř instrukcí:
+
+[[opcode_analysis_1]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE
+----
+
+Zde máme +PUSH1+ následovaný surovým bajtem hodnoty +0x60+. Tato instrukce EVM vezme jeden bajt za kódem instrukce v programovém kódu (jako doslovnou hodnotu) a vloží jej do zásobníku. Je možné do zásobníku posunout hodnoty velikosti až 32 bajtů, jako v:
+
+----
+PUSH32 0x436f6e67726174756c6174696f6e732120536f6f6e20746f206d617374657221
+----
+
+Druhá instrukce +PUSH1+ z _example.opcode_ ukládá +0x40+ na na vrchol zásobníku (nad hodnotu +0x60+, která byla do teď jediným prvkem zásobníku a tedy na jeho vrcholu a nyní bude jednu pozici pod vrcholem.
+
+Další je +MSTORE+, což je operace ukládání do paměti, která ukládá hodnotu do paměti EVM. Vyžaduje dva parametry a stejně jako většina operací EVM je získá ze zásobníku. Výběr každého z těchto parametrů ze zásobníku probíhá následujícím způsobem. Je odebrána horní hodnota zásobníku (vrchol) a všechny ostatní hodnoty v zásobníku jsou posunuty o jednu pozici nahoru. Prvním parametrem pro +MSTORE+ je adresa slova v paměti, kam bude vložena hodnota, která má být uložena. Pro tento program máme ve vrcholu zásobníku +0x40+, takže je ze zásobníku odebrána a použita jako adresa paměti. Druhým argumentem je hodnota, která se má uložit, což je zde +0x60+. Po provedení operace +MSTORE+ je náš zásobník znovu prázdný, ale máme v hodnotu +0x60+ (desítkově +96+) v paměti na adrese +0x40+.
+
+Další instrukcí je +CALLVALUE+, což je instrukce prostředí, která vloží na vrchol zásobníku množství etheru (měřeno ve wei) odeslané pomocí volání zprávy, které zahájila toto vykonání.
+
+Mohli bychom pokračovat v tomto programu tímto způsobem, dokud jsme si plně neuvědomili změny stavu na nízké úrovni, které tento kód způsobí, ale v této fázi by nám to nepomohlo. Vrátíme se k němu později v kapitole. (((range="endofrange", startref="ix_13evm-asciidoc6")))(((range="endofrange", startref="ix_13evm-asciidoc5")))(((range="endofrange", startref="ix_13evm-asciidoc4")))
+
+[[contract_deployment_code]]
+==== Kód nasazení kontraktu
+
+((("EVM (Ethereum Virtual Machine)","contract deployment code", id="ix_13evm-asciidoc7", range="startofrange")))((("EVM bytecode","contract deployment code", id="ix_13evm-asciidoc8", range="startofrange")))Mezi kódem použitým při vytváření a zavádění nového kontraktu na platformě Ethereum a kódem samotného kontraktu existuje významný, ale jemný rozdíl. K vytvoření nového kontraktu je nutná zvláštní transakce, jejíž pole +to+ je nastaveno na speciální adresu +0x0+ a pole +data+ je nastaveno na _zdrojový kód vytvoření kontraktu_. Místo toho je EVM inicializován s kódem v poli +data+ transakce načtené do jeho programového kódu ROM a poté je výstup provádění tohoto nasazovacího kódu považován za kód pro nový účet kontraktu. Je to tak, že nové kontrakty lze programově nastavit pomocí světového státu Ethereum v době nasazení, stanovením hodnot v úložišti kontraktu a dokonce odesláním etheru nebo vytvořením dalších nových kontraktů.
+
+Při kompilaci kontraktu offline, např. Pomocí +solc+ na příkazové řádce, můžete získat _bajtkód nasazení_ nebo _běhový bajtkód_.
+
+((("deployment bytecode"))) Bajtkód nasazení se používá pro všechny aspekty počátečního nastavení nového účtu kontraktu, včetně bajtkódu, který bude skutečně zavolán, když transakce budou volat tento nový kontrakt (tj. běhový bajtkód) a kód pro počáteční nastavení všeho na základě konstruktoru kontraktu.
+
+((("runtime bytecode"))) Běhový bajtkód, na druhé straně, je přesně bajtkód, který je vykonán po zavolání nového kontraktu, a nic víc; nezahrnuje bajtkód potřebný k počátečnímu nastavení kontraktu během jeho nasazení.
+
+Vezměme si jako příklad jednoduchý kontrakt _Faucet.sol_, který jsme vytvořili dříve:
+
+[[faucet_example]]
+[source,solidity]
+----
+// Verze kompilátoru Solidity, pro který byl tento program napsán
+pragma solidity ^0.4.19;
+
+// Our first contract is a faucet!
+contract Faucet {
+
+  // Vydá ether každému, kdo o to požádá
+  function withdraw(uint withdraw_amount) public {
+
+      // Maximální povolená částka pro výběr
+      require(withdraw_amount <= 100000000000000000);
+
+      // Zašlete částku na adresu, která o ni požádala
+      msg.sender.transfer(withdraw_amount);
+    }
+
+  // Přijměte jakoukoliv příchozí částku
+  function () external payable {}
+
+}
+----
+
+Pro získání bajtkódu nasazení bychom spustili `solc --bin Faucet.sol`. Pokud bychom místo toho chtěli pouze běhový bajtkód, spustili by jsme pass:[<code>solc --bin-runtime <span class="keep-together">Faucet.sol</span></code>].
+
+Pokud porovnáte výstup těchto příkazů, uvidíte, že běhový bajtkód je podmnožinou bajtkódu nasazení. Jinými slovy, běhový bajtkód je zcela obsažen v bajtkódu nasazení. (((range="endofrange", startref="ix_13evm-asciidoc8")))(((range="endofrange", startref="ix_13evm-asciidoc7")))
+
+[[disassembling_the_bytecode]]
+==== Rozklad bajtkódu na assembler
+
+((("EVM (Ethereum Virtual Machine)","disassembling bytecode", id="ix_13evm-asciidoc9", range="startofrange")))((("EVM bytecode","disassembling", id="ix_13evm-asciidoc10", range="startofrange"))) Rozklad bajtkódu EVM je skvělý způsob, jak pochopit, jak vysokoúrovňové Solidity působí v EVM. K tomu můžete použít několik dekompilátorů (disassembler):
+
+- https://github.com/comaeio/porosity[_Porosity_] je populární dekompilátor s otevřeným zdrojovým kódem.
+- https://github.com/trailofbits/ethersplay[_Ethersplay_] je EVM zásuvný modul pro dekompilátor Binary Ninja.
+- https://github.com/trailofbits/ida-evm[_IDA-Evm_] je EVM zásuvný modul pro další dekompilátor IDA.
+
+V této sekci budeme používat zásuvný modul Ethersplay pro Binary Ninja a začneme <<Faucet_disassembled>>. Po získání běhového  bajtkódu _Faucet.sol_  můžeme ho vložit do Binary Ninja (po načtení zásuvného modulu Ethersplay) a podívat se, jak vypadají instrukce EVM.
+
+[[Faucet_disassembled]]
+Rozklad Faucet.sol na běhový bajtkód
+image::images/Faucet_disassembled.png["Rozklad Faucet.sol na běhový bajtkód"]
+
+Když odešlete transakci na chytrý kontrakt kompatibilní s ABI (lze předpokládat, že to splňují všechny kontrakty), transakce nejprve interaguje s _dispečerem_ tohoto chytrého kontraktu. Dispečer přečte transakční pole  +data+ a odešle příslušnou jeho část příslušné funkci. Na začátku našeho rozebraného běhového bajtkódu _Faucet.sol_ vidíme příklad dispečera. Po známé instrukci +MSTORE+ vidíme následující instrukce:
+
+[[faucet_instructions]]
+----
+PUSH1 0x4
+CALLDATASIZE
+LT
+PUSH1 0x3f
+JUMPI
+----
+
+Jak jsme viděli, +PUSH1 0x4+ umístí +0x4+ na vrchol zásobníku, který je do té doby prázdný. +CALLDATASIZE+ získá bajtovou velikost dat odeslaných transakcí (známé jako _data volání_) a toto číslo vloží do zásobníku. Po provedení těchto instrukcí vypadá zásobník takto:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|<length of calldata from tx>
+|+0x4+
+|======================
+
+Tato další instrukce je +LT+, zkratka pro „ménší než“. Instrukce +LT+ zkontroluje, zda je horní položka v zásobníku menší než další položka v zásobníku. V našem případě zkontroluje, zda je výsledek +CALLDATASIZE+ menší než 4 bajty.
+
+Proč EVM kontroluje, zda data volání transakce jsou nejméně 4 bajty? Kvůli mechanizmu identifikátorů funkcí. Každá funkce je identifikována prvními 4 bajty Keccak-256 haše. Použitím názvu funkce a parametrů jako vstupu hašovací funkce +keccak256+, můžeme odvodit její identifikátor funkce. V našem případě máme:
+
+[[faucet_function_identifier]]
+```
+keccak256("withdraw(uint256)") = 0x2e1a7d4d...
+```
+
+Identifikátor funkce pro funkci +withdraw(uint256)+ je tedy +0x2e1a7d4d+, protože se jedná o první 4 bajty výsledného haše. Identifikátor funkce je vždy 4 bajty dlouhý, takže pokud celé pole +data+ transakce odeslané do kontraktu je menší než 4 bajty, neexistuje žádná funkce, s níž by transakce mohla komunikovat, pokud není definována _nozouvá_ funkce. Protože jsme implementovali takovou  nouzovou funkci v _Faucet.sol_, EVM skočí na tuto funkci, když je délka dat volání menší než 4 bajty.
+
++LT+ vyzvedne ze zásobníku dvě horní hodnoty, a pokud je pole +dat + transakce menší než 4 bajty, vloží na vrchol  zásobníku +1+. Jinak vloží na vrchol zásobníku +0+. V našem příkladu předpokládejme, že pole +data+  transakce zaslané našemu kontraktu_ bylo menší než 4 bajty.
+
+Instrukce +PUSH1 0x3f+ vloží bajt +0x3f+ na vrchol zásobníku. Po této instrukci vypadá zásobník takto:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|+0x3f+
+|+1+
+|======================
+
+Další instrukce je +JUMPI+, což je zkratka pro "podmíněný skok". Funguje to takto:
+
+[[faucet_jump_instruction_text]]
+----
+jumpi(label, cond) // Skoč na místo programu označené "návěštím" pokud "podmínka" je vyhodnocena jako pravdivá
+----
+
+V našem případě +návěští+ je +0x3f+, což je místo, kde zíje naše nouzová funkce v našem chytrém kontraktu. Parametr +podmínka + je +1+, což byl výsledek předchozí instrukce +LT+. Chcete-li tuto celou posloupnost vyjádřit slovy, smlouva skočí na nouzovou funkci, pokud jsou transakční data menší než 4 bajty.
+
+Na +0x3f+ následuje pouze instrukce +STOP+, protože ačkoli jsme deklarovali nouzovou funkci, ponechali jsme ji prázdnou. Jak můžete vidět v <<Faucet_jumpi_instruction>>, neimplementovali jsme záložní funkci, kontrakt by měl místo toho vyvolat výjimku. 
+
+[[Faucet_jumpi_instruction]]
+.JUMPI instrukce vedoucí k nouzové funkci
+image::images/Faucet_jumpi_instruction.png["JUMPI instrukce vedoucí k nouzové funkci"]
+
+Podívejme se na centrální blok dispečera. Za předpokladu, že jsme obdrželi data volání, která byla _větší_ delší než 4 bajty, instrukce +JUMPI+ by neskočila na záložní funkci. Místo toho by provádění kódu pokračovalo podle následujících instrukcí:
+
+[[faucet_instructions2]]
+----
+PUSH1 0x0
+CALLDATALOAD
+PUSH29 0x1000000...
+SWAP1
+DIV
+PUSH4 0xffffffff
+AND
+DUP1
+PUSH4 0x2e1a7d4d
+EQ
+PUSH1 0x41
+JUMPI
+----
+
++PUSH1 0x0+ vloží +0+ na vrchol zásobníku zásobníku, který je nyní jinak znovu prázdný. +CALLDATALOAD+ přijímá jako parametr index v rámci dat volání zasílaných do chytrého kontaktu a čte 32 bajtů z tohoto indexu, například:
+
+[[faucet_calldataload_instruction_text]]
+----
+calldataload(p) //načte 32 bajtů dat volání od zadané pozice p
+----
+
+Protože příkaz +PUSH1 0x0+ předal index +0+, +CALLDATALOAD+ přečte 32 bajtů dat volání počínaje bajtem 0 a poté je vkládá na vrchol zásobníku (po odebrání původního +0x0+). Po instrukci ++PUSH29 0x1000000++ ... je zásobník:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|++0x1000000++... (celkem dlouhé 29 bajtů)
+|<32 bytes of calldata starting at byte 0>
+|======================
+
++SWAP1+ prohazuje vrchol zásobníku s __i __- tým prvkem za ním. V tomto případě zaměňuje ++0x1000000++ ... s daty volání. Nový zásobník je:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|<32 bytes of calldata starting at byte 0>
+|++0x1000000++... (celkem dlouhé 29 bajtů)
+|======================
+
+Další instrukce +DIV+, která pracuje následovně:
+
+[[faucet_div_instruction_text]]
+----
+div(x, y) // celočíselné dělení x / y
+----
+
+V tomto případě +x+ = 32 bajtů dat volání počínaje bajtem 0 a +y+ = ++0x100000000++ ... (celkem 29 bajtů). Přemýšlíte, proč dispečer dělá dělení? Tady je nápověda: nejprve čteme 32 bajtů z dat volání, počínaje indexem 0. První 4 bajty těchto dat volání je identifikátor funkce.
+
+
+Data ++0x100000000++..., která jsme vložili na zásobník dříve, jsou 29 bajtů dlouhá, sestávající z +1+ na začátku, následovaných samými  ++0++. Rozdělením našich 32 bajtů dat volání touto hodnotou nám zůstanou pouze _vrchní 4 bajtů načtení dat volání, počínaje indexem 0. Tyto 4 bajty - první 4 bajty v datech volání začínající indexem 0 - jsou identifikátor funkce, a tímto způsobem EVM extrahuje toto pole.
+
+Pokud vám tato část není jasná, myslete na to takto: v desítkové soustavě, 1234000/1000 = 1234. V šestnáctkové soustavě se to neliší. Namísto toho, aby každé místo bylo násobkem 10, je to násobek 16. Stejně jako dělení 10^3^ (1000) v našem menším příkladu ponechalo pouze nejvyšší číslice, přičemž naše 32-bajtové hodnota o základu 16 se vydělila 16^29^ stejným způsobem.
+
+Výsledek +DIV+ (identifikátor funkce) je vložen na vrchol zásobníku a náš zásobník je nyní:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|<function identifier sent in +data+>
+|======================
+
+Protože instrukce +PUSH4 0xffffffff+ a +AND+ jsou nadbytečné, můžeme je zcela ignorovat, protože zásobník zůstane stejný i po jejich dokončení. Instrukce +DUP1+ zdvojí vrchol zásobníku, což je identifikátor funkce. Další instrukce, +PUSH4 0x2e1a7d4d+, vloží na vrchol zásobníku vypočítaný identifikátor funkce pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>]. Zásobník je nyní:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|+0x2e1a7d4d+
+|<function identifier sent in +data+>
+|<function identifier sent in +data+>
+|======================
+
+Další instrukce +EQ+ vybere z vrcholu zásobníku dvě položky a porovná je. Toto je místo, kde dispečer vykonává svou hlavní úlohu: porovnává, zda se identifikátor funkce odeslaný v poli +msg.data+ transakce shoduje s identifikátorem pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>]. Pokud se shodují, +EQ+ vloží na vrchol zásobníku +1+, která nakonec bude použíta pro skok na funkci pro výběr prostředků. V opačném případě, +EQ+ vloží na vrchol zásobníku +0+.
+
+Za předpokladu, že transakce zaslaná našemu kontraktu skutečně začala identifikátorem funkce pro +withdraw(uint256)+, náš zásobník nyní vypadá následovně:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|+1+
+|<function identifier sent in +data+> (nyní známá jako +0x2e1a7d4d+)
+|======================
+
+Dále máme +PUSH1 0x41+, což je adresa, na které funkce +withdraw(uint256)+ žije ve smlouvě. Po této instrukci vypadá zásobník takto:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Zásobník
+|+0x41+
+|+1+
+|Identifikátor funkce zaslaný v +msg.data+
+|======================
+
+Další je instrukce +JUMPI + a jako své parametry bere opět dva horní prvky v zásobníku. V tomto případě máme +jumpi(0x41, 1)+, která říká EVM, aby provedl skok na místo funkce +withdraw(uint256)+, a pokračoval v provádění kódu této funkce.(((range="endofrange", startref="ix_13evm-asciidoc10")))(((range="endofrange", startref="ix_13evm-asciidoc9")))
+
+[[turing_completeness_and_gas]]
+=== Turingova úplnost a plyn
+
+((("EVM (Ethereum Virtual Machine)","Turing completeness and Gas")))((("Turing completeness","EVM and")))Jak jsme se již dříve zmínili, jednoduše řečeno, systém nebo programovací jazyk je _Turingovsky úplný_, pokud dokáže spustit libovolný program. Tato schopnost však přichází s velmi důležitou výzvou: některé programy běží navždy. Důležitým aspektem je to, že nemůžeme říct, pouhým pohledem na program, zda bude běžet věčně nebo ne. Musíme skutečně projít celým během programu a počkat na jeho ukončení, abychom to zjistili. ((("halting problem")))Samozřejmě, bude-li běžet věčně, budeme muset čekat věčně. Tomu se říká _problém zastavení_ a pro Ethereum by to byl obrovský problém, kdyby nebyl vyřešen.
+
+Kvůli problému zastavení hrozí, žeEthereum světový počítač bude požádán o provedení programu, který se nikdy nezastaví. Mohlo by to být náhodou nebo zlomyslností. Diskutovali jsme o tom, že Ethereum funguje jako stroj s jedním vláknem, bez jakéhokoli plánovače, a tak pokud by se zasekl v nekonečné smyčce, znamenalo by to, že by se stal nepoužitelným.
+
+Existuje řešení, použití plynu: pokud po provedení předepsaného maximálního množství výpočtu není provádění ukončeno, EVM provádění programu zastaví. To činí z EVM „kvazi Turingovsky úplný stroj;“ může spustit jakýkoli program, který do něj vložíte, ale dokončí ho pouze v případě, že program skončí v rámci určitého množství výpočtu. Tento limit není pevně nastaven v Ethereu. Můžete zaplatit, abyste jej zvýšili na maximum (nazývané „blokový limit plynu“) a každý může souhlasit se zvýšením tohoto maxima v průběhu času. Nicméně kdykoli existuje limit, transakce, které při provádění spotřebovávají příliš mnoho plynu, jsou pass:[<span class="keep-together">zastaveny</span>].
+
+V následujících částech se podíváme na plyn a prozkoumáme, jak to funguje.
+
+[[gas]]
+=== Plyn
+
+((("EVM (Ethereum Virtual Machine)","gas and", id="ix_13evm-asciidoc11", range="startofrange")))((("gas","EVM and", id="ix_13evm-asciidoc12", range="startofrange")))_Plyn_ je Ethereum jednotka pro měření výpočetních a úložných zdrojů potřebných k provádění akcí na Ethereum bločence. Na rozdíl od Bitcoinu, jejichž transakční poplatky zohledňují pouze velikost transakce v kilobajtech, musí Ethereum brát v úvahu každý výpočetní krok prováděný transakcemi a prováděním kódu chytrého kontraktu.
+
+Každá operace prováděná transakcí nebo smlouvou stojí pevné množství plynu. Několik příkladů z Etereum Žluté knihy:
+
+* Sečtení dvou čísel stojí 3 jednotky plynu
+* Výpočet Keccak-256 haše stojí 30 plynu + plynu za každých 256 bitů hašovaných dat
+* Zaslání transakce stojí 21 000 plynu
+
+Plyn je klíčovou součástí Etherea a plní dvojí roli: jako nárazník mezi (volatilní) cenou Etherea a odměnou těžařům za práci, kterou vykonávají, a jako obrana proti útokům odepření služby. Aby se předešlo náhodným nebo škodlivým nekonečným smyčkám nebo jiným plýtvajícím výpočtům v síti, je odesilatel každé transakce povinen stanovit limit na výši výpočtu, za kterou je ochoten zaplatit. Plynový systém tak odradí útočníky od odesílání „spamových“ transakcí, protože musí úměrně platit za výpočetní zátěž a úložné prostředky, které spotřebovávají.
+
+[[gas_accounting_execution]]
+==== Účtování plynu během provádění
+((("EVM (Ethereum Virtual Machine)","gas accounting during execution")))((("gas","accounting during execution")))Když je k dokončení transakce potřeba EVM, je mu nejprve poskytnuta zásoba plynu rovnající se zadanému množství plynu v transakci. Každá spuštěná instrukce má stanovenou cenu plynu, a tak se zásoba plynu v EVM snižuje, jak EVM prochází programem. Před každou operací EVM zkontroluje, zda je dostatek plynu k provedení operace. Pokud není dostatek plynu, provádění se zastaví a transakce je anulována.
+
+Pokud EVM dosáhne konce úspěšně konce provádění, bez vyčerpání plynu, jsou náklady na plyn uhrazeny těžaři jako transakční poplatek převedený na ether na základě ceny plynu uvedené v transakci:
+
+----
+poplatek těžaři = spotřebované množství plynu * cena plynu
+----
+
+
+Plyn zbývající v zásobě plynu je vrácen odesílateli, opět převeden na ether na základě ceny plynu uvedené v transakci:
+
+----
+zbývající plyn = limit plynu - spotřebovaný plyn
+vrácený ether = zbývající plyn * cena plynu
+----
+
+Pokud transakci dojde během provádění plyn, dojde k jejímu okamžitému ukončení a je vyvolána výjimka „došel plyn“. Transakce je anulována a všechny změny stavu jsou vráceny zpět.
+
+Přestože byla transakce neúspěšná, bude odesílateli účtován poplatek za transakci, protože těžaři již do té doby provedli výpočetní práci a musí být za to odškodněni.
+
+==== Úvahy o účtování plynu
+
+((("EVM (Ethereum Virtual Machine)","gas accounting considerations")))((("gas","accounting considerations")))Relativní náklady na plyn při různých operacích, které může EVM provádět, byly pečlivě vybrány, aby co nejlépe chránily Ethereum bločenku před útokem. Můžete vidět podrobnou tabulku nákladů na plyn pro různé EVM instrukce v <<evm_opcodes_table>>.
+
+Výpočtově náročnější operace stojí více plynu. Například provedení funkce +SHA3+ je 10-krát dražší (30 plynu) než operace +ADD+ (3 jednotky plynu). Ještě důležitější je, že některé operace, například +EXP+, vyžadují dodatečnou platbu na základě velikosti operandu. Používání paměti EVM a ukládání dat do úložiště kontraktu v bločence také stojí plyn.
+
+Důležitost přizpůsobení nákladů na plyn skutečným nákladům na zdroje byla prokázána v roce 2016, kdy útočník našel a využil nesoulad nákladů. Útok vytvářel transakce, které byly velmi výpočetně drahé, a přiměl Ethereum síť téměř se zastavit. Tento nesoulad byl vyřešen tvrdým rozštěpením (nazvaným „Tangerine Whistle“), které vyladilo relativní náklady na plyn.
+
+==== Náklady na plyn versus cena plynu
+((("EVM (Ethereum Virtual Machine)","gas cost vs. gas price")))((("gas","cost vs. price")))((("gas cost, gas price vs.")))Zatímco _náklady na pyn_ jsou mírou výpočtu a skladování používaného v EVM, samotný plyn má také _cenu_ měřenou v etheru. Při provádění transakce odesílatel stanoví cenu plynu, kterou je ochotni zaplatit (v etheru) za každou jednotku plynu, což trhu umožňuje rozhodnout o vztahu mezi cenou etheru a náklady na výpočetní operace (měřeno v plynu) :
+
+----
+transakční poplatek = množství použitého plynu * zaplacena cena za jednotku plynu (v ether)
+----
+
+Při tvorbě nového bloku si těžaři v síti Ethereum mohou vybrat mezi čekajícími transakcemi výběrem těch, které nabízejí zaplatit vyšší cenu za jednotku plynu. Nabízení vyšší ceny plynu proto motivuje těžaře, aby zahrnuli vaši transakci a získali ji rychlejší.
+
+V praxi odesílatel transakce stanoví limit plynu, který je vyšší nebo roven množství plynu, které se očekává, že se použije. Je-li limit plynu nastaven na vyšší hodnotu, než je množství spotřebovaného plynu, bude odesílateli vrácena nadbytečná částka, protože těžaři dostanou zaplaceno pouze za práci, kterou skutečně vykonají.
+
+Je důležité si ujasnit rozdíl mezi _náklady na plyn_ a _cenou plynu_. Shrnutí:
+
+* Náklady na plyn jsou počet jednotek plynu potřebných k provedení určité operace.
+
+* Cena plynu je množství etheru, které jste ochotni zaplatit za jednotku plynu, když odešlete svou transakci do Ethereum sítě.
+
+[TIP]
+====
+I když má plyn cenu, nemůže být „vlastněn“ ani „utracen“. Plyn existuje pouze uvnitř EVM, jako měřítko, kolik výpočetní práce se provádí. Odesílateli je účtován transakční poplatek v etheru, který je poté převeden na plyn pro účetnictví EVM a poté zpět na ether jako transakční poplatek zaplacený těžařům.
+====
+
+
+===== Záporné náklady na plyn
+
+((("gas","negative costs")))Ethereum podporuje vymazání použitých uložených proměnných a účtů tím, že vrátí část plynu použitého během provádění kontraktu.
+
+V EVM jsou dvě operace se zápornými náklady na plyn:
+
+* Smazání kontraktu (+SELFDESTRUCT+) je odměněno navrácením 24 000 plynu.
+* Změna adresy v úložišti z nenulové hodnoty na nulovou (+SSTORE[x] = 0+) je odměněno vrácením 15 000 plynu.
+
+Aby se zabránilo využívání mechanismu vrácení prostředků, je maximální náhrada za transakci stanovena na polovinu celkového množství použitého plynu (zaokrouhleno dolů).
+
+==== Blokový limit plynu
+
+((("block gas limit")))((("EVM (Ethereum Virtual Machine)","block gas limit")))((("gas","block gas limit")))Blokový limit plynu je maximální množství plynu, které může být spotřebováno všemi transakcemi v bloku, a omezuje, kolik transakcí se vejde do bloku.
+
+Řekněme například, že máme 5 transakcí, jejichž limity plynu byly nastaveny na 30 000, 30 000, 40 000, 50 000 a 50 000. Pokud je limit plyny v bloku 180 000, pak se do jednoho bloku mohou zapojit libovolné čtyři z těchto transakcí, zatímco pátá bude muset čekat na budoucí blok. Jak již bylo řečeno, těžaři rozhodují, které transakce mají být v bloku zahrnuty. Různí těžaři pravděpodobně vyberou různé kombinace, hlavně proto, že přijímají transakce ze sítě v jiném pořadí.
+
+Pokud se těžař pokusí zahrnout transakci, která vyžaduje více plynu, než je aktuální limit plynu v bloku, blok bude sítí odmítnut. Většina Ethereum klientů vás zastaví ve vydávání takové transakce tak, že vás varuje v řádku „transakce překračuje limit plynu v bloku“. Blokový limit plynu v Ethereum hlavní síti je v době psaní podle protokolu https://etherscan.io 8 miliónů plynu, což znamená, že do bloku se vejde zhruba 380 základních transakcí (každá spotřebovává 21 000 plynu).
+
+===== Kdo rozhoduje, jaký je limit plynu v bloku?
+
+Těžaři v síti společně rozhodují o limitu plynu v bloku. Jednotlivci, kteří chtějí těžit v síti Ethereum, používají těžební program, například Ethminer, který se připojuje k Geth nebo Parity Ethereum klientovi. Protokol Ethereum má vestavěný mechanismus, kde horníci mohou hlasovat o limitu plynu, takže kapacita může být zvýšena nebo snížena v následujících blocích. Těžař bloku může hlasovat pro úpravu limitu plynu v bloku faktorem 1/1 024 (0,0976%) v obou směrech. Výsledkem je nastavitelná velikost bloku na základě aktuálních potřeb sítě. Tento mechanismus je spojen s výchozí těžařskou strategií, kdy těžaři hlasují o limitu plynu, který je nejméně 4,7 milionu plynu, ale který se zaměřuje na hodnotu 150% průměru průměrné nedávné celkové spotřeby plynu na blok (pomocí exponenciálního plovoucího průměru 1 024 bloků).(((range="endofrange", startref="ix_13evm-asciidoc12")))(((range="endofrange", startref="ix_13evm-asciidoc11")))
+
+=== Závěry
+
+V této kapitole jsme prozkoumali Ethereum virtuální stroj, sledovali provádění různých chytrých kontraktů a zkoumali, jak EVM provádí bajtkód. Také jsme se podívali na plyn, účetní mechanismus EVM, a viděli jsme, jak řeší problém zastavení a chrání Ethereum před útoky odepření služby. Dále v <<consensus>> se podáváme na mechanizmus použitý Ethereum k decentralizovanému dosahování konsensu.(((range="endofrange", startref="ix_13evm-asciidoc0")))

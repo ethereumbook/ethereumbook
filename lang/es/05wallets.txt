@@ -1,0 +1,422 @@
+[[wallets_chapter]]
+== Carteras
+
+((("carteras", id="ix_05wallets-asciidoc0", range="startofrange")))La palabra "cartera" se usa para describir algunas cosas diferentes en Ethereum.
+
+En un nivel alto, una cartera es una aplicación de software que sirve como interfaz de usuario principal para Ethereum. La cartera controla el acceso al dinero de un usuario, administra las llaves y direcciones, rastrea el saldo y crea y firma transacciones. Además, algunas carteras de Ethereum también pueden interactuar con contratos, como los tokens ERC20.
+
+((("carteras","definición")))Más concretamente, desde la perspectiva de un programador, la palabra _cartera_ se refiere al sistema utilizado para almacenar y administrar las llaves de un usuario. Cada cartera tiene un componente de administración de llaves. Para algunas carteras, eso es todo lo que hay. Otras carteras forman parte de una categoría mucho más amplia, la de _navegadores_, que son interfaces para aplicaciones descentralizadas basadas en Ethereum, o _DApps_, que examinaremos con más detalle en el <<decentralized_applications_chap>>. No hay líneas claras de distinción entre las diversas categorías que se combinan bajo el término "cartera".
+
+En este capítulo veremos las carteras como contenedores de llaves privadas y como sistemas para administrar estas llaves.
+
+[[wallet_tech_overview]]
+=== Descripción General de la Tecnología de las Carteras
+
+((("carteras","descripción general de la tecnología", id="ix_05wallets-asciidoc1", range="startofrange")))En esta sección resumimos las diversas tecnologías utilizadas para construir carteras en Ethereum fáciles de usar, seguras y flexibles.
+
+Una consideración fundamental en el diseño de carteras es equilibrar la comodidad con la privacidad. La cartera en Ethereum más conveniente es una que posea una sola llave privada y una sola dirección que pueda reutilizarse para todo. Desafortunadamente, esta solución es una pesadilla para la privacidad, ya que cualquiera puede rastrear y correlacionar fácilmente todas nuestras transacciones. Usar una llave nueva para cada transacción es lo mejor para la privacidad, pero se vuelve muy difícil de administrar. El equilibrio correcto es difícil de lograr, pero es por eso que un buen diseño de cartera es primordial.
+
+Un malentendido común respecto a Ethereum es que las carteras en Ethereum contienen éter o tokens. De hecho, muy estrictamente hablando, las carteras solo contienen llaves. El éter u otros tokens se registran es en la cadena de bloques de Ethereum. Los usuarios controlan los tokens en la red firmando transacciones con las llaves de sus carteras. ((("cadena de llaves")))En cierto sentido, una cartera de Ethereum es un _cadena de llaves_. Dicho esto, dado que las llaves contenidas en una cartera son las únicas cosas que se necesitan para transferir éter o tokens a otros usuarios, en la práctica esta distinción es bastante irrelevante. Donde la distinción importa en realidad es en cambiar la mentalidad errónea que suele aplicarse al manejo de sistemas centralizados de la banca convencional (donde solo el usuario, y el banco, pueden ver el dinero en cuenta, y solo necesitamos convencer al banco de que deseamos transferir fondos al realizar una transacción) para readaptarnos al sistema descentralizado de plataformas basadas en la cadena de bloques (donde todos pueden ver el saldo en éter de una cuenta, aunque probablemente no conozcan al propietario de la cuenta, y todos deben estar convencidos de que el propietario quiere mover fondos para que una transacción sea promulgada). En la práctica, esto significa que existe una forma independiente de verificar el saldo de una cuenta, sin la necesidad de ninguna cartera. Lo que es más, podemos sustituir el manejo de nuestras cuentas, mediante la aplicación de nuestra cartera actual a otra cartera diferente, si nos gusta la aplicación de cartera que comenzábamos a usar.
+
+[NOTE]
+====
+Las carteras de Ethereum contienen llaves, no éter ni tokens. Las carteras son como llaveros que contienen pares de llaves públicas y privadas. Los usuarios firman transacciones con las llaves privadas, demostrando así que poseen el éter. El éter se almacena en la cadena de bloques.
+====
+
+Hay dos tipos principales de carteras, que se distinguen por si las llaves que contienen están relacionadas entre sí o no.
+
+((("carteras no deterministas (aleatorias)", id="ix_05wallets-asciidoc2", range="startofrange")))((("carteras aleatorias (no deterministas)", id="ix_05wallets-asciidoc3", range="startofrange")))((("carteras","no deterministas", id="ix_05wallets-asciidoc4", range="startofrange")))El primer tipo es la _cartera no determinista_, donde cada llave se genera de forma independiente a partir de un número aleatorio diferente . Las llaves no están relacionadas entre sí. ((("carteras JBOK", seealso="carteras no deterministas (aleatorias)"))) Este tipo de carteras también se conocen como cartera JBOK, que proviene del inglés "Just a Bunch of Keys&#x201d; que significa "solo un manojo de llaves".
+
+((("carteras deterministas (germinadas)","definición")))((("carteras","deterministas")))El segundo tipo de cartera es una _cartera determinista_, donde todas las llaves se derivan de una sola llave maestra, conocida como la _semilla_. Todas las llaves en este tipo de cartera están relacionadas entre sí y se pueden generar nuevamente si se tiene la semilla original. ((("métodos de derivación de llaves")))Hay varios métodos diferentes de _derivación de llaves_ utilizados en carteras deterministas. El método de derivación más comúnmente utilizado emplea una estructura en forma de árbol, como se describe en la propuesta <<hd_wallets>>.
+
+((("palabras código mnemónicas")))((("semillas","palabras código mnemónicas para")))Para que las carteras deterministas sean un poco más seguras contra accidentes de pérdida de datos, como por ejemplo en caso de que nos roben el teléfono o lo dejemos caer en el inodoro, las semillas a menudo se codifican como una lista de palabras (en inglés u otro idioma) para que podamos anotarlas y podamos apelar a ellas en caso de un accidente. Estas se conocen como _palabras código mnemónicas_ de la cartera. Por supuesto, si alguien se apodera de nuestras palabras código mnemónicas, también puede recrear nuestra cartera y así obtener acceso a nuestro éter y nuestros contratos inteligentes. Como tal, ¡téngase mucho, mucho cuidado con la lista de palabras de recuperación! Nunca deben guardarse electrónicamente, en un archivo, en la computadora o el teléfono. Es preciso anotarlas en papel y guardarlas en un lugar seguro y protegido.
+
+Las siguientes secciones presentan cada una de estas tecnologías a un alto nivel.
+
+
+[[random_wallet]]
+==== Carteras No Deterministas (Aleatorias)
+
+En la primera versión de cartera para Ethereum (producida para la preventa de Ethereum), cada archivo de cartera almacenaba una única llave privada generada aleatoriamente. Estas carteras están siendo reemplazadas por carteras deterministas porque estas carteras "de estilo antiguo" son inferiores en muchos aspectos. Por ejemplo, se considera una buena práctica evitar la reutilización de direcciones de Ethereum como parte del objetivo de maximizar nuestra privacidad mientras se hace uso de la red&#x2014;es decir, se aconseja usar una nueva dirección (que necesita una nueva llave privada) cada vez que recibimos fondos. Podemos ir más allá y usar una nueva dirección para cada transacción, aunque esto puede resultar costoso, sobretodo si se trabaja mucho con tokens. Para seguir esta práctica, una cartera no determinista deberá aumentar periódicamente su lista de llaves, lo que significa que se deberán realizar copias de seguridad periódicas. Si alguna vez se sufre una pérdida de datos (falla del disco duro, se derrama una bebida, se roban el teléfono) antes de haberse logrado hacer una copia de seguridad de nuestra cartera, se perderá el acceso a nuestros fondos y contratos inteligentes. Las carteras no deterministas "tipo 0" son las más difíciles de manejar, porque crean un nuevo archivo de cartera para cada nueva dirección de una manera "improvisada".
+
+((("archivo keystore")))Sin embargo, muchos clientes de Ethereum (incluido +geth+) utilizan un archivo _keystore_ que es un archivo codificado en JSON que contiene una llave privada única (generada aleatoriamente), cifrada con una frase de contraseña para mayor seguridad . El contenido del archivo JSON se ve así:
+
+[[keystore_example]]
+[source,json]
+----
+{
+    "address": "001d3f1ef827552ae1114027bd3ecf1f086ba0f9",
+    "crypto": {
+        "cipher": "aes-128-ctr",
+        "ciphertext":
+            "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
+        "cipherparams": {
+            "iv": "d10c6ec5bae81b6cb9144de81037fa15"
+        },
+        "kdf": "scrypt",
+        "kdfparams": {
+            "dklen": 32,
+            "n": 262144,
+            "p": 1,
+            "r": 8,
+            "salt":
+                "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
+        },
+        "mac": "594c8df1c8ee0ded8255a50caf07e8c12061fd859f4b7c76ab704b17c957e842"
+    },
+    "id": "4fcb2ba4-ccdb-424f-89d5-26cce304bf9c",
+    "version": 3
+}
+----
+
+((("función de derivación de llaves (KDF)")))((("algoritmo de extensión de contraseñas")))El formato del almacén de llaves utiliza una _función de derivación de llaves_ (de sus siglas en inglés: KDF), también conocida como algoritmo de extensión de contraseñas, que protege contra ataques de fuerza bruta, ataques de diccionarios, y ataques de tableros arcoiris. En términos simples, la llave privada no está encriptada directamente por la frase de contraseña. En cambio, la frase de contraseña se _extiende_ mediante la aplicación de una función hash, repetidamente. La función hash se repite durante unas 262.144 rondas, que se pueden ver en el almacén de llaves JSON como el parámetro +crypto.kdfparams.n+. Un atacante que intente aplicar la fuerza bruta a la frase de contraseña tendría que aplicar 262.144 rondas de hash por cada intento de frase de contraseña, lo que ralentiza el ataque lo suficiente como para hacerlo inviable para frases de contraseña con suficiente complejidad y longitud.
+
+Hay varias bibliotecas de software que pueden leer y escribir en el formato del almacén de llaves, como la biblioteca de JavaScript https://github.com/ethereumjs/keythereum[+keythereum+].
+
+[TIP]
+====
+El uso de carteras no deterministas se desaconseja para cualquier otra cosa que no sean pruebas simples. Son demasiado engorrosas para hacerles copias de seguridad y para usarlas para cualquier cosa que no sea la más básica de las situaciones. En su lugar, úsense las carteras HD basadas en estándares de la industria&#x2013;con una semilla mnemónica como respaldo.(((range="endofrange", startref="ix_05wallets-asciidoc4")))(((range="endofrange", startref="ix_05wallets-asciidoc3")))(((range="endofrange", startref="ix_05wallets-asciidoc2")))   
+====
+
+[[deterministic_wallets]]
+==== Carteras Deterministas (Germinadas)
+
+((("carteras deterministas (germinadas)","acerca de")))((("carteras","deterministas")))Las carteras deterministas o "germinadas" son carteras que contienen llaves privadas que se derivan de una única llave maestra o semilla. La semilla es un número generado aleatoriamente que se combina con otros datos, como un número de índice o un "código de cadena" (véase <<extended_keys>>), para derivar cualquier número de llaves privadas. En una billetera determinista, la semilla es suficiente para recuperar todas las llaves derivadas y, por lo tanto, una sola copia de seguridad, en el momento de la creación, es suficiente para asegurar todos los fondos y contratos inteligentes en la cartera. La semilla también es suficiente para una exportación o importación de la cartera, lo que permite una fácil migración de todas las llaves entre diferentes implementaciones de carteras.
+
+Este diseño hace que la seguridad de la semilla sea de suma importancia, ya que solo se necesita la semilla para acceder a toda la cartera. Por otro lado, poder concentrar la mayor parte de los esfuerzos de seguridad en un solo dato puede considerarse una ventaja.
+
+[[hd_wallets]]
+==== Carteras Jerárquico-Deterministas (BIP-32/BIP-44)
+
+((("propuestas de mejora de Bitcoin (BIPs)","Carteras Jerárquico Deterministas (BIP-32/BIP-44)")))((("carteras jerárquico deterministas (BIP-32/BIP-44)")))Las carteras deterministas se desarrollaron para facilitar la obtención de muchas llaves a partir de una sola semilla. Actualmente, la forma más avanzada de cartera determinista es la cartera _jerárquico determinista_ (del inglés "Hierarchical Deterministic o HD) definida por el estándar http://bit.ly/2B2vQWs[_BIP-32 _] de Bitcoin. Los monederos HD contienen llaves derivadas de una estructura de árbol, de modo que una llave "paterna" puede derivar una secuencia de llaves "hijas", cada una de las cuales puede derivar una secuencia de llaves, a su vez, sucesoras, y así sucesivamente. Esta estructura de árbol se ilustra en la <<hd_wallets_figure>>.
+
+[[hd_wallets_figure]]
+.Cartera HD: un árbol de llaves generadas a partir de una sola semilla
+image::images/hd_wallet.png["cartera HD"]
+
+Las carteras HD ofrecen algunas ventajas clave sobre las carteras deterministas más simples. Primero, la estructura de árbol se puede usar para expresar un significado organizacional adicional, como cuando se usa una rama específica de sub-llaves para recibir pagos entrantes y se usa una rama diferente para recibir el vuelto de pagos salientes. Las ramas de llaves también se pueden utilizar en entornos corporativos, asignando diferentes ramas a distintos departamentos, filiales, funciones específicas o categorías contables.
+
+La segunda ventaja de los monederos HD es que los usuarios pueden crear una secuencia de llaves públicas sin tener acceso a las correspondientes llaves privadas. Esto permite que las carteras HD se utilicen en un servidor inseguro o en una aplicación de solo visualización o de solo recepción, donde la cartera no tiene las llaves privadas que pueden gastar los fondos.
+
+[[mnemonic_codes]]
+==== Semillas y Códigos Mnemónicos (BIP-39)
+
+((("estándar BIP-39")))((("propuestas de mejora de Bitcoin (BIPs)","Palabras Código Mnemónicas (BIP-39)")))((("palabras código mnemónicas","BIP-39")))((("semillas","palabras código mnemónicas para", seealso="palabras código mnemónicas")))((("carteras","códigos mnemónicos (BIP-39)")))Hay muchas formas de codificar una llave privada para lograr una copia de seguridad que resulte en recuperaciones seguras. El método preferido actualmente es usar una secuencia de palabras que, cuando se toman juntas en el orden correcto, pueden recrear de forma única la llave privada. Esto a veces se conoce como un código _mnemónico_, y el enfoque ha sido estandarizado por el http://bit.ly/2OEMjUz[BIP-39]. Hoy en día, muchas carteras de Ethereum (así como carteras para otras criptomonedas) usan este estándar y pueden importar y exportar semillas para generar respaldos y recuperaciones usando palabras mnemónicas interoperables.
+
+Para ver por qué este enfoque se ha vuelto tan popular, echemos un vistazo a un ejemplo:
+
+[[hex_seed_example]]
+.Una semilla para una cartera determinista, en formato hexadecimal
+----
+FCCF1AB3329FD5DA3DA9577511F8F137
+----
+
+[[mnemonic_seed_example]]
+.Una semilla para una billetera determinista, de un mnemónico de 12 palabras
+----
+wolf juice proud gown wool unfair
+wall cliff insect more detail hub
+----
+
+En términos prácticos, la posibilidad de un error al escribir la secuencia hexadecimal es inaceptablemente alta. Por el contrario, la lista de palabras conocidas es bastante fácil de manejar, principalmente porque hay un alto nivel de redundancia en la escritura de palabras (especialmente palabras en inglés). Si una palabra se escribe erróneamente, como por ejemplo "inzect", se podría determinar rápidamente, ante la necesidad de recuperar la cartera, que "inzect" no es una palabra válida en inglés y que en su lugar debería usarse "insect". Estamos hablando de anotar una representación de la semilla porque esa es una buena práctica cuando se administran carteras HD: la semilla es necesaria para recuperar una cartera en caso de pérdida de datos (ya sea por accidente o robo), por lo que mantener una copia de seguridad es muy prudente. Sin embargo, la semilla debe mantenerse privada en extremo, por lo que las copias de seguridad digitales deben evitarse escrupulosamente; de ahí el consejo anterior de realizar copias de seguridad con lápiz y papel.
+
+En resumen, el uso de una lista de palabras de recuperación para codificar la semilla de una billetera HD es la forma más fácil de exportar, transcribir, grabar en papel, leer sin errores e importar un conjunto de llaves privadas hacia otra cartera de manera segura.(((range="endofrange", startref="ix_05wallets-asciidoc1")))
+
+
+[[wallet_best_practices]]
+=== Las Mejores Prácticas con Carteras
+
+((("carteras","mejores prácticas para", id="ix_05wallets-asciidoc5", range="startofrange")))A medida que la tecnología de las carteras de criptomonedas ha venido madurado, han surgido ciertos estándares comunes de la industria que hacen que estas carteras sean ampliamente interoperables, fáciles de usar, seguras y flexibles. Estos estándares también permiten que las carteras obtengan llaves para múltiples criptomonedas diferentes, todo a partir de un solo código mnemónico. Estos estándares comunes son:
+
+* Palabras de código mnemónicas, basadas en el BIP-39
+* Carteras HD, basadas en el BIP-32
+* Estructuras HD multipropósito para carteras, basadas en el BIP-43
+* Carteras de múltiples monedas y cuentas variadas, basadas en el BIP-44
+
+Estos estándares pueden cambiar o quedar obsoletos por desarrollos futuros, pero por ahora forman un conjunto de tecnologías entrelazadas que se han convertido en el estándar _de facto_ para carteras en la mayoría de las plataformas de cadenas de bloques y sus criptomonedas.
+
+Los estándares han sido adoptados por una amplia gama de software de carteras y hardware para carteras, lo que hace que todas estas carteras sean interoperables. Un usuario puede exportar un mnemónico generado en una de estas carteras e importarlo a otra, recuperando todas las llaves y direcciones.
+
+Algunos ejemplos de software de carteras que admiten estos estándares incluyen (enumerados alfabéticamente) Jaxx, MetaMask, MyCrypto y MyEtherWallet (MEW). ((("carteras en hardware")))Ejemplos de carteras en hardware que admiten estos estándares incluyen Keepkey, Ledger y Trezor.
+
+Las siguientes secciones examinan cada una de estas tecnologías en detalle.
+
+[TIP]
+====
+Si estuviésemos desarrollando una cartera en Ethereum, deberíamos construirla como un monedero HD, con una semilla codificada como un código mnemónico para respaldo, siguiendo los estándares BIP-32, BIP-39, BIP-43 y BIP-44, como se describe en las siguientes secciones.
+====
+
+[[bip39]]
+[[mnemonic_code_words]]
+==== Palabras de Código Mnemónicas (BIP-39)
+
+((("estándar BIP-39", id="ix_05wallets-asciidoc6", range="startofrange")))((("propuestas de mejora de Bitcoin (BIPs)","Palabras Código Mnemónicas (BIP-39)", id="ix_05wallets-asciidoc7", range="startofrange")))((("palabras código mnemónicas","BIP-39", id="ix_05wallets-asciidoc8", range="startofrange")))((("carteras","códigos mnemónicos (BIP-39)", id="ix_05wallets-asciidoc9", range="startofrange")))Las palabras código mnemónicas son secuencias de palabras que codifican un número aleatorio que se utiliza como semilla para derivar una cartera determinista. La secuencia de palabras es suficiente para recrear la semilla, y a partir de ahí recrear la cartera y todas las llaves derivadas. Una aplicación de cartera que implementa carteras deterministas con palabras mnemónicas le mostrará al usuario una secuencia de 12 a 24 palabras cuando se crea una cartera por primera vez. Esa secuencia de palabras es la copia de seguridad de la cartera y se puede usar para recuperar y recrear todas las llaves en la misma aplicación de la cartera o en cualquier otra compatible. Como explicamos anteriormente, las listas de palabras mnemónicas facilitan a los usuarios realizar copias de seguridad de las carteras, porque son fáciles de leer y de pass:[<span class="keep-together">transcribir</span>] correctamente.
+
+[NOTE]
+====
+((("carteras memorizadas, palabras mnemónicas versus")))Las palabras mnemónicas a menudo se confunden con "carteras memorizadas". No son la misma cosa. La principal diferencia es que una cartera memorizada consiste en palabras elegidas por el usuario, mientras que las palabras mnemónicas son creadas al azar por el software de la cartera y son presentadas al usuario. Esta importante diferencia hace que las palabras mnemónicas sean mucho más seguras, porque los humanos son fuentes muy pobres de aleatoriedad. Quizás lo más importante es que el uso del término "cartera memorizada" sugiere que las palabras deben memorizarse, lo cual es una idea terrible y una receta para no tener nuestro respaldo cuando se lo necesite.
+====
+
+Los códigos mnemónicos se definen en el BIP-39. Téngase en cuenta que el BIP-39 es una implementación de un estándar de código mnemónico. Existe un estándar diferente, _con un conjunto diferente de palabras_, utilizado por las carteras Electrum para Bitcoin y que es anterior al BIP-39. El BIP-39 fue propuesto por la compañía detrás de la cartera en hardware, llamada Trezor y es incompatible con la implementación de Electrum. Sin embargo, el BIP-39 ha logrado un amplio soporte de la industria en docenas de implementaciones interoperables y debe considerarse el estándar _de facto_ para la industria. Además, el BIP-39 se puede utilizar para producir carteras de varias monedas compatibles con Ethereum, mientras que las semillas de Electrum no.
+
+El BIP-39 define la creación de un código mnemónico y una semilla, que describimos aquí en nueve pasos. Para mayor claridad, el proceso se divide en dos partes: los pasos del 1 al 6 se muestran en <<generating_mnemonic_words>> y los pasos del 7 al 9 se muestran en <<mnemonic_to_seed>>.
+
+[[generating_mnemonic_words]]
+===== Generando las palabras mnemónicas
+
+((("estándar BIP-39","generando palabras código con el")))((("suma de comprobación","en la generación de palabras código mnemónicas")))((("palabras código mnemónicas","generándolas")))Las palabras mnemónicas son generadas automáticamente por el software de la cartera utilizando el proceso estandarizado definido en el BIP-39. La cartera comienza desde una fuente de entropía, agrega una suma de verificación y luego asigna una correspondencia entre la entropía a una lista de palabras:
+
+1. Créese una secuencia criptográficamente aleatoria +S+ de entre 128 a 256 bits.
+2. Créese una suma de comprobación para +S+ tomando la primera longitud-de-++S++ ÷ 32 bits del hash SHA-256 de +S+.
+3. Agréguese la suma de verificación al final de la secuencia aleatoria +S+.
+4. Divídase la concatenación de secuencia-y-suma-de-comprobación en secciones de 11 bits.
+5. Asígnese a cada valor de 11 bits a una palabra del diccionario predefinido de 2.048 palabras.
+6. Crear el código mnemónico a partir de la secuencia de palabras, manteniendo el orden.
+
+La <<generating_entropy_and_encoding>> muestra cómo se usa la entropía para generar palabras mnemónicas.
+
+La <<table_bip39_entropy>> muestra la relación entre el tamaño de los datos de entropía y la longitud de los códigos mnemónicos en palabras.
+
+[[table_bip39_entropy]]
+.Códigos mnemónicos: entropía y extensión de palabras.
+[options="header"]
+|=======
+|Entropía (bits) | Suma de Comprobación (bits) | Entropía *+* suma de comprobación (bits) | Extensión mnemónica (en palabras)
+| 128 | 4 | 132 | 12
+| 160 | 5 | 165 | 15
+| 192 | 6 | 198 | 18
+| 224 | 7 | 231 | 21
+| 256 | 8 | 264 | 24
+|=======
+
+[[generating_entropy_and_encoding]]
+[role="smallerseventy"]
+.Generando entropía y codificación en forma de palabras mnemónicas.
+image::images/bip39-part1.png["Generando entropía y codificación en forma de palabras mnemónicas"]
+
+[[mnemonic_to_seed]]
+===== De la frase mnemónica a la semilla
+
+((("estándar BIP-39","derivando la semilla de las palabras mnemónicas")))((("semillas","derivándolas de las palabras código mnemónicas")))Las palabras mnemónicas representan la entropía con una longitud de 128 a 256 bits. La entropía se usa luego para derivar una semilla más larga (de 512 bits) mediante el uso de la función de estiramiento de llaves ((("función PBKDF2")))PBKDF2. La semilla producida se utiliza para construir una cartera determinista y derivar sus llaves.
+
+((("función de estiramiento de llaves")))((("sales")))La función de estiramiento de llaves toma dos parámetros: el mnemónico y una _sal_. El propósito de la sal en una función de estiramiento de llaves es dificultar la creación de una tabla de búsqueda que permita un ataque de fuerza bruta. En el estándar BIP-39, la sal tiene otro propósito: permite la introducción de una contraseña que sirva como factor de seguridad adicional que proteja a la semilla, como describiremos con más detalle en <<mnemonic_passphrase>>.
+
+El proceso descrito en los pasos 7 al 9 continúa desde el proceso descrito en la sección anterior:
+
+[start=7]
+7. El primer parámetro de la función de estiramiento de llaves, PBKDF2, es el _mnemónico_ producido en el paso 6.
+8. El segundo parámetro de la función de estiramiento de llaves PBKDF2, es una _sal_. La sal se compone del parámetro constante de cadena del +"mnemónico"+ concatenado con una frase de contraseña opcional proporcionada por el usuario.
+9. PBKDF2 estira los parámetros mnemónicos y la sal usando 2.048 rondas de hash con el algoritmo HMAC-SHA512, produciendo un valor de 512 bits como salida final. Ese valor de 512 bits es la semilla.
+
+La <<mnemonic_to_seed_figure>> muestra cómo se usa el mnemónico para generar una semilla.
+
+[[mnemonic_to_seed_figure]]
+.Del mnemónico a la semilla
+image::images/bip39-part2.png["Del mnemónico a la semilla"]
+
+[NOTE]
+====
+La función de estiramiento de llaves, con sus 2.048 rondas de hash, es una protección bastante eficaz ante ataques de fuerza bruta contra el mnemónico o la frase de contraseña. Hace que sea costoso (en cálculo) probar más de unos pocos miles de frases de contraseña y combinaciones mnemónicas, mientras que el número de posibles semillas derivadas es enorme (2^512^, o aproximadamente 10^154^)&#x2014;mucho mayor que el número de átomos en el universo visible (alrededor de 10^80^).
+====
+
+Las tablas pass:[<a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_no_pass">#mnemonic_128_no_pass</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_w_pass">#mnemonic_128_w_pass</a>, y <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_256_no_pass">#mnemonic_256_no_pass</a>] muestran algunos ejemplos de códigos mnemónicos y las semillas que producen.
+
+[[mnemonic_128_no_pass]]
+.Código mnemónico con entropía de 128 bits, sin frase de contraseña, semilla resultante
+[cols="h,"]
+|=======
+| *Entropía de entrada (128 bits)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemónico (12 palabras)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Contraseña*| (none)
+| *Semilla  (512 bits)* | +5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39+
++a88b76373733891bfaba16ed27a813ceed498804c0570+
+|=======
+
+[[mnemonic_128_w_pass]]
+.Código mnemónico con entropía de 128 bits, con frase de contraseña, semilla resultante
+[cols="h,"]
+|=======
+| *Entropía de entrada (128 bits)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemónico (12 palabras)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Contraseña*| SuperDuperSecret
+| *Semilla  (512 bits)* | +3b5df16df2157104cfdd22830162a5e170c0161653e3afe6c88defeefb0818c793dbb28ab3ab091897d0+
++715861dc8a18358f80b79d49acf64142ae57037d1d54+
+|=======
+
+[role="pagebreak-before"]
+[[mnemonic_256_no_pass]]
+.Código mnemónico con entropía de 256 bits, sin frase de contraseña, semilla resultante
+[cols="h,"]
+|=======
+| *Entropía de entrada (256 bits)* | +2041546864449caff939d32d574753fe684d3c947c3346713dd8423e74abcf8c+
+| *Mnemónico (24 palabras)* | +cake apple borrow silk endorse fitness top denial coil riot stay wolf
+luggage oxygen faint major edit measure invite love trap field dilemma oblige+
+| *Contraseña*| (none)
+| *Semilla (512 bits)* | +3269bce2674acbd188d4f120072b13b088a0ecf87c6e4cae41657a0bb78f5315b33b3a04356e53d062e5+
++5f1e0deaa082df8d487381379df848a6ad7e98798404+
+|=======
+
+[[mnemonic_passphrase]]
+===== Frase de contraseña opcional en BIP-39
+
+((("estándar BIP-39","frase de contraseña opcional con")))((("palabras código mnemónicas","frase de contraseña opcional en BIP-39")))((("frases de contraseña")))((("semillas","frase de contraseña opcional con")))El estándar BIP-39 permite el uso de una frase de contraseña opcional en el proceso de la derivación de la semilla. Si no se usa una frase de contraseña, el mnemónico se estira con una sal que consiste en el parámetro constante de cadena +"mnemónico"+, produciendo una semilla específica de 512 bits a partir de cualquier mnemónico dado. Si se usa una frase de contraseña, la función de estiramiento produce una semilla _diferente_ de ese mismo mnemónico. De hecho, dado un único mnemónico, cada frase de contraseña posible conduce a una semilla diferente. Esencialmente, no existe una frase de contraseña "incorrecta". Todas las frases de contraseña son válidas y todas conducen a diferentes semillas, formando un vasto conjunto de posibles carteras no inicializadas. El conjunto de carteras posibles es tan grande (2^512^) que no hay posibilidad práctica de forzar o adivinar accidentalmente una que esté en uso, siempre que la frase de contraseña tenga la complejidad y longitud suficientes.
+
+[TIP]
+====
+No hay contraseñas "incorrectas" en BIP-39. Cada frase de contraseña conduce a alguna cartera, que a menos que se use previamente estará vacía.
+====
+
+La frase de contraseña opcional crea dos características importantes:
+
+* Un segundo factor (algo a ser memorizado) que hace que un mnemónico sea inútil por sí solo, protegiendo las copias de seguridad del mnemónico del riesgo de un ladrón.
+
+* ((("cartera de coacción")))((("carteras","cartera de coacción")))Un mecanismo de disuasión plausible o "cartera de coacción", en la que una frase de contraseña elegida conduce a una cartera con una pequeña cantidad de fondos, utilizada para distraer a un atacante de la cartera "real" que contiene la mayoría de los fondos.
+
+[role="pagebreak-before"]
+Sin embargo, es importante tener en cuenta que el uso de una frase de contraseña también presenta el riesgo de pérdida:
+
+* Si el dueño de la cartera queda incapacitado o fallece y nadie más conoce la contraseña, la semilla termina siendo inútil y todos los fondos almacenados en la cartera se pierden para siempre.
+
+* Si por el contrario, si el propietario hace una copia de seguridad de la frase de contraseña en el mismo lugar que la semilla, anula el propósito de un segundo factor de seguridad.
+
+Si bien las frases de contraseña son muy útiles, solo deben usarse en combinación con un proceso cuidadosamente planificado para la copia de seguridad y la recuperación, considerando la posibilidad de que los herederos sobrevivan al propietario y puedan recuperar las criptomonedas.
+
+[[working_mnemonic_codes]]
+===== Trabajando con códigos mnemónicos
+
+((("estándar BIP-39","bibliotecas")))((("estándar BIP-39","trabajando con códigos mnemónicos")))BIP-39 se implementa como una biblioteca en muchos lenguajes de programación diferentes. Por ejemplo:
+
+https://github.com/trezor/python-mnemonic[python-mnemonic]:: La implementación de referencia del estándar por parte del equipo de SatoshiLabs que propuso a BIP-39, en Python
+
+https://github.com/ConsenSys/eth-lightwallet[ConsenSys/eth-lightwallet]:: Cartera de Ethereum Lightweight JS para nodos y navegadores (con BIP-39)
+
+https://www.npmjs.com/package/bip39[npm/bip39]:: Implementación JavaScript de Bitcoin BIP-39: código mnemónico para generar llaves deterministas
+
+También hay un generador acorde al estándar BIP-39, implementado en una página web independiente (<<a_bip39_generator_as_a_standalone_web_page>>), que es extremadamente útil para probar y experimentar. En el link, https://iancoleman.io/bip39/[Mnemonic Code Converter] se generan mnemónicos, semillas y llaves privadas extendidas. Este servicio se puede usar sin conexión en un navegador o se puede acceder en línea.(((range="endofrange", startref="ix_05wallets-asciidoc9")))(((range="endofrange", startref="ix_05wallets-asciidoc8")))(((range="endofrange", startref="ix_05wallets-asciidoc7")))(((range="endofrange", startref="ix_05wallets-asciidoc6")))
+
+[[a_bip39_generator_as_a_standalone_web_page]]
+.Un generador BIP-39 como página web independiente
+image::images/bip39_web.png["Página web generadora BIP-39"]
+
+[[create_hd_wallet]]
+==== Creación de una Cartera HD a partir de la Semilla
+
+((("carteras jerárquico deterministas (BIP-32/BIP-44)","creación a partir de semilla originaria")))((("semillas originarias, creando carteras HD a partir de")))((("carteras","creando carteras HD a partir de semilla originaria")))Las carteras HD se crean a partir de una única _semilla originaria_, que es un número aleatorio de 128, 256 o 512 bits. Más comúnmente, esta semilla se genera a partir de un mnemónico como se detalló en la sección anterior.
+
+Cada llave en una cartera HD se deriva determinísticamente de esta semilla originaria, lo que hace posible recrear la cartera HD completa a partir de esa semilla en cualquier cartera HD compatible. Esto facilita la exportación, copia de seguridad, restauración e importación de carteras HD que contienen miles o incluso millones de llaves transfiriendo solo el mnemónico del que se deriva la semilla originaria.
+
+[[bip32_bip43_44]]
+==== Carteras HD (BIP-32) y Rutas (BIP-43/44)
+
+((("propuestas de mejora de Bitcoin (BIPs)","Estructura de Carteras HD Multipropósito (BIP-43)", id="ix_05wallets-asciidoc10", range="startofrange")))((("carteras jerárquico deterministas (BIP-32/BIP-44)","carteras HD (BIP-32) y rutas (BIP-43/44)", id="ix_05wallets-asciidoc11", range="startofrange")))La mayoría de las carteras HD siguen el ((("estándar BIP-32","carteras HD y", id="ix_05wallets-asciidoc12", range="startofrange")))Estándar BIP-32, que se ha convertido en un estándar de la industria _de facto_ para la generación de llaves deterministas.
+
+No discutiremos todos los detalles del estándar BIP-32 aquí, solo los componentes necesarios para comprender cómo se usa en las carteras. El principal aspecto importante son las relaciones jerárquicas en forma de árbol que es posible que tengan las llaves derivadas, como puede verse en la <<hd_wallets_figure>>. También es importante comprender los conceptos de _llaves extendidas_ y _llaves fortalecidas_, que se explican en las siguientes secciones.
+
+Hay docenas de implementaciones interoperables del estándar BIP-32 que se ofrecen en muchas bibliotecas de software. Estas están principalmente diseñadas para carteras en Bitcoin, que implementan direcciones de una manera diferente, pero comparten la misma implementación de derivación de las llaves que las carteras compatibles con el estándar BIP-32 de Ethereum. Úsese una implementación https://github.com/ConsenSys/eth-lightwallet[diseñada para Ethereum], o adáptese una de Bitcoin agregando una biblioteca de codificación de direcciones para Ethereum.
+
+También hay un generador de BIP-32 implementado como una http://bip32.org/[página web independiente] que es muy útil para probar y experimentar con el estándar BIP-32.
+
+[WARNING]
+====
+El generador BIP-32 independiente no es un sitio HTTPS. Eso es para recordar que el uso de esta herramienta no es segura. Es solo para hacer pruebas. No deben utilizarse las llaves producidas por este sitio con fondos reales.
+====
+
+[[extended_keys]]
+===== Llaves públicas y privadas extendidas
+
+((("estándar BIP-32","llaves públicas y privadas extendidas")))((("llaves extendidas")))((("carteras jerárquico deterministas (BIP-32/BIP-44)","llaves públicas y privadas extendidas")))((("llaves","extendidas")))En la terminología del estándar BIP-32, las llaves se pueden "extender.&#x201d; Con las operaciones matemáticas correctas, estas llaves "padre" extendidas se pueden utilizar para derivar llaves "hijas", produciendo así la jerarquía de llaves y direcciones descritas anteriormente. Una llave padre no tiene que estar necesariamente en la parte superior del árbol. se puede seleccionar desde cualquier lugar de la jerarquía del árbol. ((("código de cadena")))La extensión de una llave implica tomar la llave en sí y agregarle un _código de cadena_ especial. Un código de cadena es una cadena binaria de 256 bits que es mezclado con cada llave para producir llaves hijas.
+
+((("llaves privadas","extendidas")))Si la llave es una llave privada, se convierte en una _llave privada extendida_ que se distingue por el pass:[<span class="keep-together">prefijo</span>] +xprv+:
+
+[[xprv_example]]
+----
+xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8i...
+----
+
+((("llaves públicas","extendidas")))Una _llave pública extendida_ se distingue por el prefijo +xpub+:
+
+[[xpub_example]]
+----
+xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn...
+----
+
+Una característica muy útil de las carteras HD es la capacidad de derivar llaves públicas hijas o secundarias a partir de llaves públicas padres o principales, _sin_ necesidad de las llaves privadas. Esto nos da dos formas de derivar una llave pública secundaria: directamente de la llave privada secundaria o de la llave pública padre.
+
+Por lo tanto, se puede usar una llave pública extendida para derivar todas las llaves públicas (y solo las llaves públicas) en esa rama de la estructura de la cartera HD.
+
+Este atajo se puede utilizar para crear implementaciones muy seguras, desplegadas para sólo&#x2013;llaves-públicas, donde un servidor o una aplicación tiene una copia de una llave pública extendida, pero ninguna llave privada. Ese tipo de implementación puede producir una cantidad infinita de llaves públicas y direcciones Ethereum, pero no puede gastar nada del dinero enviado a esas direcciones. Mientras tanto, en otro servidor más seguro, la llave privada extendida puede derivar todas las llaves privadas correspondientes para firmar transacciones y gastar el dinero.
+
+Una aplicación común de este método es instalar una llave pública extendida en un servidor web que sirva a una aplicación de comercio electrónico. El servidor web puede usar la función de deducción de llave pública para crear una nueva dirección Ethereum para cada transacción (por ejemplo, para el carrito de compras de un cliente) y no tendrá llaves privadas que sean vulnerables al robo. Sin carteras HD, la única forma de hacerlo es generar miles de direcciones Ethereum en un servidor seguro separado y luego precargarlas en el servidor de comercio electrónico. Ese enfoque es engorroso y requiere de un mantenimiento constante para garantizar que el servidor no se quede sin llaves, de ahí la preferencia de usar llaves públicas extendidas en carteras HD.
+
+((("carteras en hardware")))Otra aplicación común de esta solución es para ((("carteras de almacenamiento en frío")))((("carteras","carteras de almacenamiento en frío")))almacenamiento en frío o carteras en hardware. En ese escenario, la llave privada extendida se puede almacenar en una cartera que exista en forma de hardware, mientras que la llave pública extendida se puede mantener en línea. El usuario puede crear direcciones de "recepción" a voluntad, mientras que las llaves privadas se almacenan de forma segura fuera de línea. Para gastar los fondos, el usuario puede usar la llave privada extendida en un cliente Ethereum fuera de línea o desconectado para la firma, o bien, firmar sus transacciones en el dispositivo de cartera en hardware.
+
+[[hardened_child_key]]
+===== Derivación de llave hija fortalecida
+
+((("llaves privadas hijas")))((("derivación fortalecida","para llaves privadas hijas")))((("carteras jerárquico deterministas (BIP-32/BIP-44)","derivación de llave hija fortalecida")))((("carteras jerárquico deterministas (BIP-32/BIP-44)","números de índice para derivación normal/fortalecida")))((("números de índice, para derivación normal/fortalecida")))((("llaves privadas","derivación de llave hija fortalecida")))La capacidad de derivar una rama de llaves públicas a partir de una llave pública extendida, o _xpub_, es muy útil, pero conlleva un riesgo potencial. El acceso a una xpub no da acceso a las llaves privadas hijas. Sin embargo, debido a que la xpub contiene el código de cadena (utilizado para derivar las llaves públicas hijas de la llave pública padre), si se conoce una llave privada hija o se filtra de alguna manera, se puede usar con el código de la cadena para derivar todas las demás llaves privadas hijas. Una única llave privada hija que se filtra, junto con un código de cadena principal, revela todas las llaves privadas de todos las descendientes. Peor aún, la llave privada hija junto con un código de cadena principal se puede utilizar para deducir la llave privada principal.
+
+Para contrarrestar este riesgo, las carteras HD utilizan una función de derivación alternativa llamada _derivación fortalecida_, que "rompe" con la relación entre la llave pública parental y el código de la cadena de descendientes. La función de derivación fortalecida utiliza la llave privada padre para derivar el código de la cadena de descendientes, en lugar de usar la llave pública padre. Esto crea un "cortafuegos" en la secuencia padre/hija, con un código en cadena que no se puede utilizar para comprometer una llave privada padre o hermana.
+
+En términos simples, si se desea utilizar la conveniencia de una xpub para derivar ramas de llaves públicas sin exponerse al riesgo de un código de cadena filtrado, deben derivarse de un padre reforzado, en lugar de un padre normal. La mejor práctica es tener las hijas de nivel-1 de las llaves maestras siempre derivadas por derivación fortalecida, para evitar el compromiso de las llaves maestras.
+
+[[index_number]]
+===== Números de índice para la derivación normal y fortalecida
+
+((("derivación fortalecida","números índice para")))Es claramente deseable poder derivar más de una llave hija a partir de una clave padre determinada. Para gestionar esto, se utiliza un número de índice. Cada número de índice, cuando se combina con una llave principal mediante la función de derivación secundaria especial, proporciona una llave hija diferente. El número de índice utilizado en la función de derivación de padre a hija de BIP-32 es un entero de 32 bits. Para distinguir fácilmente entre llaves derivadas a través de la función de derivación normal (no fortalecida) frente a llaves derivadas mediante derivación fortalecida, este número de índice se divide en dos rangos. Los números de índice entre 0 y 2^31^&#x2013;1 (desde +0x0+ hasta +0x7FFFFFFF+) se utilizan _sólo_ para la derivación normal. Los números de índice entre 2^31^ y 2^32^&#x2013;1 (desde +0x80000000+ hasta +0xFFFFFFFF+) se utilizan _sólo_ para la derivación fortalecida. Por lo tanto, si el número de índice es menor que 2^31^, la llave hija es normal, mientras que si el número de índice es igual o mayor que 2^31^, la llave hija estará fortalecida.
+
+Para que los números de índice sean más fáciles de leer y mostrar, los números de índice para llaves hijas fortalecidas se muestran comenzando desde cero, pero con un símbolo primo. Por lo tanto, la primera llave hija normal se muestra como +0+, mientras que la primera llave hija fortalecida (índice +0x80000000+) se muestra como ++0&#x27;++. En secuencia, entonces, la segunda llave fortalecida tendría un índice igual a +0x80000001+ y se mostraría como ++1&#x27;++, y así sucesivamente. Cuando vemos un índice de cartera HD ++i&#x27;++, eso significa 2^31^ pass:[+] ++i++.(((range="endofrange", startref="ix_05wallets-asciidoc12")))
+
+[[hd_wallet_path]]
+===== Identificador de llave para cartera HD (ruta)
+
+((("carteras jerárquico deterministas (BIP-32/BIP-44)","identificador de llave")))((("llaves","convención de denominación de rutas")))Las llaves en una billetera HD se identifican mediante una convención de denominación de "ruta", con cada nivel del árbol separado por un carácter de barra (/) (véase la <<hd_path_table>>). Las llaves privadas derivadas de la llave privada maestra comienzan con +m+. Las llaves públicas derivadas de la llave pública maestra comienzan con +M+. Por lo tanto, la primera llave privada hija de la clave privada maestra es +m/0+. La primera llave pública hija es +M/0+. La segunda llave nieta de la primera hija es +m/0/1+, y así sucesivamente.
+
+El "ancestro" de una llave se lee de derecha a izquierda, hasta llegar a la llave maestra de la que se derivó. Por ejemplo, el identificador +m/x/y/z+ describe la llave que es la ++z++-ava hija de la llave +m/x/y+, que viene a ser la ++y++-ava hija de la llave +m/x+, que a su vez es la ++x++-ava hija de +m+.
+
+[[hd_path_table]]
+.Ejemplos de rutas de carteras HD
+[options="header"]
+|=======
+|Ruta HD | Llave descrita
+| +m/0+ | La primera (+0+) llave privada hija de la llave privada maestra (+m+)
+| +m/0/0+ | La primera llave privada nieta de la primera hija (+m/0+)
+| +m/0'/0+ | La primera nieta normal de la primera hija _fortalecida_ (+m/0'+)
+| +m/1/0+ | La primera llave privada nieta de la segunda hija (+m/1+)
+| +M/23/17/0/0+ | La primera llave pública tatara-nieta de la primera bisnieta de la 18va nieta de la pass:[<span class="keep-together">24ta hija</span>]
+|=======
+
+[[navigating_hd_wallet_tree]]
+===== Navegando por la estructura de árbol de una cartera HD
+
+((("carteras jerárquico deterministas (BIP-32/BIP-44)","estructura de árbol")))((("estructura de árbol, exploración")))La estructura de árbol de una cartera HD es enormemente flexible. La otra cara de la moneda es que también permite una complejidad ilimitada: cada llave extendida principal puede tener 4 mil millones de hijas: 2 mil millones de hijas normales y 2 mil millones de hijas fortalecidas. Cada una de esas hijas puede tener otras 4 mil millones de hijas, y así sucesivamente. El árbol puede ser tan profundo como se desee, con un número potencialmente infinito de generaciones. Con todo ese potencial, puede resultar bastante difícil explorar estos árboles tan grandes.
+
+Dos de las BIPs ofrecen una forma de gestionar esta complejidad potencial mediante la creación de estándares para la estructura de los árboles de carteras HD. ((("estándar BIP-43")))BIP-43 propone el uso del primer índice secundario fortalecido como un identificador especial que indica el "propósito" de la estructura del árbol. Basada en BIP-43, una cartera HD debe usar solo una rama de nivel-1 del árbol, con el número de índice definiendo el propósito de la cartera identificando la estructura y el espacio de nombres del resto del árbol. Más específicamente, una cartera HD que usa solo la rama ++m/i&#x27;/...++ está destinada a significar un propósito específico y ese propósito se identifica mediante el número de índice +i+.
+
+((("estándar BIP-44")))Ampliando esa especificación, la propuesta BIP-44 propone una estructura multi-cuentas de múltiples monedas que se indica estableciendo el número de "propósito" en +44'+. Todas las carteras HD que siguen la estructura BIP-44 se identifican por el hecho de que solo usan una rama del árbol: +m/44'/*+.
+
+BIP-44 especifica que la estructura consta de cinco niveles de árbol predefinidos:
+
+[[bip44_tree]]
+-----
+m / propósito' / tipo_de_moneda' / cuenta' / vuelto / índice_de_dirección
+-----
+
+El primer nivel, +propósito&#x27;+, siempre está configurado en +44&#x27;+. El segundo nivel, +tipo_de_moneda&#x27;+, especifica el tipo de criptomoneda, permitiendo carteras HD multi-cripto-monedas en las que cada moneda tiene su propio sub-árbol en el segundo nivel. Hay varias monedas definidas en un documento de estándares llamado https://github.com/satoshilabs/slips/blob/master/slip-0044.md[SLIP0044]; por ejemplo, Ethereum es ++m/44&#x27;/60&#x27;++, Ethereum Clásico es ++m/44&#x27;/61&#x27;++, Bitcoin es ++m/44&#x27;/0&#x27;++, y la red de pruebas o Testnet para todas las cripto-monedas es ++m/44&#x27;/1&#x27;++.
+
+El tercer nivel del árbol es +cuenta&#x27;+, que permite a los usuarios subdividir sus billeteras en sub-cuentas lógicas separadas para fines contables u organizativos. Por ejemplo, una cartera HD puede contener dos "cuentas" de  Ethereum: ++m/44&#x27;/60&#x27;/0&#x27;++ y ++m/44&#x27;/60&#x27;/1&#x27;++. Cada cuenta es el origen o raíz de su propio sub-árbol.
+
+Debido a que BIP-44 se creó originalmente para Bitcoin, contiene una "peculiaridad" que no es relevante en el mundo de Ethereum. En el cuarto nivel de la ruta, el +vuelto+, una cartera HD tiene dos sub-árboles: uno para crear direcciones de recepción de fondos y otro para crear direcciones para el vuelto. En Ethereum solo se utiliza la ruta de "recepción", ya que no es necesaria una dirección para el vuelto como sí lo es en Bitcoin. Téngase en cuenta que mientras que los niveles anteriores usaban derivaciones fortalecidas, este nivel usa una derivación normal. Esto es para permitir que el nivel de cuenta del árbol exporte llaves públicas extendidas para su uso en entornos poco seguros. Las direcciones utilizables son derivadas por la cartera HD como elementos descendientes del cuarto nivel, lo que hace que el quinto nivel del árbol sea el +índice_de_la_dirección+. Por ejemplo, la tercera dirección de recepción de pagos de Ethereum en la cuenta principal sería ++M/44&#x27;/60&#x27;/0&#x27;/0/2++. La <<bip44_path_examples>> muestra algunos ejemplos más(((range="endofrange", startref="ix_05wallets-asciidoc11")))(((range="endofrange", startref="ix_05wallets-asciidoc10"))).(((range="endofrange", startref="ix_05wallets-asciidoc5")))
+
+[[bip44_path_examples]]
+.Ejemplos de estructura de cartera HD según BIP-44
+[options="header"]
+|=======
+|Ruta HD | Llave descrita
+| ++M/44&#x27;/60&#x27;/0&#x27;/0/2++ | La tercera llave pública receptora para la cuenta principal de Ethereum
+| ++M/44&#x27;/0&#x27;/3&#x27;/1/14++ | La 15^ava^ llave publica de la dirección para el vuelto correspondiente a la 4^ta^ cuenta de Bitcoin
+| ++m/44&#x27;/2&#x27;/0&#x27;/0/1++ | La segunda llave privada en la cuenta principal de Litecoin, para firmar transacciones.
+|=======
+
+=== Conclusiones
+
+Las carteras son la base de cualquier aplicación en una cadena de bloques, de cara al usuario. Permiten a los usuarios gestionar colecciones de llaves y direcciones. Las carteras también permiten a los usuarios demostrar la propiedad de sus éter y autorizar transacciones mediante la aplicación de firmas digitales, como veremos en el <<tx_chapter>>.(((range="endofrange", startref="ix_05wallets-asciidoc0")))

@@ -1,0 +1,762 @@
+[附录]
+[[dev_tools_frameworks]]
+==开发工具，开发框架，通行证：[<span class="keep-together">和软件库</span>]
+
+===开发框架
+
+((("frameworks", id="ix_appdx-dev-tools-asciidoc0", range="startofrange"))) 开发框架可用于简化以太坊智能合约的开发。通过自己做所有事情，你可以更好地了解所有内容如何组合在一起，但这是许多繁琐且重复的工作。本节中描述的框架可以使某些任务自动化并简化开发。
+
+[[truffle]]
+==== Truffle
+
+((("frameworks","Truffle", id="ix_appdx-dev-tools-asciidoc1", range="startofrange")))((("Truffle", id="ix_appdx-dev-tools-asciidoc2", range="startofrange")))GitHub地址: https://github.com/trufflesuite/truffle
+
+网址: https://truffleframework.com
+
+文档: https://truffleframework.com/docs
+
+Truffle沙盒: http://truffleframework.com/boxes/
+
++npm+ package repository: https://www.npmjs.com/package/truffle
+
+
+[[installing_truffle]]
+=====安装Truffle框架
+
+((("Node.js")))((("Truffle","installing"))) Truffle框架包含多个Node.js程序包。在安装+ truffle +之前，你需要安装Node.js和Node Package Manager（+ npm +）的最新且可用的安装。
+
+建议安装Node.js和+ npm +的方法是使用节点版本管理器（+ nvm +）。安装+ nvm +后，它将为你处理所有依赖项和更新。请按照http://nvm.sh []上的说明进行操作。
+
+在操作系统上安装+ nvm +之后，安装Node.js就很简单。使用+-lts +标志告诉+ nvm +你需要最新的Node.js“长期支持”（LTS）版本：
+
+++++
+<pre data-type="programlisting">
+$ <strong>nvm install --lts</strong>
+</pre>
+++++
+
+确认你已安装 +node+ 和 +npm+：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v</strong>
+v8.9.4
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+接下来，创建一个隐藏文件_.nvmrc_，其中包含DApp支持的Node.js版本，因此开发人员只需在项目目录的根目录中运行`nvm install`，它将自动安装并切换为使用该版本：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v &gt; .nvmrc</strong>
+$ <strong>nvm install</strong>
+</pre>
+++++
+
+看起来不错。现在安装+truffle+：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install truffle</strong>
+
++ truffle@4.0.6
+installed 1 package in 37.508s
+</pre>
+++++
+
+[[truffle_box]]
+=====集成预建的Truffle项目（Truffle Box）
+
+((("Truffle","integrating a prebuilt Truffle project")))((("Truffle Box"))) 如果要使用或创建基于预构建样板的DApp，请访问Truffle Boxes网站，选择现有的Truffle项目，然后运行以下命令下载并解压缩它：
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle unbox <em>BOX_NAME</em></strong>
+</pre>
+++++
+
+[[truffle_project_directory]]
+=====直接创建truffle项目目录
+
+((("Truffle","creating a project directory", id="ix_appdx-dev-tools-asciidoc3", range="startofrange")) 对于要使用+ truffle +的每个项目，创建一个项目目录并初始化该目录中的+ truffle +。 + truffle +将在项目目录中创建必要的目录结构。通常给项目目录一个描述项目的名称。在此示例中，我们将使用+ truffle +从<<simple_contract_example>>部署我们的+ Faucet +合约，因此我们将项目文件夹命名为__Faucet__：
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir Faucet</strong>
+$ <strong>cd Faucet</strong>
+Faucet $
+</pre>
+++++
+
+Once inside the _Faucet_ directory, we initialize +truffle+:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle init</strong>
+</pre>
+++++
+
++truffle+ creates a directory structure and some default files:
+
+----
+Faucet
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- test
++---- truffle-config.js
+`---- truffle.js
+----
+
+除了+ truffle +本身之外，我们还将使用许多JavaScript（Node.js）支持包。我们可以使用+ npm +安装它们。我们初始化+ npm +目录结构，并接受+ npm +建议的默认值：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+
+package name: (faucet)
+version: (1.0.0)
+description:
+entry point: (truffle-config.js)
+test command:
+git repository:
+keywords:
+author:
+license: (ISC)
+About to write to Faucet/package.json:
+
+{
+  "name": "faucet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" &amp;&amp; exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+
+
+Is this ok? (yes)
+</pre>
+++++
+
+现在，我们可以安装依赖项，以便更轻松地使用+ truffle +：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install dotenv truffle-wallet-provider ethereumjs-wallet</strong>
+</pre>
+++++
+
+现在，我们在_Faucet_目录中有一个__node_modules__目录，其中包含数千个文件。
+
+在将DApp部署到云生产或持续集成环境之前，重要的是指定+ engines +字段，以便使用正确的Node.js版本构建DApp并安装其相关的依赖项。有关配置此字段的详细信息，请参见文档 http://bit.ly/2zp2GPF[documentation] 。(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc3")))
+
+=====配置truffle
+
+((("Truffle","configuring"))) + truffle +创建一些空的配置文件_truffle.js_和_truffle-config.js_。在Windows系统上，当你尝试运行命令+ truffle +时，_truffle.js_名称可能会导致冲突，而Windows尝试改为运行_truffle.js_。为避免这种情况，我们将删除_truffle.js_并使用_truffle-config.js_（为Windows用户提供支持，老实说，他们已经受够了）：
+
+++++
+<pre data-type="programlisting">
+$ <strong>rm truffle.js</strong>
+</pre>
+++++
+
+现在，我们编辑_truffle-config.js_并将内容替换为此处显示的配置示例：
+
+[source,javascript]
+----
+module.exports = {
+  networks: {
+    localnode: { // Whatever network our local node connects to
+      network_id: "*", // Match any network ID
+      host: "localhost",
+      port: 8545,
+    }
+  }
+};
+----
+
+此配置是一个很好的起点。它设置了一个默认的以太坊网络（名为+ localnode +），它假设我们正在运行一个以太坊客户端（例如Parity）作为完整节点或轻客户端。此配置将指示+ truffle +通过端口8545上的RPC与本地节点进行通信。+ truffle +将使用本地节点连接到的任何以太坊网络，例如以太坊主网络或测试网络（例如Ropsten）。本地节点还将提供钱包功能。
+
+在以下各节中，我们将配置供+ truffle +使用的其他网络，例如+ ganache +本地测试区块链和托管网络提供商Infura。随着我们添加更多网络，配置文件将变得更加复杂，但是它也将为我们的测试和开发工作流提供更多选择。
+
+=====使用truffle部署合约
+
+((("smart contracts","using Truffle to deploy")))((("Truffle","contract deployment with"))) 我们现在为_Faucet_项目有了一个基本的工作目录，我们有+ truffle +和其依赖项已配置。合约位于我们项目的_contracts_子目录中。该目录已包含“帮助程序”合约_Migrations.sol_，该合约为我们管理合约的升级。在下一节中，我们将研究_Migrations.sol_的用法。
+
+让我们复制_Faucet.sol_合约（从<<solidity_faucet_example>>）到_contracts_子目录中，因此项目目录如下所示：
+
+----
+Faucet
++---- contracts
+|   +---- Faucet.sol
+|   `---- Migrations.sol
+...
+----
+
+我们现在可以要求+ truffle +为我们编译合约：
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle compile</strong>
+Compiling ./contracts/Faucet.sol...
+Compiling ./contracts/Migrations.sol...
+Writing artifacts to ./build/contracts
+</pre>
+++++
+
+[[truffle_migrations_understanding_deployment_scripts]]
+=====Truffle迁移 - 了解部署脚本
+
+((("deployment scripts", id="ix_appdx-dev-tools-asciidoc4", range="startofrange")))((("migrations", id="ix_appdx-dev-tools-asciidoc5", range="startofrange")))((("Truffle","migrations", id="ix_appdx-dev-tools-asciidoc6", range="startofrange"))) Truffle提供了一个称为迁移_migration_的部署系统。如果你在其他框架上工作过，则可能会看到类似的内容：Ruby on Rails，Python Django和许多其他语言和框架都有+ migrate +命令。
+
+在所有这些框架中，迁移的目的是处理软件不同版本之间的数据模式更改。以太坊迁移的目的略有不同。由于以太坊合约是不可变的且部署成本高昂，因此Truffle提供了一种迁移机制来跟踪已部署的合约（以及哪些版本）。在具有数十个合约和复杂依存关系的复杂项目中，你不必为重新部署未更改的合约而付费。你也不想手动跟踪已经部署了哪些合约的版本。Truffle迁移机制通过部署智能合约_Migrations.sol_来完成所有工作，然后跟踪所有其他合约部署。
+
+我们只有一个合约_Faucet.sol_，这意味着迁移系统是大材小用的。不幸的是，我们必须使用它。但是，通过学习如何将其用于一个合约，我们可以开始为开发工作流程培养一些良好的习惯。随着事情变得越来越复杂，这种努力将获得回报。
+
+Truffle的_migrations_目录是找到迁移脚本的位置。现在，只有一个脚本__1_initial_migration.js__可以自行部署_Migrations.sol_合同：
+
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/1_initial_migration.js[]
+----
+
+我们需要第二个迁移脚本来部署_Faucet.sol_。我们称它为__2_deploy_contracts.js__。就像__1_initial_migration.js__一样，它非常简单，只做了一些小改动。实际上，您可以复制__1_initial_migration.j__的内容，只需将+ Migrations +的所有实例替换为+ Faucet +：
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
+----
+
+该脚本初始化变量+ Faucet +，将_Faucet.sol_ Solidity源代码标识为定义+ Faucet +的工件。然后，它调用`deploy`函数来部署此合约。
+
+我们都准备好了。让我们使用+ truffle migration +对其进行部署。我们必须使用+-network +参数指定要部署合约的网络。我们在配置文件中仅指定了一个网络，我们将其命名为+ localnode +。确保本地以太坊客户端正在运行，然后键入：
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle migrate --network localnode</strong>
+</pre>
+++++
+
+因为我们使用本地节点连接到以太坊网络并管理我们的钱包，所以我们必须对+ truffle +创建的交易进行授权。我们正在运行+ parity +连接到Ropsten测试区块链，因此在迁移过程中，我们会在Parity的Web控制台上看到类似<<parity_deployment_confirmation>>的显示。
+
+[[parity_deployment_confirmation]]
+.Parity要求确认部署水龙头合约
+image::images/parity_deployment_confirmation.png["Parity asking for confirmation to deploy Faucet"]
+
+共有四笔交易：一笔用于部署 +Migrations+，一笔用于将部署计数器更新为 +1+，一笔用于部署+Faucet+，另一笔将部署计数器更新为 +2+。
+
+Truffle将显示迁移完成，每个交易以及合同地址：(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc6")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc5")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc4")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle migrate --network localnode</strong>
+Using network 'localnode'.
+
+Running migration: 1_initial_migration.js
+Deploying Migrations...
+  ... 0xfa090db179d023d2abae543b4a21a1479e70ca7d35a469a5d1a98bfc6bd80fe8
+  Migrations: 0x8861c27715550bed8362c0345add158489df6db0
+Saving successful migration to network...
+  ... 0x985c4a32716826ddbe4eae284104bef8bc69e959899f62246a1b27c9dfcd6c03
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+Deploying Faucet...
+  ... 0xecdbeef77f0558edc689440e34b7bba0a3ba7a45e4b680b071b47c30a930e9d6
+  Faucet: 0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300
+Saving successful migration to network...
+  ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
+Saving artifacts...
+</pre>
+++++
+
+=====使用Truffle控制台
+
+((("Truffle","console", id="ix_appdx-dev-tools-asciidoc7", range="startofrange")))Truffle提供了一个JavaScript控制台，我们可以用来与以太坊网络进行交互（通过本地节点），与已部署的合约进行交互以及与电子钱包提供商进行交互。在我们当前的配置中（+localnode+），节点和钱包提供者是我们的本地Parity客户端。
+
+让我们启动Truffle控制台并测试一些命令：
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle console --network localnode</strong>
+truffle(localnode)>
+</pre>
+++++
+
+Truffle出现提示，显示选定的网络配置（+localnode+）。
+
+[TIP]
+====
+重要的是要记住并知道你使用的是哪个网络。你不想意外地在以太坊主网络上部署测试合约或进行交易。那可能是一个代价高昂的错误！
+====
+
+Truffle 控制台提供自动完成功能，使我们可以轻松地探索环境。如果在部分完成命令后按Tab，则Truffle将为我们完成命令。如果有多个命令与我们的输入匹配，则两次按Tab键将显示所有可能的完成。实际上，如果我们在空白提示下按两次Tab键，则Truffle会列出所有可用命令：
+
+++++
+<pre data-type="programlisting" class="codewrap">
+truffle(localnode)&gt;
+Array Boolean Date Error EvalError Function Infinity JSON Math NaN Number Object RangeError ReferenceError RegExp String SyntaxError TypeError URIError decodeURI decodeURIComponent encodeURI encodeURIComponent eval isFinite isNaN parseFloat parseInt undefined
+
+ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Intl Map Migrations Promise Proxy Reflect Set StateManager Symbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ assert async_hooks buffer child_process clearImmediate clearInterval clearTimeout cluster console crypto dgram dns domain escape events fs global http http2 https module net os path perf_hooks process punycode querystring readline repl require root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
+
+__defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
+</pre>
+++++
+
+大多数与钱包和节点相关的功能由+ web3 +对象提供，该对象是web3.js库的实例。 + web3 +对象将RPC接口抽象到我们的Parity节点。你还将注意到两个名称相似的对象：+ Migrations +和+ Faucet +。这些代表我们刚刚部署的合约。我们将使用Truffle控制台与合约进行交互。首先，让我们通过+ web3 +对象检查钱包：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.accounts</strong>
+[ '0x9e713963a92c02317a681b9bb3065a8249de124f',
+  '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
+</pre>
+++++
+
+我们的Parity客户端有两个钱包，在Ropsten上有一些测试以太币。 + web3.eth.accounts +属性包含所有帐户的列表。我们可以使用+ getBalance +函数检查第一个帐户的余额：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(web3.eth.accounts[0]).toNumber()</strong>
+191198572800000000
+truffle(localnode)&gt;
+</pre>
+++++
+
+web3.js是一个大型JavaScript库，可通过本地客户端等提供程序为Ethereum系统提供全面的接口。我们将在<<web3js_tutorial>>中更详细地检查web3.js。现在，让我们尝试与我们的合约进行互动：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.address</strong>
+'0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+0
+truffle(localnode)&gt;
+</pre>
+++++
+
+接下来，我们将使用+ sendTransaction +发送一些测试以太币来为+ Faucet +合约提供资金。注意使用+ web3.utils.toWei +为我们转换以太单位。正确输入18个零点既困难又危险，因此，最好使用单位转换器来取值。这是我们发送交易的方式：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
+                    to:Faucet.address, value:web3.utils.toWei(0.5, 'ether')});</strong>
+'0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
+</pre>
+++++
+
+如果我们切换到Parity Web界面，则会看到一个弹出窗口，要求我们确认此交易。一旦交易被挖出，我们将能够看到我们的+Faucet+合约的余额：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+500000000000000000
+</pre>
+++++
+
+让我们现在调用+withdraw+函数，从合约中提取一些测试以太币：
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                       {instance.withdraw(web3.utils.toWei(0.1,
+                       'ether'))}).then(console.log)</strong>
+</pre>
+++++
+
+同样，我们需要在Parity Web界面中批准交易。如果再次检查，我们会发现+Faucet+合约的余额减少了，我们的测试钱包收到了0.1以太币(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc7"))):(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc2")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc1")))
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+400000000000000000
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                    {instance.withdraw(web3.utils.toWei(1, 'ether'))})</strong>
+StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c 
+  exited with an error (status 0).
+</pre>
+++++
+
+==== Embark
+
+((("Embark")))((("frameworks","Embark")))GitHub地址: https://github.com/embark-framework/embark/[]
+
+文档链接: https://embark.status.im/docs/[]
+
++npm+ 软件包存档： https://www.npmjs.com/package/embark[]
+
+Embark是一个软件框架，旨在使开发人员可以轻松开发和部署分布式应用程序。
+Embark集成了以太坊，IPFS，Whisper和Swarm，以提供以下功能：
+
+*自动部署合约，并使其在JS代码中可用。
+*注意更改并更新合约以在需要时进行重新部署。
+*管理不同的区块链并与之交互（例如，测试网，本地，主网）。
+*管理复杂系统中相互依存的合约。
+*存储和检索数据，包括上载和检索IPFS中托管的文件。
+*简化了将整个应用程序部署到IPFS或Swarm的过程。
+*通过Whisper协议发送和接收消息。
+
+你可以使用+npm+安装它：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install embark</strong>
+</pre>
+++++
+
+[role =“ pagebreak-before”]
+==== OpenZeppelin
+
+((("frameworks","OpenZeppelin suite", id="ix_appdx-dev-tools-asciidoc8", range="startofrange")))((("OpenZeppelin", id="ix_appdx-dev-tools-asciidoc9", range="startofrange")))GitHub: https://github.com/OpenZeppelin/openzeppelin-solidity[]
+
+网站: https://openzeppelin.org/[]
+
+文档: https://openzeppelin.org/api/docs/open-zeppelin.html[]
+
+https://openzeppelin.org/[OpenZeppelin] 是以Solidity语言编写的可重用和安全智能合约的开放框架。
+
+它是由社区驱动的，由 https://zeppelin.solutions/[Zeppelin] 团队领导，并有100多个外部贡献者。该框架的主要重点是安全性，它通过应用Zeppelin开发人员从 https://blog.zeppelin.solutions/tagged/security[auditing]  审计大量合约，并通过社区的不断测试和审核，使用该框架作为其实际应用程序的基础。
+
+OpenZeppelin框架是用于以太坊智能合约的最广泛使用的解决方案。该框架目前有一个丰富的合约库，包括ERC20和ERC721通证的实现，多种类型的众筹模型以及合约中常见的简单行为，例如“拥有”，“可暂停”或“限制余额”。在某些情况下，此存储库中的合约用作事实上的实现标准。
+
+该框架使用MIT许可协议，并且所有合约均采用模块化方法进行设计，以确保易于重用和扩展。这些是干净且基本的构建基块，可以在下一个以太坊项目中使用。让我们设置框架并使用OpenZeppelin合约进行简单的打包销售，以演示它的易用性。此示例还强调了重用安全组件而不是自己编写安全组件的重要性。
+
+首先，我们需要将+ openzeppelin-solidity +库安装到我们的工作区中。截至撰写本文时，最新版本是v1.9.0，因此我们将使用该版本：
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir sample-crowdsale</strong>
+$ <strong>cd sample-crowdsale</strong>
+$ <strong>npm install openzeppelin-solidity@1.9.0</strong>
+$ <strong>mkdir contracts</strong>
+</pre>
+++++
+
+在撰写本文时，OpenZeppelin包含多个遵循ERC20，ERC721和ERC827标准的基本通证合约，具有不同的排放，限制，归属，生命周期等特征。
+
+让我们制作一个可铸造的ERC20代币，这意味着初始供应从0开始，代币所有者可以创建新代币（在我们的示例中，是销售通行证：[<span class="keep-together">合同</span>]）并出售给买家。为此，我们将创建一个_contracts / SampleToken.sol_文件，其中包含以下内容：
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleToken.sol[]
+----
+
+OpenZeppelin已经提供了+ MintableToken +合约，我们可以将其用作通证的基础，因此我们仅定义特定于我们案例的详细信息。接下来，让我们签订众筹合约。就像通证一样，OpenZeppelin已经提供了各种各样的众筹方式。当前，你将找到涉及分配，派发，价格和验证的各种方案的合约。因此，假设您要为众筹设定一个目标，如果在交易完成时仍未达到目标，则想退还所有投资者。为此，您可以使用 http://bit.ly/2yHoh65[+RefundableCrowdsale+] 合约。或者，你可能想定义价格上涨的众筹来激励早期购买者；为此，有一个 http://bit.ly/2PtWOys[+IncreasingPriceCrowdsale+] 合约。你也可以在合约收到指定量的以太币后终止众筹(http://bit.ly/2OVsCN8[+CappedCrowdsale+])，或使用 http://bit.ly/2zp2Nuz[+TimedCrowdsale+] 合约设置结束时间，或使用 http://bit.ly/2CN8Hc9[+WhitelistedCrowdsale+] 合约创建购买者白名单。
+
+如前所述，OpenZeppelin合约是基本的构建块。这些众筹合约的设计目的是要合并在一起；只需阅读基本 http://bit.ly/2ABIQSI[+Crowdsale+] 合约的源代码，以获取有关扩展它的说明。对于我们的通证的众筹销售，我们需要在众筹销售合约收到以太币时铸造通证，因此让我们使用 http://bit.ly/2Sx3HOc[+MintedCrowdsale+] 作为基础。为了使它更有趣，我们也将其设置为 http://bit.ly/2Qef0Jm[+PostDeliveryCrowdsale+] ，以便仅在众筹结束后才能提取通证。为此，我们将以下内容写入_contracts / SampleCrowdsale.sol_：
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleCrowdsale.sol[]
+----
+
+再说一次，我们几乎不必编写任何代码。我们只是重用了OpenZeppelin社区提供的经过战斗验证的代码。但是，必须注意，这种情况与我们的“ SampleToken”合同不同。如果你转到众筹自动测试 http://bit.ly/2Q8lQ3o[Crowdsale automated tests]，则会看到它们是独立测试的。当你将不同的代码单元集成到更大的组件中时，单独测试所有单元是不够的，因为它们之间的交互可能会导致你意想不到的行为。特别是，你将在这里看到我们引入了多重继承，如果开发人员不了解Solidity的细节，这会使开发人员感到惊讶。我们的pass：[ <span class="keep-together"><code>SampleCrowdsale</code></span> ]合约很简单，它将按我们期望的那样工作，因为该框架旨在使此类情况变得简单明了；但不要因为此框架引入的简单性而放松警惕。每次集成OpenZeppelin框架的各个部分以构建更复杂的解决方案时，都必须全面测试解决方案的各个方面，以确保单元的所有交互都按预期工作。
+
+最后，当我们对我们的解决方案感到满意并对其进行了彻底的测试时，我们需要对其进行部署。 OpenZeppelin与Truffle集成良好，因此我们可以像下面这样编写一个迁移文件（_migrations / 2_deploy_contracts.js_），如<<truffle_migrations_understanding_deployment_scripts>>中所介绍的：
+
+[source,js]
+----
+include::code/OpenZeppelin/migrations/2_deploy_contracts.js[]
+----
+
+[NOTE]
+====
+这只是OpenZeppelin框架中的一些合约的快速概述。欢迎你加入OpenZeppelin开发社区，进行学习和参加贡献。(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc9")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc8")))
+====
+
+==== ZeppelinOS
+
+((("frameworks","ZeppelinOS")))((("ZeppelinOS")))GitHhub: https://github.com/zeppelinos[]
+
+Website: https://zeppelinos.org[]
+
+Blog: https://blog.zeppelinos.org[]
+
+https://github.com/zeppelinos[ZeppelinOS] 是一个基于EVM的开源，分布式工具和服务平台
+以安全地开发和管理智能合约应用程序。
+
+与OpenZeppelin的代码（每次使用时都需要将其重新部署）不同，ZeppelinOS的代码位于链上。需要给定功能（例如ERC20通证）的应用程序不仅不必重新设计和审核其实现（OpenZeppelin解决了某些问题），甚至不需要部署它。使用ZeppelinOS，应用程序可以直接与通证的链上实现进行交互，方式与桌面应用程序与其基础OS的组件进行交互的方式几乎相同。
+
+((("proxy"))) ZeppelinOS的核心是一个非常聪明的合约，称为_proxy_。代理是能够包装任何其他合约，公开其接口而不必手动为其实现设置器和获取器的合约，并且可以在不丢失状态的情况下对其进行升级。用Solidity的术语，可以将其视为普通合约，其业务逻辑包含在库中，可以随时交换为新库而不会丢失其状态。代理链接到其实现的方式完全自动化，并为开发人员封装。几乎任何合约都可以在几乎没有更改的情况下进行升级。有关ZeppelinOS代理机制的更多信息，请参见 http://bit.ly/2OfuNpu[blog] ，有关使用它的示例，请参见 http://bit.ly/2OfuE5q[on GitHub]。
+
+使用ZeppelinOS开发应用程序类似于使用+ npm +开发JavaScript应用程序。 + AppManager +为每个版本的应用程序处理应用程序包。软件包只是合约目录，每个合约可以具有一个或多个可升级代理。 + AppManager +不仅以特定于应用程序的合约提供代理，还以标准库的形式为ZeppelinOS实现提供代理。要查看完整的示例，请访问 http://bit.ly/2PtyJb3[examples/complex] 。
+
+尽管目前处于开发阶段，ZeppelinOS的目的是提供广泛的附加功能，例如开发人员工具，可自动执行合约内后台操作的调度程序，开发赏金，可促进应用程序之间的价值沟通和交换的市场等等。所有这些都在ZeppelinOS的白皮书 http://bit.ly/2QcxV7K[whitepaper] 中进行了描述。(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc0")))
+
+
+
+
+===实用程序
+
+==== EthereumJS helpeth：命令行实用程序
+
+((("EthereumJS helpeth")))((("helpeth command-line tool")))((("utilities")))((("utilities","EthereumJS helpeth")))GitHub: https://github.com/ethereumjs/helpeth[]
+
++ helpeth +是用于密钥和交易处理的命令行工具，可简化开发人员的工作。
+
+它是EthereumJS基于JavaScript的库和工具的集合的一部分：
+
+
+
+----
+Usage: helpeth [command]
+
+Commands:
+  signMessage <message>                     Sign a message
+  verifySig <hash> <sig>                    Verify signature
+  verifySigParams <hash> <r> <s> <v>        Verify signature parameters
+  createTx <nonce> <to> <value> <data>      Sign a transaction
+  <gasLimit> <gasPrice>
+  assembleTx <nonce> <to> <value> <data>    Assemble a transaction from its
+  <gasLimit> <gasPrice> <v> <r> <s>         components
+  parseTx <tx>                              Parse raw transaction
+  keyGenerate [format] [icapdirect]         Generate new key
+  keyConvert                                Convert a key to V3 keystore format
+  keyDetails                                Print key details
+  bip32Details <path>                       Print key details for a given path
+  addressDetails <address>                  Print details about an address
+  unitConvert <value> <from> <to>           Convert between Ethereum units
+
+Options:
+  -p, --private      Private key as a hex string                        [string]
+  --password         Password for the private key                       [string]
+  --password-prompt  Prompt for the private key password               [boolean]
+  -k, --keyfile      Encoded key file                                   [string]
+  --show-private     Show private key details                          [boolean]
+  --mnemonic         Mnemonic for HD key derivation                     [string]
+  --version          Show version number                               [boolean]
+  --help             Show help                                         [boolean]
+----
+
+==== dapp.tools
+
+((("dapp.tools")))((("utilities","dapp.tools")))Website: https://dapp.tools/[]
+
+dapp.tools是一整套基于Unix哲学精神创建的面向区块链的开发人员工具。包括的工具有：
+
+
+Dapp::
+Dapp是基本的面向用户的工具，用于创建新的DApp，运行Solidity单元测试，调试和部署合约，启动测试网等。
+
+Seth::
+塞思（Seth）用于撰写交易，查询区块链，在数据格式之间转换，执行远程调用以及类似的日常任务。
+
+Hevm::
+Hevm是Haskell EVM实施，带有灵活的基于终端的Solidity调试器。它用于测试和调试DApp。
+
+evmdis::
+evmdis是EVM反汇编程序；它对字节码执行静态分析，以提供比原始EVM操作更高级别的抽象。
+
+
+==== SputnikVM
+
+https://github.com/etcdevteam/sputnikvm[SputnikVM] ((("SputnikVM")))((("utilities","SputnikVM"))) 是一个独立的可插拔虚拟机，用于不同的基于以太坊的区块链。它用Rust编写，可以用作二进制文件，Cargo安装库或共享库，也可以通过FFI，Protobuf和JSON接口集成。它有一个单独的二进制文件+ sputnikvm-dev +，用于测试目的，它可以模拟大多数JSON-RPC API和区块挖掘。
+
+=== Libraries
+
+==== web3.js
+
+((("libraries", id="ix_appdx-dev-tools-asciidoc10", range="startofrange")))web3.js ((("libraries","web3.js")))((("web3.js"))) 是由以太坊基金会开发的，与以太坊兼容的JavaScript API，用于通过JSON-RPC与客户端进行通信。
+
+GitHub: https://github.com/ethereum/web3.js[]
+
++npm+ package repository: https://www.npmjs.com/package/web3[]
+
+web3.js API 0.2x.x的文档: http://bit.ly/2Qcyq1C[]
+
+web3.js API 1.0.0-beta.xx的文档: http://bit.ly/2CT33p0[]
+
+[role =“ pagebreak-before”]
+==== web3.py
+
+((("libraries","web3.py")))((("web3.py"))) web3.py是用于访问以太坊区块链的Python库，由以太坊基金会维护。
+
+GitHub: https://github.com/ethereum/web3.py[]
+
+PyPi: https://pypi.python.org/pypi/web3/4.0.0b9[]
+
+文档: https://web3py.readthedocs.io/[]
+
+==== EthereumJS
+
+((("EthereumJS"))) EthereumJS是用于Ethereum的库和实用程序的集合。
+
+GitHub: https://github.com/ethereumjs[]
+
+网站: https://ethereumjs.github.io/[]
+
+==== web3j
+
+((("libraries","web3j")))((("web3j"))) web3j是Java和Android库，用于与以太坊客户端集成并使用智能合约。
+
+GitHub: https://github.com/web3j/web3j[]
+
+网站: https://web3j.io[]
+
+文档: https://docs.web3j.io[]
+
+==== EtherJar
+
+((("EtherJar")))((("libraries","EtherJar"))) EtherJar是另一个Java库，用于与以太坊集成并使用智能合约。它是为基于Java 8+的服务器端项目而设计的，它提供了有关RPC，以太坊数据结构和智能合约访问的低级访问和高级包装。
+
+GitHub: https://github.com/infinitape/etherjar[]
+
+==== Nethereum
+
+((("libraries","Nethereum")))((("Nethereum"))) Nethereum是用于以太坊的.Net集成库。
+
+GitHub: https://github.com/Nethereum/Nethereum[]
+
+Website: http://nethereum.com/[]
+
+Documentation: https://nethereum.readthedocs.io/en/latest/[]
+
+==== ethers.js
+
+((("ethers.js")))((("libraries","ethers.js"))) ethers.js库是一个紧凑，完整，功能齐全，经过广泛测试的基于MIT许可的以太坊软件库，这个项目从以太坊基金会获得了DevEx赠款，用于其扩展和维护。
+
+GitHub link: https://github.com/ethers-io/ethers.js[]
+
+Documentation: https://docs.ethers.io[]
+
+
+==== Emerald Platform
+
+((("Emerald Platform")))((("libraries","Emerald Platform"))) Emerald Platform提供了用于在以太坊之上构建DApp的库和UI组件。 Emerald JS和Emerald JS UI提供了用于构建JavaScript应用程序和网站的模块集和React组件集； Emerald SVG Icons是一组与区块链相关的图标。除JavaScript库外，Emerald还具有一个Rust库，用于操作私钥和交易签名。所有Emerald库和组件均已获得Apache许可证2.0版的许可。(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc10")))
+
+GitHub: https://github.com/etcdevteam/emerald-platform[]
+
+Documentation: https://docs.etcdevteam.com[]
+
+[[testing_frameworks]]
+===测试智能合约
+
+((("frameworks","for smart contract development", id="ix_appdx-dev-tools-asciidoc11", range="startofrange")))((("smart contracts","test frameworks", id="ix_appdx-dev-tools-asciidoc12", range="startofrange")))((("test frameworks","for smart contract development", id="ix_appdx-dev-tools-asciidoc13", range="startofrange")))有几种用于智能合约开发的常用测试框架，在<<testing_frameworks_table>>做了摘要介绍：
+
+[[testing_frameworks_table]]
+[options =“ header”]
+.智能合约测试框架摘要
+|=======
+|Framework | Test language(s)    | Testing framework | Chain emulator       | Website
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.status.im/docs/[]
+|Dapp      | Solidity            | +ds-test+ (custom)  | +ethrun+ (Parity)      | https://dapp.tools/dapp/[]
+|Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
+|=======
+
+
+Truffle :: ((("Truffle","as test framework"))) Truffle允许以JavaScript（基于Mocha）或Solidity编写的单元测试。这些测试是可以在Ganache上运行的。
+
+Embark :: ((("Embark"))) Embark与Mocha集成在一起，以运行用JavaScript编写的单元测试。这些测试依次针对TestRPC / Ganache上部署的合约。 Embark框架自动部署智能合约，并在更改合约时自动重新部署。它还跟踪已部署的合约，仅在真正需要时才部署合约。 Embark包含一个测试库，可通过+ assert.equal +之类的功能在EVM中快速运行和测试你的合约。 + embark test +命令将运行_test_目录下的所有测试文件。
+
+Dapp :: ((("Dapp"))) Dapp使用本机Solidity代码（一个名为+ ds-test +的库）和一个由Parity构建的名为+ ethrun +的Rust库来执行以太坊字节码，然后判断正确性。 + ds-test +库提供判断功能，用于验证正确性和事件，以便在控制台中记录数据。
++
+判断函数包括：
++
+----
+assert(bool condition)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+----
++
+记录命令会将信息记录到控制台，从而使它们对于调试非常有用：
++
+----
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+----
+
+Populus :: ((("Populus"))Populus使用Python和它自己的链仿真器来运行以Solidity编写的合约。单元测试使用用Python编写的+ pytest +库。 Populus支持编写专门用于测试的合约。这些合约文件名应与全局模式_Test * .sol_相匹配，并且位于项目测试目录_tests_下的任何位置。
+
+
+[[on_blockchain_testing_sec]]
+====区块链在线测试
+
+((("blockchain","on-blockchain testing")))((("test frameworks","on-blockchain testing"))) 虽然大多数测试不应该在已部署的合约上进行，但是可以通过以太坊客户端来检查合约的行为。以下命令可用于评估智能合约的状态。这些命令应在+ geth +终端上键入，尽管任何web3控制台也将支持它们。
+
+要通过__ ++ txhash ++ __获取合约的地址，请使用：
+
+++++
+<pre data-type="programlisting">
+web3.eth.getTransactionReceipt(<em>txhash</em>);
+</pre>
+++++
+
+
+此命令获取部署在__ ++ contractaddress ++ __的合约的代码；这可以用来验证部署的正确性：
+
+++++
+<pre data-type="programlisting">
+web3.eth.getCode(<em>contractaddress</em>)
+</pre>
+++++
+
+这将获取位于__ ++ options ++ __中指定的地址处的合约的完整日志，这有助于查看合约的历史调用记录：
+
+++++
+<pre data-type="programlisting">
+web3.eth.getPastLogs(<em>options</em>)
+</pre>
+++++
+
+最后，此命令获取位于__ ++ address ++ __的存储，偏移量为__ ++ position ++ __：
+
+++++
+<pre data-type="programlisting">
+web3.eth.getStorageAt(<em>address</em>, <em>position</em>)
+</pre>
+++++
+
+[[ganache]]
+==== Ganache：本地测试区块链
+
+((("Ganache","local blockchain testing with"))) Ganache是一个本地测试区块链，可用于部署合约，开发应用程序和运行测试。它可作为Windows，macOS和Linux的桌面应用程序（带有图形用户界面）使用。它也可以作为名为+ ganache-cli +的命令行实用程序使用。有关Ganache桌面应用程序的更多详细信息和安装说明，请参阅 https://truffleframework.com/ganache []。
+
+可以在https://github.com/trufflesuite/ganache-cli/ []中找到+ ganache-cli +代码。
+
+要安装命令行+ ganache-cli +，请使用+ npm +：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g ganache-cli</strong>
+</pre>
+++++
+
+你可以使用+ ganache-cli +启动本地区块链进行测试，如下所示：
+
+++++
+<pre data-type="programlisting">
+$ <strong>ganache-cli \
+  --networkId=3 \
+  --port="8545" \
+  --verbose \
+  --gasLimit=8000000 \
+  --gasPrice=4000000000;</strong>
+</pre>
+++++
+
+关于此命令行的一些注意事项：
+
+* [] 检查`--networkId`和`--port`标志值是否与_truffle.js_中的配置匹配。
+* [] 检查`--gasLimit`标志值是否与 https://ethstats.net 上显示的最新主网gas限制（例如8,000,000 gas）匹配，以避免不必要地遇到“gas不足”异常。请注意，+ 4000000000 +的`--gasPrice`表示4 gwei的燃料价格。
+* []你可以选择输入`--mnemonic`标志值来还原以前的HD钱包和关联的地址。(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc13")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc12")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc11")))
