@@ -44,7 +44,7 @@ DIR=_build
 DIST=dist
 BOOK=book
 TAG=`git describe --tags --always`
-TITLE=MasteringBitcoin2OE
+TITLE=MasteringEthereumOE
 
 RUBYDIR=/usr/lib/ruby/gems/2.4.0/gems/
 ADOCFONTSDIR=/usr/lib/ruby/gems/*/gems/*/data/fonts/
