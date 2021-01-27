@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.5.16;
 
 import "./DeedRepository.sol";
 
@@ -20,7 +20,7 @@ contract AuctionRepository {
 
     // Bid struct to hold bidder and amount
     struct Bid {
-        address from;
+        address payable from;
         uint256 amount;
     }
 
@@ -32,7 +32,7 @@ contract AuctionRepository {
         string metadata;
         uint256 deedId;
         address deedRepositoryAddress;
-        address owner;
+        address payable owner;
         bool active;
         bool finalized;
     }
@@ -60,7 +60,7 @@ contract AuctionRepository {
     /**
     * @dev Disallow payments to this contract directly
     */
-    function() public{
+    function() external {
         revert();
     }
 
@@ -68,7 +68,7 @@ contract AuctionRepository {
     * @dev Gets the length of auctions
     * @return uint representing the auction count
     */
-    function getCount() public constant returns(uint) {
+    function getCount() public view returns(uint) {
         return auctions.length;
     }
 
@@ -76,7 +76,7 @@ contract AuctionRepository {
     * @dev Gets the bid counts of a given auction
     * @param _auctionId uint ID of the auction
     */
-    function getBidsCount(uint _auctionId) public constant returns(uint) {
+    function getBidsCount(uint _auctionId) public view returns(uint) {
         return auctionBids[_auctionId].length;
     }
 
@@ -84,7 +84,7 @@ contract AuctionRepository {
     * @dev Gets an array of owned auctions
     * @param _owner address of the auction owner
     */
-    function getAuctionsOf(address _owner) public constant returns(uint[]) {
+    function getAuctionsOf(address _owner) public view returns(uint[] memory) {
         uint[] memory ownedAuctions = auctionOwner[_owner];
         return ownedAuctions;
     }
@@ -94,14 +94,14 @@ contract AuctionRepository {
     * @param _auctionId uint of the auction owner
     * @return amount uint256, address of last bidder
     */
-    function getCurrentBid(uint _auctionId) public constant returns(uint256, address) {
+    function getCurrentBid(uint _auctionId) public view returns(uint256, address) {
         uint bidsLength = auctionBids[_auctionId].length;
         // if there are bids refund the last bid
         if( bidsLength > 0 ) {
             Bid memory lastBid = auctionBids[_auctionId][bidsLength - 1];
             return (lastBid.amount, lastBid.from);
         }
-        return (0, 0);
+        return (uint256(0), address(0));
     }
 
     /**
@@ -109,7 +109,7 @@ contract AuctionRepository {
     * @param _owner address of the owner
     * @return uint total number of auctions
     */
-    function getAuctionsCountOfOwner(address _owner) public constant returns(uint) {
+    function getAuctionsCountOfOwner(address _owner) public view returns(uint) {
         return auctionOwner[_owner].length;
     }
 
@@ -126,11 +126,11 @@ contract AuctionRepository {
     * @return bool whether the auction is active
     * @return bool whether the auction is finalized
     */
-    function getAuctionById(uint _auctionId) public constant returns(
-        string name,
+    function getAuctionById(uint _auctionId) public view returns(
+        string memory name,
         uint256 blockDeadline,
         uint256 startPrice,
-        string metadata,
+        string memory metadata,
         uint256 deedId,
         address deedRepositoryAddress,
         address owner,
@@ -160,7 +160,7 @@ contract AuctionRepository {
     * @param _blockDeadline uint is the timestamp in which the auction expires
     * @return bool whether the auction is created
     */
-    function createAuction(address _deedRepositoryAddress, uint256 _deedId, string _auctionTitle, string _metadata, uint256 _startPrice, uint _blockDeadline) public contractIsDeedOwner(_deedRepositoryAddress, _deedId) returns(bool) {
+    function createAuction(address _deedRepositoryAddress, uint256 _deedId, string memory _auctionTitle, string memory _metadata, uint256 _startPrice, uint _blockDeadline) public contractIsDeedOwner(_deedRepositoryAddress, _deedId) returns(bool) {
         uint auctionId = auctions.length;
         Auction memory newAuction;
         newAuction.name = _auctionTitle;
