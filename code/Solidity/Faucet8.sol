@@ -16,15 +16,15 @@ contract owned {
 }
 
 contract mortal is owned {
-	// Contract destructor
-	function destroy() public onlyOwner {
-		selfdestruct(owner);
-	}
+    // Contract destructor
+    function destroy() public onlyOwner {
+        selfdestruct(owner);
+    }
 }
 
 contract Faucet is mortal {
-	event Withdrawal(address indexed to, uint amount);
-	event Deposit(address indexed from, uint amount);
+    event Withdrawal(address indexed to, uint amount);
+    event Deposit(address indexed from, uint amount);
 
 	// Give out ether to anyone who asks
 	function withdraw(uint withdraw_amount) public {
