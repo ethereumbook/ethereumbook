@@ -4,7 +4,7 @@
 // npm install ethereumjs-tx
 //
 // Run with: $ node raw_tx_demo.js
-const ethTx = require('ethereumjs-tx');
+const ethTx = require('ethereumjs-tx').Transaction;
 
 const txData = {
   nonce: '0x0',
