@@ -32,5 +32,5 @@ contract Faucet is mortal {
         msg.sender.transfer(withdraw_amount);
     }
     // Accept any incoming amount
-    function () public payable {}
+    function () external payable {}
 }

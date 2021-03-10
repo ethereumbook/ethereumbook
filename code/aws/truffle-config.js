@@ -31,13 +31,13 @@ module.exports = {
 			network_id: "1",
 			provider: mainNetProvider,
 			gas: 4600000,
-			gasPrice: web3.toWei("20", "gwei")
+			gasPrice: web3.utils.toWei("20", "gwei")
 		},
 		ropsten: { // Provided by Infura, load keys in .env file
 			network_id: "3",
 			provider: ropstenProvider,
 			gas: 4600000,
-			gasPrice: web3.toWei("20", "gwei")
+			gasPrice: web3.utils.toWei("20", "gwei")
 		},
 		kovan: {
 			network_id: 42,

@@ -106,7 +106,7 @@ It's important to verify that you are downloading the real MetaMask extension, a
 
 * Shows the ID +nkbihfbeogaeaoehlefnkodbefgpgknn+ in the address bar
 * Is offered by https://metamask.io
-* Has more than 1,400 reviews
+* Has more than 1,500 reviews
 * Has more than 1,000,000 users
 
 Once you confirm you are looking at the correct extension, click "Add to Chrome" to install it.
@@ -173,7 +173,7 @@ Your MetaMask wallet uses the same private key and Ethereum address on all the n
 
 ((("ether (generally)","testnet")))((("MetaMask","and testnet ether")))((("test ether","obtaining")))((("testnet","ether for")))((("wallets","testnet ether and")))Your first task is to get your wallet funded. You won't be doing that on the main network because real ether costs money and handling it requires a bit more experience. For now, you'll load your wallet with some testnet ether.
 
-((("Ropsten Test Network")))Switch MetaMask to the _Ropsten Test Network_. Click Buy, then click Ropsten Test Faucet. MetaMask will open a new web page, as shown in <<metamask_ropsten_faucet>>.
+((("Ropsten Test Network")))Switch MetaMask to the _Ropsten Test Network_. Click Deposit, then click Ropsten Test Faucet. MetaMask will open a new web page, as shown in <<metamask_ropsten_faucet>>.
 
 [[metamask_ropsten_faucet]]
 .MetaMask Ropsten Test Faucet
@@ -343,15 +343,15 @@ A couple of interesting things are happening here. The +msg+ object is one of th
 
 The very next line is the closing curly brace, indicating the end of the definition of our +withdraw+ function.
 
-Next, we we declare one more function:
+Next, we declare one more function:
 
-[[fallback_function]]
+[[receive_function]]
 [source,solidity]
 ----
-function () public payable {}
+receive () external payable {}
 ----
 
-((("fallback function")))This function is a so-called _fallback_ or _default_ function, which is called if the transaction that triggered the contract didn't name any of the declared functions in the contract, or any function at all, or didn't contain data. Contracts can have one such default function (without a name) and it is usually the one that receives ether. That's why it is defined as a public and payable function, which means it can accept ether into the contract. It doesn't do anything, other than accept the ether, as indicated by the empty definition in the curly braces pass:[(<code>{}</code>)]. If we make a transaction that sends ether to the contract address, as if it were a wallet, this function will handle it.
+((("receive function")))The receive function is called if the transaction that triggered the contract didn't name any of the declared functions in the contract, or didn't contain data and thus was a plain Ether transfer. Contracts can have one such receive function (without a name) and it is used to receive ether. That's why it is defined as an external and payable function, which means it can accept ether into the contract. It doesn't do anything, other than accept the ether, as indicated by the empty definition in the curly braces pass:[(<code>{}</code>)]. If we make a transaction that sends ether to the contract address, as if it were a wallet, this function will handle it.
 
 Right below our default function is the final closing curly brace, which closes the definition of the contract +Faucet+. That's it!(((range="endofrange", startref="ix_02intro-asciidoc11")))(((range="endofrange", startref="ix_02intro-asciidoc10")))
 
@@ -388,7 +388,7 @@ Once you have loaded the _Faucet.sol_ contract into the Remix IDE, the IDE will 
 .Remix successfully compiles the Faucet.sol contract
 image::images/remix_compile.png[""]
 
-If something goes wrong, the most likely problem is that the Remix IDE is using a version of the Solidity compiler that is different from 0.4.19. In that case, our pragma directive will prevent _Faucet.sol_ from compiling. To change the compiler version, go to the Settings tab, set the version to 0.4.19, and try again.
+If something goes wrong, the most likely problem is that the Remix IDE is using a version of the Solidity compiler that is different from 0.6. In that case, our pragma directive will prevent _Faucet.sol_ from compiling. To change the compiler version, go to the Settings tab, set the version to 0.6.0, and try again.
 
 The Solidity compiler has now compiled our _Faucet.sol_ into EVM bytecode. If you are curious, the bytecode looks like this:
 
@@ -429,7 +429,7 @@ image::images/remix_run.png["Remix IDE Run tab, with Injected Web3 environment s
 
 Right below the Run settings you just confirmed is the +Faucet+ contract, ready to be created. Click on the Deploy button shown in <<remix_run>>.
 
-Remix will construct the special "creation" transaction and MetaMask will ask you to approve it, as shown in <<remix_metamask_create>>. You'll notice the contract creation transaction has no ether in it, but it has 258 bytes of data (the compiled contract) and will consume 10 gwei in gas. Click Submit to approve it.
+Remix will construct the special "creation" transaction and MetaMask will ask you to approve it, as shown in <<remix_metamask_create>>. You'll notice the contract creation transaction has no ether in it, but it has 262 bytes of data (the compiled contract) and will consume 10 gwei in gas. Click Submit to approve it.
 
 [[remix_metamask_create]]
 .MetaMask showing the contract creation transaction
@@ -478,12 +478,12 @@ image::images/metamask_send_to_contract.png[""]
 
 In a minute, if you reload the Etherscan block explorer, it will show another transaction to the contract address and an updated balance of 1 ether.
 
-Remember the unnamed default public payable function in our _Faucet.sol_ code? It looked like this:
+Remember the unnamed default external payable function in our _Faucet.sol_ code? It looked like this:
 
-[[fallback_function_review]]
+[[receive_function_review]]
 [source,solidity]
 ----
-function () public payable {}
+receive () external payable {}
 ----
 
 When you sent a transaction to the contract address, with no data specifying which function to call, it called this default function. Because we declared it as +payable+, it accepted and deposited the 1 ether into the contract's account balance. Your transaction caused the contract to run in the EVM, updating its balance. You have funded your faucet!(((range="endofrange", startref="ix_02intro-asciidoc18")))
@@ -493,7 +493,7 @@ When you sent a transaction to the contract address, with no data specifying whi
 
 ((("Faucet.sol contract (test example)","withdrawing funds from", id="ix_02intro-asciidoc19", range="startofrange")))((("withdrawal of funds from contract", id="ix_02intro-asciidoc20", range="startofrange")))Next, let's withdraw some funds from the faucet. To withdraw, we have to construct a transaction that calls the +withdraw+ function and passes a +withdraw_amount+ argument to it. To keep things simple for now, Remix will construct that transaction for us and MetaMask will present it for our approval.
 
-Return to the Remix tab and look at the contract on the Run tab. You should see a red box labeled +withdraw+ with a field entry labeled +uint256 withdraw_amount+ (see <<remix_contract_withdraw>>).
+Return to the Remix tab and look at the contract on the Run tab. You should see a orange box labeled +withdraw+ with a field entry labeled +uint256 withdraw_amount+ (see <<remix_contract_withdraw>>).
 
 [[remix_contract_withdraw]]
 .The withdraw function of Faucet.sol, in Remix
@@ -516,7 +516,7 @@ Type "100000000000000000" (with the quotes) into the +withdraw_amount+ box and c
 .Click "withdraw" in Remix to create a withdrawal transaction
 image::images/remix_withdraw.png[""]
 
-MetaMask will pop up a transaction window for you to approve. Click Submit to send your withdrawal call to the contract (see <<metamask_withdraw>>).
+MetaMask will pop up a transaction window for you to approve. Click Confirm to send your withdrawal call to the contract (see <<metamask_withdraw>>).
 
 [[metamask_withdraw]]
 .MetaMask transaction to call the withdraw function

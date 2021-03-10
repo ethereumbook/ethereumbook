@@ -1,15 +1,15 @@
 // Version of Solidity compiler this program was written for
-pragma solidity ^0.4.22;
+pragma solidity ^0.5.3;
 
 // Our first contract is a faucet!
 contract Faucet {
 
-    address owner;
+  address payable owner;
 
-    // Contract constructor: set owner
-    constructor() {
-        owner = msg.sender;
-    }
+	// Contract constructor: set owner
+	constructor() public {
+		owner = msg.sender;
+	}
 
     // Contract destructor
     function destroy() public {
@@ -28,6 +28,6 @@ contract Faucet {
     }
 
     // Accept any incoming amount
-    function () public payable {}
+    function () external payable {}
 
 }
