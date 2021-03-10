@@ -2,6 +2,102 @@
 [[dev_tools_frameworks]]
 == Development Tools, Frameworks, pass:[<span class="keep-together">and Libraries</span>]
 
+
+=== Development Tools
+
+[[alchemy]]
+==== Alchemy
+
+Website: https://alchemyapi.io
+
+Documentation: https://docs.alchemyapi.io/
+
+To make transactions on the Ethereum network, developers need to either run their own Geth / Parity nodes to serve requests on, or use an infrastructure platform that manages the nodes for them and receives JSON-RPC requests via a custom API endpoint.
+
+Spinning up a self-hosted node can present a number of challenges: it can be time-consuming and expensive, requiring significant engineering time to manage on the order of ~$7k in AWS server costs per node every year. On top of that, these nodes can be unreliable with problems such as CPU spikes, peering failures, and consistency issues when nodes fall out of sync with the network. In addition, determining a consistent state of the network can become challenging when scaling up to multiple nodes, which may all see slightly different versions of the blockchain at any given moment.
+
+A blockchain infrastructure provider encapsulates away the complexities of managing Ethereum nodes using a JSON-RPC request interface that extends `web3.js`. By routing node requests to a custom API endpoint, developers can get access to everything necessary to communicate with the Ethereum blockchain while guaranteeing that their requests are served reliably, with full data correctness, and can be scaled to any size necessary.
+
+Alchemy is one such infrastructure provider. In addition to these guarantees, it also provides additional developer tools such as: 
+
+API Explorer::
+A browser tool allowing developers to search and analyze all historical API requests sent through Alchemy to track patterns, find errors, and simplify debugging.
+
+Mempool Visualizer::
+A browser tool that allows developers to view and search for mined, pending, and dropped transactions in the Alchemy mempool, so that they can track the status of their transactions.
+
+Composer::
+A browser tool that allows developers to make JSON-RPC calls directly from the dashboard in order to prototype and fix failing requests or explore the behavior of new methods.
+
+Enhanced APIs::
+A set of additional APIs that provide higher level tools to help developers, such as returning token balances, getting token metadata, or fetching historical transactions for any address without needing to scan the entire blockchain. 
+
+Notify::
+A tool that uses webhooks allowing developers to receive notifications whenever they see activity on a particular Ethereum address, have transactions in their mempool mined or dropped, or when Ethereum gas prices drop below a certain amount.
+
+
+==== Setup
+To use Alchemy's products, you need an API key to authenticate your requests. Create an Alchemy account, generate your first app, and select "View Key" in the dashboard for your chosen app to get your new key.
+
+image::images/alchemy-new-app.gif["Retrieving the API key from a new Alchemy App"]
+
+===== Making Requests
+
+For manual requests, we recommend interacting with the JSON-RPC via POST requests. Simply pass in the `Content-Type: application/json` header and your query as the `POST` body with the following fields.
+
+* `jsonrpc`: The JSON-RPC version—currently, only 2.0 is supported.
+* `method`: The ETH API method. See API reference.
+* `params`: A list of parameters to pass to the method.
+* `id`: The ID of your request. Will be returned by the response so you can keep track of which request a response belongs to.
+
+Here is an example you can run from the command line to retrieve the current gas price, replacing `demo` with your own API key. 
+
+++++
+<pre data-type="programlisting">
+curl https://eth-mainnet.alchemyapi.io/v2/demo \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":73}
+</pre>
+++++
+
+Results:
+++++
+<pre data-type="programlisting">
+{ "id": 73,
+  "jsonrpc": "2.0",
+  "result": "0x09184e72a000" // 10000000000000 }
+</pre>
+++++
+
+===== Setting up Alchemy as your Client
+
+We recommend using `AlchemyWeb3.js`, an extended version of `web3.js` that also includes Alchemy Enhanced APIs. For more information, please refer to the https://docs.alchemyapi.io/documentation/alchemy-web3[Alchemy Web3 guide].
+
+To install `AlchemyWeb3.js`, run in the command line:
+
+With Yarn: `yarn add @alch/alchemy-web3`
+
+With NPM: `npm install @alch/alchemy-web3`
+
+To use Alchemy's node infrastructure, run in NodeJS or add this to a JavaScript file:
+
+++++
+<pre data-type="programlisting">
+const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
+const web3 = createAlchemyWeb3("https://eth-mainnet.alchemyapi.io/v2/your-api-key");
+</pre>
+++++
+
+Alternatively, you can use the default `web3.js` by running `npm install web3` and run the code snippet below to use Alchemy's infrastructure without the Enhanced APIs: 
+++++
+<pre data-type="programlisting">
+// JavaScript: web3.js
+const Web3 = require('web3');
+const web3 = new Web3("https://eth-mainnet.alchemyapi.io/v2/your-api-key");
+</pre>
+++++
+
 === Frameworks
 
 ((("frameworks", id="ix_appdx-dev-tools-asciidoc0", range="startofrange")))Frameworks can be used to ease Ethereum smart contract development. By doing everything yourself you get a better understanding of how everything fits together, but it's a lot of tedious, repetitive work. The frameworks described in this section can automate certain tasks and make development easier.
@@ -11,11 +107,11 @@
 
 ((("frameworks","Truffle", id="ix_appdx-dev-tools-asciidoc1", range="startofrange")))((("Truffle", id="ix_appdx-dev-tools-asciidoc2", range="startofrange")))GitHub: https://github.com/trufflesuite/truffle
 
-Website: https://truffleframework.com
+Website: https://trufflesuite.com
 
-Documentation: https://truffleframework.com/docs
+Documentation: https://trufflesuite.com/docs
 
-Truffle Boxes: http://truffleframework.com/boxes/
+Truffle Boxes: http://trufflesuite.com/boxes/
 
 +npm+ package repository: https://www.npmjs.com/package/truffle
 
@@ -23,7 +119,7 @@ Truffle Boxes: http://truffleframework.com/boxes/
 [[installing_truffle]]
 ===== Installing the Truffle framework
 
-((("Node.js")))((("Truffle","installing")))The Truffle framework comprises several Node.js packages. Before you install +truffle+, you need to have an up-to-date and working installation of Node.js and the Node Package Manager (+npm+).
+((("Node.js")))((("Truffle","installing")))The Truffle framework comprises several Node.js packages. Before you install +Truffle+, you need to have an up-to-date and working installation of Node.js and the Node Package Manager (+npm+).
 
 The recommended way to install Node.js and +npm+ is to use the Node Version Manager (+nvm+). Once you install +nvm+, it will handle all the dependencies and updates for you. Follow the instructions found at http://nvm.sh[].
 
@@ -40,9 +136,9 @@ Confirm you have +node+ and +npm+ installed:
 ++++
 <pre data-type="programlisting">
 $ <strong>node -v</strong>
-v8.9.4
+v12.16.1
 $ <strong>npm -v</strong>
-5.6.0
+6.13.4
 </pre>
 ++++
 
@@ -55,14 +151,14 @@ $ <strong>nvm install</strong>
 </pre>
 ++++
 
-Looking good. Now to install +truffle+:
+Looking good. Now to install +Truffle+:
 
 ++++
 <pre data-type="programlisting">
 $ <strong>npm -g install truffle</strong>
 
-+ truffle@4.0.6
-installed 1 package in 37.508s
++ truffle@5.1.20
+added 26 packages from 438 contributors and updated 1 package in 24.229s
 </pre>
 ++++
 
@@ -78,9 +174,9 @@ $ <strong>truffle unbox <em>BOX_NAME</em></strong>
 ++++
 
 [[truffle_project_directory]]
-===== Creating a truffle project directory
+===== Creating a Truffle project directory
 
-((("Truffle","creating a project directory", id="ix_appdx-dev-tools-asciidoc3", range="startofrange")))For each project where you will use +truffle+, create a project directory and initialize +truffle+ within that directory. +truffle+ will create the necessary directory structure inside your project directory. It's customary to give the project directory a name that describes the project. For this example, we will use +truffle+ to deploy our +Faucet+ contract from <<simple_contract_example>>, and therefore we will name the project folder __Faucet__:
+((("Truffle","creating a project directory", id="ix_appdx-dev-tools-asciidoc3", range="startofrange")))For each project where you will use +Truffle+, create a project directory and initialize +Truffle+ within that directory. +Truffle+ will create the necessary directory structure inside your project directory. It's customary to give the project directory a name that describes the project. For this example, we will use +Truffle+ to deploy our +Faucet+ contract from <<simple_contract_example>>, and therefore we will name the project folder __Faucet__:
 
 ++++
 <pre data-type="programlisting">
@@ -90,7 +186,7 @@ Faucet $
 </pre>
 ++++
 
-Once inside the _Faucet_ directory, we initialize +truffle+:
+Once inside the _Faucet_ directory, we initialize +Truffle+:
 
 ++++
 <pre data-type="programlisting">
@@ -98,7 +194,7 @@ Faucet $ <strong>truffle init</strong>
 </pre>
 ++++
 
-+truffle+ creates a directory structure and some default files:
++Truffle+ creates a directory structure and some default files:
 
 ----
 Faucet
@@ -107,11 +203,10 @@ Faucet
 +---- migrations
 |   `---- 1_initial_migration.js
 +---- test
-+---- truffle-config.js
-`---- truffle.js
+`---- truffle-config.js
 ----
 
-We will also use a number of JavaScript (Node.js) support packages, in addition to +truffle+ itself. We can install these with +npm+. We initialize the +npm+ directory structure and accept the defaults suggested by +npm+:
+We will also use a number of JavaScript (Node.js) support packages, in addition to +Truffle+ itself. We can install these with +npm+. We initialize the +npm+ directory structure and accept the defaults suggested by +npm+:
 
 ++++
 <pre data-type="programlisting">
@@ -148,7 +243,7 @@ Is this ok? (yes)
 </pre>
 ++++
 
-Now, we can install the dependencies that we will use to make working with +truffle+ easier:
+Now, we can install the dependencies that we will use to make working with +Truffle+ easier:
 
 ++++
 <pre data-type="programlisting">
@@ -160,17 +255,9 @@ We now have a __node_modules__ directory with several thousand files inside our 
 
 Prior to deploying a DApp to a cloud production or continuous integration environment, it is important to specify the +engines+ field so that your DApp is built with the correct Node.js version and its associated dependencies are installed. For details on configuring this field, see the http://bit.ly/2zp2GPF[documentation].(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc3")))
 
-===== Configuring truffle
+===== Configuring Truffle
 
-((("Truffle","configuring")))+truffle+ creates some empty configuration files, _truffle.js_ and _truffle-config.js_. On Windows systems the _truffle.js_ name may cause a conflict when you try to run the command +truffle+ and Windows attempts to run _truffle.js_ instead. To avoid this, we will delete _truffle.js_ and use _truffle-config.js_ (in support of Windows users, who, honestly, suffer enough already):
-
-++++
-<pre data-type="programlisting">
-$ <strong>rm truffle.js</strong>
-</pre>
-++++
-
-Now we edit _truffle-config.js_ and replace the contents with the sample configuation shown here:
+((("Truffle","configuring")))+Truffle+ creates an empty configuration file, _truffle-config.js_. Now we edit _truffle-config.js_ and replace the contents with the sample configuation shown here:
 
 [source,javascript]
 ----
@@ -185,13 +272,13 @@ module.exports = {
 };
 ----
 
-This configuration is a good starting point. It sets up one default Ethereum network (named +localnode+), which assumes we are running an Ethereum client such as Parity, either as a full node or as a light client. This configuration will instruct +truffle+ to communicate with the local node over RPC, on port 8545. +truffle+ will use whatever Ethereum network the local node is connected to, such as the Ethereum main network, or a test network like Ropsten. The local node will also be providing the wallet functionality.
+This configuration is a good starting point. It sets up one default Ethereum network (named +localnode+), which assumes we are running an Ethereum client such as Parity, either as a full node or as a light client. This configuration will instruct +Truffle+ to communicate with the local node over RPC, on port 8545. +Truffle+ will use whatever Ethereum network the local node is connected to, such as the Ethereum main network, or a test network like Ropsten. The local node will also be providing the wallet functionality.
 
-In following sections, we will configure additional networks for +truffle+ to use, such as the +ganache+ local test blockchain and Infura, a hosted network provider. As we add more networks, the configuration file will get more complex, but it will also give us more options for our testing and development workflow.
+In following sections, we will configure additional networks for +Truffle+ to use, such as the +ganache+ local test blockchain and Infura, a hosted network provider. As we add more networks, the configuration file will get more complex, but it will also give us more options for our testing and development workflow.
 
-===== Using truffle to deploy a contract
+===== Using Truffle to deploy a contract
 
-((("smart contracts","using Truffle to deploy")))((("Truffle","contract deployment with")))We now have a basic working directory for our _Faucet_ project, and we have +truffle+ and its dependencies configured. Contracts go in the _contracts_ subdirectory of our project. The directory already contains a "helper" contract, _Migrations.sol_, which manages contract upgrades for us. We'll examine the use of _Migrations.sol_ in the next section.
+((("smart contracts","using Truffle to deploy")))((("Truffle","contract deployment with")))We now have a basic working directory for our _Faucet_ project, and we have +Truffle+ and its dependencies configured. Contracts go in the _contracts_ subdirectory of our project. The directory already contains a "helper" contract, _Migrations.sol_, which manages contract upgrades for us. We'll examine the use of _Migrations.sol_ in the next section.
 
 Let's copy the _Faucet.sol_ contract (from <<solidity_faucet_example>>) into the _contracts_ subdirectory, so that the project directory looks like this:
 
@@ -203,7 +290,7 @@ Faucet
 ...
 ----
 
-We can now ask +truffle+ to compile the contract for us:
+We can now ask +Truffle+ to compile the contract for us:
 
 ++++
 <pre data-type="programlisting">
@@ -248,7 +335,7 @@ Faucet $ <strong>truffle migrate --network localnode</strong>
 </pre>
 ++++
 
-Because we are using a local node to connect to the Ethereum network and manage our wallet, we have to authorize the transaction that +truffle+ creates. We're running +parity+ connected to the Ropsten test blockchain, so during the migration we'll see a pop-up like the one in <<parity_deployment_confirmation>> on Parity's web console.
+Because we are using a local node to connect to the Ethereum network and manage our wallet, we have to authorize the transaction that +Truffle+ creates. We're running +parity+ connected to the Ropsten test blockchain, so during the migration we'll see a pop-up like the one in <<parity_deployment_confirmation>> on Parity's web console.
 
 [[parity_deployment_confirmation]]
 .Parity asking for confirmation to deploy Faucet
@@ -345,12 +432,12 @@ truffle(localnode)&gt;
 </pre>
 ++++
 
-Next, we'll use +sendTransaction+ to send some test ether to fund the +Faucet+ contract. Note the use of +web3.toWei+ to convert ether units for us. Typing 18 zeros without making a mistake is both difficult and dangerous, so it's always better to use a unit converter for values. Here's how we send the transaction:
+Next, we'll use +sendTransaction+ to send some test ether to fund the +Faucet+ contract. Note the use of +web3.utils.toWei+ to convert ether units for us. Typing 18 zeros without making a mistake is both difficult and dangerous, so it's always better to use a unit converter for values. Here's how we send the transaction:
 
 ++++
 <pre data-type="programlisting">
 truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
-                    to:Faucet.address, value:web3.toWei(0.5, 'ether')});</strong>
+                    to:Faucet.address, value:web3.utils.toWei(0.5, 'ether')});</strong>
 '0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
 </pre>
 ++++
@@ -369,7 +456,7 @@ Let's call the +withdraw+ function now, to withdraw some test ether from the con
 ++++
 <pre data-type="programlisting">
 truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
-                       {instance.withdraw(web3.toWei(0.1,
+                       {instance.withdraw(web3.utils.toWei(0.1,
                        'ether'))}).then(console.log)</strong>
 </pre>
 ++++
@@ -381,7 +468,7 @@ Again, we'll need to approve the transaction in the Parity web interface. If we 
 truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
 400000000000000000
 truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
-                    {instance.withdraw(web3.toWei(1, 'ether'))})</strong>
+                    {instance.withdraw(web3.utils.toWei(1, 'ether'))})</strong>
 StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c 
   exited with an error (status 0).
 </pre>
@@ -648,7 +735,7 @@ Documentation: https://docs.etcdevteam.com[]
 .Smart contract test frameworks summary
 |=======
 |Framework | Test language(s)    | Testing framework | Chain emulator       | Website
-|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://trufflesuite.com/[]
 |Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.status.im/docs/[]
 |Dapp      | Solidity            | +ds-test+ (custom)  | +ethrun+ (Parity)      | https://dapp.tools/dapp/[]
 |Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
@@ -657,7 +744,7 @@ Documentation: https://docs.etcdevteam.com[]
 
 Truffle:: ((("Truffle","as test framework")))Truffle allows for unit tests to be written in JavaScript (Mocha-based) or Solidity. These tests are run against Ganache.
 
-Embark:: ((("Embark")))Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on TestRPC/Ganache. The Embark framework automatically deploys smart contracts, and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts only when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like +assert.equal+. The command +embark test+ will run any test files under the directory _test_.
+Embark:: ((("Embark")))Embark integrates with Mocha to run unit tests written in JavaScript. The tests are in turn run against contracts deployed on Ganache (formerly called TestRPC). The Embark framework automatically deploys smart contracts, and will automatically redeploy the contracts when they are changed. It also keeps track of deployed contracts and deploys contracts only when truly needed. Embark includes a testing library to rapidly run and test your contracts in an EVM, with functions like +assert.equal+. The command +embark test+ will run any test files under the directory _test_.
 
 Dapp:: ((("Dapp")))Dapp uses native Solidity code (a library called +ds-test+) and a Parity-built Rust library called +ethrun+ to execute Ethereum bytecode and then assert correctness. The +ds-test+ library provides assertion functions for validating correctness and events for logging data in the console.
 +
@@ -698,7 +785,7 @@ To get the address of a contract at __++txhash++__, use:
 
 ++++
 <pre data-type="programlisting">
-eth.getTransactionReceipt(<em>txhash</em>);
+web3.eth.getTransactionReceipt(<em>txhash</em>);
 </pre>
 ++++
 
@@ -707,7 +794,7 @@ This command gets the code of a contract deployed at __++contractaddress++__; th
 
 ++++
 <pre data-type="programlisting">
-eth.getCode(<em>contractaddress</em>)
+web3.eth.getCode(<em>contractaddress</em>)
 </pre>
 ++++
 
@@ -715,7 +802,7 @@ This gets the full logs of the contract located at the address specified in __++
 
 ++++
 <pre data-type="programlisting">
-eth.getPastLogs(<em>options</em>)
+web3.eth.getPastLogs(<em>options</em>)
 </pre>
 ++++
 
@@ -723,14 +810,14 @@ Finally, this command gets the storage located at __++address++__ with an offset
 
 ++++
 <pre data-type="programlisting">
-eth.getStorageAt(<em>address</em>, <em>position</em>)
+web3.eth.getStorageAt(<em>address</em>, <em>position</em>)
 </pre>
 ++++
 
 [[ganache]]
 ==== Ganache: A Local Test Blockchain
 
-((("Ganache","local blockchain testing with")))Ganache is a local test blockchain that you can use to deploy contracts, develop your applications, and run tests. It is available as a desktop application (with a graphical user interface) for Windows, macOS, and Linux. It is also available as a command-line utility called +ganache-cli+. For more details and installation instructions for the Ganache desktop application, see https://truffleframework.com/ganache[].
+((("Ganache","local blockchain testing with")))Ganache is a local test blockchain that you can use to deploy contracts, develop your applications, and run tests. It is available as a desktop application (with a graphical user interface) for Windows, macOS, and Linux. It is also available as a command-line utility called +ganache-cli+. For more details and installation instructions for the Ganache desktop application, see https://trufflesuite.com/ganache[].
 
 The +ganache-cli+ code can be found at https://github.com/trufflesuite/ganache-cli/[].
 
@@ -757,6 +844,6 @@ $ <strong>ganache-cli \
 
 A few notes on this command line:
 
-* [ ] Check the `--networkId` and `--port` flag values match your configuration in _truffle.js_.
+* [ ] Check the `--networkId` and `--port` flag values match your configuration in _truffle-config.js_.
 * [ ] Check the `--gasLimit` flag value matches the latest mainnet gas limit (e.g., 8,000,000 gas) shown at https://ethstats.net to avoid encountering &#x201c;out of gas&#x201d; exceptions unnecessarily. Note that a `--gasPrice` of +4000000000+ represents a gas price of 4 gwei.
 * [ ] You can optionally enter a `--mnemonic` flag value to restore a previous HD wallet and associated addresses.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc13")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc12")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc11")))

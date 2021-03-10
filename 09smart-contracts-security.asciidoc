@@ -68,7 +68,7 @@ contract EtherStore {
     mapping(address => uint256) public lastWithdrawTime;
     mapping(address => uint256) public balances;
 
-    function depositFunds() public payable {
+    function depositFunds() external payable {
         balances[msg.sender] += msg.value;
     }
 
@@ -111,7 +111,7 @@ contract Attack {
       etherStore = EtherStore(_etherStoreAddress);
   }
 
-  function attackEtherStore() public payable {
+  function attackEtherStore() external payable {
       // attack to the nearest ether
       require(msg.value >= 1 ether);
       // send eth to the depositFunds() function
@@ -223,7 +223,7 @@ contract EtherStore {
     mapping(address => uint256) public lastWithdrawTime;
     mapping(address => uint256) public balances;
 
-    function depositFunds() public payable {
+    function depositFunds() external payable {
         balances[msg.sender] += msg.value;
     }
 
@@ -291,7 +291,7 @@ the largest number, i.e., 999999, is surpassed) and periodic mathematical functi
 clarity, adding `257` to a `uint8` that currently has a value of `0` will result
 in the number `1`.  It is sometimes instructive to think of fixed-size variables
 as being cyclic, where we start again from zero if we add numbers above the
-largest possible stored number, and start counting down from the largest number if we subtract from zero. In the case of signed `int` types, which _can_ represent negative numbers, we start again once we reach the largest negative value; for example, if we try to subtract `1` from a `uint8` whose value is `-128`, we will get `127`.
+largest possible stored number, and start counting down from the largest number if we subtract from zero. In the case of signed `int` types, which _can_ represent negative numbers, we start again once we reach the largest negative value; for example, if we try to subtract `1` from a `int8` whose value is `-128`, we will get `127`.
 
 These kinds of numerical gotchas allow attackers to misuse code and create
 unexpected logic flows. For example, consider the +TimeLock+ contract in
@@ -307,7 +307,7 @@ contract TimeLock {
     mapping(address => uint) public balances;
     mapping(address => uint) public lockTime;
 
-    function deposit() public payable {
+    function deposit() external payable {
         balances[msg.sender] += msg.value;
         lockTime[msg.sender] = now + 1 weeks;
     }
@@ -445,7 +445,7 @@ contract TimeLock {
     mapping(address => uint256) public balances;
     mapping(address => uint256) public lockTime;
 
-    function deposit() public payable {
+    function deposit() external payable {
         balances[msg.sender] = balances[msg.sender].add(msg.value);
         lockTime[msg.sender] = now.add(1 weeks);
     }
@@ -564,7 +564,7 @@ contract EtherGame {
 
     mapping(address => uint) redeemableEther;
     // Users pay 0.5 ether. At specific milestones, credit their accounts.
-    function play() public payable {
+    function play() external payable {
         require(msg.value == 0.5 ether); // each play is 0.5 ether
         uint currentBalance = this.balance + msg.value;
         // ensure no players after the game has finished
@@ -646,7 +646,7 @@ contract EtherGame {
 
     mapping (address => uint) redeemableEther;
 
-    function play() public payable {
+    function play() external payable {
         require(msg.value == 0.5 ether);
         uint currentBalance = depositedWei + msg.value;
         // ensure no players after the game has finished
@@ -675,7 +675,7 @@ contract EtherGame {
  }
 ----
 
-Here, we have created a new variable, `depositedEther`, which keeps
+Here, we have created a new variable, `depositedWei`, which keeps
 track of the known ether deposited, and it is this variable that we
 use for our tests. Note that we no longer have any
 reference to `this.balance`.
@@ -774,7 +774,7 @@ contract FibonacciBalance {
     bytes4 constant fibSig = bytes4(sha3("setFibonacci(uint256)"));
 
     // constructor - loads the contract with ether
-    constructor(address _fibonacciLibrary) public payable {
+    constructor(address _fibonacciLibrary) external payable {
         fibonacciLibrary = _fibonacciLibrary;
     }
 
@@ -1104,7 +1104,7 @@ contract WalletLibrary is WalletEvents {
   ...
 
   // constructor is given number of sigs required to do protected
-  // "onlymanyowners" transactionsas well as the selection of addresses
+  // "onlymanyowners" transactions as well as the selection of addresses
   // capable of confirming them
   function initMultiowned(address[] _owners, uint _required) {
     m_numOwners = _owners.length + 1;
@@ -1487,7 +1487,7 @@ contract Private_Bank
         }
     }
 
-    function() public payable{}
+    function() external payable{}
 
 }
 
@@ -1800,7 +1800,7 @@ contract FindThisHash {
     bytes32 constant public hash =
       0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
 
-    constructor() public payable {} // load with ether
+    constructor() external payable {} // load with ether
 
     function solve(string solution) public {
         // If you can find the pre-image of the hash, receive 1000 ether
@@ -1940,7 +1940,7 @@ contract DistributeTokens {
 
     // ... extra functionality, including transfertoken()
 
-    function invest() public payable {
+    function invest() external payable {
         investors.push(msg.sender);
         investorTokens.push(msg.value * 5); // 5 times the wei sent
         }
@@ -2019,7 +2019,7 @@ In the second example, a privileged user was required to change the state
 of the contract. In such examples a failsafe can be
 used in the event that the owner becomes incapacitated. One solution
 is to make the owner a multisig contract. Another solution
-is to use a time-lock: in the example given the +require+ on line 13 could include a
+is to use a time-lock: in the example given the +require+ on line 5 could include a
 time-based mechanism, such as
 `require(msg.sender == owner || now > unlockTime)`, that allows any user
 to finalize after a period of time specified by `unlockTime`. This kind
@@ -2078,10 +2078,10 @@ would be vulnerable to miner exploitation.
 contract Roulette {
     uint public pastBlockTime; // forces one bet per block
 
-    constructor() public payable {} // initially fund contract
+    constructor() external payable {} // initially fund contract
 
     // fallback function used to make a bet
-    function () public payable {
+    function () external payable {
         require(msg.value == 10 ether); // must send 10 ether to play
         require(now != pastBlockTime); // only 1 transaction per block
         pastBlockTime = now;
@@ -2125,7 +2125,7 @@ Time-sensitive logic is sometimes required; e.g., for unlocking contracts
 dates. It is sometimes recommended to use http://bit.ly/2OdUC9C[`block.number`] and an average block time to estimate times; with
 a `10 second` block time, `1 week` equates to approximately, `60480 blocks`.
 Thus, specifying a block number at which to change a contract state can
-be more secure, as miners are unable easily to manipulate the block number. The
+be more secure, as miners are unable to easily manipulate the block number. The
 http://bit.ly/2AAebFr[BAT
 ICO] contract employed this strategy.
 
@@ -2379,7 +2379,7 @@ contract FunWithNumbers {
     uint constant public weiPerEth = 1e18;
     mapping(address => uint) public balances;
 
-    function buyTokens() public payable {
+    function buyTokens() external payable {
         // convert wei to eth, then multiply by token rate
         uint tokens = msg.value/weiPerEth*tokensPerEth;
         balances[msg.sender] += tokens;
@@ -2421,7 +2421,7 @@ You should ensure that any ratios or rates you are using allow for large
 numerators in fractions. For example, we used the rate `tokensPerEth` in
 our example. It would have been better to use `weiPerTokens`, which would
 be a large number. To calculate the corresponding number of tokens we could do
-`msg.sender/weiPerTokens`. This would give a more precise result.
+`msg.value/weiPerTokens`. This would give a more precise result.
 
 Another tactic to keep in mind is to be mindful of order of operations.
 In our example, the calculation to purchase tokens was
@@ -2490,7 +2490,7 @@ contract Phishable {
         owner = _owner;
     }
 
-    function () public payable {} // collect ether
+    function () external payable {} // collect ether
 
     function withdrawAll(address _recipient) public {
         require(tx.origin == owner);

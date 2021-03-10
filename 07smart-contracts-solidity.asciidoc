@@ -338,7 +338,7 @@ Other functions worth noting are:
 
 +ecrecover+:: Recovers the address used to sign a message from the signature.
 
-++selfdestrunct(__recipient_address__)++:: Deletes the current contract, sending any remaining ether in the account to the recipient address.
+++selfdestruct(__recipient_address__)++:: Deletes the current contract, sending any remaining ether in the account to the recipient address.
 
 +this+:: The address of the currently executing contract account.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc12")))
 
@@ -476,7 +476,7 @@ function destroy() public {
 }
 ----
 
-If anyone calls this +destroy+ function from an address other than +owner+, it will fail. But if the same address stored in +owner+ by the constructor calls it, the contract will self-destruct and send any remaining balance to the +owner+ address. Note that we did not use the unsafe +tx.origin+ to determine whether the owner wished to destroy the contract&#x2014;using +tx.orgin+ would allow malign contracts to destroy your contract without your permission.
+If anyone calls this +destroy+ function from an address other than +owner+, it will fail. But if the same address stored in +owner+ by the constructor calls it, the contract will self-destruct and send any remaining balance to the +owner+ address. Note that we did not use the unsafe +tx.origin+ to determine whether the owner wished to destroy the contract&#x2014;using +tx.origin+ would allow malign contracts to destroy your contract without your permission.
 
 ==== Function Modifiers
 
@@ -583,7 +583,7 @@ contract Faucet is mortal {
         msg.sender.transfer(withdraw_amount);
     }
     // Accept any incoming amount
-    function () public payable {}
+    function () external payable {}
 }
 ----
 
@@ -667,7 +667,7 @@ function withdraw(uint withdraw_amount) public {
     emit Withdrawal(msg.sender, withdraw_amount);
 }
 // Accept any incoming amount
-function () public payable {
+function () external payable {
     emit Deposit(msg.sender, msg.value);
 }
 ----
@@ -712,11 +712,11 @@ Saving successful migration to network...
 Saving artifacts...
 
 truffle(develop)> <strong>Faucet.deployed().then(i => {FaucetDeployed = i})</strong>
-truffle(develop)> <strong>FaucetDeployed.send(web3.toWei(1, "ether")).then(res => \
+truffle(develop)> <strong>FaucetDeployed.send(web3.utils.toWei(1, "ether")).then(res => \
                   { console.log(res.logs[0].event, res.logs[0].args) })</strong>
 Deposit { from: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
   amount: BigNumber { s: 1, e: 18, c: [ 10000 ] } }
-truffle(develop)> <strong>FaucetDeployed.withdraw(web3.toWei(0.1, "ether")).then(res => \
+truffle(develop)> <strong>FaucetDeployed.withdraw(web3.utils.toWei(0.1, "ether")).then(res => \
                   { console.log(res.logs[0].event, res.logs[0].args) })</strong>
 Withdrawal { to: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
   amount: BigNumber { s: 1, e: 17, c: [ 1000 ] } }
@@ -878,7 +878,7 @@ include::code/truffle/CallExamples/contracts/CallExamples.sol[]
 ----
 ====
 
-As you can see in this example, our main contract is +caller+, which calls a library +calledLibrary+ and a contract +calledContract+. Both the called library and the contract have identical +calledFunction+ functions, which emit an event +calledEvent+. The event +calledEvent+ logs three pieces of data: +msg.sender+, +tx.origin+, and +this+. Each time +calledFunction+ is called it may have a different execution context (with different values for potentially all the context variables), depending on whether it is called directly or through +delegatecall+.
+As you can see in this example, our main contract is +caller+, which calls a library +calledLibrary+ and a contract +calledContract+. Both the called library and the contract have identical +calledFunction+ functions, which emit an event +callEvent+. The event +callEvent+ logs three pieces of data: +msg.sender+, +tx.origin+, and +this+. Each time +calledFunction+ is called it may have a different execution context (with different values for potentially all the context variables), depending on whether it is called directly or through +delegatecall+.
 
 In +caller+, we first call the contract and library directly, by invoking +calledFunction+ in each. Then, we explicitly use the low-level functions +call+ and +delegatecall+ to call +calledContract.calledFunction+. This way we can see how the various calling mechanisms behave.
 
@@ -956,7 +956,7 @@ The next two calls, using the low-level +call+ and +delegatecall+, verify our ex
 [[gas_sec]]
 === Gas Considerations
 
-((("gas","conserving", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("smart contracts","gas considerations", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","gas considerations", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))Gas, described in more in detail in <<gas>>, is an incredibly important consideration in smart contract programming. Gas is a resource constraining the maximum amount of computation that Ethereum will allow a transaction to consume. If the gas limit is exceeded during computation, the following series of events occurs:
+((("gas","conserving", id="ix_07smart-contracts-solidity-asciidoc24", range="startofrange")))((("smart contracts","gas considerations", id="ix_07smart-contracts-solidity-asciidoc25", range="startofrange")))((("Solidity","gas considerations", id="ix_07smart-contracts-solidity-asciidoc26", range="startofrange")))Gas, described in more detail in <<gas>>, is an incredibly important consideration in smart contract programming. Gas is a resource constraining the maximum amount of computation that Ethereum will allow a transaction to consume. If the gas limit is exceeded during computation, the following series of events occurs:
 
 * An "out of gas" exception is thrown.
 * The state of the contract prior to execution is restored (reverted).
@@ -991,7 +991,7 @@ var gasPrice = web3.eth.getGasPrice();
 And from there you can estimate the gas cost:
 
 [source, javascript]
-var gasCostInEther = web3.fromWei((gasEstimate * gasPrice), 'ether');
+var gasCostInEther = web3.utils.fromWei((gasEstimate * gasPrice), 'ether');
 
 Let's apply our gas estimation functions to estimating the gas cost of our +Faucet+ example, using the code http://bit.ly/2zf0SIO[from the book's repository].
 
@@ -1012,10 +1012,10 @@ FaucetContract.web3.eth.getGasPrice(function(error, result) {
     // Get the contract instance
     FaucetContract.deployed().then(function(FaucetContractInstance) {
 
-        // Use the keyword 'estimateGas' after the function name to get the gas
-        // estimation for this particular function (aprove)
-        FaucetContractInstance.send(web3.toWei(1, "ether"));
-        return FaucetContractInstance.withdraw.estimateGas(web3.toWei(0.1, "ether"));
+		// Use the keyword 'estimateGas' after the function name to get the gas
+		// estimation for this particular function (aprove)
+		FaucetContractInstance.send(web3.utils.toWei(1, "ether"));
+        return FaucetContractInstance.withdraw.estimateGas(web3.utils.toWei(0.1, "ether"));
 
     }).then(function(result) {
         var gas = Number(result);
@@ -1023,7 +1023,7 @@ FaucetContract.web3.eth.getGasPrice(function(error, result) {
         console.log("gas estimation = " + gas + " units");
         console.log("gas cost estimation = " + (gas * gasPrice) + " wei");
         console.log("gas cost estimation = " +
-                FaucetContract.web3.fromWei((gas * gasPrice), 'ether') + " ether");
+                FaucetContract.web3.utils.fromWei((gas * gasPrice), 'ether') + " ether");
     });
 });
 ----

@@ -57,7 +57,7 @@ In summary, it is important to note that the use of the nonce is actually vital 
 [[tracking_nonce]]
 ==== Keeping Track of Nonces
 
-((("nonces","keeping track of")))In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e., on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a JavaScript console in a browser with MetaMask running, or use the +truffle console+ command to access the JavaScript web3 library, then type:
+((("nonces","keeping track of")))In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e., on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a JavaScript console in Geth (or your preferred web3 interface) on Ropsten testnet, then type:
 
 ++++
 <pre data-type="programlisting">
@@ -89,22 +89,26 @@ Let's look at an example:
 "pending")</strong>
 40
 &gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
-"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});</strong>
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
 &gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
 "pending")</strong>
 41
 &gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
-"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});</strong>
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
 &gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
 "pending")</strong>
 41
 &gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
-"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.toWei(0.01, "ether")});</strong>
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
 &gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
 "pending")</strong>
 41
 </pre>
 ++++
+[TIP]
+====
+If you're trying to recreate these code examples yourself in Geth's javascript console, you should use web3.toWei() instead of web3.utils.toWei(). This is because Geth uses an older version of the web3 library.
+====
 
 As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
 
@@ -206,7 +210,7 @@ If your transaction's destination address is a contract, then the amount of gas 
 
 To borrow a common analogy used in Ethereum, you can think of +gasLimit+ as the capacity of the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey, such as a diversion (a more complex execution path), that increase fuel consumption.
 
-The analogy to a fuel tank is somewhat misleading, however. It's actually more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * gas+ fee. But the amount is not actually deducted from your account until the transaction finishes executing. You are only billed for gas actually consumed by your transaction, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+The analogy to a fuel tank is somewhat misleading, however. It's actually more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * gas+ limit. But the amount is not actually deducted from your account until the transaction finishes executing. You are only billed for gas actually consumed by your transaction, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
 
 [[tx_recipient]]
 === Transaction Recipient
@@ -243,7 +247,7 @@ Our first transaction contains only a value (payment), and no data payload:
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, \
-  value: web3.toWei(0.01, "ether"), data: ""});
+  value: web3.utils.toWei(0.01, "ether"), data: ""});
 ----
 
 Our wallet shows a confirmation screen indicating the value to send, as shown in <<parity_txdemo_value_nodata>>.
@@ -259,7 +263,7 @@ The next example specifies both a value and a data payload:
 [source,javascript]
 ----
 web3.eth.sendTransaction({from: src, to: dst, \
-  value: web3.toWei(0.01, "ether"), data: "0x1234"});
+  value: web3.utils.toWei(0.01, "ether"), data: "0x1234"});
 ----
 
 Our wallet shows a confirmation screen indicating the value to send as well as the data payload, as shown in <<parity_txdemo_value_data>>.
@@ -304,7 +308,7 @@ image::images/parity_txdemo_novalue_nodata.png["Parity wallet showing a transact
 
 For EOA addresses, or rather for any address that isn't flagged as a contract on the blockchain, Ethereum will record a state change, adding the value you sent to the balance of the address. If the address has not been seen before, it will be added to the client's internal representation of the state and its balance initialized to the value of your payment.
 
-If the destination address (+to+) is a contract, then the EVM will execute the contract and will attempt to call the function named in the data payload of your transaction. If there is no data in your transaction, the EVM will call a _fallback_ function and, if that function is payable, will execute it to determine what to do next. If there is no fallback function, then the effect of the transaction will be to increase the balance of the contract, exactly like a payment to a wallet.
+If the destination address (+to+) is a contract, then the EVM will execute the contract and will attempt to call the function named in the data payload of your transaction. If there is no data in your transaction, the EVM will call a _fallback_ function and, if that function is payable, will execute it to determine what to do next. If there is no code in fallback function, then the effect of the transaction will be to increase the balance of the contract, exactly like a payment to a wallet. If there is no fallback function or non-payable fallback function, then transaction will be reverted. 
 
 A contract can reject incoming payments by throwing an exception immediately when a function is called, or as determined by conditions coded in a function. If the function terminates successfully (without an exception), then the contract's state is updated to reflect an increase in the contract's ether balance.(((range="endofrange", startref="ix_06transactions-asciidoc7")))(((range="endofrange", startref="ix_06transactions-asciidoc6")))
 
@@ -340,7 +344,7 @@ Let's calculate the Keccak-256 hash of this string:
 
 ++++
 <pre data-type="programlisting">
-> <strong>web3.sha3("withdraw(uint256)");</strong>
+> <strong>web3.utils.sha3("withdraw(uint256)");</strong>
 '0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
 </pre>
 ++++
@@ -351,9 +355,9 @@ Next, let's calculate a value to pass as the argument +withdraw_amount+. We want
 
 ++++
 <pre data-type="programlisting">
-> <strong>withdraw_amount = web3.toWei(0.01, "ether");</strong>
+> <strong>withdraw_amount = web3.utils.toWei(0.01, "ether");</strong>
 '10000000000000000'
-> <strong>withdraw_amount_hex = web3.toHex(withdraw_amount);</strong>
+> <strong>withdraw_amount_hex = web3.utils.toHex(withdraw_amount);</strong>
 '0x2386f26fc10000'
 </pre>
 ++++
@@ -424,7 +428,7 @@ We can look at the receipt of the transaction to get information about the contr
 
 ++++
 <pre data-type="programlisting">
-> <strong>eth.getTransactionReceipt( \
+> <strong>web3.eth.getTransactionReceipt( \
   "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");</strong>
 
 {
@@ -452,7 +456,7 @@ This includes the address of the contract, which we can use to send funds to and
 <pre data-type="programlisting">
 > <strong>contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"</strong>
 > <strong>web3.eth.sendTransaction({from: src, to: contract_address, \
-  value: web3.toWei(0.1, "ether"), data: ""});</strong>
+  value: web3.utils.toWei(0.1, "ether"), data: ""});</strong>
 
 "0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
 
@@ -602,7 +606,7 @@ Verification is the inverse of the signature generation function, using the _r_ 
 2. Calculate _w_ = __s__^-1^ _mod p_
 3. Calculate _u~1~_ = __Keccak256__(__m__) * _w_ _mod p_
 4. Calculate _u~2~_ = _r_ * _w_ _mod p_
-5. Finally, calculate the point on the elliptic curve _Q_ &#8801; _u~1~ * _G_ + _u~2~_ * _K_  {nbsp} {nbsp} (_mod p_)
+5. Finally, calculate the point on the elliptic curve _Q_ &#8801; _u~1~_ * _G_ + _u~2~_ * _K_  {nbsp} {nbsp} (_mod p_)
 
 where:
 
@@ -646,7 +650,7 @@ The special signature variable +v+ indicates two things: the chain ID and the re
 [[raw_tx]]
 ==== Raw Transaction Creation and Signing
 
-((("EthereumJS")))((("transactions","raw transaction creation/signing")))In this section we'll create a raw transaction and sign it, using the +ethereumjs-tx+ library. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in the file __raw_tx_demo.js__ in the book's http://bit.ly/2yI2GL3[GitHub repository]:
+((("EthereumJS")))((("transactions","raw transaction creation/signing")))In this section we'll create a raw transaction and sign it, using the +ethereumjs-tx+ library, which can be installed with npm. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in the file __raw_tx_demo.js__ in the book's http://bit.ly/2yI2GL3[GitHub repository]:
 
 [[raw_tx_demo_source]]
 [source,javascript]

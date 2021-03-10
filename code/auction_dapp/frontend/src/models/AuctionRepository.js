@@ -97,10 +97,10 @@ export class AuctionRepository {
     }
 
     bid(auctionId, price) {
-        console.log(auctionId, this.web3.toWei(price, 'ether'))
+        console.log(auctionId, this.web3.utils.toWei(price, 'ether'))
         return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.bidOnAuction(auctionId, {from: this.account, gas: this.gas, value: this.web3.toWei(price, 'ether') }, (err, transaction) => {
+                this.contractInstance.bidOnAuction(auctionId, {from: this.account, gas: this.gas, value: this.web3.utils.toWei(price, 'ether') }, (err, transaction) => {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -114,7 +114,7 @@ export class AuctionRepository {
         return new Promise(async (resolve, reject) => {
             try {
 
-                this.contractInstance.createAuction(Config.DEEDREPOSITORY_ADDRESS, deedId, auctionTitle, metadata, this.web3.toWei(startingPrice, 'ether'), blockDeadline, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.createAuction(Config.DEEDREPOSITORY_ADDRESS, deedId, auctionTitle, metadata, this.web3.utils.toWei(startingPrice, 'ether'), blockDeadline, {from: this.account, gas: this.gas }, (err, transaction) => {
                     if(!err) resolve(transaction)
                     reject(err)
                 })

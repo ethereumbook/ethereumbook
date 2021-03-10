@@ -277,11 +277,10 @@ METoken/
 |   `---- 1_initial_migration.js
 +---- package.json
 +---- test
-+---- truffle-config.js
-`---- truffle.js
+`---- truffle-config.js
 ----
 
-Edit the _truffle.js_ or _truffle-config.js_ configuration file to set up your Truffle environment, or copy the latter from http://bit.ly/2DdP2mz[the repository].
+Edit the _truffle-config.js_ configuration file to set up your Truffle environment, or copy the latter from http://bit.ly/2DdP2mz[the repository].
 
 If you use the example _truffle-config.js_, remember to create a file _.env_ in the _METoken_ folder containing your test private keys for testing and deployment on public Ethereum test networks, such as Ropsten or Kovan. You can export your test network private key from MetaMask.
 
@@ -297,7 +296,6 @@ METoken/
 +---- package.json
 +---- test
 +---- truffle-config.js
-+---- truffle.js
 `---- .env *new file*
 ----
 
@@ -460,7 +458,7 @@ truffle(ganache)&gt; <strong>accounts[0]</strong>
 </pre>
 ++++
 
-The +accounts+ list now contains all the accounts created by +ganache+, and +account[0]+ is the account that deployed the +METoken+ contract. It should have a balance of pass:[<span class="keep-together">METoken</span>], because our METoken constructor gives the entire token supply to the address that created it. Let's check:
+The +accounts+ list now contains all the accounts created by +ganache+, and +accounts[0]+ is the account that deployed the +METoken+ contract. It should have a balance of pass:[<span class="keep-together">METoken</span>], because our METoken constructor gives the entire token supply to the address that created it. Let's check:
 
 ++++
 <pre data-type="programlist">
@@ -471,7 +469,7 @@ truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 9, c: [ 2100000000 ] }</strong
 </pre>
 ++++
 
-Finally, let's transfer 1000.00 METoken from +account[0]+ to +account[1]+, by calling the contract's +transfer+ function:
+Finally, let's transfer 1000.00 METoken from +accounts[0]+ to +accounts[1]+, by calling the contract's +transfer+ function:
 
 ++++
 <pre data-type="programlist">
@@ -495,7 +493,7 @@ truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 5, c: [ 100000 ] }</strong>
 METoken has 2 decimals of precision, meaning that 1 METoken is 100 units in the contract. When we transfer 1,000 METoken, we specify the value as +100000+ in the call to the +transfer+ function.
 ====
 
-As you can see, in the console, +account[0]+ now has 20,999,000 MET, and +account[1]+ has 1,000 MET.
+As you can see, in the console, +accounts[0]+ now has 20,999,000 MET, and +accounts[1]+ has 1,000 MET.
 
 If you switch to the +ganache+ graphical user interface, as shown in <<ganache_METoken_transfer>>, you will see the transaction that called the +transfer+ function.(((range="endofrange", startref="ix_10tokens-asciidoc12")))(((range="endofrange", startref="ix_10tokens-asciidoc11")))
 
@@ -645,7 +643,7 @@ Finally, since our faucet no longer sends ether, we should probably prevent anyo
 [source,solidity]
 ----
 // REJECT any incoming ether
-function () public payable { revert(); }
+function () external payable { revert(); }
 ----
 
 Now that our _METFaucet.sol_ code is ready, we need to modify the migration script to deploy it. This migration script will be a bit more complex, as +METFaucet+ depends on the address of +METoken+. We will use a JavaScript promise to deploy the two contracts in sequence. Create __2_deploy_contracts.js__ as follows:
@@ -701,7 +699,7 @@ truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 3, c: [ 1000 ] }</strong>
 </pre>
 ++++
 
-As you can see from the results, we can use the +approve+ &amp; +transferFrom+ workflow to authorize one contract to transfer tokens defined in another token. If properly used, ERC20 tokens can be used by EOAs and other contracts.
+As you can see from the results, we can use the +approve+ &amp; +transferFrom+ workflow to authorize one contract to transfer tokens defined in another contract. If properly used, ERC20 tokens can be used by EOAs and other contracts.
 
 However, the burden of managing ERC20 tokens correctly is pushed to the user interface. If a user incorrectly attempts to transfer ERC20 tokens to a contract address and that contract is not equipped to receive ERC20 tokens, the tokens will be lost(((range="endofrange", startref="ix_10tokens-asciidoc17")))(((range="endofrange", startref="ix_10tokens-asciidoc16")))(((range="endofrange", startref="ix_10tokens-asciidoc15"))).(((range="endofrange", startref="ix_10tokens-asciidoc10")))(((range="endofrange", startref="ix_10tokens-asciidoc9")))
 
