@@ -1,7 +1,7 @@
 [[tx_chapter]]
 == Transactions
 
-((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are what make that state machine "tick," changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account (EOA), transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are what make that state machine "tick," changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
 
 In this chapter, we will dissect transactions, show how they work, and examine the details. Note that much of this chapter is addressed to those who are interested in managing their own transactions at a low level, perhaps because they are writing a wallet app; you don't have to worry about this if you are happy using existing wallet applications, although you may find the details interesting!
 
@@ -73,12 +73,12 @@ The nonce is a zero-based counter, meaning the first transaction has nonce 0. In
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
 
-When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count toward the +getTransactionCount+ total.
+When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count toward the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] total.
 
 [[get_tx_count_bug]]
 [WARNING]
 ====
-Be careful when using the +getTransactionCount+ function for counting pending transactions, because you might run into some problems if you send a few transactions in a row.
+Be careful when using the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] function for counting pending transactions, because you might run into some problems if you send a few transactions in a row.
 ====
 
 Let's look at an example:
@@ -110,11 +110,11 @@ Let's look at an example:
 If you're trying to recreate these code examples yourself in Geth's javascript console, you should use web3.toWei() instead of web3.utils.toWei(). This is because Geth uses an older version of the web3 library.
 ====
 
-As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
+As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
 
-When you build an application that constructs transactions, it cannot rely on pass:[<span class="keep-together"><code>getTransactionCount</code></span>] for pending transactions. Only when the pending and confirmed counts are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
+When you build an application that constructs transactions, it cannot rely on pass:[<span class="keep-together"><code>getTransactionCount</code></span>] for pending transactions. Only when the pending and confirmed counts are equal (all outstanding transactions are confirmed) can you trust the output of pass:[<span class="keep-together"><code>getTransactionCount</code></span>] to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
 
-((("Parity","nonce counting")))Parity's JSON RPC interface offers the +parity_nextNonce+ function, which returns the next nonce that should be used in a transaction. The +parity_nextNonce+ function counts nonces correctly, even if you construct several transactions in rapid succession without confirming them:
+((("Parity","nonce counting")))Parity's JSON RPC interface offers the pass:[<span class="keep-together"><code>parity_nextNonce</code></span>] function, which returns the next nonce that should be used in a transaction. The pass:[<span class="keep-together"><code>parity_nextNonce</code></span>] function counts nonces correctly, even if you construct several transactions in rapid succession without confirming them:
 
 ++++
 <pre data-type="programlisting">

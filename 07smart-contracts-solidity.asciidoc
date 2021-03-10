@@ -32,7 +32,7 @@ The EVM runs as a local instance on every Ethereum node, but because all instanc
 
 ((("transactions","smart contracts and")))Importantly, contracts _only run if they are called by a transaction_. All smart contracts in Ethereum are executed, ultimately, because of a transaction initiated from an EOA. A contract can call another contract that can call another contract, and so on, but the first contract in such a chain of execution will always have been called by a transaction from an EOA. Contracts never run “on their own” or “in the background.” Contracts effectively lie dormant until a transaction triggers execution, either directly or indirectly as part of a chain of contract calls. It is also worth noting that smart contracts are not executed "in parallel" in any sense&#x2014;the Ethereum world computer can be considered to be a single-threaded machine.
 
-((("transactions","as atomic")))Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
+((("transactions","as atomic")))Transactions are _atomic_, they are either successfully terminated or reverted. A successful termination of a transaction means different things under different scenarios: (1) if a transaction is sent from an EOA to another EOA then any changes to the global state (e.g. account balances) made by the transaction are recorded; (2) if a transaction is sent from an EOA to a contract that does not invoke any other contracts, then any changes to the global state are recorded (e.g. account balances, state variables of the contracts) (3) if a transaction is sent from an EOA to a contract that only invokes other contracts in a manner that propagates errors, then any changes to the global state are recorded (e.g. account balances, state variables of the contracts); and (4) if a transaction is sent from an EOA to a contract that invokes other contracts in a manner that does not propagates errors, then there may only be some changes to the global state recorded (e.g. account balances, state variables of the non erroring contracts), whereas other changes to the global state are not recorded (e.g. state variables of the erroring contracts). Otherwise, if a transaction is reverted, all of its effects (changes in state) are “rolled back” as if the transaction never ran.  A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state. 
 
 ((("smart contracts","deleting")))As mentioned previously, it is important to remember that a contract’s code cannot be changed. However, a contract can be “deleted,” removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. ((("SELFDESTRUCT opcode")))To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). ((("negative gas")))That operation costs “negative gas,” a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract cannot be deleted.
 
@@ -229,7 +229,7 @@ Integer (+int+, +uint+):: Signed (+int+) and unsigned (+uint+) integers, declare
 
 Fixed point (+fixed+, +ufixed+):: Fixed-point numbers, declared with pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] where __++M++__ is the size in bits (increments of 8 up to 256) and __++N++__ is the number of decimals after the point (up to 18); e.g., +ufixed32x2+.
 
-Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being pass:[<span class="keep-together"><code>balance</code></span>] (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account). 
+Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account).
 
 Byte array (fixed):: Fixed-size arrays of bytes, declared with +bytes1+ up to +bytes32+.
 
@@ -401,9 +401,9 @@ Constructors can be specified in two ways. Up to and including in Solidity v0.4.
 [source,solidity]
 ----
 contract MEContract {
-	function MEContract() {
-		// This is the constructor
-	}
+    function MEContract() {
+        // This is the constructor
+    }
 }
 ----
 
@@ -416,9 +416,9 @@ To address the potential problems with constructor functions being based on havi
 ----
 pragma ^0.4.22
 contract MEContract {
-	constructor () {
-		// This is the constructor
-	}
+    constructor () {
+        // This is the constructor
+    }
 }
 ----
 
@@ -447,14 +447,15 @@ pragma solidity ^0.6.0;
 // Our first contract is a faucet!
 contract Faucet {
 
-	address owner;
+    address owner;
 
-	// Initialize Faucet contract: set owner
-	constructor() {
-		owner = msg.sender;
-	}
+    // Initialize Faucet contract: set owner
+    constructor() {
+        owner = msg.sender;
+    }
 
-[...]
+    [...]
+}
 ----
 
 Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
@@ -467,8 +468,8 @@ Now we can add a function to destroy the contract. We need to make sure that onl
 ----
 // Contract destructor
 function destroy() public {
-	require(msg.sender == owner);
-	selfdestruct(owner);
+    require(msg.sender == owner);
+    selfdestruct(owner);
 }
 ----
 
@@ -515,7 +516,7 @@ Inside a modifier, you can access all the values (variables and arguments) visib
 [source,solidity]
 ----
 contract Child is Parent {
-  ...
+    ...
 }
 ----
 
@@ -524,7 +525,7 @@ With this construct, the +Child+ contract inherits all the methods, functionalit
 [source,solidity]
 ----
 contract Child is Parent1, Parent2 {
-  ...
+    ...
 }
 ----
 
@@ -623,7 +624,7 @@ However, it might be better to check explicitly and provide a clear error messag
 [source,solidity]
 ----
 require(this.balance >= withdraw_amount,
-	"Insufficient balance in faucet for withdrawal request");
+        "Insufficient balance in faucet for withdrawal request");
 msg.sender.transfer(withdraw_amount);
 ----
 
@@ -646,7 +647,7 @@ contract Faucet is Mortal {
 	event Withdrawal(address indexed to, uint amount);
 	event Deposit(address indexed from, uint amount);
 
-	[...]
+    [...]
 }
 ----
 
@@ -751,9 +752,9 @@ Events are a very useful mechanism, not only for intra-contract communication, b
 contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -766,9 +767,9 @@ import "Faucet.sol";
 contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -781,9 +782,9 @@ import "Faucet.sol";
 contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 }
 ----
 
@@ -796,13 +797,13 @@ import "Faucet.sol";
 contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 
-	function destroy() ownerOnly {
-		_faucet.destroy();
-	}
+    function destroy() ownerOnly {
+        _faucet.destroy();
+    }
 }
 ----
 
@@ -818,12 +819,12 @@ import "Faucet.sol";
 
 contract Token is Mortal {
 
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor(address _f) {
-		_faucet = Faucet(_f);
-		_faucet.withdraw(0.1 ether)
-	}
+    constructor(address _f) {
+        _faucet = Faucet(_f);
+        _faucet.withdraw(0.1 ether);
+    }
 }
 ----
 
@@ -874,7 +875,7 @@ include::code/truffle/CallExamples/contracts/CallExamples.sol[]
 ----
 ====
 
-As you can see in this example, our main contract is +caller+, which calls a library +calledLibrary+ and a contract +calledContract+. Both the called library and the contract have identical +calledFunction+ functions, which emit an event +calledEvent+. The event +calledEvent+ logs three pieces of data: +msg.sender+, +tx.origin+, and +this+. Each time +calledFunction+ is called it may have a different execution context (with different values for potentially all the context variables), depending on whether it is called directly or through +delegatecall+.
+As you can see in this example, our main contract is +caller+, which calls a library +calledLibrary+ and a contract +calledContract+. Both the called library and the contract have identical +calledFunction+ functions, which emit an event +callEvent+. The event +callEvent+ logs three pieces of data: +msg.sender+, +tx.origin+, and +this+. Each time +calledFunction+ is called it may have a different execution context (with different values for potentially all the context variables), depending on whether it is called directly or through +delegatecall+.
 
 In +caller+, we first call the contract and library directly, by invoking +calledFunction+ in each. Then, we explicitly use the low-level functions +call+ and +delegatecall+ to call +calledContract.calledFunction+. This way we can see how the various calling mechanisms behave.
 
@@ -886,7 +887,7 @@ truffle(develop)> <strong>migrate</strong>
 Using network 'develop'.
 [...]
 Saving artifacts...
-truffle(develop)> <strong>web3.eth.accounts[0]</strong>
+truffle(develop)> <strong>(await web3.eth.getAccounts())[0]</strong>
 '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 truffle(develop)> <strong>caller.address</strong>
 '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'
