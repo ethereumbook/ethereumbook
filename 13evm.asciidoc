@@ -443,6 +443,7 @@ As we have seen, +PUSH1 0x4+ places +0x4+ onto the top of the stack, which is ot
 |Stack
 |<length of calldata from tx>
 |+0x4+
+|
 |======================
 
 This next instruction is +LT+, short for “less than.” The +LT+ instruction checks whether the top item on the stack is less than the next item on the stack. In our case, it checks to see if the result of +CALLDATASIZE+ is less than 4 bytes.
@@ -465,6 +466,7 @@ The +PUSH1 0x3f+ instruction pushes the byte +0x3f+ onto the stack. After this i
 |Stack
 |+0x3f+
 |+1+
+|
 |======================
 
 The next instruction is +JUMPI+, which stands for "jump if." It works like so:
@@ -514,6 +516,7 @@ Since +0+ was the index passed to it from the +PUSH1 0x0+ command, +CALLDATALOAD
 |Stack
 |++0x1000000++... (29 bytes in length)
 |<32 bytes of calldata starting at byte 0>
+|
 |======================
 
 +SWAP1+ switches the top element on the stack with the __i__-th element after it. In this case, it swaps ++0x1000000++... with the calldata. The new stack is:
@@ -523,6 +526,7 @@ Since +0+ was the index passed to it from the +PUSH1 0x0+ command, +CALLDATALOAD
 |Stack
 |<32 bytes of calldata starting at byte 0>
 |++0x1000000++... (29 bytes in length)
+|
 |======================
 
 The next instruction is +DIV+, which works as follows:
@@ -545,6 +549,7 @@ The result of the +DIV+ (the function identifier) gets pushed onto the stack, an
 |======================
 |Stack
 |<function identifier sent in +data+>
+|
 |======================
 
 Since the +PUSH4 0xffffffff+ and +AND+ instructions are redundant, we can ignore them entirely, as the stack will remain the same after they are done. The +DUP1+ instruction duplicates the first item on the stack, which is the function identifier. The next instruction, +PUSH4 0x2e1a7d4d+, pushes the precalculated function identifier of the pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>] function onto the stack. The stack is now:
@@ -555,6 +560,7 @@ Since the +PUSH4 0xffffffff+ and +AND+ instructions are redundant, we can ignore
 |+0x2e1a7d4d+
 |<function identifier sent in +data+>
 |<function identifier sent in +data+>
+|
 |======================
 
 The next instruction, +EQ+, pops off the top two items of the stack and compares them. This is where the dispatcher does its main job: it compares whether the function identifier sent in the +msg.data+ field of the transaction matches that of pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>]. If they are equal, +EQ+ pushes +1+ onto the stack, which will ultimately be used to jump to the withdraw function. Otherwise, +EQ+ pushes +0+ onto the stack.
@@ -566,6 +572,7 @@ Assuming the transaction sent to our contract indeed began with the function ide
 |Stack
 |+1+
 |<function identifier sent in +data+> (now known to be +0x2e1a7d4d+)
+|
 |======================
 
 Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)+ function lives in the contract. After this instruction, the stack looks like this:
@@ -576,6 +583,7 @@ Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)
 |+0x41+
 |+1+
 |function identifier sent in +msg.data+
+|
 |======================
 
 The +JUMPI+ instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have +jumpi(0x41, 1)+, which tells the EVM to execute the jump to the location of the +withdraw(uint256)+ function, and the execution of that function's code can proceed.(((range="endofrange", startref="ix_13evm-asciidoc10")))(((range="endofrange", startref="ix_13evm-asciidoc9")))

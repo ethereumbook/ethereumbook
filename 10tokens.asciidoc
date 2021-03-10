@@ -473,15 +473,15 @@ Finally, let's transfer 1000.00 METoken from +accounts[0]+ to +accounts[1]+, by 
 
 ++++
 <pre data-type="programlist">
-truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
                   { instance.transfer(accounts[1], 100000) })</strong>
 undefined
-truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
                   { instance.balanceOf(accounts[0]).then(console.log) })</strong>
 undefined
 truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 9, c: [ 2099900000 ] }</strong>
 undefined
-truffle(ganache)&gt; <strong>METoken.deployed().then(instance => 
+truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
                   { instance.balanceOf(accounts[1]).then(console.log) })</strong>
 undefined
 truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 5, c: [ 100000 ] }</strong>
@@ -652,10 +652,10 @@ Now that our _METFaucet.sol_ code is ready, we need to modify the migration scri
 ----
 var METoken = artifacts.require("METoken");
 var METFaucet = artifacts.require("METFaucet");
-var owner = web3.eth.accounts[0];
 
-module.exports = function(deployer) {
+module.exports = function(deployer, network, accounts) {
 
+	var owner = accounts[0];
 	// Deploy the METoken contract first
 	deployer.deploy(METoken, {from: owner}).then(function() {
 		// Then deploy METFaucet and pass the address of METoken and the
@@ -692,7 +692,7 @@ truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
                   { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })</strong>
 truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 0, c: [ 0 ] }</strong>
 truffle(ganache)&gt; <strong>METFaucet.deployed().then(instance =>
-                  { instance.withdraw(1000, {from:web3.eth.accounts[1]}) } )</strong>
+                  { instance.withdraw(1000, {from&#58;web3.eth.accounts[1]}) })</strong>
 truffle(ganache)&gt; <strong>METoken.deployed().then(instance =>
                   { instance.balanceOf(web3.eth.accounts[1]).then(console.log) })</strong>
 truffle(ganache)&gt; <strong>BigNumber { s: 1, e: 3, c: [ 1000 ] }</strong>
@@ -805,7 +805,7 @@ interface ERC777Token {
                           bytes userData,bytes operatorData) public;
 
     event Sent(address indexed operator, address indexed from,
-               address indexed to, uint256 amount, bytes userData, 
+               address indexed to, uint256 amount, bytes userData,
                bytes operatorData);
     event Minted(address indexed operator, address indexed to,
                  uint256 amount, bytes operatorData);
@@ -906,7 +906,7 @@ interface ERC721 /* is ERC165 */ {
     function transferFrom(address _from, address _to, uint256 _deedId)
         external payable;
     function approve(address _approved, uint256 _deedId) external payable;
-    function setApprovalForAll(address _operateor, boolean _approved) payable;
+    function setApprovalForAll(address _operator, boolean _approved) payable;
     function supportsInterface(bytes4 interfaceID) external view returns (bool);
 }
 ----

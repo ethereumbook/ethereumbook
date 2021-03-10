@@ -32,7 +32,7 @@ The EVM runs as a local instance on every Ethereum node, but because all instanc
 
 ((("transactions","smart contracts and")))Importantly, contracts _only run if they are called by a transaction_. All smart contracts in Ethereum are executed, ultimately, because of a transaction initiated from an EOA. A contract can call another contract that can call another contract, and so on, but the first contract in such a chain of execution will always have been called by a transaction from an EOA. Contracts never run “on their own” or “in the background.” Contracts effectively lie dormant until a transaction triggers execution, either directly or indirectly as part of a chain of contract calls. It is also worth noting that smart contracts are not executed "in parallel" in any sense&#x2014;the Ethereum world computer can be considered to be a single-threaded machine.
 
-((("transactions","as atomic")))Transactions are _atomic_, regardless of how many contracts they call or what those contracts do when called. Transactions execute in their entirety, with any changes in the global state (contracts, accounts, etc.) recorded only if all execution terminates successfully. Successful termination means that the program executed without an error and reached the end of execution. If execution fails due to an error, all of its effects (changes in state) are “rolled back” as if the transaction never ran. A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state.
+((("transactions","as atomic")))Transactions are _atomic_, they are either successfully terminated or reverted. A successful termination of a transaction means different things under different scenarios: (1) if a transaction is sent from an EOA to another EOA then any changes to the global state (e.g. account balances) made by the transaction are recorded; (2) if a transaction is sent from an EOA to a contract that does not invoke any other contracts, then any changes to the global state are recorded (e.g. account balances, state variables of the contracts) (3) if a transaction is sent from an EOA to a contract that only invokes other contracts in a manner that propagates errors, then any changes to the global state are recorded (e.g. account balances, state variables of the contracts); and (4) if a transaction is sent from an EOA to a contract that invokes other contracts in a manner that does not propagates errors, then there may only be some changes to the global state recorded (e.g. account balances, state variables of the non erroring contracts), whereas other changes to the global state are not recorded (e.g. state variables of the erroring contracts). Otherwise, if a transaction is reverted, all of its effects (changes in state) are “rolled back” as if the transaction never ran.  A failed transaction is still recorded as having been attempted, and the ether spent on gas for the execution is deducted from the originating account, but it otherwise has no other effects on contract or account state. 
 
 ((("smart contracts","deleting")))As mentioned previously, it is important to remember that a contract’s code cannot be changed. However, a contract can be “deleted,” removing the code and its internal state (storage) from its address, leaving a blank account. Any transactions sent to that account address after the contract has been deleted do not result in any code execution, because there is no longer any code there to execute. ((("SELFDESTRUCT opcode")))To delete a contract, you execute an EVM opcode called +SELFDESTRUCT+ (previously called +SUICIDE+). ((("negative gas")))That operation costs “negative gas,” a gas refund, thereby incentivizing the release of network client resources from the deletion of stored state. Deleting a contract in this way does not remove the transaction history (past) of the contract, since the blockchain itself is immutable. It is also important to note that the +SELFDESTRUCT+ capability will only be available if the contract author programmed the smart contract to have that functionality. If the contract's code does not have a +SELFDESTRUCT+ opcode, or it is inaccessible, the smart contract cannot be deleted.
 
@@ -78,7 +78,7 @@ To get started, we will download a binary executable of the Solidity compiler. T
 
 ((("semantic versioning")))((("Solidity","selecting version of")))Solidity follows a versioning model called https://semver.org/[_semantic versioning_], which specifies version numbers structured as three numbers separated by dots: __++MAJOR.MINOR.PATCH++__. The "major" number is incremented for major and _backward-incompatible_ changes, the "minor" number is incremented as backward-compatible features are added in between major releases, and the "patch" number is incremented for backward-compatible bug fixes.
 
-At the time of writing, Solidity is at version 0.4.24.  The rules for major version 0, which is for initial development of a project, are different: anything may change at any time. In practice, Solidity treats the "minor" number as if it were the major version and the "patch" number as if it were the minor version. Therefore, in 0.4.24, 4 is considered to be the major version and 24 the minor version.
+At the time of writing, Solidity is at version 0.6.4.  The rules for major version 0, which is for initial development of a project, are different: anything may change at any time. In practice, Solidity treats the "minor" number as if it were the major version and the "patch" number as if it were the minor version. Therefore, in 0.6.4, 6 is considered to be the major version and 4 the minor version.
 
 The 0.5 major version release of Solidity is anticipated imminently.
 
@@ -106,7 +106,7 @@ Once you have +solc+ installed, check the version by running:
 <pre data-type="programlisting">
 $ <strong>solc --version</strong>
 solc, the solidity compiler commandline interface
-Version: 0.4.24+commit.e67f0147.Linux.g++
+Version: 0.6.4+commit.1dca32f3.Linux.g++
 </pre>
 ++++
 
@@ -149,12 +149,12 @@ We use the +--bin+ and +--optimize+ arguments of +solc+ to produce an optimized 
 $ <strong>solc --optimize --bin Faucet.sol</strong>
 ======= Faucet.sol:Faucet =======
 Binary:
-6060604052341561000f57600080fd5b60cf8061001d6000396000f300606060405260043610603e5
-763ffffffff7c01000000000000000000000000000000000000000000000000000000006000350416
-632e1a7d4d81146040575b005b3415604a57600080fd5b603e60043567016345785d8a00008111156
-06357600080fd5b73ffffffffffffffffffffffffffffffffffffffff331681156108fc0282604051
-600060405180830381858888f19350505050151560a057600080fd5b505600a165627a7a723058203
-556d79355f2da19e773a9551e95f1ca7457f2b5fbbf4eacf7748ab59d2532130029
+608060405234801561001057600080fd5b5060cc8061001f6000396000f3fe6080604052600436106
+01f5760003560e01c80632e1a7d4d14602a576025565b36602557005b600080fd5b34801560355760
+0080fd5b50605060048036036020811015604a57600080fd5b50356052565b005b67016345785d8a0
+000811115606657600080fd5b604051339082156108fc029083906000818181858888f19350505050
+1580156092573d6000803e3d6000fd5b505056fea26469706673582212205cf23994b22f7ba19eee5
+6c77b5fb127bceec1276b6f76ca71b5f95330ce598564736f6c63430006040033
 </pre>
 ++++
 
@@ -177,10 +177,9 @@ We use the +solc+ command-line Solidity compiler to produce the ABI for our pass
 $ <strong>solc --abi Faucet.sol</strong>
 ======= Faucet.sol:Faucet =======
 Contract JSON ABI
-[{"constant":false,"inputs":[{"name":"withdraw_amount","type":"uint256"}], \
-"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable", \
-"type":"function"},{"payable":true,"stateMutability":"payable", \
-"type":"fallback"}]
+[{"inputs":[{"internalType":"uint256","name":"withdraw_amount","type":"uint256"}], \
+"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}, \
+{"stateMutability":"payable","type":"receive"}]
 </pre>
 ++++
 
@@ -191,16 +190,16 @@ All that is needed for an application to interact with a contract is an ABI and 
 [[solidity_pragma]]
 ==== Selecting a Solidity Compiler and Language Version
 
-((("Solidity","selecting compiler and language version")))As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.4.21. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.4.19 and we tried to compile it with 0.4.18?
+((("Solidity","selecting compiler and language version")))As we saw in the previous code, our +Faucet+ contract compiles successfully with Solidity version 0.6.4. But what if we had used a different version of the Solidity compiler? The language is still in constant flux and things may change in unexpected ways. Our contract is fairly simple, but what if our program used a feature that was only added in Solidity version 0.6.1 and we tried to compile it with 0.6.0?
 
 ((("compiler directive")))((("version pragma")))To resolve such issues, Solidity offers a _compiler directive_ known as a _version pragma_ that instructs the compiler that the program expects a specific compiler (and language) version. Let’s look at an example:
 
 [[compiler_version]]
 ----
-pragma solidity ^0.4.19;
+pragma solidity ^0.6.0;
 ----
 
-The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of 0.4.19. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above 0.4.19; e.g., 0.4.20, but not 0.5.0 (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
+The Solidity compiler reads the version pragma and will produce an error if the compiler version is incompatible with the version pragma. In this case, our version pragma says that this program can be compiled by a Solidity compiler with a minimum version of 0.6.0. The symbol +^+ states, however, that we allow compilation with any _minor revision_ above 0.6.0; e.g., 0.6.1, but not 0.7.0 (which is a major revision, not a minor revision). Pragma directives are not compiled into EVM bytecode. They are only used by the compiler to check compatibility.
 
 Let’s add a pragma directive to our +Faucet+ contract. We will name the new file pass:[<span class="keep-together"><em>Faucet2.sol</em></span>], to keep track of our changes as we proceed through these examples starting in <<add_pragma_to_faucet>>.
 
@@ -230,7 +229,7 @@ Integer (+int+, +uint+):: Signed (+int+) and unsigned (+uint+) integers, declare
 
 Fixed point (+fixed+, +ufixed+):: Fixed-point numbers, declared with pass:[(<code>u</code>)<code>fixed<em>M</em>x<em>N</em></code>] where __++M++__ is the size in bits (increments of 8 up to 256) and __++N++__ is the number of decimals after the point (up to 18); e.g., +ufixed32x2+.
 
-Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account). 
+Address:: A 20-byte Ethereum address. The +address+ object has many helpful member functions, the main ones being +balance+ (returns the account balance) and pass:[<span class="keep-together"><code>transfer</code></span>] (transfers ether to the account).
 
 Byte array (fixed):: Fixed-size arrays of bytes, declared with +bytes1+ up to +bytes32+.
 
@@ -324,9 +323,7 @@ Whenever a contract calls another contract, the values of all the attributes of 
 
 ++address.call(__payload__)++:: Low-level +CALL+ function&#x2014;can construct an arbitrary message call with a data payload. Returns +false+ on error. WARNING: unsafe&#x2014;recipient can (accidentally or maliciously) use up all your gas, causing your contract to halt with an +OOG+ exception; always check the return value of +call+.
 
-++address.callcode(__payload__)++:: Low-level +CALLCODE+ function, like +address(this).call(pass:[...])+ but with this contract's code replaced with that of +address+. Returns +false+ on error. WARNING: advanced use only!
-
-+address.delegatecall()+:: Low-level +DELEGATECALL+ function, like +callcode(pass:[...])+ but with the full +msg+ context seen by the current contract. Returns +false+ on error. WARNING: advanced use only!
++address.delegatecall(__payload__)+:: Low-level +DELEGATECALL+ function, like +callcode(pass:[...])+ but with the full +msg+ context seen by the current contract. Returns +false+ on error. WARNING: advanced use only!
 
 ===== Built-in functions
 
@@ -362,14 +359,14 @@ Solidity offers two other object types that are similar to a contract:
 ++++
 <pre data-type="programlisting">
 function FunctionName([<em>parameters</em>]) {public|private|internal|external}
-[pure|constant|view|payable] [<em>modifiers</em>] [returns (<em>return types</em>)]
+[pure|view|payable] [<em>modifiers</em>] [returns (<em>return types</em>)]
 </pre>
 ++++
 
 
 Let's look at each of these components:
 
-++FunctionName++:: The name of the function, which is used to call the function in a transaction (from an EOA), from another contract, or even from within the same contract. ((("fallback function")))One function in each contract may be defined without a name, in which case it is the _fallback_ function, which is called when no other function is named. The fallback function cannot have any arguments or return anything.
+++FunctionName++:: The name of the function, which is used to call the function in a transaction (from an EOA), from another contract, or even from within the same contract. ((("fallback function")))One function in each contract may be defined as a fallback function using the "fallback" keyword or a receive ether function defined using the "receive" keyword. If present, the receive ether function is called whenever the call data is empty (whether or not ether is received). Otherwise, the fallback function is called when no other function is named. The fallback function cannot have any arguments or return anything.
 
 __++parameters++__:: Following the name, we specify the arguments that must be passed to the function, with their names and types. In our +Faucet+ example we defined +uint withdraw_amount+ as the only argument to the pass:[<code><span class="keep-together">withdraw</span></code>] function.
 
@@ -404,9 +401,9 @@ Constructors can be specified in two ways. Up to and including in Solidity v0.4.
 [source,solidity]
 ----
 contract MEContract {
-	function MEContract() {
-		// This is the constructor
-	}
+    function MEContract() {
+        // This is the constructor
+    }
 }
 ----
 
@@ -419,9 +416,9 @@ To address the potential problems with constructor functions being based on havi
 ----
 pragma ^0.4.22
 contract MEContract {
-	constructor () {
-		// This is the constructor
-	}
+    constructor () {
+        // This is the constructor
+    }
 }
 ----
 
@@ -445,22 +442,23 @@ First, our constructor:
 [source,solidity]
 ----
 // Version of Solidity compiler this program was written for
-pragma solidity ^0.4.22;
+pragma solidity ^0.6.0;
 
 // Our first contract is a faucet!
 contract Faucet {
 
-	address owner;
+    address owner;
 
-	// Initialize Faucet contract: set owner
-	constructor() {
-		owner = msg.sender;
-	}
+    // Initialize Faucet contract: set owner
+    constructor() {
+        owner = msg.sender;
+    }
 
-[...]
+    [...]
+}
 ----
 
-We've changed the pragma directive to specify v0.4.22 as the minimum version for this example, as we are using the new +constructor+ keyword introduced in v0.4.22 of Solidity. Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
+Our contract now has an +address+ type variable named +owner+. The name "owner" is not special in any way. We could call this address variable "potato" and still use it the same way. The name +owner+ simply makes its purpose clear.
 
 Next, our constructor, which runs as part of the contract creation transaction, assigns the address from +msg.sender+ to the +owner+ variable. We used +msg.sender+ in the pass:[<span class="keep-together"><code>withdraw</code></span>] function to identify the initiator of the withdrawal request. In the constructor, however, the +msg.sender+ is the EOA or contract address that initiated contract creation. We know this is the case _because_ this is a constructor function: it only runs once, during contract creation.
 
@@ -470,8 +468,8 @@ Now we can add a function to destroy the contract. We need to make sure that onl
 ----
 // Contract destructor
 function destroy() public {
-	require(msg.sender == owner);
-	selfdestruct(owner);
+    require(msg.sender == owner);
+    selfdestruct(owner);
 }
 ----
 
@@ -518,7 +516,7 @@ Inside a modifier, you can access all the values (variables and arguments) visib
 [source,solidity]
 ----
 contract Child is Parent {
-  ...
+    ...
 }
 ----
 
@@ -527,7 +525,7 @@ With this construct, the +Child+ contract inherits all the methods, functionalit
 [source,solidity]
 ----
 contract Child is Parent1, Parent2 {
-  ...
+    ...
 }
 ----
 
@@ -535,11 +533,11 @@ Contract inheritance allows us to write our contracts in such a way as to achiev
 
 In our +Faucet+ contract, we introduced the constructor and destructor, together with access control for an owner, assigned on construction. Those capabilities are quite generic: many contracts will have them. We can define them as generic contracts, then use inheritance to extend them to the +Faucet+ contract.
 
-We start by defining a base contract +owned+, which has an +owner+ variable, setting it in the contract's constructor:
+We start by defining a base contract +Owned+, which has an +owner+ variable, setting it in the contract's constructor:
 
 [source,solidity]
 ----
-contract owned {
+contract Owned {
 	address owner;
 
 	// Contract constructor: set owner
@@ -555,11 +553,11 @@ contract owned {
 }
 ----
 
-Next, we define a base contract +mortal+, which inherits +owned+:
+Next, we define a base contract +Mortal+, which inherits +Owned+:
 
 [source,solidity]
 ----
-contract mortal is owned {
+contract Mortal is Owned {
 	// Contract destructor
 	function destroy() public onlyOwner {
 		selfdestruct(owner);
@@ -567,13 +565,13 @@ contract mortal is owned {
 }
 ----
 
-As you can see, the +mortal+ contract can use the +onlyOwner+ function modifier, defined in +owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +owned+. Inheritance makes each contract simpler and focused on its specific functionality, allowing us to manage the details in a modular way.
+As you can see, the +Mortal+ contract can use the +onlyOwner+ function modifier, defined in +Owned+. It indirectly also uses the +owner+ address variable and the constructor defined in +Owned+. Inheritance makes each contract simpler and focused on its specific functionality, allowing us to manage the details in a modular way.
 
-Now we can further extend the +owned+ contract, inheriting its capabilities in +Faucet+:
+Now we can further extend the +Owned+ contract, inheriting its capabilities in +Faucet+:
 
 [source,solidity]
 ----
-contract Faucet is mortal {
+contract Faucet is Mortal {
     // Give out ether to anyone who asks
     function withdraw(uint withdraw_amount) public {
         // Limit withdrawal amount
@@ -582,11 +580,11 @@ contract Faucet is mortal {
         msg.sender.transfer(withdraw_amount);
     }
     // Accept any incoming amount
-    function () external payable {}
+    receive () external payable {}
 }
 ----
 
-By inheriting +mortal+, which in turn inherits +owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
+By inheriting +Mortal+, which in turn inherits +Owned+, the +Faucet+ contract now has the constructor and +destroy+ functions, and a defined owner. The functionality is the same as when those functions were within +Faucet+, but now we can reuse those functions in other contracts without writing them again. Code reuse and modularity make our code cleaner, easier to read, and easier to audit.(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc17")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc16")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc15")))(((range="endofrange", startref="ix_07smart-contracts-solidity-asciidoc14")))
 
 ==== Error Handling (assert, require, revert)
 
@@ -605,7 +603,7 @@ require(msg.sender == owner);
 
 The +require+ function acts as a _gate condition_, preventing execution of the rest of the function and producing an error if it is not satisfied.
 
-As of Solidity v0.4.22, +require+ can also include a helpful text message that can be used to show the reason for the error. The error message is recorded in the transaction log. So, we can improve our code by adding an error message in our +require+ function:
+As of Solidity v0.6.0, +require+ can also include a helpful text message that can be used to show the reason for the error. The error message is recorded in the transaction log. So, we can improve our code by adding an error message in our +require+ function:
 
 [source,solidity]
 ----
@@ -626,7 +624,7 @@ However, it might be better to check explicitly and provide a clear error messag
 [source,solidity]
 ----
 require(this.balance >= withdraw_amount,
-	"Insufficient balance in faucet for withdrawal request");
+        "Insufficient balance in faucet for withdrawal request");
 msg.sender.transfer(withdraw_amount);
 ----
 
@@ -645,11 +643,11 @@ Event objects take arguments that are serialized and recorded in the transaction
 
 [source,solidity]
 ----
-contract Faucet is mortal {
+contract Faucet is Mortal {
 	event Withdrawal(address indexed to, uint amount);
 	event Deposit(address indexed from, uint amount);
 
-	[...]
+    [...]
 }
 ----
 
@@ -666,7 +664,7 @@ function withdraw(uint withdraw_amount) public {
     emit Withdrawal(msg.sender, withdraw_amount);
 }
 // Accept any incoming amount
-function () external payable {
+receive () external payable {
     emit Deposit(msg.sender, msg.value);
 }
 ----
@@ -751,12 +749,12 @@ Events are a very useful mechanism, not only for intra-contract communication, b
 [role="pagebreak-before"]
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -766,12 +764,12 @@ This mechanism for contract construction ensures that you know the exact type of
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = new Faucet();
-	}
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ----
 
@@ -781,12 +779,12 @@ You can optionally specify the +value+ of ether transfer on creation, and pass a
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 }
 ----
 
@@ -796,16 +794,16 @@ You can also then call the +Faucet+ functions. In this example, we call the +des
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 	Faucet _faucet;
 
-	constructor() {
-		_faucet = (new Faucet).value(0.5 ether)();
-	}
+    constructor() {
+        _faucet = (new Faucet).value(0.5 ether)();
+    }
 
-	function destroy() ownerOnly {
-		_faucet.destroy();
-	}
+    function destroy() ownerOnly {
+        _faucet.destroy();
+    }
 }
 ----
 
@@ -819,14 +817,14 @@ Note that while you are the owner of the +Token+ contract, the +Token+ contract 
 ----
 import "Faucet.sol";
 
-contract Token is mortal {
+contract Token is Mortal {
 
-	Faucet _faucet;
+    Faucet _faucet;
 
-	constructor(address _f) {
-		_faucet = Faucet(_f);
-		_faucet.withdraw(0.1 ether)
-	}
+    constructor(address _f) {
+        _faucet = Faucet(_f);
+        _faucet.withdraw(0.1 ether);
+    }
 }
 ----
 
@@ -840,7 +838,7 @@ Solidity offers some even more "low-level" functions for calling other contracts
 
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	constructor(address _faucet) {
 		_faucet.call("withdraw", 0.1 ether);
 	}
@@ -851,7 +849,7 @@ contract Token is mortal {
 
 [source,solidity]
 ----
-contract Token is mortal {
+contract Token is Mortal {
 	constructor(address _faucet) {
 		if !(_faucet.call("withdraw", 0.1 ether)) {
 			revert("Withdrawal from faucet failed");
@@ -889,7 +887,7 @@ truffle(develop)> <strong>migrate</strong>
 Using network 'develop'.
 [...]
 Saving artifacts...
-truffle(develop)> <strong>web3.eth.accounts[0]</strong>
+truffle(develop)> <strong>(await web3.eth.getAccounts())[0]</strong>
 '0x627306090abab3a6e1400e9345bc60c78a8bef57'
 truffle(develop)> <strong>caller.address</strong>
 '0x8f0483125fcb9aaaefa9209d8e9d7b9c8b9fb90f'

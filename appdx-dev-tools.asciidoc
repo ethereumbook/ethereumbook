@@ -2,6 +2,102 @@
 [[dev_tools_frameworks]]
 == Development Tools, Frameworks, pass:[<span class="keep-together">and Libraries</span>]
 
+
+=== Development Tools
+
+[[alchemy]]
+==== Alchemy
+
+Website: https://alchemyapi.io
+
+Documentation: https://docs.alchemyapi.io/
+
+To make transactions on the Ethereum network, developers need to either run their own Geth / Parity nodes to serve requests on, or use an infrastructure platform that manages the nodes for them and receives JSON-RPC requests via a custom API endpoint.
+
+Spinning up a self-hosted node can present a number of challenges: it can be time-consuming and expensive, requiring significant engineering time to manage on the order of ~$7k in AWS server costs per node every year. On top of that, these nodes can be unreliable with problems such as CPU spikes, peering failures, and consistency issues when nodes fall out of sync with the network. In addition, determining a consistent state of the network can become challenging when scaling up to multiple nodes, which may all see slightly different versions of the blockchain at any given moment.
+
+A blockchain infrastructure provider encapsulates away the complexities of managing Ethereum nodes using a JSON-RPC request interface that extends `web3.js`. By routing node requests to a custom API endpoint, developers can get access to everything necessary to communicate with the Ethereum blockchain while guaranteeing that their requests are served reliably, with full data correctness, and can be scaled to any size necessary.
+
+Alchemy is one such infrastructure provider. In addition to these guarantees, it also provides additional developer tools such as: 
+
+API Explorer::
+A browser tool allowing developers to search and analyze all historical API requests sent through Alchemy to track patterns, find errors, and simplify debugging.
+
+Mempool Visualizer::
+A browser tool that allows developers to view and search for mined, pending, and dropped transactions in the Alchemy mempool, so that they can track the status of their transactions.
+
+Composer::
+A browser tool that allows developers to make JSON-RPC calls directly from the dashboard in order to prototype and fix failing requests or explore the behavior of new methods.
+
+Enhanced APIs::
+A set of additional APIs that provide higher level tools to help developers, such as returning token balances, getting token metadata, or fetching historical transactions for any address without needing to scan the entire blockchain. 
+
+Notify::
+A tool that uses webhooks allowing developers to receive notifications whenever they see activity on a particular Ethereum address, have transactions in their mempool mined or dropped, or when Ethereum gas prices drop below a certain amount.
+
+
+==== Setup
+To use Alchemy's products, you need an API key to authenticate your requests. Create an Alchemy account, generate your first app, and select "View Key" in the dashboard for your chosen app to get your new key.
+
+image::images/alchemy-new-app.gif["Retrieving the API key from a new Alchemy App"]
+
+===== Making Requests
+
+For manual requests, we recommend interacting with the JSON-RPC via POST requests. Simply pass in the `Content-Type: application/json` header and your query as the `POST` body with the following fields.
+
+* `jsonrpc`: The JSON-RPC version—currently, only 2.0 is supported.
+* `method`: The ETH API method. See API reference.
+* `params`: A list of parameters to pass to the method.
+* `id`: The ID of your request. Will be returned by the response so you can keep track of which request a response belongs to.
+
+Here is an example you can run from the command line to retrieve the current gas price, replacing `demo` with your own API key. 
+
+++++
+<pre data-type="programlisting">
+curl https://eth-mainnet.alchemyapi.io/v2/demo \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":73}
+</pre>
+++++
+
+Results:
+++++
+<pre data-type="programlisting">
+{ "id": 73,
+  "jsonrpc": "2.0",
+  "result": "0x09184e72a000" // 10000000000000 }
+</pre>
+++++
+
+===== Setting up Alchemy as your Client
+
+We recommend using `AlchemyWeb3.js`, an extended version of `web3.js` that also includes Alchemy Enhanced APIs. For more information, please refer to the https://docs.alchemyapi.io/documentation/alchemy-web3[Alchemy Web3 guide].
+
+To install `AlchemyWeb3.js`, run in the command line:
+
+With Yarn: `yarn add @alch/alchemy-web3`
+
+With NPM: `npm install @alch/alchemy-web3`
+
+To use Alchemy's node infrastructure, run in NodeJS or add this to a JavaScript file:
+
+++++
+<pre data-type="programlisting">
+const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
+const web3 = createAlchemyWeb3("https://eth-mainnet.alchemyapi.io/v2/your-api-key");
+</pre>
+++++
+
+Alternatively, you can use the default `web3.js` by running `npm install web3` and run the code snippet below to use Alchemy's infrastructure without the Enhanced APIs: 
+++++
+<pre data-type="programlisting">
+// JavaScript: web3.js
+const Web3 = require('web3');
+const web3 = new Web3("https://eth-mainnet.alchemyapi.io/v2/your-api-key");
+</pre>
+++++
+
 === Frameworks
 
 ((("frameworks", id="ix_appdx-dev-tools-asciidoc0", range="startofrange")))Frameworks can be used to ease Ethereum smart contract development. By doing everything yourself you get a better understanding of how everything fits together, but it's a lot of tedious, repetitive work. The frameworks described in this section can automate certain tasks and make development easier.
@@ -161,7 +257,7 @@ Prior to deploying a DApp to a cloud production or continuous integration enviro
 
 ===== Configuring Truffle
 
-((("Truffle","configuring")))+Truffle+ creates an empty configuration file, _truffle-config.js_. Now we edit _truffle-config.js_ and replace the contents with the sample configuation shown here:
+((("Truffle","configuring")))+Truffle+ creates an empty configuration file, _truffle-config.js_. Now we edit _truffle-config.js_ and replace the contents with the sample configuration shown here:
 
 [source,javascript]
 ----
@@ -467,7 +563,7 @@ This was just a quick overview of a few of the contracts that are part of the Op
 
 ==== ZeppelinOS
 
-((("frameworks","ZeppelinOS")))((("ZeppelinOS")))GitHhub: https://github.com/zeppelinos[]
+((("frameworks","ZeppelinOS")))((("ZeppelinOS")))GitHub: https://github.com/zeppelinos[]
 
 Website: https://zeppelinos.org[]
 

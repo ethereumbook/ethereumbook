@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.16;
 
 import "./ERC721.sol";
 import "./DeprecatedERC721.sol";
@@ -36,7 +36,7 @@ contract ERC721Token is ERC721, ERC721BasicToken {
   /**
   * @dev Constructor function
   */
-  function ERC721Token(string _name, string _symbol) public {
+  constructor(string memory _name, string memory _symbol) public {
     name_ = _name;
     symbol_ = _symbol;
   }
@@ -45,7 +45,7 @@ contract ERC721Token is ERC721, ERC721BasicToken {
   * @dev Gets the token name
   * @return string representing the token name
   */
-  function name() public view returns (string) {
+  function name() public view returns (string memory) {
     return name_;
   }
 
@@ -53,7 +53,7 @@ contract ERC721Token is ERC721, ERC721BasicToken {
   * @dev Gets the token symbol
   * @return string representing the token symbol
   */
-  function symbol() public view returns (string) {
+  function symbol() public view returns (string memory) {
     return symbol_;
   }
 
@@ -62,7 +62,7 @@ contract ERC721Token is ERC721, ERC721BasicToken {
   * @dev Throws if the token ID does not exist. May return an empty string.
   * @param _tokenId uint256 ID of the token to query
   */
-  function tokenURI(uint256 _tokenId) public view returns (string) {
+  function tokenURI(uint256 _tokenId) public view returns (string memory) {
     require(exists(_tokenId));
     return tokenURIs[_tokenId];
   }
@@ -103,7 +103,7 @@ contract ERC721Token is ERC721, ERC721BasicToken {
   * @param _tokenId uint256 ID of the token to set its URI
   * @param _uri string URI to assign
   */
-  function _setTokenURI(uint256 _tokenId, string _uri) internal {
+  function _setTokenURI(uint256 _tokenId, string memory _uri) internal {
     require(exists(_tokenId));
     tokenURIs[_tokenId] = _uri;
   }
