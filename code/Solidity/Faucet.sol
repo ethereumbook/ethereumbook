@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
 // Version of Solidity compiler this program was written for
 pragma solidity ^0.6.0;
 

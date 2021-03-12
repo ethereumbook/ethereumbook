@@ -296,12 +296,12 @@ The first line is a comment:
 [[comment]]
 [source,solidity]
 ----
-// Our first contract is a faucet!
+// SPDX-License-Identifier: CC-BY-SA-4.0
 ----
 
 Comments are for humans to read and are not included in the executable EVM bytecode. We usually put them on the line before the code we are trying to explain, or sometimes on the same line. Comments start with two forward slashes: +//+. Everything from the first slash until the end of that line is treated the same as a blank line and ignored.
 
-The next line is where our actual contract starts:
+A few lines later is where our actual contract starts:
 
 [[contract_definition]]
 [source,solidity]
@@ -311,7 +311,17 @@ contract Faucet {
 
 This line declares a +contract+ object, similar to a +class+ declaration in other object-oriented languages. The contract definition includes all the lines between the curly braces (pass:[<code>{}</code>]), which define a _scope_, much like how curly braces are used in many other programming languages.
 
-Next, we declare the first function of the +Faucet+ contract:
+Next, we enable the contract to accept any incoming amount:
+
+[[receive_function]]
+[source,solidity]
+----
+receive () external payable {}
+----
+
+((("receive function")))The receive function is called if the transaction that triggered the contract didn't name any of the declared functions in the contract, or didn't contain data and thus was a plain Ether transfer. Contracts can have one such receive function (without a name) and it is used to receive ether. That's why it is defined as an external and payable function, which means it can accept ether into the contract. It doesn't do anything, other than accept the ether, as indicated by the empty definition in the curly braces pass:[(<code>{}</code>)]. If we make a transaction that sends ether to the contract address, as if it were a wallet, this function will handle it.
+
+After this, we declare the first function of the +Faucet+ contract:
 
 [[withdraw_function]]
 [source,solidity]
@@ -342,16 +352,6 @@ msg.sender.transfer(withdraw_amount);
 A couple of interesting things are happening here. The +msg+ object is one of the inputs that all contracts can access. It represents the transaction that triggered the execution of this contract. The attribute +sender+ is the sender address of the transaction. The function +transfer+ is a built-in function that transfers ether from the current contract to the address of the sender. Reading it backward, this means +transfer+ to the +sender+ of the +msg+ that triggered this contract execution. The +transfer+ function takes an amount as its only argument. We pass the +withdraw_amount+ value that was the parameter to the +withdraw+ function declared a few lines earlier.
 
 The very next line is the closing curly brace, indicating the end of the definition of our +withdraw+ function.
-
-Next, we declare one more function:
-
-[[receive_function]]
-[source,solidity]
-----
-receive () external payable {}
-----
-
-((("receive function")))The receive function is called if the transaction that triggered the contract didn't name any of the declared functions in the contract, or didn't contain data and thus was a plain Ether transfer. Contracts can have one such receive function (without a name) and it is used to receive ether. That's why it is defined as an external and payable function, which means it can accept ether into the contract. It doesn't do anything, other than accept the ether, as indicated by the empty definition in the curly braces pass:[(<code>{}</code>)]. If we make a transaction that sends ether to the contract address, as if it were a wallet, this function will handle it.
 
 Right below our default function is the final closing curly brace, which closes the definition of the contract +Faucet+. That's it!(((range="endofrange", startref="ix_02intro-asciidoc11")))(((range="endofrange", startref="ix_02intro-asciidoc10")))
 
@@ -394,22 +394,7 @@ The Solidity compiler has now compiled our _Faucet.sol_ into EVM bytecode. If yo
 
 [[faucet_bytecode]]
 ----
-PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH2 0xF JUMPI PUSH1 0x0 DUP1
-REVERT JUMPDEST PUSH1 0xE5 DUP1 PUSH2 0x1D PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN
-STOP PUSH1 0x60 PUSH1 0x40 MSTORE PUSH1 0x4 CALLDATASIZE LT PUSH1 0x3F JUMPI
-PUSH1 0x0 CALLDATALOAD PUSH29
-0x100000000000000000000000000000000000000000000000000000000
-SWAP1 DIV PUSH4 0xFFFFFFFF AND DUP1 PUSH4 0x2E1A7D4D EQ PUSH1 0x41 JUMPI
-JUMPDEST STOP JUMPDEST CALLVALUE ISZERO PUSH1 0x4B JUMPI PUSH1 0x0 DUP1 REVERT
-JUMPDEST PUSH1 0x5F PUSH1 0x4 DUP1 DUP1 CALLDATALOAD SWAP1 PUSH1 0x20 ADD SWAP1
-SWAP2 SWAP1 POP POP PUSH1 0x61 JUMP JUMPDEST STOP JUMPDEST PUSH8
-0x16345785D8A0000 DUP2 GT ISZERO ISZERO ISZERO PUSH1 0x77 JUMPI PUSH1 0x0 DUP1
-REVERT JUMPDEST CALLER PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND
-PUSH2 0x8FC DUP3 SWAP1 DUP2 ISZERO MUL SWAP1 PUSH1 0x40 MLOAD PUSH1 0x0 PUSH1
-0x40 MLOAD DUP1 DUP4 SUB DUP2 DUP6 DUP9 DUP9 CALL SWAP4 POP POP POP POP ISZERO
-ISZERO PUSH1 0xB6 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP JUMP STOP LOG1 PUSH6
-0x627A7A723058 KECCAK256 PUSH9 0x13D1EA839A4438EF75 GASLIMIT CALLVALUE LOG4 0x5f
-PUSH24 0x7541F409787592C988A079407FB28B4AD000290000000000
+PUSH1 0x80 PUSH1 0x40 MSTORE CALLVALUE DUP1 ISZERO PUSH2 0x10 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP PUSH1 0xF4 DUP1 PUSH2 0x1F PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN INVALID PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x4 CALLDATASIZE LT PUSH1 0x1F JUMPI PUSH1 0x0 CALLDATALOAD PUSH1 0xE0 SHR DUP1 PUSH4 0x2E1A7D4D EQ PUSH1 0x2A JUMPI PUSH1 0x25 JUMP JUMPDEST CALLDATASIZE PUSH1 0x25 JUMPI STOP JUMPDEST PUSH1 0x0 DUP1 REVERT JUMPDEST CALLVALUE DUP1 ISZERO PUSH1 0x35 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST POP PUSH1 0x5F PUSH1 0x4 DUP1 CALLDATASIZE SUB PUSH1 0x20 DUP2 LT ISZERO PUSH1 0x4A JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST DUP2 ADD SWAP1 DUP1 DUP1 CALLDATALOAD SWAP1 PUSH1 0x20 ADD SWAP1 SWAP3 SWAP2 SWAP1 POP POP POP PUSH1 0x61 JUMP JUMPDEST STOP JUMPDEST PUSH8 0x16345785D8A0000 DUP2 GT ISZERO PUSH1 0x75 JUMPI PUSH1 0x0 DUP1 REVERT JUMPDEST CALLER PUSH20 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND PUSH2 0x8FC DUP3 SWAP1 DUP2 ISZERO MUL SWAP1 PUSH1 0x40 MLOAD PUSH1 0x0 PUSH1 0x40 MLOAD DUP1 DUP4 SUB DUP2 DUP6 DUP9 DUP9 CALL SWAP4 POP POP POP POP ISZERO DUP1 ISZERO PUSH1 0xBA JUMPI RETURNDATASIZE PUSH1 0x0 DUP1 RETURNDATACOPY RETURNDATASIZE PUSH1 0x0 REVERT JUMPDEST POP POP JUMP INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 STOP CODECOPY 0xDC DUP16 0xD SGT PUSH6 0xD2245039EDD7 RETURN CALLDATALOAD 0xC2 0xE4 SWAP9 0xF6 0x2C 0xF8 0xB3 OR JUMPDEST 0xAC 0xD8 CREATE2 SSTORE 0x4E SIGNEXTEND PUSH4 0x3164736F PUSH13 0x634300060C0033000000000000
 ----
 
 Aren't you glad you are using a high-level language like Solidity instead of programming directly in EVM bytecode? Me too!(((range="endofrange", startref="ix_02intro-asciidoc13")))(((range="endofrange", startref="ix_02intro-asciidoc12")))
@@ -429,7 +414,7 @@ image::images/remix_run.png["Remix IDE Run tab, with Injected Web3 environment s
 
 Right below the Run settings you just confirmed is the +Faucet+ contract, ready to be created. Click on the Deploy button shown in <<remix_run>>.
 
-Remix will construct the special "creation" transaction and MetaMask will ask you to approve it, as shown in <<remix_metamask_create>>. You'll notice the contract creation transaction has no ether in it, but it has 262 bytes of data (the compiled contract) and will consume 10 gwei in gas. Click Submit to approve it.
+Remix will construct the special "creation" transaction and MetaMask will ask you to approve it, as shown in <<remix_metamask_create>>. You'll notice the contract creation transaction has no ether in it, but it has 275 bytes of data (the compiled contract) and will consume 3 gwei in gas. Press Confirm to approve it.
 
 [[remix_metamask_create]]
 .MetaMask showing the contract creation transaction
