@@ -1,7 +1,7 @@
 [[tx_chapter]]
 == Transactions
 
-((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account, transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are what make that state machine "tick," changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transactions are signed messages originated by an externally owned account (EOA), transmitted by the Ethereum network, and recorded on the Ethereum blockchain. This basic definition conceals a lot of surprising and fascinating details. Another way to look at transactions is that they are the only things that can trigger a change of state, or cause a contract to execute in the EVM. Ethereum is a global singleton state machine, and transactions are what make that state machine "tick," changing its state. Contracts don't run on their own. Ethereum doesn't run  autonomously. Everything starts with a transaction.
 
 In this chapter, we will dissect transactions, show how they work, and examine the details. Note that much of this chapter is addressed to those who are interested in managing their own transactions at a low level, perhaps because they are writing a wallet app; you don't have to worry about this if you are happy using existing wallet applications, although you may find the details interesting!
 
@@ -14,13 +14,13 @@ A transaction is a serialized binary message that contains the following data:
 
 Nonce:: A sequence number, issued by the originating EOA, used to prevent message replay
 
-Gas price:: The price of gas (in wei) the originator is willing to pay
+Gas price:: The amount of ether (in wei) that the originator is willing to pay for each unit of gas
 
 Gas limit:: The maximum amount of gas the originator is willing to buy for this transaction
 
 Recipient:: The destination Ethereum address
 
-Value:: The amount of ether to send to the destination
+Value:: The amount of ether (in wei) to send to the destination
 
 Data:: The variable-length binary data payload
 
@@ -57,7 +57,7 @@ In summary, it is important to note that the use of the nonce is actually vital 
 [[tracking_nonce]]
 ==== Keeping Track of Nonces
 
-((("nonces","keeping track of")))In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e., on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a JavaScript console in a browser with MetaMask running, or use the +truffle console+ command to access the JavaScript web3 library, then type:
+((("nonces","keeping track of")))In practical terms, the nonce is an up-to-date count of the number of _confirmed_ (i.e., on-chain) transactions that have originated from an account. To find out what the nonce is, you can interrogate the blockchain, for example via the web3 interface. Open a JavaScript console in Geth (or your preferred web3 interface) on Ropsten testnet, then type:
 
 ++++
 <pre data-type="programlisting">
@@ -73,12 +73,12 @@ The nonce is a zero-based counter, meaning the first transaction has nonce 0. In
 
 Your wallet will keep track of nonces for each address it manages. It's fairly simple to do that, as long as you are only originating transactions from a single point. Let's say you are writing your own wallet software or some other application that originates transactions. How do you track nonces?
 
-When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count toward the +getTransactionCount+ total.
+When you create a new transaction, you assign the next nonce in the sequence. But until it is confirmed, it will not count toward the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] total.
 
 [[get_tx_count_bug]]
 [WARNING]
 ====
-Be careful when using the +getTransactionCount+ function for counting pending transactions, because you might run into some problems if you send a few transactions in a row.
+Be careful when using the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] function for counting pending transactions, because you might run into some problems if you send a few transactions in a row.
 ====
 
 Let's look at an example:
@@ -105,12 +105,16 @@ Let's look at an example:
 41
 </pre>
 ++++
+[TIP]
+====
+If you're trying to recreate these code examples yourself in Geth's javascript console, you should use web3.toWei() instead of web3.utils.toWei(). This is because Geth uses an older version of the web3 library.
+====
 
-As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the +getTransactionCount+ call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the +getTransactionCount+ call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
+As you can see, the first transaction we sent increased the transaction count to 41, showing the pending transaction. But when we sent three more transactions in quick succession, the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] call didn't count them. It only counted one, even though you might expect there to be three pending in the mempool. If we wait a few seconds to allow for network communications to settle down, the pass:[<span class="keep-together"><code>getTransactionCount</code></span>] call will return the expected number. But in the interim, while there is more than one transaction pending, it might not help us.
 
-When you build an application that constructs transactions, it cannot rely on pass:[<span class="keep-together"><code>getTransactionCount</code></span>] for pending transactions. Only when the pending and confirmed counts are equal (all outstanding transactions are confirmed) can you trust the output of +getTransactionCount+ to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
+When you build an application that constructs transactions, it cannot rely on pass:[<span class="keep-together"><code>getTransactionCount</code></span>] for pending transactions. Only when the pending and confirmed counts are equal (all outstanding transactions are confirmed) can you trust the output of pass:[<span class="keep-together"><code>getTransactionCount</code></span>] to start your nonce counter. Thereafter, keep track of the nonce in your application until each transaction confirms.
 
-((("Parity","nonce counting")))Parity's JSON RPC interface offers the +parity_nextNonce+ function, which returns the next nonce that should be used in a transaction. The +parity_nextNonce+ function counts nonces correctly, even if you construct several transactions in rapid succession without confirming them:
+((("Parity","nonce counting")))Parity's JSON RPC interface offers the pass:[<span class="keep-together"><code>parity_nextNonce</code></span>] function, which returns the next nonce that should be used in a transaction. The pass:[<span class="keep-together"><code>parity_nextNonce</code></span>] function counts nonces correctly, even if you construct several transactions in rapid succession without confirming them:
 
 ++++
 <pre data-type="programlisting">
@@ -206,7 +210,7 @@ If your transaction's destination address is a contract, then the amount of gas 
 
 To borrow a common analogy used in Ethereum, you can think of +gasLimit+ as the capacity of the fuel tank in your car (your car is the transaction). You fill the tank with as much gas as you think it will need for the journey (the computation needed to validate your transaction). You can estimate the amount to some degree, but there might be unexpected changes to your journey, such as a diversion (a more complex execution path), that increase fuel consumption.
 
-The analogy to a fuel tank is somewhat misleading, however. It's actually more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * gas+ limit. But the amount is not actually deducted from your account until the transaction finishes executing. You are only billed for gas actually consumed by your transaction, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+The analogy to a fuel tank is somewhat misleading, however. It's actually more like a credit account for a gas station company, where you pay after the trip is completed, based on how much gas you actually used. When you transmit your transaction, one of the first validation steps is to check that the account it originated from has enough ether to pay the +gasPrice * gasLimit+. But the amount is not actually deducted from your account until the transaction finishes executing. You are only billed for gas actually consumed by your transaction, but you have to have enough balance for the maximum amount you are willing to pay before you send your transaction.(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
 
 [[tx_recipient]]
 === Transaction Recipient
@@ -646,7 +650,7 @@ The special signature variable +v+ indicates two things: the chain ID and the re
 [[raw_tx]]
 ==== Raw Transaction Creation and Signing
 
-((("EthereumJS")))((("transactions","raw transaction creation/signing")))In this section we'll create a raw transaction and sign it, using the +ethereumjs-tx+ library. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in the file __raw_tx_demo.js__ in the book's http://bit.ly/2yI2GL3[GitHub repository]:
+((("EthereumJS")))((("transactions","raw transaction creation/signing")))In this section we'll create a raw transaction and sign it, using the +ethereumjs-tx+ library, which can be installed with npm. This demonstrates the functions that would normally be used inside a wallet, or an application that signs transactions on behalf of a user. The source code for this example is in the file __raw_tx_demo.js__ in the book's http://bit.ly/2yI2GL3[GitHub repository]:
 
 [[raw_tx_demo_source]]
 [source,javascript]
@@ -669,7 +673,7 @@ Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1..
 [[raw_tx_eip155]]
 ==== Raw Transaction Creation with EIP-155
 
-((("chain identifier")))((("EIP-155 Simple Replay Attack Protection standard")))((("transactions","raw transaction creation with EIP-1455")))The EIP-155 "Simple Replay Attack Protection" standard specifies a replay-attack-protected transaction encoding, which includes a _chain identifier_ inside the transaction data, prior to signing. This ensures that transactions created for one blockchain (e.g., the Ethereum main network) are invalid on another blockchain (e.g., Ethereum Classic or the Ropsten test network). Therefore, transactions broadcast on one network cannot be _replayed_ on another, hence the name of the standard.
+((("chain identifier")))((("EIP-155 Simple Replay Attack Protection standard")))((("transactions","raw transaction creation with EIP-155")))The EIP-155 "Simple Replay Attack Protection" standard specifies a replay-attack-protected transaction encoding, which includes a _chain identifier_ inside the transaction data, prior to signing. This ensures that transactions created for one blockchain (e.g., the Ethereum main network) are invalid on another blockchain (e.g., Ethereum Classic or the Ropsten test network). Therefore, transactions broadcast on one network cannot be _replayed_ on another, hence the name of the standard.
 
 EIP-155 adds three fields to the main six fields of the transaction data structure, namely the chain identifier, +0+, and +0+. These three fields are added to the transaction data _before it is encoded and hashed_. They therefore change the transaction's hash, to which the signature is later applied. By including the chain identifier in the data being signed, the transaction signature prevents any changes, as the signature is invalidated if the chain identifier is modified. Therefore, EIP-155 makes it impossible for a transaction to be replayed on another chain, because the signature's validity depends on the chain identifier.
 

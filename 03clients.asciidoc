@@ -70,7 +70,7 @@ You also have the option of running a remote client, which does not store a loca
 
 *Advantages:*
 
-* A testnet node needs to sync and store much less data&#x2014;about 25 GB depending on the network.
+* A testnet node needs to sync and store much less data&#x2014;about 45 GB depending on the network.
 * A testnet node can sync fully in a few hours.
 * Deploying contracts or making transactions requires test ether, which has no value and can be acquired for free from several "faucets."
 * Testnets are public blockchains with many other users and contracts, running "live."
@@ -88,16 +88,17 @@ You also have the option of running a remote client, which does not store a loca
 *Advantages:*
 
 * No syncing and almost no data on disk; you mine the first block yourself
-* No need to obtain test ether; you "award" yourself mining rewards that you can use for testing
+* No need to obtain test ether; Ganache is initialized with accounts that already hold ether for testing
 * No other users, just you
-* No other contracts, just the ones you deploy after you launch it
+* No other contracts, just the ones you deploy after you launch it unless you use the option of forking off an existing Ethereum node
 
 *Disadvantages:*
 
 * Having no other users means that it doesn't behave the same as a public blockchain. There's no competition for transaction space or sequencing of pass:[<span class="keep-together">transactions</span>].
 * No miners other than you means that mining is more predictable; therefore, you can't test some scenarios that occur on a public blockchain.
-* Having no other contracts means you have to deploy everything that you want to test, including dependencies and contract libraries.
-* You can't recreate some of the public contracts and their addresses to test some scenarios (e.g., the DAO contract).(((range="endofrange", startref="ix_03clients-asciidoc2")))(((range="endofrange", startref="ix_03clients-asciidoc1")))
+* If you are forking off an existing Ethereum node, it will need to be an archival node for you to interact with state from blocks that may have been pruned otherwise
+
+(((range="endofrange", startref="ix_03clients-asciidoc2")))(((range="endofrange", startref="ix_03clients-asciidoc1")))
 
 
 [[running_client]]
@@ -108,14 +109,14 @@ You also have the option of running a remote client, which does not store a loca
 [[requirements]]
 ==== Hardware Requirements for a Full Node
 
-8(("clients, Ethereum","full node hardware requirements")))((("full node","hardware requirements")))Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 300 GB of disk space to store a full copy of the Ethereum blockchain. If you also want to run a full node on the Ethereum testnet, you will need at least an additional 25 GB. Downloading 325 GB of blockchain data can take a long time, so it's recommended that you work on a fast internet connection.
+((("clients, Ethereum","full node hardware requirements")))((("full node","hardware requirements")))Before we get started, you should ensure you have a computer with sufficient resources to run an Ethereum full node. You will need at least 300 GB of disk space to store a full copy of the Ethereum blockchain. If you also want to run a full node on the Ethereum testnet, you will need at least an additional 45 GB. Downloading 345 GB of blockchain data can take a long time, so it's recommended that you work on a fast internet connection.
 
 Syncing the Ethereum blockchain is very input/output (I/O) intensive. It is best to have a solid-state drive (SSD). If you have a mechanical hard disk drive (HDD), you will need at least 8 GB of RAM to use as cache. Otherwise, you may discover that your system is too slow to keep up and sync fully.
 
 *Minimum requirements:*
 
 * CPU with 2+ cores
-* At least 80 GB free storage space
+* At least 300 GB free storage space
 * 4 GB RAM minimum with an SSD, 8 GB+ if you have an HDD
 * 8 MBit/sec download internet service
 
@@ -161,13 +162,13 @@ Before we get started, you may need to install some software. If you've never do
 
 ((("git")))Git can be installed by following the instructions at https://git-scm.com[].
 
-((("Go", seealso="Geth (Go-Ethereum)")))Go can be installed by following the instructions at https://golang.org[].
+((("Go", seealso="Geth (Go-Ethereum)")))Go can be installed by following the instructions at https://golang.org[], or https://github.com/golang/go/wiki/Ubuntu[] if you are using Ubuntu.
 
 [NOTE]
 =====
-((("Geth (Go-Ethereum)")))Geth requirements vary, but if you stick with Go version 1.10 or greater you should be able to compile any version of Geth you want. Of course, you should always refer to the documentation for your chosen flavor of Geth.
+((("Geth (Go-Ethereum)")))Geth requirements vary, but if you stick with Go version 1.13 or greater you should be able to compile most versions of Geth. Of course, you should always refer to the documentation for your chosen flavor of Geth.
 
-The version of +golang+ that is installed on your operating system or is available from your system's package manager may be significantly older than 1.10. If so, remove it and install the latest version from https://golang.org/[].
+The version of +golang+ that is installed on your operating system or is available from your system's package manager may be significantly older than 1.13. If so, remove it and install the latest version from https://golang.org/[].
 =====
 
 ((("Rust")))Rust can be installed by following the instructions at https://www.rustup.rs/[].
@@ -181,7 +182,7 @@ Parity requires Rust version 1.27 or greater.
 
 ++++
 <pre data-type="programlisting">
-$ <strong>sudo apt-get install openssl libssl-dev libudev-dev cmake</strong>
+$ <strong>sudo apt-get install openssl libssl-dev libudev-dev cmake clang</strong>
 </pre>
 ++++
 
@@ -219,7 +220,7 @@ Then change to the _parity_ directory and use +cargo+ to build the executable:
 ++++
 <pre data-type="programlisting">
 $ <strong>cd parity</strong>
-$ <strong>cargo install</strong>
+$ <strong>cargo install --path .</strong>
 </pre>
 ++++
 
@@ -227,19 +228,18 @@ If all goes well, you should see something like:
 
 ++++
 <pre data-type="programlisting">
-$ <strong>cargo install</strong>
-    Updating git repository `https://github.com/paritytech/js-precompiled.git`
- Downloading log v0.3.7
- Downloading isatty v0.1.1
- Downloading regex v0.2.1
+$ <strong>cargo install --path .</strong>
+Installing parity-ethereum v2.7.0 (/root/parity)
+Updating crates.io index
+Updating git repository `https://github.com/paritytech/rust-ctrlc.git`
+Updating git repository `https://github.com/paritytech/app-dirs-rs`   Updating git repository
 
  [...]
 
-Compiling parity-ipfs-api v1.7.0
-Compiling parity-rpc v1.7.0
-Compiling parity-rpc-client v1.4.0
-Compiling rpc-cli v1.4.0 (file:///home/aantonop/Dev/parity/rpc_cli)
-Finished dev [unoptimized + debuginfo] target(s) in 479.12 secs
+Compiling parity-ethereum v2.7.0 (/root/parity)
+Finished release [optimized] target(s) in 10m 16s
+Installing /root/.cargo/bin/parity
+Installed package `parity-ethereum v2.7.0 (/root/parity)` (executable `parity`)
 $
 </pre>
 ++++
@@ -250,15 +250,16 @@ Try and run +parity+ to see if it is installed, by invoking the +--version+ opti
 ++++
 <pre data-type="programlisting">
 $ <strong>parity --version</strong>
-Parity
-  version Parity/v1.7.0-unstable-02edc95-20170623/x86_64-linux-gnu/rustc1.18.0
-Copyright 2015, 2016, 2017 Parity Technologies (UK) Ltd
-License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;.
+Parity Ethereum Client.
+  version Parity-Ethereum/v2.7.0-unstable-b69a33b3a-20200124/x86_64-unknown-linux-gnu/rustc1.40.0
+Copyright 2015-2020 Parity Technologies (UK) Ltd.
+License GPLv3+: GNU GPL version 3 or later <ulink url="http://gnu.org/licenses/gpl.html">http://gnu.org/licenses/gpl.html</ulink>.
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
 
-By Wood/Paronyan/Kotewicz/Drwięga/Volf
-   Habermeier/Czaban/Greeff/Gotchac/Redmann
+By Wood/Paronyan/Kotewicz/Drwięga/Volf/Greeff
+   Habermeier/Czaban/Gotchac/Redman/Nikolsky
+   Schoedon/Tang/Adolfsson/Silva/Palm/Hirsz et al.
 $
 </pre>
 ++++
@@ -273,15 +274,15 @@ Great! Now that Parity is installed, you can sync the blockchain and get started
 
 * https://github.com/ethereum/go-ethereum[Ethereum] (or https://geth.ethereum.org/)
 
-* https://github.com/ethereumproject/go-ethereum[Ethereum Classic]
+* https://github.com/etclabscore/go-ethereum[Ethereum Classic]
 
 * https://github.com/ellaism/go-ellaism[Ellaism]
 
-* https://github.com/expanse-org/go-expanse[Expanse] 
+* https://github.com/expanse-org/go-expanse[Expanse]
 
-* https://github.com/Musicoin/go-musicoin[Musicoin] 
+* https://github.com/Musicoin/go-musicoin[Musicoin]
 
-* https://github.com/ubiq/go-ubiq[Ubiq] 
+* https://github.com/ubiq/go-ubiq[Ubiq]
 
 [NOTE]
 =====
@@ -306,12 +307,10 @@ You should see a progress report as the repository is copied to your local syste
 [[cloning_status]]
 ----
 Cloning into 'go-ethereum'...
-remote: Counting objects: 62587, done.
-remote: Compressing objects: 100% (26/26), done.
-remote: Total 62587 (delta 10), reused 13 (delta 4), pack-reused 62557
-Receiving objects: 100% (62587/62587), 84.51 MiB | 1.40 MiB/s, done.
-Resolving deltas: 100% (41554/41554), done.
-Checking connectivity... done.
+remote: Enumerating objects: 86915, done.
+remote: Total 86915 (delta 0), reused 0 (delta 0), pack-reused 86915
+Receiving objects: 100% (86915/86915), 134.73 MiB | 29.30 MiB/s, done.
+Resolving deltas: 100% (57590/57590), done.
 ----
 
 Great! Now that you have a local copy of Geth, you can compile an executable for your platform.
@@ -355,12 +354,12 @@ Let's make sure +geth+ works without actually starting it running:
 $ <strong>./build/bin/geth version</strong>
 
 Geth
-Version: 1.6.6-unstable
-Git Commit: 58a1e13e6dd7f52a1d5e67bee47d23fd6cfdee5c
+Version: 1.9.11-unstable
+Git Commit: 0b284f6c6cfc6df452ca23f9454ee16a6330cb8e
+Git Commit Date: 20200123
 Architecture: amd64
-Protocol Versions: [63 62]
-Network Id: 1
-Go Version: go1.8.3
+Protocol Versions: [64 63]
+Go Version: go1.13.4
 Operating System: linux
 [...]
 </pre>
@@ -368,15 +367,15 @@ Operating System: linux
 
 Your +geth version+ command may show slightly different information, but you should see a version report much like the one seen here.
 
-Don't run +geth+ yet, because it will start synchronizing the blockchain "the slow way" and that will take far too long (weeks).(((range="endofrange", startref="ix_03clients-asciidoc8")))(((range="endofrange", startref="ix_03clients-asciidoc7"))) The next sections explains the challenge with the initial synchronization of Ethereum's blockchain(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
+The next sections explains the challenge with the initial synchronization of Ethereum's blockchain(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
 
 
 [[first_sync]]
 === The First Synchronization of Ethereum-Based Blockchains
 
-((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange")))Normally, when syncing an Ethereum blockchain, your client will download and validate every block and every transaction since the very start&#x2014;i.e., from the genesis block.
+((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange")))Traditionally, when syncing an Ethereum blockchain, your client would download and validate every block and every transaction since the very start&#x2014;i.e., from the genesis block.
 
-While it is possible to fully sync the blockchain this way, the sync will take a very long time and has high resource requirements (it will need much more RAM, and will take a very long time indeed if you don't have fast storage).
+While it is possible to fully sync the blockchain this way, this type of sync will take a very long time and has high resource requirements (it will need much more RAM, and will take a very long time indeed if you don't have fast storage).
 
 Many Ethereum-based blockchains were the victim of denial-of-service attacks at the end of 2016. Affected blockchains will tend to sync slowly when doing a full sync.
 
@@ -384,11 +383,11 @@ For example, on Ethereum, a new client will make rapid progress until it reaches
 
 If you are syncing with full validation, your client will slow down and may take several days, or perhaps even longer, to validate the blocks affected by the DoS attacks.
 
-((("fast synchronization")))Fortunately, most Ethereum clients include an option to perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
+((("fast synchronization")))Fortunately, most Ethereum clients by default now perform a "fast" synchronization that skips the full validation of transactions until it has synced to the tip of the blockchain, then resumes full validation.
 
-For Geth, the option to enable fast synchronization is typically called +--fast+. You may need to refer to the specific instructions for your chosen Ethereum chain.
+Geth performs fast synchronization by default for Ethereum. You may need to refer to the specific instructions for other chosen Ethereum chain.
 
-Parity does fast synchronization by default.
+Parity also does fast synchronization by default.
 
 [NOTE]
 =====
@@ -397,7 +396,7 @@ Geth can only operate fast synchronization when starting with an empty block dat
 
 ==== Running Geth or Parity
 
-((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Now that you understand the challenges of the "first sync," you're ready to start an Ethereum client and sync the blockchain. For both Geth and Parity, you can use the +--help+ option to see all the configuration parameters. Other than using +--fast+ for Geth, as outlined in the previous section, the default settings are usually sensible and appropriate for most uses. Choose how to configure any optional parameters to suit your needs, then start Geth or Parity to sync the chain. Then wait...
+((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Now that you understand the challenges of the "first sync," you're ready to start an Ethereum client and sync the blockchain. For both Geth and Parity, you can use the +--help+ option to see all the configuration parameters. The default settings are usually sensible and appropriate for most uses. Choose how to configure any optional parameters to suit your needs, then start Geth or Parity to sync the chain. Then wait...
 
 [TIP]
 ====
@@ -411,7 +410,7 @@ Syncing the Ethereum blockchain will take anywhere from half a day on a very fas
 
 Usually, the RPC interface is offered as an HTTP service on port 8545. For security reasons it is restricted, by default, to only accept connections from localhost (the IP address of your own computer, which is 127.0.0.1).
 
-To access the JSON-RPC API, you can use a specialized library (written in the programming language of your choice) that provides "stub" function calls corresponding to each available RPC command, or you can manually construct HTTP requests and send/receive JSON-encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth configured and running, then switch to a new terminal window (e.g., with Ctrl-Shift-N or Ctrl-Shift-T in an existing terminal window) as shown here:
+To access the JSON-RPC API, you can use a specialized library (written in the programming language of your choice) that provides "stub" function calls corresponding to each available RPC command, or you can manually construct HTTP requests and send/receive JSON-encoded requests. You can even use a generic command-line HTTP client, like +curl+, to call the RPC interface. Let's try that. First, ensure that you have Geth up and running, configured with --rpc to allow HTTP access to the RPC interface, then switch to a new terminal window (e.g., with Ctrl-Shift-N or Ctrl-Shift-T in an existing terminal window) as shown here:
 
 ++++
 <pre data-type="programlisting">
@@ -420,7 +419,7 @@ $ <strong>curl -X POST -H "Content-Type: application/json" --data \
   http://localhost:8545</strong>
 
 {"jsonrpc":"2.0","id":1,
-"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
 </pre>
 ++++
 
@@ -451,10 +450,10 @@ The response we receive is:
 
 ----
 {"jsonrpc":"2.0","id":1,
-"result":"Geth/v1.8.0-unstable-02aeb3d7/linux-amd64/go1.8.3"}
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
 ----
 
-This tells us that the JSON-RPC API is being served by Geth client version 1.8.0.
+This tells us that the JSON-RPC API is being served by Geth client version 1.13.4.
 
 Let's try something a bit more interesting. In the next example, we ask the JSON-RPC API for the current price of gas in wei:
 
@@ -524,7 +523,7 @@ https://jaxx.io[Jaxx]:: ((("Jaxx","mobile version")))((("wallets","Jaxx")))A mul
 
 https://status.im[Status]:: ((("Status (mobile wallet)")))A mobile wallet and DApp browser, with support for a variety of tokens and popular DApps. Available for iOS and Android.
 
-https://trustwalletapp.com/[Trust Wallet]:: ((("Trust Wallet")))((("wallets","Trust")))A mobile Ethereum and Ethereum Classic wallet that supports ERC20 and ERC223 tokens. Trust Wallet is available for iOS and Android. 
+https://trustwalletapp.com/[Trust Wallet]:: ((("Trust Wallet")))((("wallets","Trust")))A mobile multi-currency wallet that supports Ethereum and Ethereum Classic as well as ERC20 and ERC223 tokens. Trust Wallet is available for iOS and Android.
 
 https://www.cipherbrowser.com[Cipher Browser]::  ((("Cipher Browser")))A full-featured Ethereum-enabled mobile DApp browser and wallet that allows integration with Ethereum apps and tokens. Available for iOS and Android.
 
@@ -533,7 +532,7 @@ https://www.cipherbrowser.com[Cipher Browser]::  ((("Cipher Browser")))A full-fe
 
 ((("browser wallets")))((("remote clients","browser wallets")))((("wallets","browser wallets")))A variety of wallets and DApp browsers are available as plug-ins or extensions of web browsers such as Chrome and Firefox. These are remote clients that run inside your browser.
 
-Some of the more popular ones are MetaMask, Jaxx, MyEtherWallet/MyCrypto, and Mist.
+Some of the more popular ones are MetaMask, Jaxx, MyEtherWallet, and MyCrypto.
 
 [[MetaMask]]
 ===== MetaMask
@@ -552,13 +551,12 @@ https://jaxx.io[Jaxx], ((("Jaxx","desktop version")))((("wallets","Jaxx")))which
 
 https://www.myetherwallet.com/[MyEtherWallet] ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))is a browser-based JavaScript remote client that offers:
 
-* A software wallet running in JavaScript
 * A bridge to popular hardware wallets such as the Trezor and Ledger
 * A web3 interface that can connect to a web3 instance injected by another client (e.g., MetaMask)
 * An RPC client that can connect to an Ethereum full client
 * A basic interface that can interact with smart contracts, given a contract's address and application binary interface (ABI)
-
-MyEtherWallet is very useful for testing and as an interface to hardware wallets. It should not be used as a primary software wallet, as it is exposed to threats via the browser environment and is not a secure key storage system.
+* A mobile app, MEWConnect, that enables one to use a compatible Android or iOS device to store funds, similarly to a hardware wallet.
+* A software wallet running in JavaScript
 
 [WARNING]
 ====
@@ -568,12 +566,12 @@ You must be very careful when accessing MyEtherWallet and other browser-based Ja
 [[MyCrypto]]
 ===== MyCrypto
 
-((("MyCrypto (wallet)")))((("wallets","MyCrypto")))Just prior to the publication of this book, the ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork," as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and https://mycrypto.com/[MyCrypto]. At the time of the split MyCrypto offered identical functionality as MyEtherWallet, but it is likely that the two projects will diverge as the two development teams adopt different goals and priorities.
+((("MyCrypto (wallet)")))((("wallets","MyCrypto")))In early 2018, the ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))MyEtherWallet project split into two competing implementations, guided by two independent development teams: a "fork," as it is called in open source development. The two projects are called MyEtherWallet (the original branding) and https://mycrypto.com/[MyCrypto]. MyCrypto offers almost identical functionality to MyEtherWallet, but instead of using MEWConnect, it offers a connection to the Parity Signer mobile app. Like MEWConnect, Parity Signer stores keys on the phone and interfaces with MyCrypto in a similar manner as a hardware wallet.
 
 [[Mist]]
-===== Mist
+===== Mist (Deprecated)
 
-https://github.com/ethereum/mist[Mist] ((("Mist (browser-based wallet)")))((("wallets","Mist")))was the first Ethereum-enabled browser, built by the Ethereum Foundation. It contains a browser-based wallet that was the first implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20, was also the main developer of Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-55). Mist runs a full node, and offers a full DApp browser with support for Swarm-based storage and ENS addresses.(((range="endofrange", startref="ix_03clients-asciidoc16")))(((range="endofrange", startref="ix_03clients-asciidoc15")))
+https://github.com/ethereum/mist[Mist] ((("Mist (browser-based wallet)")))((("wallets","Mist")))was the first Ethereum-enabled browser, built by the Ethereum Foundation. It contained a browser-based wallet that was the first implementation of the ERC20 token standard (Fabian Vogelsteller, author of ERC20, was also the main developer of Mist). Mist was also the first wallet to introduce the camelCase checksum (EIP-55). As of March, 2019, Mist was deprecated and should no longer be used.
 
 === Conclusions
 
