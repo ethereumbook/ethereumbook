@@ -1,6 +1,6 @@
-import "Faucet.sol"
+import "Faucet8.sol"
 
-contract Token is mortal {
+contract Token is Mortal {
     Faucet _faucet;
 
     constructor(address _f) {
