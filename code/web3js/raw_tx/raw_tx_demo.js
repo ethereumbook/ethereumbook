@@ -12,7 +12,7 @@ const txData = {
   gasLimit: '0x30000',
   to: '0xb0920c523d582040f2bcb1bd7fb1c7c1ecebdb34',
   value: '0x00',
-  data: '',
+  data: '0x0',
   v: "0x1c", // Ethereum mainnet chainID
   r: 0,
   s: 0 
