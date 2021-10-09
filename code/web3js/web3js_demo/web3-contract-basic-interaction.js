@@ -32,7 +32,7 @@ if (options.infuraFileToken && !options.localRPC) {
   console.log(infura_token);
 
   // Prepare your Infura host url
-  var node_host = `https://kovan.infura.io/${infura_token}`
+  var node_host = `https://kovan.infura.io/v3/${infura_token}`
   
 } else if (options.alchemyFileToken && !options.localRPC) {
   console.log(options.alchemyFileToken);
