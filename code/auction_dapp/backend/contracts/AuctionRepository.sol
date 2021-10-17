@@ -151,7 +151,7 @@ contract AuctionRepository {
     }
     
     /**
-    * @dev Creates an auction with the given informatin
+    * @dev Creates an auction with the given information
     * @param _deedRepositoryAddress address of the DeedRepository contract
     * @param _deedId uint256 of the deed registered in DeedRepository
     * @param _auctionTitle string containing auction title
