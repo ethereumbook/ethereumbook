@@ -1,10 +1,10 @@
 // Load requirements first:
 //
 // npm init
-// npm install ethereumjs-tx
+// npm install @ethereumjs/tx
 //
 // Run with: $ node raw_tx_demo.js
-const ethTx = require('ethereumjs-tx').Transaction;
+const ethTx = require('@ethereumjs/tx').Transaction;
 
 const txData = {
   nonce: '0x0',
@@ -27,8 +27,5 @@ console.log('Tx Hash: 0x' + txHash.toString('hex'))
 // Sign transaction
 const privKey = Buffer.from(
     '91c8360c4cb4b5fac45513a7213f31d4e4a7bfcb4630e9fbf074f42a203ac0b9', 'hex');
-tx.sign(privKey);
-
-serializedTx = tx.serialize();
-rawTx = 'Signed Raw Transaction: 0x' + serializedTx.toString('hex');
-console.log(rawTx)
+signedTx = tx.sign(privKey);
+console.log('Signed Raw Transaction: 0x' + signedTx.serialize().toString('hex'))
