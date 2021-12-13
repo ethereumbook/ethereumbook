@@ -1,6 +1,7 @@
 import "Faucet.sol"
 
 contract Token is mortal {
+
     Faucet _faucet;
 
     constructor(address _f) {
