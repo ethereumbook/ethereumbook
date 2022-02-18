@@ -1,0 +1,422 @@
+[[bab_dompet]]
+== Dompet
+
+((("wallets", id="ix_05wallets-asciidoc0", range="startofrange")))Perkataan "dompet" digunakan untuk menggambarkan beberapa perkara yang berbeza dalam Ethereum.
+
+Pada tahap yang tinggi, dompet adalah aplikasi perisian yang berfungsi sebagai antara muka pengguna utama kepada Ethereum. Dompet mengendalikan akses kepada wang pengguna, menguruskan kunci dan alamat, menjejaki baki, serta membuat dan menandatangani urus niaga. Di samping itu, sesetengah dompet Ethereum juga boleh bertindak balas dengan kontrak, seperti token ERC20.
+
+((("wallets","defined")))Pada tahap yang tinggi, dari sudut pandangan pengaturcara, dompet adalah aplikasi perisian yang berfungsi sebagai antara muka utama pengguna untuk menyimpan dan mengurus kunci pengguna. Setiap dompet mempunyai komponen pengurusan utama. Bagi sesetengah dompet, tidak semuanya ada. Sebahagian dompet lebih luas penggunaannya, iaitu dengan _pelayar_, yang merupakan antara muka kepada aplikasi bukan terpusat Ethereum, atau _DApps_, yang akan kita menguji lebih terperinci di <<decentralized_applications_chap>>. Tiada garis perbezaan yang ketara yang menggabungkan pelbagai variasi dengan yang biasa dalam istilah dompet.
+
+Dalam bab ini kita akan melihat dompet sebagai bekas untuk kunci peribadi, dan sebagai sistem untuk menguruskan kunci-kunci ini.
+
+[[wallet_tech_overview]]
+=== Ikhtisar Teknologi Dompet
+
+((("wallets","technology overview", id="ix_05wallets-asciidoc1", range="startofrange")))Dalam bahagian ini, kita merumuskan pelbagai teknologi yang digunakan untuk membina dompet Ethereum yang mesra pengguna, selamat, dan boleh lentur guna.
+
+Salah satu pertimbangan utama dalam mereka bentuk dompet adalah mengimbangi kemudahan dan kerahsiaan. Dompet Ethereum yang paling biasa adalah dengan kunci peribadi tunggal dan alamat yang anda guna semula untuk semua urusan. Malangnya, penyelesaian sedemikian adalah mimpi buruk bagi kerahsiaan, kerana sesiapa sahaja boleh menjejaki dan mengaitkan semua urusniaga anda. Menggunakan kunci baharu untuk setiap transaksi adalah yang terbaik untuk diri sendir, tetapi menjadi sangat sukar untuk diurus. Keseimbangan yang betul amat sukar untuk dicapai, inilah sebabnya mengapa reka bentuk dompet yang bagus adalah yang paling utama untuk dipilih.
+
+Tanggapan salah mengenai Ethereum ialah dompet Ethereum mengandungi ether atau token. Sebenarnya, dompet hanya memegang kunci. Ether dan matawang kripto yang lain, direkodkan di blok Ethereum. Pengguna mengawal token kripto di rangkaian dengan menandatangani transaksi dengan kunci di dompet mereka. ((("keychains")))Dalam erti kata lain, dompet Ethereum adalah _rantai kunci_. Memandangkan kekunci yang dipegang oleh dompet adalah satu-satunya perkara yang diperlukan untuk memindahkan ether atau token kepada orang lain, tetapi secara lazimnya perbezaan ini agak tidak berkaitan langsung. Adalah penting mengubah tanggapan minda seseorang yang biasa berurusan dengan sistem perbankan konvensional terpusat (iaitu antaranya di mana hanya anda dan bank, boleh melihat wang dalam akaun anda, dan anda hanya perlu meyakinkan bank bahawa anda ingin memindahkan dana untuk membuat urusniaga) kepada pemikiran baharu iaitu sistem platform rantai blok yang bukan terpusat (di mana semua orang dapat melihat baki akaun ether, walaupun mereka tidak mengetahui pemilik akaun itu, dan setiap orang perlu yakin pemilik mahu mengalihkan dana supaya transaksi berlaku). Secara lazimnya, ini bermakna terdapat cara yang bebas untuk memeriksa baki akaun, tanpa memerlukan dompet. Lebih-lebih lagi, anda boleh bertukar akaun anda dari dompet semasa anda ke dompet yang berlainan, jika anda sudah muak dengan aplikasi dompet yang sedang anda gunakan sekarang.
+
+[NOTA]
+====
+Dompet Ethereum mengandungi kekunci, bukan ether atau token. Dompet adalah seperti gantungan kunci yang mengandungi sepasang kunci peribadi dan awam. Pengguna menandatangani transaksi dengan kunci peribadi, dengan itu membuktikan mereka pemilik ether. Ether disimpan di rantai blok.
+====
+
+Terdapat dua jenis dompet utama, dibezakan oleh sama ada kunci yang mereka masukkan itu berkaitan sama ada antara satu sama lain.
+
+((("nondeterministic (random) wallets", id="ix_05wallets-asciidoc2", range="startofrange")))((("random (nondeterministic) wallets", id="ix_05wallets-asciidoc3", range="startofrange")))((("wallets","nondeterministic", id="ix_05wallets-asciidoc4", range="startofrange")))Jenis pertama ialah dompet _tidak tetap_, di mana setiap kunci dihasilkan secara bebas daripada nombor rawak yang berbeza. Kunci tidak berkaitan dengan satu sama lain. ((("JBOK wallets", seealso="nondeterministic (random) wallets")))Jenis domp[et ini dikenali sebagai dompet JBOK, fdari perkataan sekadar kekunci yakni "Just a Bunch of Keys.&#x201d;
+
+((("deterministic (seeded) wallets","defined")))((("wallets","deterministic")))Jenis dompet yang kedua adalah _dompet ditentukan_, di mana semua kunci diperoleh dari satu kunci induk tunggal, yang dikenali sebagai _benih_ (seed). Semua kekunci dalam dompet jenis ini berkaitan dengan satu sama lain dan boleh dijana lagi jika seseorang mempunyai benih asal.((("key derivation methods")))Terdapat beberapa kaedah _turunan kunci_ yang berbeza digunakan dalam dompet deterministik ini. Kaedah turunan yang paling biasa digunakan menggunakan struktur seperti pepohon, seperti yang dijelaskan dalam<<hd_wallets>>.
+
+((("mnemonic code words")))((("seeds","mnemonic code words for")))Untuk membuat dompet jenis deterministik, ia sedikit lebih selamat jika melibatkan musibah kehilangan data, seperti mempunyai telefon anda dicuri atau terjatuh dalam lubang jamban. Benih dikodkan dalam senarai perkataan (dalam bahasa Inggeris atau bahasa lain) yang perlu ditulis dan digunakan sekiranya berlaku sesuatu yang tidak diduga pada telefon mudah alih anda. Ini dikenali sebagai dompet _kata kunci kod mememonik_. Sudah tentu, jika seseorang mendapat perkataan mnemonik ini, maka mereka juga boleh mencipta dompet dari akaun anda dan mendapat akses kepada kontrak ether dan kontrak pintar anda. Oleh itu, berhati-hati dengan senarai perkataan pemulihan ini! Jangan disimpan secara elektronik, dalam fail, pada komputer atau telefon itu. Tuliskannya di atas kertas dan simpan di tempat yang tempat selamat dan peti besi.
+
+Beberapa bahagian seterusnya adalah pengenalan setiap teknologi pada tahap tinggi.
+
+
+[[random_wallet]]
+==== Dompet Tidak Tetap (Rawak)
+
+Dalam dompet Ethereum pertama (yang dihasilkan untuk pra-jualan Ethereum), setiap fail dompet menyimpan kunci peribadi yang dijana secara rawak. Dompet sedemikian digantikan dengan dompet tetap (deterministik) kerana dompet-dompet jenis "lama" sebenarnya bertahap rendah. Sebagai contoh, Mengelakkan kitar-semula alamat Ethereum dianggap suatu amalan yang baik sebagai sebahagian daripada meningkatkan lagi kerahsiaan anda semasa menggunakan Ethereum&#x2014;iaitu, menggunakan alamat baharu (yang memerlukan kunci peribadi yang baru) setiap kali anda menerima dana. Anda boleh terus menggunakan alamat baru untuk setiap transaksi, walaupun ianya menelan sedikit belanja gas jika anda berurusan dengan banyak token. Untuk mengikuti amalan ini, dompet bukan deterministik perlu sentiasa mempunyai banyak senarai kekuncinya, yang bermaksud anda perlu membuat sandaran tetap. Jika anda kehilangan data (kegagalan cakera, tertumpah air, telefon dicuri) sebelum anda berjaya membuat sandaran dompet anda, anda akan kehilangan hak memasuki kepada dana dan kontrak pintar anda sendiri. Dompet "jenis 0" ini adalah yang paling sukar untuk dikendalikan, kerana ia akan mencipta fail dompet baharu dengan alamat baharu "pada waktu" anda masuk semula.
+
+((("keystore file")))Walau bagaimanapun, banyak klien Ethereum (termasuk +geth+) menggunakan fail _keystore_, iaitu fail stor kunci yang dikodkan dengan JSON yang mengandungi kunci peribadi tunggal (dijana secara rawak), disulitkan oleh frasa laluan untuk keselamatan tambahan. Kandungan fail JSON kelihatan seperti ini:
+
+[[keystore_example]]
+[source,json]
+----
+{
+    "address": "001d3f1ef827552ae1114027bd3ecf1f086ba0f9",
+    "crypto": {
+        "cipher": "aes-128-ctr",
+        "ciphertext":
+            "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
+        "cipherparams": {
+            "iv": "d10c6ec5bae81b6cb9144de81037fa15"
+        },
+        "kdf": "scrypt",
+        "kdfparams": {
+            "dklen": 32,
+            "n": 262144,
+            "p": 1,
+            "r": 8,
+            "salt":
+                "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
+        },
+        "mac": "594c8df1c8ee0ded8255a50caf07e8c12061fd859f4b7c76ab704b17c957e842"
+    },
+    "id": "4fcb2ba4-ccdb-424f-89d5-26cce304bf9c",
+    "version": 3
+}
+----
+
+((("key derivation function (KDF)")))((("password stretching algorithm")))Format utama menggunakan _fungsi turunan kunci_ (KDF), juga dikenali sebagai algoritma peregangan kata laluan, yang melindungi terhadap serangan kekerasan (brute-force), kamus, dan serangan pelangi meja (rta). Sebenarnya, kunci peribadi tidak disulitkan oleh frasa laluan secara langsung. Sebaliknya, frasa laluan adalah _terenggang_, dengan berkali-kali tercincang. Fungsi hash diulangi 262,144 pusingan, yang boleh dilihat di stor kunci JSON sebagai parameter +crypto.kdfparams.n+. Seorang penyerang yang cuba serang paksa frasa laluan itu, hendaklah mengisi 262,144 pusingan cincang bagi setiap percubaan frasa kata laluan, inilah yang memperlahankan serangan itu dan menjadikan ianya tidak mudah bagi menghuraikan frasa untuk kata laluan yang cukup kompleks dan panjang.
+
+Terdapat beberapa perpustakaan perisian yang boleh membaca dan menulis format kunci storan, seperti pustaka JavaScript https://github.com/ethereumjs/keythereum[+keythereum+].
+
+[PETUA]
+====
+Penggunaan dompet bukan-deterministik tidak digalakkan melainkan untuk cuba-cuba sahaja. Ianya terlalu rumit untuk disandarkan dan digunakan ianya terlalu bersifat asas. Sebaliknya, gunakan piawaian industri&#x2013;berasaskan dompet HD dengan benih mnemonic untuk sandaran.(((range="endofrange", startref="ix_05wallets-asciidoc4")))(((range="endofrange", startref="ix_05wallets-asciidoc3")))(((range="endofrange", startref="ix_05wallets-asciidoc2")))
+====
+
+[[deterministic_wallets]]
+==== Dompet Deterministik (Terbenih)
+
+((("deterministic (seeded) wallets","about")))((("wallets","deterministic")))Dompet deterministik iaitu yang menentukan atau "terbenih" adalah dompet yang mengandungi kunci peribadi yang semuanya berasal dari satu kunci utama, disebut juga benih. Benih adalah nombor yang dijana secara rawak yang digabungkan dengan data lain, seperti nombor indeks atau "kod rantaian" (lihat <<extended_keys>>), untuk memperoleh kunci peribadi. Dalam dompet deterministik, satu benih sudah mencukupi untuk memulihkan semua kunci yang diperoleh, maka hanya sekali sandaran pada masa penciptaan, sudah cukupi untuk menjamin keselamatan semua dana dan kontrak pintar dalam dompet. Benih ini juga boleh mengeksport atau mengimport ke mana-mana dompet, mempermudahkan penghijrahan semua kunci antara dompet yang berbeza.
+
+Reka bentuk ini menjadikan keselamatan benih sangat penting, kerana hanya benih yang diperlukan untuk mendapatkan akses kepada seluruh dompet. Dalam erti kata lain, menumpukan usaha hanya pada keselamatan sekeping data adalah dilihat sebagai kelebihan.
+
+[[hd_wallets]]
+==== Dompet Hirarki Deterministik (BIP-32/BIP-44)
+
+((("Bitcoin improvement proposals (BIPs)","Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))((("hierarchical deterministic wallets (BIP-32/BIP-44)")))Dompet  Deterministik telah dibangunkan untuk bagi memudahkan untuk mendapatkanpenghasilan banyak kunci dari satu benih sahaja. Pada masa ini, bentuk dompet deterministik yang paling maju ialah dompet _deterministik berhirarki_ (HD) yang ditakrif oleh http://bit.ly/2B2vQWs[_BIP-32 standard_] Bitcoin. Dompet HD mengandungi kekunci yang diturunkan sebagaimana struktur batang pokok dan dedahan, oleh itu ibu kunci (benih) boleh memperoleh anak kunci, yang masing-masing juga dapat memperoleh cucu, cicit, dan sebagainya. Struktur pokok ini digambarkan di dalam <<hd_wallets_figure>>.
+
+[[hd_wallets_figure]]
+.Dompet HD: pepohon kunci yang dijana hanya dari satu benih
+image::images/hd_wallet.png["HD wallet"]
+
+Dompet HD menawarkan beberapa kelebihan utama ke atas dompet deterministik. Pertama, struktur pokok boleh digunakan untuk menyatakan makna organisasi tambahan, seperti apabila cabang khusus sub-kunci digunakan untuk menerima bayaran masuk dan cawangan lain digunakan untuk menerima perubahan daripada pembayaran keluar. Cawangan kunci juga boleh digunakan dalam syarikat korporat, dengan memperuntukkan cawangan yang berbeza kepada jabatan, anak syarikat, fungsi tertentu, atau kategori perakaunan.
+
+Kelebihan yang kedua dompet HD adalah pengguna dapat membuat urutan kunci awam tanpa perlu masuk kepada kunci peribadi. Ini membolehkan dompet HD digunakan pada pelayan yang tidak selamat, dalam kapasiti tengok-sahaja dan terima-sahaja, iaitu kapasiti di mana dompet yang tidak mempunyai kunci peribadi dibolehkan membelanjakan dana
+
+[[mnemonic_codes]]
+==== Benih dan Kod Mnemonik (BIP-39)
+
+((("BIP-39 standard")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)")))((("mnemonic code words","BIP-39")))((("seeds","mnemonic code words for", seealso="mnemonic code words")))((("wallets","mnemonic codes (BIP-39)")))Terdapat banyak cara untuk mengekod kekunci peribadi untuk tujuan sandaran mahupun proses mendapatkan semula dompet. Kaedah yang digemari, menggunakan urutan kata-kata di mana ianya disusunkan bersama dalam urutan yang betul, secara uniknya mampu menghasilkan kekunci peribadi. Ia dikenali sebagai _mnemonik_, dan pendekatan telah diseragamkan oleh http://bit.ly/2OEMjUz[BIP-39]. Hari ini, banyak dompet Ethereum (serta dompet untuk matawang kripto yang lain) menggunakan piawaian ini, boleh mengimport dan mengeksport benih untuk tujuan sandaran dan pemulihan menggunakan mnemonik yang boleh guna.
+
+Untuk mengetahui mengapa pendekatan ini menjadi masyhur, mari kita lihat contohnya:
+
+[[hex_seed_example]]
+.Benih dompet deterministik, dalam hex
+----
+FCCF1AB3329FD5DA3DA9577511F8F137
+----
+
+[[mnemonic_seed_example]]
+.Benih untuk dompet deterministik, terdiri dari 12-ayat mnemonik
+----
+wolf juice proud gown wool unfair
+wall cliff insect more detail hub
+----
+
+Secara kelaziman, kemungkinan ralat ketika menulis urutan hex kemungkinan ada. Sebaliknya, senarai kata-kata yang diketahui agak mudah diatasi, terutamanya kerana terdapat berlebih-lebihan dalam penulisan kata-kata (terutamanya kata-kataperkataan bahasa Inggeris). Jika "inzect" telah direkod secara tidak sengaja, ia dapat ditentukan dengan cepat, apabila keperluan untuk pemulihan dompet, bahawa "inzect" bukanlah perkataan bahasa Inggeris yang sah dan "seranggainsect" sepatutnya digunakan. Kita bercakap tentang menulis perwakilan benih kerana ini adalah amalan yang baik semasa mengurus dompet HD kerana benih diperlukan untuk mendapatkan dompet dalam kes kehilangan data (sama ada melalui kemalangan atau kecurian), jadi tindakan menyimpan kata sandaran ini tersangatlah bijak. Walau bagaimanapun, benih mesti disimpan dengan penuh rahsia, sandaran secara digital harus dielakkan. Nasihat kami, salin dengan pen dan kertas.
+
+Ringkasnya, penggunaan senarai perkataan pemulihan bagi tujuan mengekodkan benih dompet HD akan menjadikan ianya cara paling mudah untuk mengeksport kunci dengan selamat, menyalin, merakam di atas kertas, membaca tanpa kesilapan, dan mengimport kunci peribadi ke dalam dompet lain.(((range="endofrange", startref="ix_05wallets-asciidoc1")))
+
+
+[[wallet_best_practices]]
+=== Amalan Terbaik Dompet
+
+((("wallets","best practices for", id="ix_05wallets-asciidoc5", range="startofrange")))Oleh kerana teknologi dompet cryptocurrency telah matang, piawaian industri biasa tertentu telah muncul dan menghasilkan dompet secara meluas yang dapat digunakan, selamat, dan fleksibelboleh lentur guna. Piawaian-piawaian ini juga membolehkan dompet untuk mendapatkan kunci untuk pelbagai matawang kripto yang berbeza, semua dari hanya satu mnemonik. Piawaian umum ini ialah:
+
+* Mnemonic code words, based on BIP-39
+* HD wallets, based on BIP-32
+* Multipurpose HD wallet structure, based on BIP-43
+* Multicurrency and multiaccount wallets, based on BIP-44
+
+Piawaian-piawaian ini boleh berubah atau dimansuhkan oleh perkembangan masa depan, tetapi pada masa ini, ia membentuk satu set teknologi saling berkait yang telah menjadi piawai utama bagi kebanyakan platform rantai blok dan kriptografi.
+
+Piawaian telah diterima pakai oleh sebilangan besar dompet perisian dan perkakasan, menjadikan semua dompet ini saling beroperasi. Pengguna boleh mengeksport mnemonik yang dihasilkan dari mana-mana dompet HD dan mengimportnya ke dompet HD yang lain, dalam masa yang sama, memulihkan semua kekunci dan alamat asal miliknya.
+
+Beberapa contoh dompet perisian yang menyokong piawaian ini termasuk (tersenarai mengikut abjad) Jaxx, MetaMask, MyCrypto, dan MyEtherWallet (MEW). ((("hardware wallets")))Contoh dompet perkakasan yang menyokong piawaian ini termasuk Keepkey, Lejar, dan Trezor.
+
+Bahagian berikut kajian setiap teknologi ini secara terperinci.
+
+[PETUA]
+====
+Jika anda menggunakan dompet Ethereum, ia haruslah dibina dari dompet HD, dengan benih yang dikodkan dengan kod mnemonik sebagai sandaran, mengikut piawaian BIP-32, BIP-39, BIP-43, dan BIP-44, seperti yang dijelaskan dalam bahagian berikut.
+====
+
+[[bip39]]
+[[mnemonic_code_words]]
+==== Kata-kata Kod Mnemonik (BIP-39)
+
+((("BIP-39 standard", id="ix_05wallets-asciidoc6", range="startofrange")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)", id="ix_05wallets-asciidoc7", range="startofrange")))((("mnemonic code words","BIP-39", id="ix_05wallets-asciidoc8", range="startofrange")))((("wallets","mnemonic codes (BIP-39)", id="ix_05wallets-asciidoc9", range="startofrange")))Kata-kata kod mnemonik adalah urutan perkataan yang mengekodkan nombor rawak, apabila benih digunakan untuk mendapatkan dompet deterministik. Urutan perkataan yang cukup untuk ciptaan semula benih, dan dari sanaitu ia mencipta dompet dan semua kunci yang pernah dihasilkan. Aplikasi dompet yang menerapkan dompet deterministik dengan frasa mnemonik akan menunjukkan urutan 12 hingga 24 perkataan (berbahasa Inggeris) dipermulaan mencipta dompet. Susunan perkataan itu adalah sebagai sandaran dompet, dan boleh digunakan untuk memulihkan dompet semula dan mencipta semua jenis kekunci alamat kripto dalam aplikasi dompet HD yang sama atau dompet HD jenama lain. Seperti yang telah dijelaskan dalam bab , senarai perkataan mnemonik memudahkan pengguna untuk membuat sandaran dompet, kerana ia mudah dibaca dan  pass: [<span class="keep-together">transkrip</span>] sebenar.
+
+[NOTA]
+====
+((("brainwallets, mnemonic words vs.")))Kata-kata mnemonik sering dikelirukan dengan "dompet_otak" (brain wallet). Ia berbeza sama sekali. Perbezaan utama dompet otak itu terdiri daripada kata-kata yang dipilih oleh pengguna, sedangkan frasa mnemonik dibuat secara rawak oleh dompet HD dan diberikan frasa itu kepada pengguna. Perbezaan penting ini menjadikan kata-kata mnemonik jauh lebih selamat, kerana sumber rawak kemanusiaan adalah sangat daif. Yang ketara, penggunaan dompet otak; perkataan itu wajib diingati, inilah idea yang teruk, kerana anda tidak akan berniat untuk mempunyai sandaran dan akan menjadi masalah di saat anda memerlukannya ketika terlupa.
+====
+
+Kod mnemonik ditakrifkan dalam BIP-39. Perhatikan bahawa BIP-39 adalah salah satu pelaksanaan piawaian kod mnemonik. Terdapat piawai yang berbeza, dengan set perkataan yang berbeza yang telah digunakan oleh dompet Electrum Bitcoin kerana mendahului tarik terbitan BIP-39. BIP-39 telah dicadangkan oleh syarikat yang menghasilkan dompet perkakas jenama Trezor dan ianya tidak sesuai dengan pelaksanaan Electrum. Bagaimanapun, BIP-39 kini telah mencapai sokongan industri yang meluas di dalam puluhan pelaksanaan saling boleh guna dan ianya harus dipertimbangkan sebagai piawaian industri. Selain itu, BIP-39 boleh digunakan untuk menghasilkan dompet pelbagai matawang yang menyokong Ethereum, sedangkan benih Electrum tidak berkebolehan seperti itu.
+
+BIP-39 mentakrifkan penciptaan kod dan benih mnemonik, yang kami akan terangkan di sini dalam sembilan langkah. Untuk lebih jelas, prosesnya dibahagikan kepada dua bahagian: langkah 1 hingga 6 dipaparkan di <<generating_mnemonic_words>> and langkah 7 hingga 9 ditunjukkan di <<mnemonic_to_seed>>.
+
+[[generating_mnemonic_words]]
+===== Menghasilkan kata-kata mnemonik
+
+((("BIP-39 standard","generating code words with")))((("checksum","in mnemonic code word generation")))((("mnemonic code words","generating")))Perkataan mnemonik dijana secara automatik oleh dompet menggunakan proses piawai yang ditakrifkan dalam BIP-39. Dompet bermula dari sumber penyimpanan data, menambah semak jumlah, dan kemudian memetakan semua itu (entropi) ke senarai perkataan:
+
+1. Buat urutan rawak kriptografi +S+ dari 128 ke 256 bit.
+2. Cipta semak jumlah +S+ dengan mengambil panjang ++S++ ÷ 32 bit yang pertama bagi hash SHA-256 +S+.
+3. Menambahkan semak jumlah pada akhir turutan rawak +S+.
+4. Membahagi 11 bits hubungan turutan-dan-semak jumlah.
+5. Memetakan nilai 11-bit kepada perkataan dari yang diperoleh dari kamus sebanyak 2,048 patah perkataan.
+6. Menghasilkan kod mnemonik dari urutan perkataan, lalu mengekalkan arahan itu.
+
+<<generating_entropy_and_encoding>> menunjukkan bagaimana entropi digunakan dalam penjanaan perkataan mnemonik.
+
+<<table_bip39_entropy>>mempamerkan hubung kait antara saiz data entropi dengan panjang kod mnemonik dalam perkataan.
+
+[[table_bip39_entropy]]
+Kod metoni: entropi dan panjang perkataan
+[options="header"]
+|=======
+|Entropi (bits) | Checksum (bit) | Entropi *+* checksum (bit) | Panjang Mnemonik (perkataan)
+| 128 | 4 | 132 | 12
+| 160 | 5 | 165 | 15
+| 192 | 6 | 198 | 18
+| 224 | 7 | 231 | 21
+| 256 | 8 | 264 | 24
+|=======
+
+[[generating_entropy_and_encoding]]
+[role="smallerseventy"]
+. Menjana entropi dan mengekod sebagai perkataan mnemonik
+image::images/bip39-part1.png["Generating entropy and encoding as mnemonic words"]
+
+[[mnemonic_to_seed]]
+===== Dari mnemonik hingga kepada benih
+
+((("BIP-39 standard","deriving seed from mnemonic words")))((("seeds","deriving from mnemonic code words"))) Perkataan mnemonik mewakili entropi dengan panjang 128 hingga 256 bit. Himpunan data (entropi) kemudiannya digunakan untuk mendapatkan benih lebih panjang (512-bit) melalui penggunaan fungsi peregangan utama ((("PBKDF2 function")))PBKDF2. Benih yang dihasilkan digunakan untuk membina dompet deterministik dan memperoleh kuncinya.
+
+((("key-stretching function")))((("salts")))Fungsi kunci peregangan ada dua ukuran: mnemonik dan _salt_. Tujuan salt dalam fungsi peregangan utama adalah untuk menjadikannya sukar untuk membina sebuah jadual carian yang membolehkan serangan keras akan berlaku. Dalam piawaian BIP-39, salt mempunyai maksud lain: ia membolehkan pengenalan frasa laluan yang berfungsi sebagai faktor keselamatan tambahan yang melindungi benih, seperti yang akan kita gambarkan dengan lebih terperinci dalam <<mnemonic_passphrase>>.
+
+Proses yang diterangkan dalam langkah 7 hingga 9 terus dari proses yang dijelaskan dalam bahagian sebelumnya:
+
+[start=7]
+7. Parameter pertama untuk fungsi pembesaran utama PBKD2 adalah _mememonik_ yang dihasilkan dalam langkah 6.
+8. Parameter kedua pada fungsi pembesaran utama PBKD2 adalah _salt_. Ia terdiri daripada rentetan +"mnemonic"+ digabungkan dengan kata laluan pengguna yang dibekalkan.
+9. Regangan PBKDF2 dalam ukuran mnemonik dan salt menggunakan 2,048 pusingan cincang dengan algoritma HMAC-SHA512, menghasilkan nilai 512-bit sebagai output muktamadnya. Nilai 512-bit adalah benih.
+
+<<mnemonic_to_seed_figure>> menunjukkan bagaimana mnemonik digunakan untuk menjana benih.
+
+[[mnemonic_to_seed_figure]]
+Dari mnemonik hingga benih
+image::images/bip39-part2.png["From mnemonic to seed"]
+
+[NOTA]
+====
+Fungsi kunci peregangan, dengan 2,048 cincangannya, ia perlindungan yang agak berkesan terhadap serangan kerasn terhadap mnemonik atau frasa laluan. Ia tidak berbaloi (dalam pengiraan) untuk menggodam lebih daripada beberapa ribu frasa laluan dan kombinasi mnemonik, manakala bilangan biji yang diperoleh mungkin  (2^512^, or about 10^154^)&#x2014;jauh lebih besar daripada bilangan atom dalam alam semesta yang kelihatan (kira-kira 10^80^).
+====
+
+Jadual pass:[<a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_no_pass">#mnemonic_128_no_pass</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_w_pass">#mnemonic_128_w_pass</a>, dan <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_256_no_pass">#mnemonic_256_no_pass</a>] menunjukkan contoh kod mnemonik dan benih yang dihasilkan.
+
+[[mnemonic_128_no_pass]]
+.128-bit kon mnemonik entropi, tiada frasa laluan, menghasilkan benih
+[cols="h,"]
+|=======
+| *input Entropi (128 bit)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemonik (12 perkataan)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Frasa Laluan*| (tiada)
+| *Benih  (512 bit)* | +5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39+
++a88b76373733891bfaba16ed27a813ceed498804c0570+
+|=======
+
+[[mnemonik_128_w_pass]]
+.128-bit entropi kod mnemonik  , dengan frasa laluan, menghasilkan benih
+[cols="h,"]
+|=======
+| *input Entropi (128 bit)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemonik (12 perkataan)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Frasa Laluan*| SuperDuperSecret
+| *Benih  (512 bit)* | +3b5df16df2157104cfdd22830162a5e170c0161653e3afe6c88defeefb0818c793dbb28ab3ab091897d0+
++715861dc8a18358f80b79d49acf64142ae57037d1d54+
+|=======
+
+[role="pagebreak-before"]
+[[mnemonic_256_no_pass]]
+.256-bit entropi kod mnemonik, tiada frasa laluan, menghasilkan benih
+[cols="h,"]
+|=======
+| *input Entropi (256 bits)* | +2041546864449caff939d32d574753fe684d3c947c3346713dd8423e74abcf8c+
+| *Mnemonik (24 perkataan)* | +cake apple borrow silk endorse fitness top denial coil riot stay wolf
+luggage oxygen faint major edit measure invite love trap field dilemma oblige+
+| *Frasa Laluan*| (tiada)
+| *Benih (512 bits)* | +3269bce2674acbd188d4f120072b13b088a0ecf87c6e4cae41657a0bb78f5315b33b3a04356e53d062e5+
++5f1e0deaa082df8d487381379df848a6ad7e98798404+
+|=======
+
+[[mnemonic_passphrase]]
+===== Pilihan Frasa Laluan Dalam BIP-39
+
+((("BIP-39 standard","optional passphrase with")))((("mnemonic code words","optional passphrase in BIP-39")))((("passphrases")))((("seeds","optional passphrase with")))Piawaian BIP-39 membolehkan penggunaan frasa laluan pilihan dari terbitan benih. Sekiranya tiada frasa laluan digunakan, maka mnemonik diregangkan dengan salt yang terdiri daripada rentetan +"mnemonic"+, menghasilkan benih 512-bit khusus dari mana-mana mnemonik tertentu. Jika frasa laluan digunakan, fungsi regangan menghasilkan benih _berbeza_dari mnemonik yang sama. Sebenarnya, diberikan satu mnemonik, setiap frasa laluan yang mungkin membawa kepada benih yang berbeza. Pada asasnya, tidak ada frasa laluan "salah". Kesemua kata laluan itu adalah sah dan semuanya membawa kepada biji benih yang berbeza, membentuk satu set dompet yang belum ditetapkan. Set frasa dompet sangat luas (2^512^), tiada kemungkinan perbuatan menggodam paksa atau meneka secara tidak sengaja, dapat menembusinya kerana ianya cukup panjang lagi kompleks.
+
+[PETUA]
+====
+Tidak terdapat frasa laluan "salah" dalam BIP-39. Setiap frasa laluan membawa kepada beberapa dompet, melainkan yang digunakan sebelumnya, akan dikosongkan.
+====
+
+Frasa laluan pilihan mewujudkan dua ciri penting:
+
+* Faktor kedua (sesuatu yang diingati) yang membuat mnemonik sia-sia dengan sendirinya, lindungilah sandaran mnemonik daripada dirampas oleh pencuri.
+
+* ((("duress wallet")))((("wallets","duress wallet")))Satu bentuk kebolehan menafikan apa yang berlaku atau "duress wallet," di mana frasa laluan yang dipilih membawa kepada dompet mempunyai sedikit dana, digunakan untuk mengalihkan tumpuan penggodam dari dompet "sebenar" yang mengandungi dana sebenar.
+
+[role="pagebreak-before"]
+Walau bagaimanapun, adalah penting untuk diambil perhatian bahawa penggunaan frasa laluan juga terdapat risiko kerugian:
+
+* Jika pemilik dompet tidak berupaya atau mati dan tiada siapa yang tahu frasa laluan, benih tidak berguna lagi dan semua dana yang disimpan dalam dompet anggaplah pergi selama-lamanya.
+
+* Sebaliknya, jika pemilik menyandarkan frasa laluan di tempat yang sama dengan benih, dia tewas dengan tujuan faktor kedua.
+
+Walaupun frasa laluan sangat berguna, ianya hanya perlu digunakan dengan proses yang dirancang dengan teliti untuk sandaran dan pemulihan, memandangkan kemungkinan ahli waris masih hidup maka pewaris dapat mengambil alih matawang kripto itu..
+
+[[working_mnemonic_codes]]
+===== Bekerja dengan kod mnemonik
+
+((("BIP-39 standard","libraries")))((("BIP-39 standard","working with mnemonic codes")))BIP-39 dilaksanakan sebagai pustaka dalam banyak bahasa pengaturcaraan yang berbeza. Sebagai contoh:
+
+https://github.com/trezor/python-mnemonic[python-mnemonic]: Pelaksanaan rujukan piawai oleh pasukan SatoshiLabs yang mencadangkan BIP-39, dalam Python
+
+https://github.com/ConsenSys/eth-lightwallet[ConsenSys/eth-lightwallet]:: Dompet ringan JS Ethereum untuk nod dan pelayar (dengan BIP-39)
+
+https://www.npmjs.com/package/bip39[npm/bip39]:: Pelaksanaan JavaScript Bitcoin BIP-39: Kod mnemonik untuk menghasilkan kekunci dompet penentu (HD)
+
+Terdapat juga penjana BIP-39 yang dilaksanakan dalam halaman sesawang bersendiri (<<a_bip39_generator_as_a_standalone_web_page>>), yang amat berguna bagi tujuan ujian dan eksperimen. Kod mnemonik https://iancoleman.io/bip39/[Mnemonic Code Converter] menjana mnemonik, benih, dan menyambung kunci peribadi. Ia boleh digunakan di luar talian dalam pelayar, atau diakses secara dalam talian. (((range="endofrange", startref="ix_05wallets-asciidoc9")))(((range="endofrange", startref="ix_05wallets-asciidoc8")))(((range="endofrange", startref="ix_05wallets-asciidoc7")))(((range="endofrange", startref="ix_05wallets-asciidoc6")))
+
+[[a_bip39_generator_as_a_standalone_web_page]]
+Sebuah penjana BIP-39 sebagai laman web yang berdiri sendirian (standalone).
+image::images/bip39_web.png["BIP-39 generator web-page"]
+
+[[create_hd_wallet]]
+==== Mewujudkan Wallet HD dari Benih
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","creating from root seed")))((("root seeds, creating HD wallets from")))((("wallets","creating HD wallets from root seed")))Dompet HD dicipta dari satu _benih akar_ tunggal, iaitu nombor rawak 128-, 256-, atau 512-bit. Kebiasaannya, benih ini dihasilkan dari molekul seperti yang terperinci di bahagian sebelumnya.
+
+Setiap kunci dalam dompet HD ditentukan secara deterministik dari benih akar ini, yang memungkinkan untuk mencipta dompet HD keseluruhan dari benih itu dalam mana-mana dompet HD yang serasi. Ini memudahkan untuk mengeksport, menyandarkan, memulihkan, dan mengimport dompet HD yang mengandungi beribu-ribu atau bahkan berjuta-juta kunci dengan memindahkan hanya dari mnemonik dari mana benih akar diperoleh.
+
+[[bip32_bip43_44]]
+==== Dompet HD (BIP-32) dan Lorong (BIP-43/44)
+
+((("Bitcoin improvement proposals (BIPs)","Multipurpose HD Wallet Structure (BIP-43)", id="ix_05wallets-asciidoc10", range="startofrange")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","HD wallets (BIP-32) and paths (BIP-43/44)", id="ix_05wallets-asciidoc11", range="startofrange")))Kebanyakkannya dompet HD mengikuti ((("BIP-32 standard","HD wallets and", id="ix_05wallets-asciidoc12", range="startofrange")))Piawaian BIP-32, yang telah menjadi piawaian industri _de facto_ untuk janaan kunci deterministik.
+
+Kami tidak akan membincangkan semua butiran BIP-32 di sini, hanya komponen yang diperlukan untuk memahami bagaimana ia digunakan dalam dompet. Aspek penting utama ialah hubungan hierarki seperti pohon yang mungkin untuk kunci yang diperoleh, seperti yang anda lihat dalam <<hd_wallets_figure>>. Ia juga penting untuk memahami ilham penyumbang kepada _penyambungan kunci_ yang dijelaskan dalam bahagian berikut.
+
+Terdapat berpuluh-puluh pelaksanaan saling boleh guna BIP-32 yang ditawarkan di banyak pustaka perisian. Kebanyakannya direka untuk dompet Bitcoin, yang melaksanakan alamat dengan cara yang berbeza, tetapi berkongsi pelaksanaan yang sama seperti dompet Ethereum serasi BIP-32. Gunakan yang direka untuk Ethereum yakni https://github.com/ConsenSys/eth-lightwallet[designed Ethereum], atau ambil satu dari Bitcoin dengan menambah pustaka pengekod alamat Ethereum.
+
+Terdapat juga penjana BIP-32 yang dilaksanakan sebagai laman sesawang http://bip32.org/[standalone] yang sangat berguna untuk ujian dan eksperimen dengan BIP-32.
+
+[AMARAN]
+====
+Penjana BIP-32 yang berdiri sendiri bukanlah laman HTTPS. Itu untuk mengingatkan anda bahawa penggunaan alat ini tidak selamat. Ia hanya untuk ujian. Anda tidak boleh menggunakan kunci yang dihasilkan oleh laman sesawang ini dengan dana sebenar.
+====
+
+[[extended_keys]]
+===== Kekunci awam dan peribadi yang disambungkan
+
+((("BIP-32 standard","extended public and private keys")))((("extended keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","extended public and private keys")))((("keys","extended")))Dalam istilah BIP-32, kunci boleh "dilanjutkan.&#x201d; Dengan operasi matematik yang betul, "ibu kunci" ini boleh digunakan untuk memperoleh "anak kunci", dengan itulah ia menghasilkan hierarki kekunci dan alamat yang diterangkan sebelum ini. Ibu kunci tidak berada di bahagian atas pokok. Anak kunci boleh dipilih dari mana-mana sahaja dalam hierarki pokok. ((("kod rantai")))Memperlanjutkan kunci melibatkan mengambil kunci itu sendiri dan memasukkan kod rantai khusus kepadanya. Kod rantaian adalah rentetan pendua (binari) 256-bit yang bercampur dengan setiap kunci untuk menghasilkan anak kunci.
+
+((("private keys","extended")))Jika kunci itu jenis peribadi, ia menjadi _kunci peribadi boleh dilanjutkan_ yang dibezakan dengan pass:[<span class="keep-together">awalan</span>] +xprv+:
+
+[[xprv_example]]
+----
+xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8i...
+----
+
+((("public keys","extended")))An _extended public key_ is distinguished by the prefix +xpub+:
+
+[[xpub_example]]
+----
+xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn...
+----
+
+Ciri-ciri dompet HD yang sangat berguna adalah keupayaan untuk mendapatkan anak kunci awam dari ibu kunci awam, tanpa memiliki kunci peribadi. Ini memberi kita dua cara untuk mendapatkan anak kunci sama ada terus dari anak kunci peribadi, atau dari ibu kunci awam.
+
+Oleh itu, kunci awam yang disambungkan itu, boleh digunakan untuk memperoleh semua kunci awam (dan hanya kunci awam) dalam dahan dan ranting bagi struktur dompet HD.
+
+Cara pintas ini boleh digunakan untuk menghasilkan kunci awam&#x2013; yang sangat selamat, di mana pelayan atau aplikasi mempunyai salinan kunci awam yang dilanjutkan, tetapi tiada kunci persendirian. Jenis kunci bersambungan itu boleh menghasilkan bilangan kunci awam dan alamat Ethereum yang tidak terhingga, tetapi tidak boleh membelanjakan mana-mana wang yang dihantar ke alamat tersebut. Sementara itu, pada pelayan lain yang lebih selamat, kunci peribadi yang dilanjutkan itu dapat menghasilkan semua kunci peribadi yang sesuai untuk tujuan tandatangan pada transaksi dan membelanjakan wang tersebut.
+
+Salah satu cara umum bagi kaedah ini ialah memasang kunci awam yang dilanjutkan itu pada pelayan sesawang yang menyediakan aplikasi e-dagang. Pelayan sesawang boleh menggunakan fungsi perolehan utama awam akan membuat alamat Ethereum baru untuk setiap transaksi (contohnya, untuk bakul belanja pelanggan dalam talian), dan tidak akan mempunyai kunci peribadi yang akan terdedah kepada kecurian. Tanpa dompet HD, satu-satunya cara untuk melakukan ini ialah menjana beribu-ribu alamat Ethereum pada pelayan selamat yang berasingan dan kemudian pra-muatnya di pelayan e-dagang. Pendekatan itu adalah rumit dan memerlukan penyelenggaraan yang berterusan untuk memastikan bahawa pelayan tidak kehabisan kunci, oleh itu adalah penting untuk menggunakan kunci awam yang disambungkan dari dompet HD.
+
+((("hardware wallets")))Selain itu, terdapat cara biasa yanh menjadi penyelesaian untuk ((("cold-storage wallets")))((("wallets","cold-storage wallets"))) penyimpanan sejuk atau dompet perkakasan. Bagi kejadian ini, kunci peribadi yang dilanjutkan boleh disimpan dalam dompet perkakasan, sementara kunci awam yang dilanjutkan dapat disimpan secara dalam talian. Pengguna boleh membuat alamat bagi tujuan "menerima" sekehendaknya, sementara kunci peribadi disimpan dengan selamat di luar talian. Untuk membelanjakan dana, pengguna boleh menggunakan kunci peribadi yang dilanjutkan dalam klien Ethereum di luar talian, atau menandatangani transaksi pada peranti dompet perkakasan.
+
+[[hardened_child_key]]
+===== Turunan Anak Kunci Yang Teguh
+
+((("child private keys")))((("hardened derivation","for child private keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","hardened child key derivation")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","index numbers for normal/hardened derivation")))((("index numbers, for normal/hardened derivation")))((("private keys","hardened child key derivation")))Keupayaan untuk mendapatkan dahan kunci awam dari kunci awam yang dilanjutkan, atau _xpub_, adalah sangat berguna, tetapi ia hadir dengan upaya risiko. Kemasukan kepada xpub tidak memberikan kebenaran masuk kepada anak kunci peribadi. Walau bagaimanapun, kerana xpub mengandungi kod rantaian (digunakan untuk memperoleh anak kunci awam dari ibu kunci awam), jika anak kunci peribadi telah diketahui, atau entah bagaimana boleh bocor, ia boleh digunakan dengan kod rantaian untuk mendapatkan semua anak kunci yang lain. Satu anak kunci peribadi yang bocor, bersama-sama dengan kod rantaian induk, mendedahkan semua anak kunci peribadi. Lebih buruk lagi, anak kunci peribadi bersama-sama dengan kod rantaian induk boleh digunakan untuk menyimpulkan ibu kunci peribadi.
+
+Untuk mengatasi risiko ini, dompet HD menggunakan fungsi turunan (derivasi) alternatif yang dipanggil _turunan teguh_ (hardened derivation), yang "memecahkan" hubungan antara ibu kunci awam dan kod rantaian anaknya. Fungsi turunan yang teguh menggunakan ibu kunci peribadi untuk mendapatkan kod rantaian anaknya, bukan ibu kunci awam. Ini mewujudkan "tembok api" dalam urutan induk/anak, dengan kod rantai yang tidak boleh digunakan untuk memperalatkan ibu kunci peribadi mahupun kunci beradik.
+
+Dalam istilah yang mudah, jika anda ingin menggunakan kemudahan xpub untuk mendapatkan dahan kunci awam tanpa mendedahkan diri anda kepada risiko kod rantai yang bocor, anda harus membahagikannya daripada induk yang teguh, bukannya induk biasa. Amalan terbaik adalah untuk mempunyai anak sulong kunci tahap-1 dan sentiasa diperolehi oleh turunan teguh, untuk mengelakkan pencerobohan kekunci induk utama.
+
+[[index_number]]
+===== Nombor-nombor indeks untuk turunan biasa dan teguh
+
+((("hardened derivation","index numbers for")))Jelas sekali, bahawa perlu memperoleh lebih daripada anak satu kunci dari ibu kunci yang diberikan. Untuk menguruskannya, nombor indeks digunakan. Setiap nombor indeks, apabila digabungkan dengan ibu kunci, akan menggunakan fungsi turunan khas kepada anak kunci, memberikan anak kunci yang saling berbeza. Nombor indeks integer 32 bit digunakan bagi fungsi turunan BIP-32  ibu kepada anak. Untuk membezakan antara kekunci yang diperoleh melalui fungsi turunan biasa (tanpa had) berbanding kunci yang diperolehi melalui turunan yang teguh, nombor indeks ini dibahagikan kepada dua julat. Nombor indeks antara 0 dan 2^31^&#x2013;1 (+0x0+ to +0x7FFFFFFF+) digunakan _hanya_ untuk terbitan biasa. Nombor indeks antara 2^31^ dan 2^32^&#x2013;1 (+0x80000000+ hingga +0xFFFFFFFF+) digunakan _hanya_ untuk derivasi teguh. Oleh itu, jika nombor indeks adalah kurang daripada 2^31^, anak kunci itu jenis biasa, sedangkan jika angka indeks sama dengan atau lebih dari 2^31^, anak kunci itu jenis teguh.
+
+Untuk menjadikan nombor indeks lebih mudah dibaca dan dipaparkan, angka indeks untuk anak kunci yang teguh akan dipaparkan bermula dari sifar, tetapi dengan simbol perdana. Oleh itu, anak kunci yang biasa dipaparkan sebagai +0+, sedangkan anak kunci yang teguh pula (indeks +0x80000000+) dipaparkan sebagai ++0&#x27;++. Dalam urutan, maka, salinan kedua anak kunci yang teguh akan mempunyai indeks +0x80000001+ dan akan dipaparkan sebagai ++1&#x27;++, dan sebagainya. Apabila anda melihat indeks dompet HD ++i&#x27;++, itu bermakna 2^31^ pass:[+] ++i++.(((range="endofrange", startref="ix_05wallets-asciidoc12")))
+
+[[hd_wallet_path]]
+===== Pengecam utama dompet HD (lorongan)
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","key identifier")))((("keys","path naming convention")))Kunci dalam dompet HD dikenal dengan menggunakan "lorongan" (path) himpunan penamaan, dengan setiap peringkat pokok dipisahkan oleh aksara slash (/) (lihat <<hd_path_table>>). Kekunci peribadi yang diperoleh dari permulaan utama induk utama dengan +m+. Kunci umum yang diperoleh daripada kunci induk utama dengan +M+. Oleh itu, anak kunci peribadi kepada kunci peribadi induk utama adalah +m/0+. Anak kunci sulong ialah +M/0+. Anak kunci dari generasi kedua (iaitu anak kepada anak kunci, cucu kepada ibu kunci) pula +m/0/1+, dan demikianlah seterusnya.
+
+"Keturunan" kunci dibaca dari kanan ke kiri, sehingga anda mencapai kunci induk utama dari mana ia berasal. Sebagai contoh, pengenal +m/x/y/z+ menerangkan kunci yang merupakan ++z++-th adalah anak kunci +m/x/y+, yang mana ++y++-th anak kunci kepada +m/x+, yang mana ++x++-th anak kepada +m+.
+
+[[hd_path_table]]
+.Dompet HD dan contoh lorongnya
+[options="header"]
+|=======
+| Lorong HD | Keterangan Kunci
+| +m/0+ | The first (+0+) child private key of the master private key (+m+)
+| +m/0/0+ | Cucu peryama kunci peribadi dari anak kunci sulong (+m/0+)
+| +m/0'/0+ | Cucu turunan biasa yang sulong dari anak kunci turunan teguh (+m/0'+)
+| +m/1/0+ | Cucu pertama kunci peribadi dari anak kunci angah (+m/1+)
+| +M/23/17/0/0+ | Ciat sulong kunci awam dari cicit ke-18 dari cucu yang bapanya adalah pass:[<span class="keep-together">anak ke24</span>] anak kunci ke 24
+|=======
+
+[[navigating_hd_wallet_tree]]
+===== Meneroka struktur pokok dompet HD
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","tree structure")))((("tree structure, navigating")))Struktur pokok dompet HD sangat boleh lentur. Sisi kebalikannya ini juga membolehkan kerumitan yang tidak terkawal: setiap ibu kunci boleh mempunyai 4 bilion kanak-kanak: 2 bilion kanak-kanak biasa dan 2 bilion kanak-kanak yang teguh. Setiap kanak-kanak itu mempunyai 4 bilion kanak-kanak lagi, dan sebagainya. Pokok ini boleh bercambah semahu yang anda inginkan, dengan bilangan generasi adalah tidak berpenghujung.. Dengan semua potensi itu, ia boleh menjadi sukar untuk meneroka keseluruhan pokok yang sangat besar ini.
+
+Dua BIP menawarkan satu cara untuk menguruskan kerumitan yang ada ini dengan mewujudkan piawaian untuk struktur pokok dompet HD. ((("BIP-43 standard"))) BIP-43 mencadangkan penggunaan indeks anak sulong yang teguh sebagai pengecam khas yang menandakan "kegunaan" struktur pokok. Berdasarkan BIP-43, dompet HD hanya menggunakan satu dahan peringkat-1 sahaja, dengan nombor indeks menentukan kegunaan dompet dengan mengenal pasti struktur dan ruang nama seluruh pokok. Lebih khusus lagi, dompet HD menggunakan satu dahan sahaja ++m/i&#x27;/...++ bertujuan untuk mengenali kegunaan khusus dan kegunaan tersebut dikenal pasti oleh nombor indeks +i+.
+
+((("BIP-44 standard")))Memperluaskan lagi spesifikasi itu, BIP-44 mencadangkan struktur pelbagai akaun dan pelbagai matawang di mana ia dikenali dengan menetapkan nombor kegunaan kepada +44+. Semua dompet HD mengikut struktur BIP-44 secara faktanya dikenal pasti menggunakan dahan pokok: +m/44'/*+..
+
+BIP-44 menentukan struktur yang terdiri daripada lima tahap pokok yang telah ditetapkan:
+
+[[bip44_tree]]
+-----
+m / tujuan' / jenis_koin' / akaun' / urup / indeks_alamat
+-----
+
+Tahap pertama, +purpose&#x27;+, sentiasa ditetapkan pada +44&#x27;+, . Tahap kedua, +coin_type&#27;+, menentukan jenis matawang kripto, membolehkan dompet HD pelbagai matawang dimana setiap mata wang mempunyai ranting sendiri di bawah tahap kedua. Terdapat beberapa mata wang yang ditakrifkan dalam dokumen standard yang dipanggil https://github.com/satoshilabs/slips/blob/master/slip-0044.md[SLIP0044]; contohnya Ethereum ialah ++m/44&#x27;/60&#x27;++, Ethereum Classic pula ++m/44&#x27;/61&#x27;++, Bitcoin pula ++m/44&#x27;/0&#x27;++, dan matawang Testnet mestilah ++m/44&#x27;/1&#x27;++.
+
+Tahap ketiga pokok ialah +account&#x27;+, yang membolehkan pengguna membahagi-bahagikan dompet mereka ke dalam sub-akaun logik berasingan untuk tujuan perakaunan atau organisasi. Sebagai contoh, dompet HD mungkin mengandungi dua "akaun" Ethereum: ++m/44&#x27;/60&#x27;/0&#x27;++ dan ++m/44&#x27;/60&#x27;/1&#x27;++. Setiap akaun adalah akar pada dahan (sub-pokok) sendiri.
+
+Dek kerana BIP-44 dibuat pada asalnya untuk Bitcoin, ia mengandungi "keanehan" yang tidak relevan di dunia Ethereum. Di peringkat keempat lorong, +urup+, dompet HD mempunyai dua sub-pokok: satu untuk membuat alamat penerima dan satu untuk membuat alamat urup. Hanya laluan "menerima" yang digunakan dalam Ethereum, kerana tidak ada keperluan untuk alamat urup seperti yang ada di Bitcoin. Perhatikan bahawa sementara tahap sebelumnya menggunakan turunan yang teguh, tahap ini menggunakan turunan yang biasa. Ini adalah untuk membolehkan tahap akaun pokok itu untuk mengeksport kunci awam yang dilanjutkan untuk digunakan dalam persekitaran yang tidak terjamin. Alamat yang boleh digunakan diperoleh dari dompet HD sebagai anak di tingkat keempat, menjadikan tahap kelima pokok itu sebagai +alamat_indeks+. Sebagai contoh, alamat penerima ketiga bagi pembayaran Ethereum dalam akaun utama akan menjadi ++M/44&#x27;/60&#x27;/0&#x27;/0/2++. <<bip44_path_examples>> lihat beberapa contoh lagi((range="endofrange", startref="ix_05wallets-asciidoc11")))(((range="endofrange", startref="ix_05wallets-asciidoc10"))).(((range="endofrange", startref="ix_05wallets-asciidoc5")))
+
+[[bip44_path_examples]]
+Contoh-contoh struktur Dompet HD BIP-44
+[options="header"]
+|=======
+| Lorong HD | Keterangan Kunci
+| ++M/44&#x27;/60&#x27;/0&#x27;/0/2++ | Kunci ketiga menerima kunci awam untuk akaun utama Ethereum
+| ++M/44&#x27;/0&#x27;/3&#x27;/1/14++ | Manakala 15^th^ menukarkan alamat kunci awam kepada akaun Bitcoin 4^th^
+| ++m/44&#x27;/2&#x27;/0&#x27;/0/1++ | Kunci peribadi kedua dalam akaun utama Litecoin, untuk menandatangani transaksi
+|=======
+
+=== Kesimpulan
+
+Dompet adalah asas bagi mana-mana aplikasi rantai blok yang pengguna menghadap kepadanya. Ia membolehkan pengguna menguruskan koleksi kunci dan alamat. Dompet juga membolehkan pengguna untuk menunjukkan pemilikan ether masing-masing, dan membenarkan transaksi, dengan menggunakan tandatangan digital, seperti yang akan kita lihat dalam <<tx_chapter>>.(((range="endofrange", startref="ix_05wallets-asciidoc0")))

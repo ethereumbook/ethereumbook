@@ -1,0 +1,286 @@
+[[oracles_chap]]
+== Orákula
+
+((("oracles", id="ix_11oracles-asciidoc0", range="startofrange")))V této kapitole diskutujeme _orákula_, což jsou systémy, které mohou poskytovat externí zdroje dat pro Ethereum chytré kontrakty. Termín „oracle“ (věštec) pochází z řecké mytologie, kde se odkazoval na člověka ve spojení s bohy, který viděl vize budoucnosti. V kontextu bločenek je orákulum systém, který může odpovídat na otázky, které jsou pro Ethereum vnější. ((("trustless systems", seealso="oracles")))Ideálně orákula jsou systémy, které jsou _důvěru nevyžadující_ (trustless), což znamená, že nemusí nevyžadují důvěru, protože pracují na decentralizovaných principech.
+
+[[why_oracles]]
+=== Proč jsou potřeba orákula
+
+((("oracles","reasons for using"))) Klíčovou součástí Ethereum platformy je Ethereum virtuální počítač  (EVM) se schopností provádět programy a aktualizovat stav Etherea, omezený pravidly konsensu, na jakémkoli uzlu v decentralizované síti. Za účelem udržení konsensu musí být provádění EVM zcela deterministické a založené pouze na sdíleném kontextu Ethereum stavu a podepsaných transakcích. To má dva zvláště důležité důsledky: první je, že nemůže existovat žádný vlastní zdroj náhodnosti pro EVM a pro chytré kontrakty, které by ho mohly využívat; Druhým je to, že vnější data lze zavést pouze jako užitečné datové zatížení transakce.
+
+Rozeberme tyto dva důsledky dále. Abychom pochopili zákaz skutečné náhodné funkce v EVM pro poskytování náhodnost pro chytré kontrakty, zvažte dopad na pokusy o dosažení konsensu po provedení takové funkce: uzel A by provedl příkaz a uložil +3+ jménem chytrého kontraktu ve svém úložišti, zatímco uzel B provádějící stejný chytrý kontrakt by místo toho uložil +7+. Uzly A a B by tedy dospěly k různým závěrům o tom, jaký by měl být výsledný stav, přestože by ve stejném kontextu běžel přesně stejný kód. Ve skutečnosti by se mohlo stát, že by se při každém vyhodnocení chytrého kontraktu dosáhlo jiného výsledného stavu. Síť s množstvím uzlů, které běží nezávisle na celém světě, by tak nikdy nemohla dospět k decentralizovanému konsensu o tom, jaký by měl být výsledný stav. V praxi by to bylo mnohem horší, než tento příklad, velmi rychle, kvůli řetězovému efektu, zahrnujícímu přesuny etheru, by exponenciálně narůstal počet možných stavů.
+
+Všimněte si, že pseudonáhodné funkce, jako jsou kryptograficky bezpečné hašovací funkce (které jsou deterministické, a proto mohou být a skutečně jsou součástí EVM), nestačí pro mnoho aplikací. Vezměte hazardní hru, která simuluje házení mincí, abyste vyřešili výplaty sázek, musíte náhodně zvolit hlavu nebo orla  - těžař může získat výhodu hraním hry a zahrnutím svých transakcí pouze do bloků, ve kterých vyhraje. Jak se tedy tento problém obejde? Všechny uzly se mohou dohodnout na obsahu podepsaných transakcí, takže lze jako datovou část transakcí odeslaných do sítě zavést vnější informace, včetně zdrojů náhodnosti, informací o ceně, předpovědi počasí atd. Takovým datům však nelze jednoduše důvěřovat, protože pocházejí z neověřitelných zdrojů. Právě jsme problém odložili. Používáme orákula k pokusu o vyřešení těchto problémů, které budeme podrobně diskutovat ve zbývající části této kapitoly.
+
+[[oracle_use_cases]]
+=== Případy užití orákula a příklady
+
+((("oracles","use cases/examples")))Orákula, ideálně, poskytují nedůvěryhodný (nebo přinejmenším téměř nedůvěryhodný) způsob, jak získat vnější (tj. „ze skutečného světa“; nebo mimo bločenkové) informace, jako jsou výsledky fotbalových her, cena zlata nebo skutečně náhodná čísla, na Ethereum platformu pro použití chytrými kontrakty. Lze je také použít k přímému přenosu dat na rozhraní DApp. Orákula lze proto považovat za mechanismus pro překlenutí mezery mezi světem mimo bločenku  a chytrým kontraktem. Umožňují chytrým kontraktům vymáhat smluvní vztahy založené na skutečných událostech a datech, čímž výrazně rozšiřují jejich rozsah. To však může také představovat vnější rizika pro Ethereum bezpečnostní model. Zvažte kontrakt „chytré závěti“, která distribuuje aktiva, když člověk zemře. To je něco, o čem se často diskutuje v oblasti chytrých kontraktů, a upozorňuje na rizika důvěru vyžadujícího orákula. Pokud je výše dědictví kontrolovaná takovýmto kontraktem dostatečně vysoká, existuje velmi vysoká motivace k hacknutí orákula a spuštění rozdělování aktiv _dříve_, než vlastník zemře.
+
+Upozorňujeme, že některá orákula poskytují údaje, které jsou specifické pro konkrétní zdroj soukromých dat, jako jsou akademické certifikáty nebo občanské průkazy. Zdroj takových údajů, jako je univerzita nebo státní správa, jednoznačně vyžaduje důvěru a pravdivost údajů je subjektivní (pravda je určena pouze odvoláním na autoritu zdroje). Taková data proto nemohou být poskytována jako důvěru nevyžadující (trustless) - tj. bez důvěru vyžadujícího zdroje - protože neexistuje žádná samostatně ověřitelná objektivní pravda. Jako takové zahrneme tyto zdroje dat do naší definice toho, co se označuje jako orákula protože také poskytují datový most pro chytré kontrakty. Údaje, které poskytují, mají obecně podobu osvědčení, jako jsou pasy nebo záznamy o dosaženém úspěchu. Osvědčení se v budoucnu stanou velkou součástí úspěchu bločenkových platforem, zejména ve vztahu k souvisejícím otázkám ověření identity nebo pověsti, takže je důležité prozkoumat, jak mohou být zajišťovány bločenkovými platformami.
+
+Mezi další příklady údajů, které by mohly poskytovat orkákula, patří:
+
+* Náhodná čísla / entropie z fyzických zdrojů, jako jsou kvantové / tepelné procesy: např. spravedlivý výběr vítěze v loterijním chytrém kontraktu
+* Parametrické spouštěče indexované podle přírodních rizik: např. dluhopisový chytrý kontrakt, spouštějící výplatu po nastalé katastrofě, např. zemětřesení daného stupně Richterovy škály.
+* Data směnného kurzu: např. pro přesné navázání kryptoměn na fiat měnu
+* Údaje o kapitálových trzích: např. cenové koše tokenizovaných aktiv / cenných papírů
+* Referenční hodnoty: např. začlenění úrokových sazeb do chytrých finančních derivátů
+* Statická / pseudostatická data: identifikátory cenných papírů, kódy zemí, kódy měn atd.
+* Časová a intervalová data: pro spouštěče událostí spojené s přesným měřením času
+* Údaje o počasí: např. výpočty pojistného na základě předpovědí počasí
+Politické události: pro řešení trhu předpovědí
+* Sportovní události: pro řešení trhu předpovědí a kontraktů z oblasti  fantasy sportů.
+* Geolokační data: např. použitá při sledování dodavatelského řetězce
+* Ověření poškození: u pojistných kontraktů
+* Události vyskytující se na jiných bločenkách: funkce vzájemné spolupráce
+* Tržní cena etheru: např. pro orákula udávající cenu plynu ve fiat měně
+* Statistiky letu: např. používané skupinami a kluby pro společný nákup letenek
+
+
+V následujících sekcích prozkoumáme některé způsoby, jak lze orákula implementovat, včetně základních vzorů orákul, výpočetních orákul, decentralizovaných orákul a implementace orákulového klienta v Solidity.
+
+[[oracle_design_patterns]]
+=== Návrhové vzory orákul
+
+((("oracles","design patterns", id="ix_11oracles-asciidoc1", range="startofrange")))Všechny orákula mají podle definice několik klíčových funkcí. Mezi ně patří schopnost:
+
+* Sbírat data ze zdroje mimo bločenku.
+* Přenos dat v bločence pomocí podepsané zprávy.
+* Zpřístupnění dat jejich umístěním do úložiště chytrého kontraktu.
+
+Jakmile jsou data k dispozici v úložišti chytrých kontraktů, lze k nim přistupovat pomocí jiných chytrých kontraktů prostřednictvím zpráv, které vyvolávají funkci „načtení“ chytrého kontraktu orákula; lze k nim přistupovat také prostřednictvím Ethereum uzlů nebo klientů podporujících síť přímo „nahlédnutím“ do úložiště orákula.
+
+Tři hlavní způsoby, jak nastavit orákulum, lze kategorizovat jako _požadavek – odpověď_, pass:[<span class="keep-together"><em>publikace-odběr</em></span>] a _bezprostřední čtení_.
+
+((("immediate-read oracles")))((("oracles","immediate-read")))Počínaje nejjednoduššími, orákula s „bezprostřením čtením“ poskytují údaje, které jsou potřebné pouze pro okamžité rozhodnutí, jako „Jaká je adresa pro __ethereumbook.info__?“ nebo „Je tato osoba starší 18 let?“ Ti, kteří se chtějí dotazovat na tento druh údajů, mají tendenci tak činit na základě „právě teď“, vyhledávání se provádí, když jsou informace potřebné a možná už nikdy znovu. Mezi příklady takových orákulí patří ty, které uchovávají údaje o organizacích nebo vydaná organizacemi, jako jsou akademické certifikáty, vytáčecí kódy, institucionální členství, identifikátory letišť, identifikační průkazy, atd. Tento typ orákula ukládá data jednou do úložiště kontraktu, odkudkoli jiný chytrý kontrakt je může vyhledat pomocí požadavkového volání kontraktu orákula. Může to být změněno. Data v úložišti orákula jsou také k dispozici pro přímé vyhledávání pomocí bločenkových aplikací  (tj. Ethereum pass:[<span class="keep-together">připojených klientů</span>]), aniž by bylo nutné být průkopníkem a vynaložit náklady na plyn při provedení transakce. Obchod, který chce zkontrolovat věk zákazníka, který si chce koupit alkohol, by mohl použít orákulum tímto způsobem. Tento typ věštce je atraktivní pro organizaci nebo společnost, která by jinak musela provozovat a udržovat servery, aby odpověděla na takové požadavky na data. Všimněte si, že data uložená orákulem pravděpodobně nebudou prvotní data, která orákulum poskytuje, např. z důvodů efektivity nebo ochrany soukromí. Univerzita by mohla zřídit orákulum pro osvědčení o akademickém úspěchu minulých studentů. Ukládání všech podrobností o osvědčeních (které by mohly odkazovat na stránky absolvovaných kurzů a dosažených známek) by však bylo příliš náročné. Místo toho stačí haš certifikátu. Stejně tak by vláda mohla chtít umístit občanské průkazy na platformu Ethereum, přičemž je třeba zachovat soukromí údajů. Opět by hašování dat (pečlivěji v Merkle stromech se solemi) a ukládání kořenového haše do úložiště chytrých kontraktů bylo účinným způsobem organizace takové služby.
+
+((("oracles","publish-subscribe")))((("publish-subscribe oracles")))Další nastavení je _publikace – odběr_, kde orákulum, který efektivně poskytuje službu vysílání dat, u nichž se očekává, že změna (možná jak pravidelná, tak i častá) je vyvolávána chytrým kontraktem z bločenky, nebo aktualizačním démonem mimo bločenku. Tato kategorie má podobnou strukturu jako kanály RSS, WebSub a podobně, kde je orákulum aktualizováno novými informacemi a signalizuje, že nová data jsou dostupná těm, kteří se považují za „přihlášené“. Zainteresované strany musí orákulum vyzvat, aby zkontrolovalo, zda se změnily nejnovější informace, nebo poslouchat aktualizace kontraktu orákula a jednat, když k nim dojde. Příkladem jsou cenové zdroje, informace o počasí, hospodářské nebo sociální statistiky, provozní údaje atd. Dotazování na změnu je ve světě webových serverů velmi neefektivní, ale ne v peer-to-peer kontextu bločenkových platforem: Ethereum klienti musí držet krok se všemi změnami stavu, včetně změn úložiště kontraktu, takže dotazování na změny dat je místní volání synchronizovaného klienta. Protokoly Ethereum událostí usnadňují aplikacím vyhledávat aktualizace orákula, takže tento vzor lze v některých ohledech dokonce považovat za službu „tlačit“ (push). Pokud se však dotazování provádí z chytrého kontraktu, který může být nezbytný pro některé decentralizované aplikace (např. tam, kde aktivační pobídky nejsou možné), mohou vzniknout značné výdaje na plyn.
+
+událostí Kategorie _požadavek-odpověď_ je nejsložitější: v tomto případě je datový prostor příliš velký na to, aby byl uložen v chytrým kontraktu a od uživatelů se očekává, že budou současně potřebovat pouze malou část celkového souboru dat. Je to také vhodný model pro podniky poskytující údaje. Prakticky by takové orákulum mohlo být implementován jako systém chytrýho kontraktů na dálku a infrastruktury mimo bločenku používané k monitorování požadavků a získávání a vracení dat. Požadavek na data z decentralizované aplikace by obvykle byl asynchronní proces zahrnující řadu kroků. V tomto vzoru nejprve EOA zašle transakci decentralizované aplikaci, což má za následek interakci s funkcí definovanou v chytrém kontraktu orákula. Tato funkce iniciuje požadavek na orákulum, s přidruženými parametry upřesňujícími požadovaná data a doplňujícími informacemi, které mohou zahrnovat funkce zpětného volání a parametry plánování. Jakmile je tato transakce potvrzena, lze žádost orákulu považovat za událost EVM vycházející z kontraktu orákula nebo jako změnu stavu; parametry lze načíst a použít k provedení skutečného dotazu zdroje dat mimo bločenku. Orákulum může také vyžadovat platbu za zpracování žádosti, platbu plynu za zpětné volání a oprávnění k přístupu k požadovaným datům. Nakonec jsou výsledná data podepsána vlastníkem orákula, což potvrzuje platnost dat v daném čase, a jsou dodávány v transakci decentralizované aplikaci, která žádost podala - buď přímo, nebo prostřednictvím orákulum kontraktu. V závislosti na parametrech plánování může orákulum vysílat další transakce aktualizující data v pravidelných intervalech (např. Informace o cenách na konci dne).
+
+Kroky orákula typu požadavek-odpověď lze shrnout takto:
+
+1. Přijme dotaz od DApp.
+2. Analyzuje dotaz.
+3. Zkontroluje platbu a zda jsou k dispozici oprávnění k přístupu k datům.
+4. Načtě relevantní data ze zdroje mimo bločenku (a v případě potřeby je zašifrujte).
+5. Podepíše transakci(transakcee) se zahrnutými údaji.
+6. Odešle transakci do sítě
+7. Naplánuje další nezbytné transakce, jako jsou oznámení atd.
+
+Je také možná řada dalších schémat; například data mohou být vyžádána a vrácena přímo EOA, čímž se odstraní potřeba kontraktu orákula. Podobně by mohl být požadavek a odpověď podán z a na hardwarového senzoru umožňujícího internet věcí. Proto může být orákulum člověk, software nebo hardware.
+
+Zde popsaný vzor požadavek-odpověď je běžně vidět v architekturách typu klient-server. I když se jedná o užitečný vzor zasílání zpráv, který umožňuje aplikacím vést obousměrnou konverzaci, za určitých podmínek je to pravděpodobně nevhodné. Například chytrý dluhopis vyžadující úrokovou sazbu od orákula může vyžadovat data denně podle vzoru požadavek-odpověď, aby se zajistilo, že sazba je vždy správná. Vzhledem k tomu, že úrokové sazby se mění jen zřídka, může být vhodnější zde vzor publikace-odběr - zejména při zohlednění omezené velikosti Ethereum bloků.
+
+Publikace - odběr je vzor, kdy vydavatelé (v tomto kontextu orákula) neposílají zprávy přímo příjemcům, ale místo toho rozdělují publikované zprávy do různých tříd. Odběratelé jsou schopni vyjádřit zájem o jednu nebo více tříd a načíst pouze ty zprávy, které jsou předmětem jejich zájmu. Podle takového vzoru by orákulum mohla zapsat úrokovou sazbu do svého vlastního interního úložiště pokaždé, když se změní. Více přihlášených DApps je jednoduše přečte z orákulum kontraktu, čímž se sníží dopad na obsazenost bloků a minimalizují se náklady na ukládání dat.
+
+((("broadcast (multicast) oracle")))((("multicast (broadcast) oracle")))((("oracles","broadcast/multicast")))Ve vzoru vysílání nebo vícesměrného vysílání, orákulum odesílá všechny zprávy na kanál a odběratelské kontrakty by poslouchaly kanál v různých režimech předplatného. Například orákulum může zveřejňovat zprávy na kanálu směnného kurzu. Odběratelský chytrý kontrakt by mohl požadovat plný obsah kanálu, pokud by vyžadovalo časové řady např. pro výpočet klouzavého průměru; jiný by mohl vyžadovat pouze nejnovější sazbu pro výpočet okamžité ceny. Vzor vysílání je vhodný, pokud orákulum nemusí znát totožnost předplatného pass:[<span class="keep-together">kontraktu</span>]. (((range="endofrange", startref="ix_11oracles-asciidoc1")))
+
+[[data_authentication_sec]]
+=== Ověření dat
+
+((("data authentication, oracles and")))((("oracles","and data authentication")))((("oracles","data authentication with")))Pokud předpokládáme, že zdroj dat, která jsou dotazována pomocí DApp, je autoritativní a důvěryhodný (není to nevýznamný předpoklad), zůstává nevyřešená otázka: vzhledem k tomu, že orákulum a mechanismus reakce na žádost mohou být provozovány různými entitami, jak můžeme tomuto mechanismu důvěřovat? Existuje zřetelná možnost, že s daty může být manipulováno během přenosu, takže je důležité, aby metody mimo bločenku dokázaly integritu vrácených dat. Dva běžné přístupy k autentizaci dat jsou _důkazy pravosti_ a _důvěryhodná prováděcí prostředí_ (TEE).
+
+((("authenticity proofs")))Důkazy pravosti jsou kryptografické záruky, že s údaji nebylo manipulováno. Na základě různých technik osvědčování (např. digitálně podepsaných důkazů) účinně přesouvají důvěru z datového nosiče na atestátora (tj. poskytovatele osvědčení). Ověření důkazem pravosti v bločence umožňuje chytrým kontraktům ověřit integritu dat, před provedením operace na těchto datech. ((("Oraclize")))http://www.oraclize.it/[Oraclize] je příkladem služby orákula, která využívá řadu důkazů pravosti. ((("TLSNotary proofs")))Jeden takový důkaz, který je v současné době k dispozici pro datové dotazy z hlavní sítě Ethereum, je TLSNotary důkaz. TLSNotary důkazy umožňují klientovi poskytnout třetí straně důkaz o tom, že mezi klientem a serverem došlo k HTTPS webovému provozu. Zatímco HTTPS je sám o sobě bezpečný, nepodporuje podepisování dat. Důkazy TLSNotary se proto spoléhají na podpisy TLSNotary (prostřednictvím PageSigner). Protokoly TLSNotary využívají protokol Transport Layer Security (TLS), což umožňuje hlavní klíč TLS, který podepisuje data po přístupu, rozdělit mezi tři strany: server (orákulum), auditovaný subjekt (oraclize) a auditor. Společnost Oraclize používá jako auditora instanci virtuálního počítače Amazon Web Services (AWS), kterou lze ověřit jako nezměněnou od okamžiku vytvoření. Tato instance AWS ukládá tajemství TLSNotary, což mu umožňuje poskytovat čestné důkazy. Přestože nabízí vyšší záruky proti manipulaci s daty, než je mechanismus čistého požadavku a odpovědi, vyžaduje tento přístup předpoklad, že Amazon sám nebude manipulovat s instancí VM.
+
+((("TEEs (trusted execution environments)")))((("Town Crier")))((("trusted execution environments (TEEs)")))http://www.town-crier.org/[Town Crier] orákulum pro autentizované datové zdroje založený na přístupu TEE; takové metody využívají zabezpečené enklávy založené na hardwaru k zajištění integrity dat. Town Crier používá Intel ((("SGX (Software Guard eXtensions)")))((("Software Guard eXtensions (SGX)")))Software Guard eXtensions (SGX) k zajištění toho, aby odpovědi z dotazů HTTPS mohly být ověřeny jako autentické. SGX poskytuje záruky integrity, čímž zajišťuje, že aplikace spuštěné v enklávě jsou chráněny CPU proti neoprávněné manipulaci jiným procesem. Poskytuje také důvěrnost a zajišťuje, že stav aplikace je neprůhledný vůči jiným procesům při běhu v enklávě. A konečně, SGX umožňuje atestaci tím, že vytváří digitálně podepsaný důkaz, že aplikace - bezpečně identifikovaná hašem jeho sestavení - skutečně běží v enklávě. Ověřením tohoto digitálního podpisu je možné, aby decentralizovaná aplikace dokázala, že instance Town Crier běží bezpečně v enklávě SGX. To zase dokazuje, že s instancí nebylo manipulováno a že data odesílaná Town Crier jsou tedy autentická. Vlastnost důvěrnosti dále umožňuje Town Crieru zpracovávat soukromá data tím, že umožňuje šifrování datových dotazů pomocí veřejného klíče instance Town Crier. Provozování mechanismu dotazů a odpovědí orákula v enklávě, jako je SGX, nám efektivně umožňuje myslet na to, že běží bezpečně na důvěryhodném hardwaru třetích stran a zajišťuje, že požadovaná data jsou vrácena nezfalšována (za předpokladu, že věříme Intel / SGX).
+
+[[computation_oracles_sec]]
+=== Výpočetní orákula
+
+((("oracles","computation oracles", id="ix_11oracles-asciidoc2", range="startofrange")))Dosud jsme diskutovali pouze orákula v souvislosti s vyžádáním a doručením dat. Orákula však lze také použít k provádění libovolného výpočtu, což je funkce, která může být zvláště užitečná vzhledem k omezení na maximální množství plynu, které můžou spotřebovat transakce v rámci jednoho Ethereum bloku, a poměrně vysokým nákladům výpočet v růmci EVM. Namísto pouhého předávání výsledků dotazu lze výpočetní orákulum použít k provedení výpočtu na sadě vstupů a vrátit vypočtený výsledek, který by nebylo možné na bločence spočítat. Například je možné použít výpočetní orákulum pro výpočet výpočetně náročného regresního výpočtu za účelem odhadu výnosu z dluhopisové smlouvy.
+
+((("Oraclize")))IPokud jste ochotni důvěřovat centralizované, ale auditovatelné službě, můžete znovu jít do Oraclize. Poskytují službu, která umožňuje decentralizovaným aplikacím požadovat výstup výpočtu provedeného ve virtuálním počítači AWS v izolovaném prostředí. Instance AWS vytvoří spustitelný kontejner z uživatelsky konfigurovaného Dockerfile zabaleného v archivu, který je nahrán do Meziplanetárního systému souborů (IPFS; viz <<data_storage_sec>>). Na požádání Oraclize načte tento archiv pomocí haše a poté inicializuje a spustí kontejner Docker na AWS a předá veškeré argumenty, které jsou aplikaci poskytnuty jako proměnné prostředí. Kontejnerizovaná aplikace provede výpočet s časovým omezením a zapíše výsledek na standardní výstup, kde jej lze získat pomocí Oraclize a vrátit se do decentralizované aplikace. Oraclize aktuálně nabízí tuto službu v auditovatelné instanci t2.micro AWS, takže pokud má výpočet nějakou netriviální hodnotu, je možné zkontrolovat, zda byl proveden správný kontejner Docker. Nejedná se však o skutečně decentralizované řešení.
+
+((("cryplet")))Koncept „cryptlet“ jako standardu pro ověřitelné pravdy orákul byl formalizován jako součást širšího rámce ESC společnosti Microsoft. Cryptlety se provádějí v zašifrované kapsli, která odtrhuje infrastrukturu, jako je I / O, a má připojený CryptoDelegate, takže příchozí a odchozí zprávy jsou automaticky podepsány, ověřovány a osvědčené. Cryptlety podporují distribuované transakce, takže logika kontraktu může ACID provádět komplexní vícekrokové, vícebločenkové a externí systémové transakce ACID způsobem. To umožňuje vývojářům vytvářet přenosná, izolovaná a soukromá řešení pravdy pro použití v chytrých kontraktech. Cryptlety mají následující formát:
+
+[source,solidity]
+----
+public class SampleContractCryptlet : Cryptlet
+  {
+        public SampleContractCryptlet(Guid id, Guid bindingId, string name,
+            string address, IContainerServices hostContainer, bool contract)
+            : base(id, bindingId, name, address, hostContainer, contract)
+        {
+            MessageApi = new CryptletMessageApi(GetType().FullName,
+                new SampleContractConstructor())
+----
+
+((("TrueBit")))V případě decentralizovanějšího řešení se můžeme obrátit na https://truebit.io/[TrueBit], které nabízí řešení pro škálovatelný a ověřitelný výpočet mimo bločenku. Používají systém řešitelů a ověřovatelů, kteří jsou motivováni k provádění výpočtů a ověřování těchto výpočtů. Pokud je řešení napadeno, provádí se opakovací proces ověřování na podmnožinách výpočtu - druh „ověřovací hry“. Hra pokračuje řadou kol, z nichž každé rekurzivně kontroluje menší a menší podmnožinu výpočtu. Hra nakonec dorazí do finálového kola, kde je výzva natolik triviální, že rozhodčí - Ethereum těžaři - mohou rozhodnout o tom, zda byla výzva splněna, na bločence. Ve skutečnosti je TrueBit implementací výpočetního trhu, který umožňuje decentralizovaným aplikacím platit za ověřitelné výpočty, které mají být prováděny mimo bločenku, ale spoléhat se na Ethereum, aby prosadil pravidla ověřovací hry. Teoreticky to umožňuje důvěryhodným chytrým kontraktům bezpečně provádět jakýkoli výpočetní úkol.
+
+Pro systémy, jako je TrueBit, existuje celá řada aplikací, od strojového učení až po ověření důkazu prací. Příkladem toho je most Doge – Ethereum, který používá TrueBit k ověření Dogecoinového důkazu práci (Scrypt), což je paměťově náročná a výpočetně náročná funkce, kterou nelze vypočítat v rámci limitu plynu bloku Etherea. Provedením tohoto ověření na TrueBit bylo možné bezpečně ověřit transakce dogecoinů v rámci chytrého kontraktu na testovací síti Ethereum Rinkeby. (((range="endofrange", startref="ix_11oracles-asciidoc2")))
+
+[[decentralized_orackes_sec]]
+=== Decentralizovaná orákula
+
+((("oracles","decentralized")))Zatímco centralizovaná datová nebo výpočetní orákula postačují pro mnoho aplikací, představují jediné body selhání v síti Ethereum. V souvislosti s myšlenkou decentralizovaných orákulí jako prostředku zajištění dostupnosti dat a vytvoření sítě jednotlivých poskytovatelů údajů se systémem agregace údajů v bločence bylo navrženo několik systémů.
+
+((("ChainLink")))https://www.smartcontract.com/link[ChainLink] navrhl decentralizovanou síť orákulí skládající se ze klíčových chytrých kontraktů: reputarční kontrakt, kontrakt párování objednávek a agregační kontrakt a —A mimo bločenkový registr poskytovatelů dat. Reputační kontrakt se používá ke sledování výkonnosti poskytovatelů dat. Skóre v reputačním kontraktu se používá k naplnění registru mimo bločenku. Kontrakt párování objednávek vybírá nabídky orákulí při zohlednění reputace kontraktu. Následně dokončí dohodu o úrovni služeb, která zahrnuje parametry dotazu a požadovaný počet orákulí. To znamená, že kupující nemusí obchodovat přímo s jednotlivými orákuly. Agregační kontrakt shromažďuje odpovědi (předložené pomocí systému odevzdání a odhalení) z několika orákulí, vypočítá konečný kolektivní výsledek dotazu a nakonec výsledky vrátí zpět do reputačního kontraktu.
+
+Jednou z hlavních výzev takového decentralizovaného přístupu je formulace agregační funkce. ChainLink navrhuje vypočítat váženou odpověď, což umožňuje vykazovat skóre platnosti pro každou odpověď orákula. Detekce „neplatného“ skóre je zde nesnadná, protože se spoléhá na předpoklad, že okrajové datové body, měřené odchylkami od odpovědí poskytnutých kolegy, jsou nesprávné. Při výpočtu skóre platnosti na základě umístění odpovědi orákula mezi distribucí odpovědí hrozí penalizace správných odpovědí oproti průměrným. Proto ChainLink nabízí standardní sadu agregačních smluv, ale také umožňuje specifikovat přizpůsobené agregační smlouvy.
+
+((("SchellingCoin protocol")))Příbuznou myšlenkou je protokol SchellingCoin. Zde uvádí několik účastníků hodnoty a medián je považován za „správnou“ odpověď. Účastníci jsou povinni poskytnout vklad, který je přerozdělován ve prospěch hodnot, které jsou blíže střední hodnotě, a proto stimuluje vykazování hodnot, které jsou podobné ostatním. Očekává se, že společná hodnota, známá také jako Schellingův bod, který by respondenti mohli považovat za přirozený a zřejmý cíl, kolem kterého se koordinovat, bude blízká skutečné hodnotě.
+
+Jason Teutsch z TrueBit nedávno představil nový návrh pro decentralizované orákulum dostupnosti dat mimo bločenku. Tento návrh využívá specializovanou bločenku využívající důkaz prací, která je schopna správně informovat o tom, zda jsou registrovaná data k dispozici během dané epochy. Těžaři se pokoušejí stahovat, ukládat a šířit všechna aktuálně registrovaná data, čímž je zaručena lokální dostupnost dat. I když je takový systém nákladný v tom smyslu, že každý těžební uzel ukládá a šíří všechna zaregistrovaná data, systém umožňuje opětovné použití úložiště uvolněním dat po skončení registračního období.
+
+[[oracle_client_interfaces_in_solidity_sec]]
+=== Rozhraní orákulového klienta v Solidity
+
+((("oracles","client interfaces in Solidity", id="ix_11oracles-asciidoc3", range="startofrange")))((("Oraclize", id="ix_11oracles-asciidoc4", range="startofrange")))((("Solidity","oracle client interfaces in", id="ix_11oracles-asciidoc5", range="startofrange"))) <<using_oraclize_to_update_the_eth_usd>> je příklad v Solidity, který ukazuje, jak lze Oraclize použít k nepřetržitému dotazování na cenu ETH / USD z API a výsledek uložit použitelným způsobem.
+
+[[using_oraclize_to_update_the_eth_usd]]
+.Pomocí Oraclize aktualizujte směnný kurz ETH / USD z externího zdroje
+====
+[source,solidity]
+----
+/*
+Cenový ticker ETH / USD využívající API CryptoCompare
+
+Tento kontrakt udržuje v paměti aktualizovanou cenu ETH / USD,
+která je aktualizována každých 10 minut.
+ */
+
+pragma solidity ^0.4.1;
+import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
+
+/*
+   Připravené metody „oraclize_“ značí dědičnost z „usingOraclize“
+ */
+contract EthUsdPriceTicker is usingOraclize {
+
+    uint public ethUsd;
+
+    event newOraclizeQuery(string description);
+    event newCallbackResult(string result);
+
+    function EthUsdPriceTicker() payable {
+        // signalizuje generování důkazů TLSN jejich ukládání na IPFS
+        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+
+        // požadovaný dotaz
+        queryTicker();
+    }
+
+    function __callback(bytes32 _queryId, string _result, bytes _proof) public {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        newCallbackResult(_result);
+
+        /*
+         * Z výsledného řetězce získá celé číslo bez znaménka pro použití na bločence. 
+         * Použije zděděného pomocníka "parseInt" z "usingOraclize", umožňujícího
+         * výsledný řetězec "123.45" převést na uint 12345.
+         */
+        ethUsd = parseInt(_result, 2);
+
+        // zavoláno ze zpětného volání, protože se dotazujeme na cenu
+        queryTicker();
+    }
+
+    function queryTicker() external payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH
+                to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the
+                answer...");
+
+            // parametry dotazu jsou (spoždění v sekundách,  typ datového zdroje,
+            // parametr datového zdroje)
+            // udává JSONPath k vyzvednutí určené částí výsledku JSON API
+            oraclize_query(60 * 10, "URL",
+                "json(https://min-api.cryptocompare.com/data/price?\
+                fsym=ETH&tsyms=USD,EUR,GBP).USD");
+        }
+    }
+}
+----
+====
+
+Pro integraci s Oraclize musí být kontrakt +EthUsdPriceTicker+ dítětem pass:[<span class="keep-together"><code>usingOraclize</code></span>]; kontrakt +usingOraclize+ je definován v souboru _oraclizeAPI_. Požadavek na data se provádí pomocí funkce +oraclize_query+, která je zděděna ze kontraktu +usingOraclize+. Toto je přetížená funkce, která očekává alespoň dva argumenty:
+
+* Podporovaný zdroj dat, který se má použít, například URL, WolframAlpha, IPFS nebo výpočet
+* Argument pro daný zdroj dat, který může zahrnovat použití pomocníků pro analýzu JSON nebo XML
+
+Cenový dotaz se provádí ve funkci +queryTicker+. Za účelem provedení dotazu Oraclize vyžaduje zaplacení malého poplatku v etheru, pokrývající náklady na plyn za zpracování výsledku a přenos do funkce zpětného volání +pass:[__]callback+ a doprovodný příplatek za službu. Tato částka závisí na zdroji dat a, je-li to stanoveno, na typu důkazu o pravosti, který je vyžadován. Jakmile jsou data načtena, je funkce +pass:[__]callback+ vyvolána účtem řízeným Oraclize, který má oprávnění provádět zpětné volání; předá hodnotu odpovědi a jedinečný argument +queryId+, který lze například použít ke zpracování a sledování více čekajících zpětných volání z Oraclize.
+
+((("BlockOne IQ")))Poskytovatel finančních údajů Thomson Reuters rovněž poskytuje službu orákula pro Ethereum nazvanou BlockOne IQ, která umožňuje požadovat tržní a referenční údaje prostřednictvím chytrých kontraktů provozovaných v soukromých nebo povolených sítích. <<contract_calling_the_blockone_iq_service_for_market_data>> zobrazuje rozhraní pro orákulum a klientský kontrakt, která žádost podá.
+
+[[contract_calling_the_blockone_iq_service_for_market_data]]
+.Kontrakt volající službu BlockOne IQ pro tržní data
+====
+[source,solidity]
+----
+pragma solidity ^0.4.11;
+
+contract Oracle {
+    uint256 public divisor;
+    function initRequest(
+       uint256 queryType, function(uint256) external onSuccess,
+       function(uint256
+    ) external onFailure) public returns (uint256 id);
+    function addArgumentToRequestUint(uint256 id, bytes32 name, uint256 arg) public;
+    function addArgumentToRequestString(uint256 id, bytes32 name, bytes32 arg)
+        public;
+    function executeRequest(uint256 id) public;
+    function getResponseUint(uint256 id, bytes32 name) public constant
+        returns(uint256);
+    function getResponseString(uint256 id, bytes32 name) public constant
+        returns(bytes32);
+    function getResponseError(uint256 id) public constant returns(bytes32);
+    function deleteResponse(uint256 id) public constant;
+}
+
+contract OracleB1IQClient {
+
+    Oracle private oracle;
+    event LogError(bytes32 description);
+
+    function OracleB1IQClient(address addr) external payable {
+        oracle = Oracle(addr);
+        getIntraday("IBM", now);
+    }
+
+    function getIntraday(bytes32 ric, uint256 timestamp) public {
+        uint256 id = oracle.initRequest(0, this.handleSuccess, this.handleFailure);
+        oracle.addArgumentToRequestString(id, "symbol", ric);
+        oracle.addArgumentToRequestUint(id, "timestamp", timestamp);
+        oracle.executeRequest(id);
+    }
+
+    function handleSuccess(uint256 id) public {
+        assert(msg.sender == address(oracle));
+        bytes32 ric = oracle.getResponseString(id, "symbol");
+        uint256 open = oracle.getResponseUint(id, "open");
+        uint256 high = oracle.getResponseUint(id, "high");
+        uint256 low = oracle.getResponseUint(id, "low");
+        uint256 close = oracle.getResponseUint(id, "close");
+        uint256 bid = oracle.getResponseUint(id, "bid");
+        uint256 ask = oracle.getResponseUint(id, "ask");
+        uint256 timestamp = oracle.getResponseUint(id, "timestamp");
+        oracle.deleteResponse(id);
+        // Udělejte něco s údaji o ceně
+    }
+
+    function handleFailure(uint256 id) public {
+        assert(msg.sender == address(oracle));
+        bytes32 error = oracle.getResponseError(id);
+        oracle.deleteResponse(id);
+        emit LogError(error);
+    }
+
+}
+----
+====
+
+Požadavek na data je iniciován pomocí funkce +initRequest+, která umožňuje specifikovat typ dotazu (v tomto příkladu požadavek na vnitrodenní cenu), navíc dvě funkce zpětného volání.
+Vrací +uint256+ identifikátor, který lze použít k poskytnutí dalších parametrů. Funkce +addArgumentToRequestString+ se používá k určení kódu nástroje Reuters (RIC), zde pro akcie IBM a pass:[<span class="keep-together"><code>addArgumentToRequestUint</code></span>] umožňuje zadat časové razítko. Nyní předání aliasu pro +block.timestamp+ načte aktuální cenu pro IBM. Požadavek je poté proveden funkcí +executeRequest+. Jakmile je žádost zpracována, kontrakt orákula vyvolá funkci +onSuccess+ zpětného volání s identifikátorem dotazu, což umožní získat výsledná data; v případě selhání vyhledávání, pass:[<span class="keep-together"><code>onFailure</code></span>] zpětné volání vrátí chybový kód. Mezi dostupná pole, která lze získat při úspěchu, patří otevírací (+open+), maximální (+high+), minimální (+low+),  zavírací OHLC (+close+) a  nabídková/poptávková (+bid+/+ask+) cena.(((range="endofrange", startref="ix_11oracles-asciidoc5")))(((range="endofrange", startref="ix_11oracles-asciidoc4")))(((range="endofrange", startref="ix_11oracles-asciidoc3")))
+
+
+=== Závěry
+
+Jak vidíte, orákula poskytují klíčovou službu chytrým kontraktům: orovádění kontraktů obohacují o externí data. S tím také samozřejmě představují značné riziko - pokud jsou důvěru vyžadujícími zdroji a mohou být ohroženy, mohou vést k ohroženému plnění chytrého kontraktu, kterému dodávají data.
+
+Obecně platí, že při zvažování použití orákula buďte velmi opatrní ohledně modelu důvěry. Pokud se domníváte, že orákulum může být důvěru vyžadující,  můžete narušit bezpečnost vašeho chytrého kontraktu tím, že ji vystavíte potenciálně falešným vstupům. To znamená, že orákula mohou být velmi užitečná, pokud budou pečlivě zváženy předpoklady zabezpečení.
+
+Decentralizovaná orákula mohou některé z těchto problémů vyřešit a nabídnout Ethereum chytrým kontraktům zdroj důvěru nevyžadujících externích dat. Vyberte si pečlivě a můžete začít zkoumat most mezi Ethereem a „skutečným světem“, který nabízejí orákula. (((range="endofrange", startref="ix_11oracles-asciidoc0")))

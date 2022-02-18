@@ -1,0 +1,732 @@
+[[decentralized_applications_chap]]
+== Aplicaciones Descentralizadas (DApps)
+
+((("DApps (aplicaciones descentralizadas)", id="ix_12dapps-asciidoc0", range="startofrange")))En este capítulo exploraremos el mundo de las _aplicaciones descentralizadas_, o _DApps_. Desde los primeros días de Ethereum la visión de sus fundadores fue mucho más amplia que la de los simples  "contratos inteligentes": ((("web3")))su visión fue nada menos que reinventar la web y crear un nuevo mundo de "DApps", que acertadamente denominaron la _web3_. Los contratos inteligentes son una forma de descentralizar el control lógico así como también la ejecución de las funciones pago de las aplicaciones. Las DApps de la "Web3" intentan nada menos que descentralizar todos los demás aspectos de una aplicación: su almacenamiento, la mensajería, la denominación de espacios web, etc. (véase <<image_web3_suite>>).
+
+[[image_web3_suite]]
+.Web3: Una web descentralizada utilizando contratos inteligentes y tecnologías P2P (entre iguales)
+image::images/web3suite.png["La Web3: Una web descentralizada utilizando contratos inteligentes y tecnologías P2P (entre iguales)"]
+
+[ADVERTENCIA]
+====
+Si bien las "aplicaciones descentralizadas" son una visión audaz del futuro, el término "DApp" a menudo se aplica a cualquier contrato inteligente con una interfaz web. Algunas de estas llamados DApps son aplicaciones altamente centralizadas (¿CApps?). ¡Cuidado con las falsas DApps!
+====
+
+En este capítulo desarrollaremos e implementaremos una DApp de muestra: una plataforma de subastas. Puede encontrar el código fuente en el repositorio del libro en la carpeta http://bit.ly/2DcmjyA[_code/auction_dapp_]. Examinaremos cada aspecto de una aplicación de subasta y veremos cómo podemos descentralizar la aplicación tanto como sea posible. Primero, sin embargo, echaremos un vistazo más de cerca a las características y ventajas definitorias de las DApps.
+
+[[what_is_a_dapp_sec]]
+=== ¿Qué es una DApp?
+
+((("DApps (aplicaciones descentralizadas)","elementos de las Dapps", id="ix_12dapps-asciidoc1", range="startofrange")))Una DApp es una aplicación que es principal o enteramente descentralizada.
+
+Considere todos los aspectos posibles de una aplicación que pueden ser descentralizados:
+
+* El software del "back-end" o a nivel del servidor (la lógica de la aplicación)
+* El software "front-end" o la interfaz del usuario
+* El almacenamiento de datos
+* La comunicación por mensajería
+* El descifrado de nombres
+
+Cada uno de estos elementos puede estar un poco centralizado o un poco descentralizado. Por ejemplo, el software a nivel de servidor (back-end), puede desarrollarse como una aplicación web que se ejecuta en un computador (el servidor) centralizado o como una aplicación móvil que se ejecuta en su dispositivo. El back-end y el almacenamiento de memoria pueden estar alojados en servidores privados y bases de datos propietarias, o bien puede estar ejecutándose mediante un contrato inteligente y utilizando almacenamiento de memoria P2P (entre pares iguales).
+
+Existen muchas ventajas tras la creación de una DApp, que una arquitectura centralizada típica no puede proporcionar:
+
+Resiliencia:: 
+Debido a que la lógica de un negocio estaría controlada por un contrato inteligente, el back-end de una DApp se distribuirá en una red y se administrará por completo en la plataforma de una cadena de bloques. A diferencia de una aplicación implementada en un servidor centralizado, una DApp no tendrá tiempo de inactividad y seguirá estando disponible mientras la plataforma siga funcionando.
+
+Transparencia::
+La naturaleza vinculada a la cadena de bloques de un DApp permite a todos inspeccionar el código y estar más seguros de sus funciones. Cualquier interacción con la DApp se almacenará para siempre en la cadena de bloques.
+
+Resistencia a la censura::
+Mientras un usuario tenga acceso a un nodo de Ethereum (ejecutando uno si es necesario), el usuario siempre podrá interactuar con cualquier DApp sin interferencia de ningún control centralizado. Ningún proveedor de servicios, ni siquiera el propietario del contrato inteligente, puede alterar el código una vez que se despliega en la red.
+
+En el ecosistema de Ethereum tal como está hoy, hay muy pocas aplicaciones verdaderamente descentralizadas&#x2014;la mayoría aún dependen de servicios y servidores centralizados para alguna parte de su operación. En el futuro, esperamos que sea posible que cada parte de cualquier DApp sea operada de manera totalmente descentralizada.
+
+[[blockchain_smart_contracts_sec]]
+==== El Contrato Inteligente Como Software del Servidor o Back-End
+
+((("DApps (aplicaciones descentralizadas)","backend (contratos inteligentes)")))((("contratos inteligentes","contratos inteligentes como el back-end de una DApp")))En una DApp, los contratos inteligentes se utilizan para almacenar tanto la lógica de ejecución de un negocio (el código del programa) como el estado relacionado de tal aplicación. Puede pensarse en un contrato inteligente como el reemplazo de los componentes del lado del servidor (también conocido como "back-end") en una aplicación normal. Esto es una simplificación excesiva, por supuesto. Una de las principales diferencias es que cualquier cálculo ejecutado en un contrato inteligente es muy costoso y, por lo tanto, debe mantenerse lo más resumido posible. Por lo tanto, es importante identificar qué aspectos de una aplicación necesitan realmente una plataforma de ejecución confiable y descentralizada.
+
+Los contratos inteligentes de Ethereum nos permiten construir arquitecturas en las que una red de contratos inteligentes se invocan entre sí y se pasan datos mutuamente, leyendo y escribiendo sobre sus propias variables de estado a medida que avanzan sus ejecuciones, con una complejidad solo restringida por el límite de unidades de gas o combustible admisible por bloque. Después de desplegar nuestro contrato inteligente, la lógica de nuestro negocio podría ser utilizada por muchos otros desarrolladores en el futuro.
+
+Una consideración importante en el diseño de las arquitecturas de los contratos inteligentes es la incapacidad de cambiar el código de éstos una vez que se despliegan en la red. Se pueden eliminar si se les instruye con un código de operación +SELFDESTRUCT+ accesible, pero aparte de la eliminación completa de un contrato, el código de ninguno de ellos se puede cambiar de ninguna otra manera.
+
+La segunda consideración principal del diseño de la arquitectura de un contrato inteligente es el tamaño de la DApp. Un contrato inteligente monolítico realmente grande puede costar muchas unidades de gas para ser desplegado e incluso utilizado. Por lo tanto, algunas aplicaciones pueden optar por tener parte de sus cálculos fuera de la cadena de bloques y una fuente de datos también externa. Sin embargo, téngase en cuenta que tener a la lógica principal de la DApp de un negocio, dependiendo de un almacenamiento de datos en medios externos (por ejemplo, en un servidor centralizado) significa que sus usuarios tendrán que confiar en estos recursos externos.
+
+[[front_end_web_ui_cec]]
+==== Front-End (La Interfaz Web del Usuario)
+
+((("DApps (aplicaciones descentralizadas)","front-end (interfaz de usuario web)")))((("interfaz de usuario, como el front-end de una DApp")))((("interfaz de usuario web, como el front-end de una DApp")))A diferencia de la lógica del código de una DApp, que requiere que un desarrollador entienda a la EVM y nuevos lenguajes como Solidity, la interfaz del lado del cliente de una DApp puede usar tecnologías web estándar (tales como HTML, CSS, JavaScript, etc.). Esto permite que un desarrollador web tradicional use herramientas, bibliotecas y marcos que le sean familiares. Las interacciones con Ethereum, tales como firmar mensajes, enviar transacciones y administrar llaves, a menudo se llevan a cabo a través del navegador web, mediante una extensión tal como MetaMask (véase el <<intro_chapter>>).
+
+Aunque también es posible crear una DApp para móviles, actualmente existen pocos recursos para ayudar a crear interfaces DApp móviles, principalmente debido a la falta de clientes móviles que pueden servir como cliente ligero con funcionalidad de administración de llaves.
+
+El front-end generalmente está vinculado a Ethereum a través de la biblioteca JavaScript _web3.js_, que se agrupa con los demás recursos front-end y es servida a un navegador mediante un servidor web.
+
+[[data_storage_sec]]
+==== Almacenamiento de Data
+
+((("DApps (aplicaciones descentralizadas)","almacenamiento de data")))((("almacenamiento de data","y las DApps")))Debido a los altos costos del gas y el límite actualmente bajo, de unidades de gas admisible por bloque,  los contratos inteligentes no son muy adecuados para almacenar o procesar grandes cantidades de datos. Por lo tanto, la mayoría de las DApps utilizan servicios de almacenamiento de datos fuera de la cadena, lo que significa que almacenan los datos voluminosos fuera de la plataforma de Ethereum, en plataformas externas de memoria. Estas plataformas de almacenamiento de datos pueden ser centralizadas (como por ejemplo, lo han sido típicamente, las bases de datos en la nube), o también, los datos pueden descentralizarse, almacenándose en una plataforma P2P (entre pares) tal como lo es la plataforma IPFS o la plataforma Swarm de Ethereum.
+
+El almacenamiento descentralizado entre pares iguales o P2P, es ideal para almacenar y distribuir grandes activos estáticos como imágenes, vídeos y los recursos front-end de la interfaz web de las aplicaciones (HTML, CSS, JavaScript, etc.). A continuación veremos algunas de estas opciones.
+
+[[ipfs_sec]]
+===== IPFS
+
+((("DApps (aplicaciones descentralizadas)","y el sistema IPFS")))((("almacenamiento de data","IPFS")))((("IPFS (InterPlanetary File System)")))El _"Sistema Inter-Planetario de Archivos_ (del inglés "InterPlanetary File System", o IPFS) es un sistema de almacenamiento descentralizado direccionable por contenido, que distribuye objetos almacenados entre pares iguales, o en una red P2P. Con "direccionable por contenido" se da a entender que cada "pieza de un contenido" (o "archivo") es despedazado en trozos mediante algoritmos hash, y el valor hash resultante es utilizado para identificar ése archivo. De este modo, podemos recuperar cualquier archivo, de cualquier nodo integrado al sistema IPFS, si podemos suministrar el valor hash que lo identifica.
+
+El sistema IPFS tiene como norte, el reemplazar al sistema HTTP como el protocolo de preferencia para la entrega de aplicaciones web. En lugar de almacenar una aplicación web en un único servidor, los archivos se almacenarían en IPFS y se pueden recuperar desde cualquier nodo IPFS.
+
+Puede encontrarse más información sobre IPFS en el enlace https://ipfs.io[].
+
+
+[[swarm_sec]]
+===== Swarm
+
+((("DApps (aplicaciones descentralizadas)","y Swarm")))((("almacenamiento de data","Swarm")))((("Swarm")))Swarm es otro sistema de almacenamiento "direccionable por contenido" entre pares iguales o P2P, similar al sistema IPFS. Swarm fue creado por la fundación Ethereum, como parte del conjunto de herramientas de Go-Ethereum. Al igual que con IPFS, Swarm nos permite almacenar archivos que terminan siendo replicados y diseminados por los nodos de esta plataforma. Podemos acceder a cualquier archivo de Swarm simplemente refiriéndonos a éste por su identificador hash. Swarm nos permite acceder a una página web, desde un sistema descentralizado P2P, en lugar de hacerlo a través de un servidor centralizado.
+
+La página de inicio de Swarm se almacena en la misma plataforma Swarm y es accesible desde un nodo Swarm o a través de una compuerta de enlace:
+https://swarm-gateways.net/bzz:/theswarm.eth/[].
+
+
+[[interdapp_coammunications_protocol_sec]]
+==== Protocolos de Comunicaciones por Mensajería Descentralizada
+
+((("DApps (aplicaciones descentralizadas)","protocolos de comunicaciones por mensajería descentralizada")))((("protocolos de comunicación por mensajería")))Otro componente importante de cualquier aplicación es la comunicación entre procesos. Eso significa poder intercambiar mensajes entre aplicaciones, entre diferentes instancias de una misma aplicación o entre usuarios de la aplicación. Tradicionalmente, esto se logra depositando nuestra confianza en un servidor centralizado. Sin embargo, hay una variedad de alternativas descentralizadas a los protocolos basados en servidores, que ofrecen mensajería a través de una red P2P. ((("Whisper")))El protocolo de mensajería P2P más notable para DApps es http://bit.ly/2CSls5h[_Whisper_], que forma parte del conjunto de herramientas Go-Ethereum de la Fundación Ethereum.
+
+El aspecto final de una aplicación que puede descentralizarse es el descifrado de nombres. Examinaremos de cerca el servicio de nombres de Ethereum más adelante en este capítulo; ahora, sin embargo, profundizaremos en un ejemplo.(((range="endofrange", startref="ix_12dapps-asciidoc1")))
+
+[[auction_dapp_intro]]
+=== Un Ejemplo Básico de DApp: Una DApp de Subastas
+
+((("DApp de Subastas", id="ix_12dapps-asciidoc2", range="startofrange")))((("DApps (aplicaciones descentralizadas)","Ejemplo de una DApp de subastas", seealso="Auction DApp", id="ix_12dapps-asciidoc3", range="startofrange")))En esta sección comenzaremos a construir un DApp de ejemplo, para explorar las diversas herramientas de descentralización. Nuestro DApp implementará una subasta descentralizada.
+
+((("escrituras","Una DApp de Subastas y Escrituras")))((("tokens no indistinguibles (del inglés NFTs)","Y una DApp de Subastas")))La DApp de subastas, le permite a un usuario registrar en un token, una "escritura", que represente algún activo único, como una casa, un automóvil, una marca comercial, etc. Una vez que se ha registrado el token, la propiedad del token se transfiere a la DApp de la subasta, lo que permite su venta. La DApp de subastas enumera cada uno de los tokens registrados, lo que permite a otros usuarios hacer ofertas. Durante cada subasta, los usuarios pueden unirse a una sala de chat creada específicamente para esa subasta. Una vez que se finaliza la subasta, la propiedad del token, que acredita la titularidad de la escritura, se transfiere al ganador de la subasta.
+
+El proceso general de la subasta se puede ver en <<auction_dapp_overview>>.
+
+Los componentes principales de nuestra DApp de subastas son:
+
+* Un contrato inteligente que implementa el estándar ERC721 para tokens de "escritura" no-indistinguibles (denominado: pass:[<code><span class="keep-together">DeedRepository</span></code>])
+* Un contrato inteligente implementando una subasta (denominado +AuctionRepository+) para vender las escrituras
+* Una interfaz de usuario web (front-end) que utiliza el entorno Vue/Vuetify para JavaScript
+* La biblioteca _web3.js_ para establecer nuestra conexión con la cadena de bloques de Ethereum (a través de MetaMask u otros clientes)
+* Un cliente Swarm, para almacenar recursos tales como imágenes
+* Un cliente de Whisper, para crear salas de chat para las subastas, en las que puedan interactuar todos los participantes
+
+[[auction_dapp_overview]]
+.DApp de Subastas: Un ejemplo simple de una DApp de subastas
+image::images/auction_diagram.png["DApp de Subastas: Un ejemplo simple de una DApp de subastas"]
+
+Puede encontrarse el código fuente de la DApp de subastas en http://bit.ly/2DcmjyA[el repositorio del libro].
+
+
+==== DApp de Subastas: Contratos Inteligentes como Back-End 
+
+((("DApp de subastas","contratos inteligentes como back-end", id="ix_12dapps-asciidoc4", range="startofrange")))((("contratos inteligentes","operando como el back-end de una DApp", id="ix_12dapps-asciidoc5", range="startofrange")))Nuestro ejemplo de DApp de Subastas es sustentado por un par de contratos inteligentes que necesitamos desplegar en una cadena de bloques de Ethereum con el fin de dar vida a la aplicación; estos son los contratos: pass:[<code><span class="keep-together">AuctionRepository</span></code>] y +DeedRepository+.
+
+Comencemos por echar un vistazo al contrato +DeedRepository+, mostrado en el <<deed_repository_code>>. Este contrato consiste en un token "no indistinguible", compatible con el estándar ERC721 (véase <<erc721>>).
+
+[[deed_repository_code]]
+.DeedRepository.sol: Un token de escrituras ERC721 para ser usado en subastas
+====
+[source,solidity]
+----
+include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
+----
+====
+
+Como puede verse, el contrato +DeedRepository+ es una implementación sencilla de un token compatible con el estándar ERC721.
+
+Nuestra DApp de Subastas utiliza el contrato +DeedRepository+ para emitir y rastrear tokens para cada subasta. La subasta en sí está orquestada por el contrato +AuctionRepository+. Este contrato es demasiado largo para incluirlo aquí en su totalidad, pero en el <<auction_repository_code>> se muestra la definición principal del contrato y las estructuras esenciales de datos. El contrato completo está disponible en el repositorio https://bit.ly/2IaOo9i[GitHub del libro].
+
+[[auction_repository_code]]
+.AuctionRepository.sol: El contrato inteligente principal de la DApp de Subastas
+====
+[source,solidity]
+----
+contract AuctionRepository {
+
+    // Un arreglo contentivo de todas las subastas
+    Auction[] public auctions;
+
+    // Un mapeo que asigna a los identificadores de subastas, las ofertas de los usuarios
+    mapping(uint256 => Bid[]) public auctionBids;
+
+    // Un mapeo que asigna propietarios a una lista de subastas que ya posee asignadas
+    mapping(address => uint[]) public auctionOwner;
+
+    // Estructo para las ofertas, que registra a los ofertantes y las cifras de sus ofertas 
+    struct Bid {
+        address from;
+        uint256 amount;
+    }
+
+    // Estructo para las subastas que registra toda la información requerida
+    struct Auction {
+        string name;
+        uint256 blockDeadline;
+        uint256 startPrice;
+        string metadata;
+        uint256 deedId;
+        address deedRepositoryAddress;
+        address owner;
+        bool active;
+        bool finalized;
+    }
+----
+====
+
+El contrato +AuctionRepository+ gestiona todas las subastas con las siguientes funciones:
+
+[source,solidity]
+----
+getCount()
+getBidsCount(uint _auctionId)
+getAuctionsOf(address _owner)
+getCurrentBid(uint _auctionId)
+getAuctionsCountOfOwner(address _owner)
+getAuctionById(uint _auctionId)
+createAuction(address _deedRepositoryAddress, uint256 _deedId,
+              string _auctionTitle, string _metadata, uint256 _startPrice, 
+              uint _blockDeadline)
+approveAndTransfer(address _from, address _to, address _deedRepositoryAddress,
+                   uint256 _deedId)
+cancelAuction(uint _auctionId)
+finalizeAuction(uint _auctionId)
+bidOnAuction(uint _auctionId)
+----
+
+Podemos desplegar estos contratos en la cadena de bloques de Ethereum de nuestra elección (por ejemplo, la red de pruebas Ropsten) usando +truffle+ en el repositorio del libro:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/backend</strong>
+$ <strong>truffle init</strong>
+$ <strong>truffle compile</strong>
+$ <strong>truffle migrate --network ropsten</strong>
+</pre>
+++++
+
+===== Gobernanza de una DApp
+
+Si leemos los dos contratos inteligentes de la DApp de Subastas, notaremos algo importante: no hay una cuenta o función especial que otorgue privilegios especiales sobre la DApp. Cada subasta tiene un propietario con algunas capacidades especiales, pero la DApp de Subastas en sí, no tiene un usuario privilegiado.
+
+Esta es un criterio deliberado de diseño para descentralizar la gobernanza de la DApp y renunciar a cualquier control sobre esta, una vez que se ha desplegado. En comparación, algunas otras DApps tienen una o más cuentas privilegiadas con capacidades especiales, como la capacidad de rescindir el contrato de la DApp, anular o cambiar su configuración, o "vetar" ciertas operaciones. Por lo general, estas funciones de gobierno se introducen en la DApp para evitar problemas desconocidos que pueden surgir debido a algún error.
+
+El tema de la gobernanza es particularmente difícil de resolver, ya que representa un arma de doble filo. Por un lado, las cuentas privilegiadas son peligrosas; si se ven comprometidas, pueden subvertir la seguridad de la DApp. Por otro lado, sin una cuenta privilegiada, no hay opciones de recuperación si se encuentra un error de código. Hemos visto que ambos riesgos se han manifestado en DApps de Ethereum.((("DAO (Organización Autónoma Descentralizada)","ataque de re-ingreso")))En el caso de "The DAO" (véase <<real_world_example_the_dao>> y el <<ethereum_fork_history>> ), habían algunas cuentas privilegiadas llamadas "curadores", pero que tenían capacidades muy limitadas. Esas cuentas no pudieron anular el retiro de los fondos del atacante de The DAO. En un caso más reciente, la casa de cambios descentralizada de Bancor, experimentó un robo masivo porque una cuenta de administración privilegiada se vio comprometida. Resultó ser que Bancor no era tan "descentralizado" como se asumió inicialmente.
+
+Al crear una DApp, debe decidirse si desearemos que los contratos inteligentes sean realmente independientes, para luego lanzarlos y ya no tener control sobre ellos, o crear cuentas privilegiadas y correr el riesgo de que se vean comprometidas. Cualquiera de las opciones conlleva riesgos, pero a la larga, las DApps verdaderas no pueden tener accesos especializados para cuentas privilegiadas&#x2014; eso no ser, en verdad, descentralizado.(((range="endofrange", startref="ix_12dapps-asciidoc5")))(((range="endofrange", startref="ix_12dapps-asciidoc4")))
+
+==== DApp de Subastas: Interfaz de Usuario Front-End
+
+((("DApp de Subastas","interfaz de usuario front-end")))Una vez que se despliegan los contratos de la DApp de Subastas, se puede entonces interactuar con ellos utilizando nuestra consola JavaScript favorita y web3.js, o cualquier otra biblioteca web3. Sin embargo, la mayoría de los usuarios necesitarán una interfaz fácil de usar. Nuestra interfaz de usuario de la DApp de Subastas está construida utilizando el entorno Vue2/Vuetify de Google para JavaScript.
+
+Se puede encontrar el código de la interfaz de usuario en la carpeta _code/auction_dapp/frontend_ en https://github.com/ethereumbook/ethereumbook[el repositorio del libro]. El directorio tiene la siguiente estructura y contenido:
+
+----
+frontend/
+|-- build
+|   |-- build.js
+|   |-- check-versions.js
+|   |-- logo.png
+|   |-- utils.js
+|   |-- vue-loader.conf.js
+|   |-- webpack.base.conf.js
+|   |-- webpack.dev.conf.js
+|   `-- webpack.prod.conf.js
+|-- config
+|   |-- dev.env.js
+|   |-- index.js
+|   `-- prod.env.js
+|-- index.html
+|-- package.json
+|-- package-lock.json
+|-- README.md
+|-- src
+|   |-- App.vue
+|   |-- components
+|   |   |-- Auction.vue
+|   |   `-- Home.vue
+|   |-- config.js
+|   |-- contracts
+|   |   |-- AuctionRepository.json
+|   |   `-- DeedRepository.json
+|   |-- main.js
+|   |-- models
+|   |   |-- AuctionRepository.js
+|   |   |-- ChatRoom.js
+|   |   `-- DeedRepository.js
+|   `-- router
+|       `-- index.js
+----
+
+Una vez que se hayan desplegado los contratos, editaremos la configuración de la interfaz en la carpeta _frontend/src/config.js_ e ingresamos las direcciones de los contratos +DeedRepository+ y +AuctionRepository+, tal como se desplegaron. La aplicación front-end también necesita acceso a un nodo de Ethereum que ofrezca una interfaz JSON-RPC y WebSockets. Una vez que se haya configurado el front-end, podremos ejecutarlo como servidor web, en nuestra máquina local:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install</strong>
+$ <strong>npm run dev</strong>
+</pre>
+++++
+
+La interfaz de la DApp de Subastas se iniciará y será accesible a través de cualquier navegador web en la pagina local http://localhost:8080.
+
+Si todo sale bien, debería verse la pantalla que se muestra en la <<auction_dapp_screen>>, que ilustra la DApp de Subastas que se ejecuta en un navegador web.
+
+[[auction_dapp_screen]]
+.Interfaz de Usuario para la DApp de Subastas
+image::images/auction_dapp_home_screen.png["Interfaz de Usuario para la DApp de Subastas"]
+
+=== Descentralizar aún más la DApp de Subastas
+
+((("DApp de Subastas","descentralización adicional")))Nuestra DApp ya está bastante descentralizada, pero podemos mejorar aún más las cosas.
+
+El contrato +AuctionRepository+ opera independientemente de cualquier supervisión, y está abierto a cualquier persona. Una vez desplegado, no se puede detener, ni se puede controlar ninguna subasta. Cada subasta tiene una sala de chat separada que permite a cualquier persona comunicarse sobre asuntos de su subasta sin censura ni identificación. Los diversos activos de la subasta, como la descripción y la imagen asociada, se almacenan en Swarm, lo que dificulta su censura o bloqueo.
+
+Cualquiera puede interactuar con la DApp construyendo transacciones manualmente o ejecutando la interfaz "Vue" en su máquina local. El código de nuestra DApp es en sí, de código abierto y desarrollado en colaboración, en un repositorio público.
+
+Hay dos cosas que podemos hacer para que esta DApp sea más descentralizada y resiliente:
+
+* Almacenar todo el código de la aplicación en Swarm o IPFS.
+* Acceder a la DApp por referencia a un nombre, utilizando el servicio de nombres de Ethereum.
+
+Exploraremos la primera opción en la siguiente sección y profundizaremos sobre la segunda opción en <<ethereum_naming_system_ens>>.
+
+=== Almacenando nuestra DApp de Subastas en Swarm
+
+((("DApp de Subastas","almacenamiento en Swarm", id="ix_12dapps-asciidoc6", range="startofrange")))((("Swarm","almacenando la DApp de Subastas en Swarm", id="ix_12dapps-asciidoc7", range="startofrange")))Introdujimos la plataforma Swarm en la sección <<swarm_sec>>, anteriormente en este capítulo. Nuestra DApp de Subastas ya usa Swarm para almacenar la imagen del icono para cada subasta. Esta es una solución mucho más eficiente que intentar almacenar datos en Ethereum, que es costoso. También es mucho más resiliente que si estas imágenes se almacenaran en un servicio centralizado como un servidor web o un servidor de archivos.
+
+Pero podemos llevar las cosas un paso más allá. Podemos almacenar la interfaz completa de la DApp en Swarm y ejecutarla directamente desde un nodo Swarm, en lugar de ejecutarla desde un servidor web.
+
+==== Preparando Swarm
+
+((("Swarm","instalación e inicialización")))Para comenzar, es necesario instalar Swarm e inicializar nuestro nodo Swarm. Swarm es parte del conjunto de herramientas Go-Ethereum de la Fundación Ethereum. Consulte las instrucciones para instalar Go-Ethereum en <<go_ethereum_geth>>, o para instalar una versión binaria de Swarm, siga las instrucciones en el enlace: http://bit.ly/2Q75KXw[Swarm documentation].
+
+Una vez que se haya instalado Swarm, podremos verificar que funciona correctamente ejecutándolo con el comando +versión+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm version</strong>
+Version: 0.3
+Git Commit: 37685930d953bcbe023f9bc65b135a8d8b8f1488
+Go Version: go1.10.1
+OS: linux
+</pre>
+++++
+
+Para comenzar a ejecutar Swarm, debe indicarle cómo conectarse a una instancia de Geth para acceder a la API JSON-RPC. Para comenzar, siga las instrucciones de la guía del enlace: https://swarm-guide.readthedocs.io/en/latest/gettingstarted.html[Getting Started guide].
+
+Cuando iniciamos Swarm, deberíamos ver algo como esto:
+
+----
+Maximum peer count                       ETH=25 LES=0 total=25
+Starting peer-to-peer node               instance=swarm/v0.3.1-225171a4/linux...
+connecting to ENS API                    url=http://127.0.0.1:8545
+swarm[5955]: [189B blob data]
+Starting P2P networking
+UDP listener up                          self=enode://f50c8e19ff841bcd5ce7d2d...
+Updated bzz local addr                   oaddr=9c40be8b83e648d50f40ad3... uaddr=e
+Starting Swarm service
+9c40be8b hive starting
+detected an existing store. trying to load peers
+hive 9c40be8b: peers loaded
+Swarm network started on bzz address: 9c40be8b83e648d50f40ad3d35f...
+Pss started
+Streamer started
+IPC endpoint opened                      url=/home/ubuntu/.ethereum/bzzd.ipc
+RLPx listener up                         self=enode://f50c8e19ff841bcd5ce7d2d...
+----
+
+Podemos confirmar que nuestro nodo Swarm se está ejecutando correctamente, conectándolo a la compuerta de enlace que sirve de interfaz web para Swarm, a nivel local de la máquina:
+http://localhost:8500.
+
+Al abrir este "localhost", deberíamos ver a continuación una pantalla como la que se muestra en la <<image_swarm_gateway>> y deberíamos ser capaces de consultar cualquier hash Swarm o nombre de Ethereum "ENS".
+
+[[image_swarm_gateway]]
+.Compuerta localhost para Swarm
+image::images/swarm-gateway.png["Compuerta localhost para Swarm"]
+
+==== Subiendo Archivos a Swarm
+
+((("Swarm","subiendo archivos", id="ix_12dapps-asciidoc8", range="startofrange")))Una vez que tengamos nuestro nodo y nuestra compuerta local de enlace para Swarm en ejecución, podemos cargar contenido a Swarm y los archivos subidos serán accesibles a cualquier nodo Swarm, simplemente referenciándolos con su hash de archivo.
+
+Probemos esto cargando un archivo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm up code/auction_dapp/README.md</strong>
+ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c
+</pre>
+++++
+
+Swarm ha logrado subir el archivo _README.md_ y ha devuelto un hash que podrá usarse para acceder a este archivo desde cualquier nodo de Swarm. Por ejemplo, podemos usar la compuerta pública de Swarm, con el enlace: https://bit.ly/2znWUP9[public Swarm gateway].
+
+Si bien cargar un archivo es relativamente sencillo, es un poco más complejo cargar una interfaz DApp completa. Esto se debe a que los diversos recursos de la DApp (HTML, CSS, JavaScript, bibliotecas, etc.) tienen referencias incrustadas que se cruzan entre sí. Normalmente, un servidor web traduce las URL a archivos locales y sirve los recursos correctos. Podemos lograr lo mismo para Swarm mediante el empaquetado de nuestra DApp.
+
+En la DApp de Subastas, hay un script para empaquetar todos los recursos:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/frontend</strong>
+$ <strong>npm run build</strong>
+
+> <strong>frontend@1.0.0 build /home/aantonop/Dev/ethereumbook/code/auction_dapp/frontend</strong>
+> <strong>node build/build.js</strong>
+
+Hash: 9ee134d8db3c44dd574d
+Version: webpack 3.10.0
+Time: 25665ms
+Asset     Size
+static/js/vendor.77913f316aaf102cec11.js  1.25 MB
+static/js/app.5396ead17892922422d4.js   502 kB
+static/js/manifest.87447dd4f5e60a5f9652.js  1.54 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css  1.13 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map  2.54 kB
+static/js/vendor.77913f316aaf102cec11.js.map  4.74 MB
+static/js/app.5396ead17892922422d4.js.map   893 kB
+static/js/manifest.87447dd4f5e60a5f9652.js.map  7.86 kB
+index.html  1.15 kB
+
+Build complete.
+</pre>
+++++
+
+El resultado de este comando será un nuevo directorio, _code/auction_dapp/frontend/dist_, que contiene todo el front-end de la DApp de Subastas, empaquetado:
+
+----
+dist/
+|-- index.html
+`-- static
+    |-- css
+    |   |-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css
+    |   `-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map
+    `-- js
+        |-- app.5396ead17892922422d4.js
+        |-- app.5396ead17892922422d4.js.map
+        |-- manifest.87447dd4f5e60a5f9652.js
+        |-- manifest.87447dd4f5e60a5f9652.js.map
+        |-- vendor.77913f316aaf102cec11.js
+        `-- vendor.77913f316aaf102cec11.js.map
+
+----
+
+Ahora podemos cargar toda la DApp en Swarm, utilizando el comando +up+ y la opción +--recursive+. Aquí, también le decimos a Swarm que +index.html+ es la ruta por defecto o el +defaultpath+ para cargar esta DApp:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm --bzzapi http://localhost:8500 --recursive \
+  --defaultpath dist/index.html up dist/</strong>
+
+ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+</pre>
+++++
+
+Ahora, toda nuestra DApp de Subastas está alojada en Swarm y se puede acceder a ella mediante la URL de Swarm:(((range="endofrange", startref="ix_12dapps-asciidoc8")))
+
+++++
+<ul class="simplelist">
+<li><em>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+Hemos progresado un poco en la descentralización de nuestra DApp, pero hemos hecho que sea más difícil de usar. Una URL como esa es mucho menos fácil de usar que un nombre agradable como __auction_dapp.com__. ¿Nos vemos obligados a sacrificar la usabilidad para obtener la descentralización? No necesariamente. En la siguiente sección examinaremos el servicio de nombres de Ethereum, que nos permite usar nombres fáciles de leer pero aún conserva la naturaleza descentralizada de nuestra aplicación.(((range="endofrange", startref="ix_12dapps-asciidoc7")))(((range="endofrange", startref="ix_12dapps-asciidoc6")))
+
+[[ethereum_naming_system_ens]]
+=== El Servicio de Nombres de Ethereum (ENS)
+
+((("DApp de Subastas","ENS and", id="ix_12dapps-asciidoc9", range="startofrange")))((("ENS (Ethereum Name Service)", id="ix_12dapps-asciidoc10", range="startofrange")))((("ENS (Servicio de Nombres de Ethereum)","DApps y ENS", id="ix_12dapps-asciidoc11", range="startofrange")))Podemos diseñar el mejor contrato inteligente del mundo, pero si no proporciona una buena interfaz para los usuarios, casi nadie podrá acceder a ella.
+
+En Internet tradicional, el Sistema de Nombres de Dominio (DNS) nos permite usar nombres legibles por humanos en el navegador mientras decodificamos esos nombres a direcciones IP u otros identificadores detrás de escena. En la cadena de bloques Ethereum, el _Ethereum Naming System_ (ENS) resuelve el mismo problema, pero de manera descentralizada.
+
+Por ejemplo, la dirección de donación de la Fundación Ethereum es +0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359+; en una billetera que admite ENS, esta cadena de números hexadecimales, es simplemente +ethereum.eth+.
+
+ENS es más que un contrato inteligente; Es una DApp fundamental en sí misma, que ofrece un servicio de nombres descentralizados. Además, ENS es compatible con una serie de DApps para el registro, la gestión y las subastas de nombres registrados. ENS demuestra cómo las DApps pueden trabajar en conjunto: es una DApp construida para servir a otras DApps, respaldada por un ecosistema de DApps, integrado en otras DApps, etc.
+
+En esta sección veremos cómo funciona ENS. Demostraremos cómo podemos configurar nuestro propio nombre y vincularlo a una billetera o una dirección de Ethereum, cómo puede integrarse el ENS en otra DApp y cómo podemos usar ENS para nombrar nuestros recursos de nuestras DApp para que sean más fáciles de usar.
+
+==== Historia de los Servicios de Nombres de Ethereum
+
+((("ENS (Ethereum Name Service)","su historia")))El registro de nombres fue la primera aplicación de las cadenas de bloques no monetaria, iniciada por Namecoin. El http://bit.ly/2Of1gfZ[White Paper] de Ethereum  proporcionó un sistema de registro tipo Namecoin de dos líneas como una de sus aplicaciones de ejemplo.
+
+Los primeros lanzamientos de Geth y el cliente C++ de Ethereum tenían un contrato +namereg+ incorporado (que ya no se usa), y se hicieron muchas propuestas y "ERC" para servicios de nombres, pero fue solo cuando Nick Johnson comenzó a trabajar para la Fundación Ethereum en 2016 y tomó el proyecto bajo su ala que comenzó un trabajo serio para un registrador.
+
+El ENS se lanzó el Día de Star Wars, el 4 de mayo de 2017 (después de un intento fallido de lanzarlo el Día de Pi, el 15 de marzo).
+
+==== Las Especificacones ENS
+
+((("ENS (Ethereum Name Service)","su diseño", id="ix_12dapps-asciidoc12", range="startofrange")))El ENS es ((("ENS (Ethereum Name Service)","especificación")))especificado principalmente en tres Propuestas de Mejora de Ethereum: la EIP-137, que especifica las funciones básicas del ENS; la EIP-162, que describe los sistemas de subastas para la raíz +.eth+; y la EIP-181, la cual especifica la resolución inversa de direcciones.
+
+El ENS sigue una filosofía de diseño tipo "sandwich": una capa muy simple en la parte inferior, seguida de capas de código más complejas pero reemplazables, con una capa superior muy simple que mantiene todos los fondos en cuentas separadas.
+
+==== La Capa Inferior: Propietarios de Nombres y Decodificadores de Nombres (Solucionadores)
+
+((("ENS (Ethereum Name Service)","la capa del fondo: propietarios de nombres y solucionadores", id="ix_12dapps-asciidoc13", range="startofrange")))El ENS funciona mediante "nodos"; en lugar de nombres legibles por humanos: un nombre legible por humanos se convierte en un nodo utilizando el algoritmo "Namehash".
+
+La capa base del ENS es un contrato ingeniosamente simple (de menos de 50 líneas de código) definido por el estándar ERC137 que permite que solo los propietarios de los nodos establezcan información pertinente sobre sus nombres y puedan crear sub-nodos (el equivalente ENS de los sub-dominios DNS).
+
+Las únicas funciones propias de la capa base son aquellas que permiten al propietario de un nodo establecer información sobre su propio nodo (específicamente el solucionador, el tiempo de vida o la transferencia de la propiedad) y crear propietarios de nuevos sub-nodos.
+
+===== El Algoritmo Namehash
+
+((("ENS (Ethereum Name Service)","el algoritmo Namehash")))((("el algoritmo Namehash")))Namehash es un algoritmo recursivo que puede convertir cualquier nombre en un valor hash que lo identifique.
+
+Aquí, "Recursivo" significa que resolvemos el problema resolviendo un sub-problema que es un problema más pequeño del mismo tipo, y luego usamos la solución al sub-problema para resolver el problema original.
+
+El algoritmo Namehash obtiene recursivamente valores hash de los componentes del nombre, produciendo una cadena única, (o &#x201c;nodo&#x201d;) de longitud fija para cualquier dominio de entrada válido.  Por ejemplo, el nodo Namehash de +subdomain.example.eth+ es `keccak('<example.eth>' node) + keccak('<subdomain>')`. El sub-problema que debemos resolver es calcular el nodo para +example.eth+, el cual es `keccak('<.eth>' node) + keccak('<example>')`. Para comenzar, debemos calcular el nodo para +eth+, el cual es `keccak(<root node>) + keccak('<eth>')`.
+
+El nodo raíz es lo que llamamos el "caso base" de nuestra recursividad, y obviamente no podemos definirlo recursivamente, ¡o el algoritmo nunca terminaría! El nodo raíz se define como `0x0000000000000000000000000000000000000000000000000000000000000000` (un binario de 32 bytes con puros ceros).
+
+Al poner todo esto en conjunto, el nodo de +subdomain.example.eth+ es por ende pass:[<code><span class="keep-together">keccak</span>(keccak(keccak(0x0...0 + keccak('eth')) + keccak('example')) + keccak('subdomain'))</code>].
+
+Generalizando, podemos definir la función Namehash de la siguiente manera (el caso base para el nodo raíz, o el nombre vacío, seguido del paso recursivo):
+
+....
+namehash([]) = 0x0000000000000000000000000000000000000000000000000000000000000000
+namehash([label, ...]) = keccak256(namehash(...) + keccak256(label))
+....
+
+En Python esto se convierte en:
+
+....
+def namehash(name):
+  if name == '':
+    return '\0' * 32
+  else:
+    label, _, remainder = name.partition('.')
+    return sha3(namehash(remainder) + sha3(label))
+....
+
+Por lo tanto, +mastering-ethereum.eth+ se procesará de la siguiente manera:
+
+....
+namehash('mastering-ethereum.eth')
+⇒ sha3(namehash('eth') + sha3('mastering-ethereum'))
+⇒ sha3(sha3(namehash('') + sha3('eth')) + sha3('mastering-ethereum'))
+⇒ sha3(sha3(('\0' * 32) + sha3('eth')) + sha3('mastering-ethereum'))
+....
+
+Desde luego, los sub-dominios pueden tener a su vez, sub-dominios: puede haber un +sub.subdomain.example.eth+ después de +subdomain.example.eth+, luego un +sub.sub.subdomain.example.eth+, y así sucesivamente. Para evitar un recálculo costoso, dado que Namehash depende solo del nombre en sí, el nodo para un nombre determinado puede calcularse previamente e insertarse en un contrato, eliminando la necesidad de manipulación de cadenas y permitiendo la búsqueda inmediata de registros ENS independientemente del número de componentes en el nombre en original.
+
+===== Cómo elegir un nombre válido
+((("ENS (Ethereum Name Service)","eligiendo un nombre válido")))Los nombres consisten en una serie de etiquetas separadas por puntos. Si bien se permiten letras mayúsculas y minúsculas, todas las etiquetas deben seguir un proceso de normalización UTS &#x23;46 que dobla las mayúsculas y minúsculas antes de aplicar el cálculo del hash, por lo que los nombres con mayúsculas y minúsculas idénticas terminarán con el mismo Namehash.
+
+Podemos usar etiquetas y dominios de cualquier longitud, pero en aras de la compatibilidad con el DNS heredado, se recomiendan las siguientes reglas:
+
+* Las etiquetas no deben tener más de 64 caracteres cada una.
+* Los nombres completos de ENS no deben tener más de 255 caracteres.
+* Las etiquetas no deben comenzar o terminar con guiones, o comenzar con dígitos.
+
+===== Titularidad del nodo raíz
+
+((("ENS (Ethereum Name Service)","titularidad del nodo raíz")))Uno de los resultados de este sistema jerárquico es que el mismo depende de los dueños del nodo raíz, quienes pueden crear dominios de nivel superior (del inglés "top-level domains" o TLDs).
+
+Si bien el objetivo final es adoptar un proceso de toma de decisiones descentralizada para los nuevos TLD, en el momento de escribirse este libro, el nodo raíz está controlado por un esquema de firmas múltiples de al menos 4-de-7, conducido por personas en diferentes países (construido a semejanza de los 7 titulares de llaves del sistema DNS).
+Como resultado, se requiere una mayoría de al menos 4 de los 7 titulares de las llaves para efectuar cualquier cambio de dominio.
+
+Actualmente, el propósito y el objetivo de estos titulares de llaves es trabajar en consenso con la comunidad para:
+
+* Migrar y actualizar la titularidad temporal del +.eth+ TLD a un contrato más permanente una vez que se evalúe el sistema.
+* Permitir que se agreguen nuevos TLDs, si la comunidad acepta que son necesarios.
+* Migrar la titularidad del esquema de múltiples firmas de raíz, a un contrato más descentralizado, cuando tal sistema se acuerde, se pruebe y se implemente.
+* Servir como una forma de último recurso para tratar cualquier error o vulnerabilidad en los registros de nivel superior.
+
+===== Solucionadores
+
+((("ENS (Ethereum Name Service)","solucionadores")))((("contratos solucionadores")))El contrato básico de ENS no puede agregar metadatos a los nombres; ese es el trabajo de los llamados "contratos solucionadores". Estos son contratos creados por el usuario que pueden responder preguntas sobre el nombre, tales como cual es la dirección de Swarm que está asociada con la aplicación, qué dirección recibe le recibe los pagos a la aplicación (en éter o tokens) o cuál es el hash de la aplicación (para verificar su integridad).(((range="endofrange", startref="ix_12dapps-asciidoc13")))
+
+==== Capa Intermedia: Los Nodos .eth
+
+((("nodos .eth")))((("ENS (Ethereum Name Service)","capa intermedia: los nodos .eth")))((("nodos eth")))Al momento de escribirse este libro, el único dominio de nivel superior que se puede registrar de forma exclusiva en un contrato inteligente es +.eth+.
+
+[NOTE]
+====
+Se está trabajando para que los propietarios de dominios DNS tradicionales puedan reclamar la titularidad del ENS.
+Si bien, en teoría, esto podría funcionar para +.com+, el único dominio que se ha implementado hasta ahora es http://bit.ly/2SwUuFC[+.xyz+, y solo en la red de prueba de Ropsten].
+====
+
+Los dominios +.eth+ se distribuyen a través de un sistema de subastas. No hay una lista reservada o prioridad, y la única forma de adquirir un nombre es usar el sistema. El sistema de subastas es un código complejo (más de 500 líneas de código); La mayoría de los primeros esfuerzos de desarrollo (¡y errores!) en ENS estaban en esta parte del sistema. Sin embargo, también es reemplazable y actualizable, sin riesgo para los fondos; ahondaremos más sobre esto, más adelante.
+
+[[vickrey_auction]]
+===== Subastas de Vickrey
+
+((("ENS (Ethereum Name Service)","subastas de Vickrey")))((("subastas de Vickrey")))Los nombres se distribuyen a través de una subasta tipo Vickrey modificada. En una subasta tradicional de Vickrey, cada postor presenta una oferta sellada, y llegado el momento, todas se revelan simultáneamente, y el mejor postor gana la subasta, pero este ganador sólo pagará la cantidad de la segunda oferta más alta. Por lo tanto, se incentiva a los licitadores a no ofertar por debajo del valor real del nombre para ellos, ya que ofertar su verdadero valor aumenta la posibilidad de que ganen pero no afecta el precio que eventualmente pagarán.
+
+Para aplicar esto en una cadena de bloques, se requieren algunos cambios:
+
+* Para garantizar que los postores no presenten ofertas que no tengan intención de pagar, deben comprometer un activo de valor igual o superior a su oferta tentativa de antemano, para garantizar que la oferta, cual sea que fuera, sea válida.
+* Debido a que no se pueden ocultar secretos en una cadena de bloques, los licitantes deben ejecutar al menos dos transacciones (el conocido proceso de comprometer-revelar), para ocultar el valor original y el nombre en el que ofertaron.
+* Dado que no se pueden revelar todas las ofertas simultáneamente en un sistema descentralizado, los postores deben revelar individualmente sus propias ofertas; si no lo hacen, perderán sus fondos comprometidos. Sin esta pérdida, cualquiera podría hacer muchas ofertas y elegir revelar solo una o dos, convirtiendo una subasta de oferta sellada en una típica pass:[<span class="keep-together">subasta</span>] de manipulación de precios.
+
+Por lo tanto, la subasta (tipo Vickrey modificada) es un proceso de cuatro pasos:
+
+1. Se da inicio a la subasta. Esto es necesario para transmitir la intención de registrar un nombre.
+Esto crea todos los límites de tiempo de la subasta. Los nombres están en forma de valores hash, de modo que solo aquellos que tengan el nombre en su diccionario sabrán qué subasta se abrió. Esto permite cierta privacidad, lo que es útil si estamos creando un nuevo proyecto y no deseamos compartir detalles al respecto.
+Podemos abrir varias subastas ficticias al mismo tiempo, por lo que si alguien nos está siguiendo, simplemente no podrá ofertar en todas las subastas que se abran.
+
+2. Hay que difundir una oferta sellada. Debemos hacerlo antes de la fecha límite de la subasta, comprometiendo una cantidad dada de éter al hash de un mensaje secreto (mensaje secreto que contendrá, entre otras cosas, el valor hash del nombre, la cantidad real de la oferta y una sal aleatoria).
+La idea es comprometer una cantidad de éter mayor al valor que realmente estamos proponiendo en la oferta, para enmascarar su verdadera valoración.
+
+3. A continuación hay que revelar la oferta. Durante el período de revelación, debemos llevar a cabo una transacción que revele nuestra oferta, a partir de tales transacciones se podrá calcular la oferta más alta y la segunda oferta más alta y se podrán enviar las sumas de éter de regreso a los licitadores que no tuvieron éxito.
+Cada vez que se revela una nueva oferta, se vuelve a re-calcular el ganador actual; por lo tanto, el último en establecerse antes de que expire el plazo revelador, se convierte en el ganador de la subasta en sí.
+
+4. Aclarar cuentas. Una vez establecido el ganador, éste puede finalizar la subasta para recuperar la diferencia en éter entre su oferta y la segunda oferta más alta.
+Si alguien olvida revelar su oferta, puede llevar a cabo una revelación tardía y recuperar un poco de los fondos de su oferta.
+
+==== Capa Superior: Las Escrituras
+
+((("escrituras","como capa superior del ENS")))((("ENS (Ethereum Name Service)","capa superior: escrituras")))La capa superior del ENS es otro contrato en extremo sencillo, que tiene un solo propósito: albergar los fondos.
+
+Cuando se ha ganado un nombre, los fondos en realidad no se envían a ninguna parte ni se le pagan a nadie, sino que simplemente se bloquean durante el período en que desea mantener el nombre (al menos un año).
+Esto funciona como una recompra garantizada: si el propietario ya no quiere el nombre, puede volver a venderlo al sistema y recuperar sus éter (por lo que el costo de mantener el nombre es el costo de oportunidad de hacer algo con los éter, con un rendimiento mayor que cero)
+
+Por supuesto, tener un solo contrato con millones de dólares en éter ha demostrado ser muy arriesgado, por lo que el ENS crea un nuevo contrato de escritura para albergar los fondos de cada nuevo nombre.
+El contrato de escritura es muy simple (alrededor de 50 líneas de código), y solo permite que los fondos se transfieran de vuelta a una sola cuenta (el propietario de la escritura) y que una sola entidad (el contrato de registro) lo invoque.
+Este enfoque reduce drásticamente la superficie de ataque del contrato, donde los errores de código pueden poner los fondos en riesgo.(((range="endofrange", startref="ix_12dapps-asciidoc12")))
+
+==== Registrando un Nombre
+
+((("ENS (Ethereum Name Service)","registrando un nombre", id="ix_12dapps-asciidoc14", range="startofrange")))((("registrando un nombre", id="ix_12dapps-asciidoc15", range="startofrange")))El registro de nombres en el sistema ENS es un proceso de cuatro pasos, tal y como lo vimos en <<vickrey_auction>>. En primer lugar, colocamos una oferta por cualquier nombre disponible, a continuación revelamos nuestra oferta tras 48 horas para asegurarnos el nombre. En <<ens_registration_timeline>> se muestra un diagrama que expone la secuencia de eventos del registro.
+
+¡Registremos nuestro primer nombre!
+
+Utilizaremos una de las varias interfaces fáciles de usar que tenemos de opción, para buscar nombres disponibles, hacer una oferta por el nombre +ethereumbook.eth+, revelar la oferta y asegurar el nombre.
+
+Existen varias interfaces basadas en la web para el ENS que nos permitirían interactuar con la aplicación de ENS. Para este ejemplo, utilizaremos la interfaz https://mycrypto.com/[MyCrypto], junto con MetaMask como nuestra billetera.
+
+[[ens_registration_timeline]]
+.La secuencia de pasos de registro en el ENS
+image::images/ens-flow.png[]
+
+
+
+Primero, debemos asegurarnos de que el nombre que nos interesa, está disponible. Mientras escribíamos este libro, realmente queríamos registrar el nombre +mastering.eth+, pero por desgracia, <<ens-name-search>> reveló que el nombre ya estaba tomado! Debido a que los registros de ENS solo duran un año, podría ser posible asegurar ese nombre en el futuro. Mientras tanto, busquemos +ethereumbook.eth+ (<<ens-name-search>>).
+
+[[ens-name-search]]
+.Buscando nombres del servicio ENS en la página MyCrypto.com
+image::images/ens-checkname.png["Buscando nombres del servicio ENS en la página MyCrypto.com"]
+
+¡Excelente! El nombre esta disponible. Para registrarlo, necesitamos avanzar de acuerdo con <<ens-auction>>. Desbloqueemos nuestra cartera MetaMask y comencemos una subasta para conseguir el nombre +ethereumbook.eth+.
+
+
+[[ens-auction]]
+.Iniciando una subasta por un nombre del sistema de ENS
+image::images/ens-auction.png["Iniciando una subasta por un nombre del sistema de ENS"]
+
+
+Hagamos nuestra apuesta. Para hacerlo, debemos seguir los pasos según <<ens-bid>>.
+
+
+[[ens-bid]]
+.Presentando una oferta por un nombre ENS
+image::images/ens-bid.png["Presentando una oferta por un nombre ENS"]
+
+[ADVERTENCIA]
+====
+Tal y como se menciona en <<vickrey_auction>>, debemos revelar nuestra oferta dentro de las 48 horas después que la subasta ha sido completada, o _perderemos los fondos de nuestra oferta_. ¿Si nos olvidamos de hacer esto, perderemos 0.01 ETH? Puedes apostar a que sí.
+
+Tomemos una captura de pantalla, guardemos nuestra frase secreta (como respaldo de nuestra oferta) y agreguemos un recordatorio en nuestro calendario para la fecha y hora que debemos llevar a cabo la revelación, para que no se nos olvide y perdamos nuestros fondos.
+====
+
+Finalmente, confirmamos la transacción, haciendo clic en el gran botón verde de envío que se muestra en la cartera MetaMask, según se muestra en <<ens-metamask-bid>>.
+
+[[ens-metamask-bid]]
+.Transacción MetaMask contentiva de nuestra oferta
+image::images/ens-metamask-bid.png["Transacción MetaMask contentiva de nuestra oferta"]
+
+Si todo sale bien, después de difundir nuestra transacción de esta manera, podremos volver y revelar nuestra oferta en 48 horas, y el nombre que solicitamos será registrado a favor de nuestra dirección de Ethereum.(((range="endofrange", startref="ix_12dapps-asciidoc15")))(((range="endofrange", startref="ix_12dapps-asciidoc14")))
+
+==== Administrando Nuestro Nombre ENS
+
+((("ENS (Ethereum Name Service)","administrando nuestro nombre ENS")))Una vez que hayamos registrado un nombre ENS, podremos administrarlo usando otra interfaz fácil de usar: el https://manager.ens.domains/[ENS Manager].
+
+
+Una vez allí, ingresamos el nombre que deseamos administrar en el cuadro de búsqueda (véase <<ens-manager>>). Debemos tener la billetera Ethereum (por ejemplo, MetaMask) desbloqueada, para que la DApp del administrador ENS pueda maniobrar sobre nuestro nombre como nuestro mediador.
+
+[[ens-manager]]
+.La interfaz web del ENS Manager
+image::images/ens-manager.png["La interfaz web del ENS Manager"]
+
+Desde esta interfaz, podemos crear sub-dominios, establecer un contrato de resolución (hablaremos más sobre esto más adelante) y conectar cada nombre al recurso apropiado, como la dirección Swarm de una interfaz front-end de una DApp.
+
+===== Crear un subdominio ENS
+
+Primero, vamos a crear un sub-dominio para nuestra DApp de Subastas de ejemplo (véase <<ens-manager-add-subdomain>>). Elegiremos para nuestro sub-dominio el nombre de +auction+, por lo que el nombre completo será +auction.ethereumbook.eth+.
+
+[[ens-manager-add-subdomain]]
+.Agregando el sub-dominio auction.ethereumbook.eth
+image::images/ens_manager_add_subdomain.png["Agregando el sub-dominio auction.ethereumbook.eth"]
+
+Una vez que hayamos creado el sub-dominio, podemos ingresar a +auction.ethereumbook.eth+ en el cuadro de búsqueda y administrarlo, tal como administramos el dominio +ethereumbook.eth+ pass:[<span class="keep-together">anteriormente</span>].
+
+[role="pagebreak-before"]
+==== Solucionadores ENS
+
+((("ENS (Ethereum Name Service)","solucionando un nombre", id="ix_12dapps-asciidoc16", range="startofrange")))En el sistema ENS, resolver un nombre es un proceso de dos pasos:
+
+1. Se llama al registro ENS con el nombre para resolverlo después de su valor hash.
+Si la anotación existe, el registro devuelve la dirección de su solucionador.
+
+2. Se llama al solucionador, utilizando el método apropiado para el recurso que se solicita. El solucionador devuelve el resultado deseado.
+
+Este proceso de dos pasos tiene varios beneficios. Separar la funcionalidad de los solucionadores del sistema de los nombres en sí, nos da mucha más flexibilidad. Los propietarios de los nombres pueden usar solucionadores personalizados para resolver cualquier tipo o recurso, ampliando la funcionalidad del ENS. Por ejemplo, si en el futuro quisiéramos vincular un recurso de geolocalización (longitud/latitud) a un nombre del ENS, podríamos crear un nuevo solucionador que responda a una  consulta de pase:[ <span class="keep-together"><code>geolocalización</code></span> ]. ¿Quién sabe qué aplicaciones podrían ser útiles en el futuro? Con solucionadores personalizados, la única limitación es nuestra imaginación.
+
+Por conveniencia, hay un solucionador público predeterminado que puede resolver una variedad de recursos, incluida la dirección Ethereum (para billeteras o contratos) y el contenido (un valor hash de Swarm para DApps o código fuente de contratos).
+
+Dado que queremos vincular nuestra DApp de Subastas a un valor hash de Swarm, podemos usar el solucionador público, que admite la resolución de contenido, como se muestra en <<ens-manager-set-default-resolver>>; no necesitamos programar o desplegar un solucionador personalizado.
+
+[[ens-manager-set-default-resolver]]
+.Configurando el solucionador público predeterminado para auction.ethereumbook.eth
+image::images/ens-manager-set-default-resolver.png["Configurando el solucionador público predeterminado para auction.ethereumbook.eth"]
+
+==== Resolver un Nombre Para un valor Hash de Swarm (Contenido)
+
+((("ENS (Ethereum Name Service)","solucionando un nombre hacia un valor hash de Swarm")))((("Swarm","solucionando un nombre hacia un valor hash de Swarm")))((("un valor hash de Swarm, resolviendo un nombre")))Una vez que el solucionador para +auction.ethereumbook.eth+ está configurado para ser el solucionador público, podemos configurarlo para que devuelva el valor hash de Swarm como el contenido de nuestro nombre (véase <<ens-set-content>>).
+
+[[ens-set-content]]
+.Configurando el 'contenido' para volver a auction.ethereumbook.eth
+image::images/ens-manager-set-content.png["Configurando el 'contenido' para volver a auction.ethereumbook.eth"]
+
+Después de esperar un corto tiempo para que se confirme nuestra transacción, deberíamos poder resolver el nombre correctamente. Antes de establecer un nombre, nuestra DApp de Subastas se puede encontrar en una puerta de enlace Swarm por su hash:
+
+++++
+<ul class="simplelist">
+<li><em>https://swarm-gateways.net/bzz:/ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+o buscando en un navegador DApp o en la compuerta de enlace de Swarm, la URL de Swarm:
+
+++++
+<ul class="simplelist">
+<li><em>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+[role="pagebreak-before"]
+Ahora que hemos hecho la vinculación a un nombre, es mucho más fácil:
+
+++++
+<ul class="simplelist">
+<li><em>http://swarm-gateways.net/bzz:/auction.ethereumbook.eth/</em></li>
+</ul>
+++++
+
+También podemos encontrarlo, buscando "auction.ethereumbook.eth" en cualquier billetera compatible con el sistema ENS o navegador DApp (por ejemplo, Mist)(((range="endofrange", startref="ix_12dapps-asciidoc16"))).(((range="endofrange", startref="ix_12dapps-asciidoc11")))(((range="endofrange", startref="ix_12dapps-asciidoc10")))(((range="endofrange", startref="ix_12dapps-asciidoc9")))
+
+=== From App to DApp
+
+En las últimas secciones, hemos construido gradualmente una aplicación descentralizada. Comenzamos con un par de contratos inteligentes para realizar una subasta de escrituras acordes al estándar ERC721. Estos contratos fueron diseñados para no tener cuentas directivas o privilegiadas, de manera que su operatividad fuera verdaderamente descentralizada. Agregamos un front-end, implementado en JavaScript, que ofrece una interfaz conveniente y fácil de usar para nuestra DApp. La DApp de Subastas utiliza el sistema de almacenamiento descentralizado de Swarm para almacenar recursos de aplicaciones como imágenes. La DApp también utiliza el protocolo de comunicaciones descentralizado Whisper para ofrecer una sala de chat encriptada para cada subasta, sin ningún servidor central.
+
+Cargamos todo el front-end en Swarm, para que nuestra DApp no dependiera de ningún servidor web para servir los archivos. Finalmente, asignamos un nombre para nuestra DApp usando el sistema ENS, conectándolo al valor hash Swarm de la interfaz, para que los usuarios puedan acceder a ella con un nombre simple y fácil de recordar, para que pueda leerse por el ser humano.
+
+Con cada uno de estos pasos, aumentamos la descentralización de nuestra aplicación. El resultado final es una DApp que no tiene ningún punto central de autoridad, ningún punto central de falla y logra manifestar la visión de "web3".
+
+La <<auction_dapp_final_architecture>> muestra la arquitectura completa de la DApp de Subastas.(((range="endofrange", startref="ix_12dapps-asciidoc3")))(((range="endofrange", startref="ix_12dapps-asciidoc2")))
+
+[[auction_dapp_final_architecture]]
+.Arquitectura de la DApp de Subastas
+image::images/auction_dapp_final_architecture.png["Arquitectura de la DApp de Subastas"]
+
+=== Conclusiones
+
+Las aplicaciones descentralizadas son la meta última de la visión de Ethereum, como lo expresaron los fundadores desde sus primeros diseños. Si bien muchas aplicaciones se llaman a sí mismas "DApps" hoy en día, la mayoría de ellas no están completamente descentralizadas. Sin embargo, ya es posible construir aplicaciones que están casi completamente descentralizadas. Con el tiempo, a medida que la tecnología madure aún más, más y más de nuestras aplicaciones podrán descentralizarse, lo que da como resultado una web más resiliente, resistente a la censura y gratuita.(((range="endofrange", startref="ix_12dapps-asciidoc0")))

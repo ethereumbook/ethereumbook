@@ -1,0 +1,422 @@
+[[wallets_chapter]]
+==钱包
+
+((("wallets", id="ix_05wallets-asciidoc0", range="startofrange")))“钱包”一词在以太坊中用于描述几种不同事物。
+
+总体而言，钱包是一种软件应用程序，可充当以太坊的主要用户界面。钱包控制对用户资金的访问，管理密钥和地址，跟踪余额以及创建和签署交易。此外，一些以太坊钱包还可以与智能合约进行交互操作，例如ERC20代币。
+
+((("wallets","defined")))侠义的定义，比如从程序员的角度来看，钱包_wallet_一词是指用于存储和管理用户密钥的系统。每个钱包都有一个密钥管理组件。对于某些钱包，仅有密钥管理功能。但更多钱包属于浏览器_browsers_的一部分，浏览器_browsers_是基于以太坊的去中心化应用程序的接口。我们将在<<decentralized_applications_chap>>中详细介绍去中心化应用_DApps_。钱包一词在各个类别之间没有明确区分，有可能被混为一谈。
+
+在本章中，我们将把钱包当作密钥的容器以及管理这些密钥的系统。
+
+[[wallet_tech_overview]]
+===钱包技术概述
+
+((("wallets","technology overview", id="ix_05wallets-asciidoc1", range="startofrange")))在本节中，我们将总结各种用于构建用户友好，安全和方便的以太坊钱包的技术。
+
+设计钱包的一个关键考虑因素是平衡便利性和隐私性。最方便的以太坊钱包是一种带有单个私钥和地址的钱包，你可以将其用于所有用途。不幸的是，这样的解决方案是隐私的噩梦，因为任何人都可以轻松地跟踪和关联你的所有交易。在每笔交易中使用新密钥最有利于隐私，但是变得很难管理。很难达到正确的平衡，但这就是为什么良好的钱包设计至关重要。
+
+关于以太坊的一个常见误解是以太坊钱包中包含以太币或代币。实际上，严格来讲，钱包只包含密钥。以太币或其他通证都记录在以太坊区块链上。用户通过使用钱包中的密钥对交易进行签名来控制网络上的通证。((("keychains"))) 在某种意义上，以太坊钱包是密钥链_keychain_。话虽如此，考虑到钱包所拥有的密钥是将以太币或通证转移给他人所需要的唯一东西，实际上这种区别是无关紧要的。区别的重要之处在于改变人们的思维方式，从处理传统银行业务的中心化系统（只有你和银行可以看到你帐户中的钱，而你只需要让银行同意你使用资金进行交易即可）到去中心化的区块链平台系统（每个人都可以看到一个账户的以太币余额，尽管他们可能不知道该账户的所有者，而且当所有者希望将资金用于交易时必须得到所有人的同意）。实际上，这意味着可以使用一种独立的方式来检查帐户余额，而无需使用其钱包。此外，如果你开始不喜欢最初使用的钱包应用程序，则可以将帐户从当前的钱包转移到其他钱包。
+
+[NOTE]
+====
+以太坊钱包包含密钥，而不是以太币或通证。钱包就像钥匙串，包含成对的私钥和公钥。用户使用私钥签署交易，从而证明他们拥有以太币。以太币存储在区块链上。
+====
+
+钱包有两种主要类型，根据它们包含的密钥是否相互关联来区分。
+
+((("nondeterministic (random) wallets", id="ix_05wallets-asciidoc2", range="startofrange")))((("random (nondeterministic) wallets", id="ix_05wallets-asciidoc3", range="startofrange")))((("wallets","nondeterministic", id="ix_05wallets-asciidoc4", range="startofrange")))第一种类型是非决定型钱包_nondeterministic wallet_，其中每个密钥都是由不同的随机数独立生成的。按键彼此不相关。 ((("JBOK wallets", seealso="nondeterministic (random) wallets"))) 这种类型的钱包也被称为JBOK钱包，从短语“ Just a Key of Keys”开始。
+
+((("deterministic (seeded) wallets","defined")))((("wallets","deterministic"))) 第二种钱包是确定性钱包_deterministic wallet_，其中所有密钥均来自单个主密钥密钥，称为种子_seed_。这种钱包中的所有密钥都是相互关联的，如果密钥具有原始种子，则可以再次生成。(("key derivation methods"))) 确定性钱包中使用了许多不同的密钥_key_的派生方法。最常用的推导方法使用树状结构，如<<hd_wallets>>。
+
+((("mnemonic code words")))((("seeds","mnemonic code words for")))为了使确定性钱包在发生数据丢失事故（例如手机被盗或掉进马桶）时更加安全，种子通常被编码为单词列表（英语或其他语言），以便你在发生事故时写下并使用。这些被称为钱包的助记词_mnemonic code words_。当然，如果有人掌握了你的助记符代码词，那么他们也可以重新创建你的钱包，从而获得对你的以太币和智能合约的访问权。因此，请非常小心你的恢复单词列表！切勿以电子方式将其以文件形式存储在计算机或电话中。请将其写下来并保存在安全的地方。
+
+接下来的几节将对这些技术中的每一项进行简要介绍。
+
+
+[[random_wallet]]
+====非确定性（随机）钱包
+
+在第一个以太坊钱包（为了以太坊预售而生成的）中，每个钱包文件都存储了一个随机生成的私钥。由于这些“旧式”钱包在许多方面都逊色，因此这些钱包已被确定性钱包所取代。例如，在使用以太坊时，为了保护隐私的一种最佳做法是尽量避免重复使用以太坊地址，即每次收到资金时都要使用新地址（需要新的私钥）。你甚至可以在每笔交易中都使用一个新地址，但如果你用代币进行大量交易，这么做可能会很昂贵。要遵循这种做法，不确定性钱包将需要定期增加其密钥列表，这意味着你将需要进行定期备份。如果你在备份钱包之前丢失了数据（磁盘故障，喝酒事故，手机被盗），你将无法使用资金和智能合约。 “ 0型”不确定性钱包最难处理，因为它们以“及时”方式为每个新地址创建一个新的钱包文件。
+
+((("keystore file"))) 尽管如此，许多以太坊客户端（包括 +geth+）仍使用_keystore_文件，该文件是JSON编码的文件，其中包含一个（随机生成的）私钥，并通过密码短语进行了加密以提高安全性。 JSON文件的内容如下所示：
+
+[[keystore_example]]
+[source,json]
+----
+{
+    "address": "001d3f1ef827552ae1114027bd3ecf1f086ba0f9",
+    "crypto": {
+        "cipher": "aes-128-ctr",
+        "ciphertext":
+            "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
+        "cipherparams": {
+            "iv": "d10c6ec5bae81b6cb9144de81037fa15"
+        },
+        "kdf": "scrypt",
+        "kdfparams": {
+            "dklen": 32,
+            "n": 262144,
+            "p": 1,
+            "r": 8,
+            "salt":
+                "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
+        },
+        "mac": "594c8df1c8ee0ded8255a50caf07e8c12061fd859f4b7c76ab704b17c957e842"
+    },
+    "id": "4fcb2ba4-ccdb-424f-89d5-26cce304bf9c",
+    "version": 3
+}
+----
+
+((("key derivation function (KDF)")))((("password stretching algorithm"))) 密钥库格式使用密钥派生函数_key derivation function_（KDF），也称为密码扩展算法，可以防止暴力破解，字典和彩虹桌攻击。简单来说，私钥不会直接由密码短语加密。相反，通过重复对其进行哈希处理，密码短语为_stretched_。哈希函数重复了262,144回合，可以在密钥存储区JSON中将其视为参数 +crypto.kdfparams.n+。试图强行使用密码短语的攻击者必须为每个尝试的密码短语试验262,144轮散列，这充分降低了攻击速度，使其无法破解足够复杂和足够长的密码短语。
+
+有许多软件库可以读取和写入密钥库格式，例如JavaScript库  https://github.com/ethereumjs/keythereum[+keythereum+] 。
+
+[TIP]
+====
+除简单测试外，不建议使用不确定性钱包。它们非常繁琐，基本无法备份和使用，仅能应付最基本的情况。建议使用基于行业标准的带有助记符种子的HD钱包进行备份。(((range="endofrange", startref="ix_05wallets-asciidoc4")))(((range="endofrange", startref="ix_05wallets-asciidoc3")))(((range="endofrange", startref="ix_05wallets-asciidoc2")))
+====
+
+[[deterministic_wallets]]
+====确定性（种子）钱包
+
+((("deterministic (seeded) wallets","about")))((("wallets","deterministic"))) 确定性或“种子”钱包是包含私钥的钱包，这些私钥都来自单个主密钥或种子。种子是随机生成的数字，它与其他数据结合在一起，例如索引号或“链码”（请参见<<extended_keys>>），以导出任意数量的私钥。在确定性钱包中，种子足以恢复所有派生的密钥，因此在创建时进行一次备份就足以确保钱包中的所有资金和智能合约。种子对于钱包的导出或导入也是足够的，从而允许在不同的钱包实现之间轻松地迁移所有密钥。
+
+这种设计使得种子的安全性至关重要，因为只需要种子就可以访问整个钱包。另一方面，能够将安全工作重点放在单个数据上可以看作是一种优势。
+
+[[hd_wallets]]
+====分层确定性钱包（BIP-32 / BIP-44）
+
+((("Bitcoin improvement proposals (BIPs)","Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))((("hierarchical deterministic wallets (BIP-32/BIP-44)"))) 确定性开发钱包的目的是可以从单个种子中获取许多密钥。当前，确定性钱包的最高级形式是由比特币的http://bit.ly/2B2vQWs[_BIP-32 standard_]定义的_hierarchical deterministic_（HD）钱包。 HD钱包包含以树结构派生的密钥，以便父密钥可以派生一系列子密钥，每个子密钥都可以派生孙密钥序列，依此类推。该树结构在<<hd_wallets_figure>>。
+
+[[hd_wallets_figure]]
+.HD钱包：从单个种子生成的密钥树
+image::images/hd_wallet.png["HD 钱包"]
+
+与比较简单的确定性钱包相比，HD钱包具有一些关键优势。首先，树形结构可用于表达其他组织含义，例如，当特定的子密钥分支用于接收传入的付款，而另一个分支用于接收来自传出付款。密钥的分支也可以在公司设置中使用，为部门，子公司，特定功能或会计类别分配不同的分支。
+
+HD钱包的第二个优点是，用户可以创建一系列公用密钥，而无需访问相应的专用密钥。这样一来，HD钱包就可以在不安全的服务器上使用，也可以仅用于观看或仅能接收的能力，因为这些钱包没有可以花费资金的私钥。
+
+[[mnemonic_codes]]
+====种子和助记符代码（BIP-39）
+
+((("BIP-39 standard")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)")))((("mnemonic code words","BIP-39")))((("seeds","mnemonic code words for", seealso="mnemonic code words")))((("wallets","mnemonic codes (BIP-39)"))) 有很多私钥的编码方法以进行安全备份和检索。当前首选的方法是使用单词序列，以正确的顺序组合在一起时，可以唯一地重新创建私钥。有时称为助记符_mnemonic_，该方法已由 http://bit.ly/2OEMjUz[BIP-39] 标准化。如今，许多以太坊钱包（以及其他加密货币的钱包）都使用此标准，并且可以使用可互操作的助记符来导入和导出种子以进行备份和恢复。
+
+要了解为什么这种方法变得流行，我们来看一个示例：
+
+[[hex_seed_example]]
+.以十六进制形式显示的确定性钱包的种子
+----
+FCCF1AB3329FD5DA3DA9577511F8F137
+----
+
+[[mnemonic_seed_example]]
+.以12个单词的助记符表示的确定性钱包的种子
+----
+wolf juice proud gown wool unfair
+wall cliff insect more detail hub
+----
+
+实际上，写下十六进制序列时出现错误的可能性很高。相反，已知单词的列表很容易处理，主要是因为单词（尤其是英语单词）的编写存在很高的冗余度。如果“ inzect”是偶然记录的，则在需要恢复钱包时，可以很快确定“ inzect”不是有效的英文单词，而应使用“ insect”。我们正在讨论写下种子的表示形式，因为这是管理HD钱包时的一种好习惯：在丢失数据（无论是由于意外还是被盗）的情况下，需要种子来恢复钱包，因此保持备份非常谨慎。但是，必须将种子高度保密，因此应谨慎避免数字备份。因此，较早的建议是使用笔和纸进行备份。
+
+总而言之，使用恢复字列表为HD钱包的种子进行编码是最简单的方法，可以安全地导出，转录，在纸上记录，无误读取以及将私钥集导入另一个钱包。((range="endofrange", startref="ix_05wallets-asciidoc1")))
+
+
+[[wallet_best_practices]]
+===钱包最佳实践方法
+
+((("wallets","best practices for", id="ix_05wallets-asciidoc5", range="startofrange")))随着加密货币钱包技术的成熟，出现了一些通用的行业标准，这些标准使钱包可以广泛地互操作，易于使用，安全和灵活。这些标准还允许钱包从单个助记符中导出多种不同加密货币的密钥。这些通用标准是：
+
+*基于BIP-39协议的助记词
+*基于BIP-32的HD钱包
+*基于BIP-43的多功能HD钱包结构
+*基于BIP-44协议的多币种和多账户钱包
+
+这些标准可能会更改或被未来的发展淘汰，但目前它们形成了一组紧密相连的技术，已成为大多数区块链平台及其加密货币的“事实上的钱包”标准。
+
+这些标准已广泛地被软件和硬件钱包采用，从而使所有这些钱包都可以互操作。用户可以导出在其中一个钱包中生成的助记符，然后将其导入到另一个钱包中，以恢复所有密钥和地址。
+
+支持这些标准的软件钱包的一些例子包括（按字母顺序列出）Jaxx，MetaMask，MyCrypto和MyEtherWallet（MEW）。((("hardware wallets")))支持这些标准的硬件钱包的例子包括Keepkey，Ledger和Trezor。
+
+以下各节详细研究了每种技术。
+
+[TIP]
+====
+如果你要实现一个以太坊钱包，则应按照BIP-32，BIP-39，BIP-43和BIP-44标准，将其构建为HD钱包，并使用种子编码为助记码进行备份，可以参考以下各节中的内容。
+====
+
+[[bip39]]
+[[mnemonic_code_words]]
+====助记词（BIP-39）
+
+((("BIP-39 standard", id="ix_05wallets-asciidoc6", range="startofrange")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)", id="ix_05wallets-asciidoc7", range="startofrange")))((("mnemonic code words","BIP-39", id="ix_05wallets-asciidoc8", range="startofrange")))((("wallets","mnemonic codes (BIP-39)", id="ix_05wallets-asciidoc9", range="startofrange")))助记词是一个单词序列，其中包含了一个随机数。该随机数用作获得确定性钱包的种子。单词序列足以重建种子，并从那里重建钱包和所有派生的密钥。使用助记词实现确定性钱包的钱包应用程序在首次创建钱包时会向用户显示12至24个单词的序列。单词序列就是钱包备份，可用于恢复和重新创建相同或任何兼容钱包应用程序中的所有密钥。如前所述，助记词列表使用户更容易备份钱包，因为它们易于阅读并正确传递：[ <span class="keep-together">transcribe</span> ]。
+
+[NOTE]
+====
+((("brainwallets, mnemonic words vs.")))助记词经常与智力钱包“ brainwallets”混淆。它们是不相同的。主要区别在于智力钱包由用户选择的单词组成，而助记词由钱包随机创建并呈现给用户。这个重要的区别使助记词更加安全，因为人类是非常差的随机性来源。也许更重要的是，使用“ 智力钱包”一词意味着必须记住这些词，这是一个糟糕的主意，会使你在需要时无法提供钱包备份。
+====
+
+BIP-39标准中定义了助记码。请注意，BIP-39仅是助记码标准的一种实现。 Electrum比特币钱包使用的是一个比BIP-39还要早的标准，即一组不同的单词。 BIP-39是公司在Trezor硬件钱包后面提出的，与Electrum的实现不兼容。但是，BIP-39现在已经在数十种可互操作的实现中获得了广泛的行业支持，因此应被视为事实上的行业标准。此外，BIP-39可用于产生支持以太坊的多货币钱包，而Electrum的种子则不能。
+
+BIP-39定义了助记码和种子的创建标准，在此我们分九步进行描述。为了清楚起见，该过程分为两个部分：步骤1至6在<<generating_mnemonic_words>>，步骤7至9显示在<<mnemonic_to_seed>>。
+
+[[generating_mnemonic_words]]
+=====生成助记词
+
+((("BIP-39 standard","generating code words with")))((("checksum","in mnemonic code word generation")))((("mnemonic code words","generating"))) 钱包会使用BIP-39中定义的标准化流程自动生成助记词。钱包从熵源开始，添加校验和，然后将熵映射到单词列表：
+
+1.创建一个128至256位的加密随机序列 +S+。
+2.通过获取+S+的SHA-256哈希值的第一个++S++÷32位来创建+S+的校验和。
+3.将校验和添加到随机序列+S+的末尾。
+4.将序列和校验和串联划分为11位的部分。
+5.将每个11位值映射到预定义的2,048个单词的词典中的单词。
+6.从单词序列创建助记码，并保持顺序。
+
+<<generating_entropy_and_encoding>>显示如何使用熵来生成助记词。
+
+<<table_bip39_entropy>>表示熵数据的大小与单词中助记码长度之间的关系。
+
+[[table_bip39_entropy]]
+.助记码：熵和词的长度
+[options =“ header”]
+|=======
+|熵 (bits) | 校验和 (bits) | 熵 *+* 校验和 (bits) | 助记词长度 (words)
+| 128 | 4 | 132 | 12
+| 160 | 5 | 165 | 15
+| 192 | 6 | 198 | 18
+| 224 | 7 | 231 | 21
+| 256 | 8 | 264 | 24
+|=======
+
+[[generating_entropy_and_encoding]]
+[role="smallerseventy"]
+生成熵并将其编码为助记词
+image::images/bip39-part1.png [“生成熵并将其编码为助记词”]
+
+[[mnemonic_to_seed]]
+=====从助记符到种子
+
+((("BIP-39 standard","deriving seed from mnemonic words")))((("seeds","deriving from mnemonic code words")))助记词代表长度为128到256位的熵。然后，通过使用键拉伸函数 ((("PBKDF2 function"))) PBKDF2，使用熵来导出更长的（512位）种子。产生的种子用于构建确定性钱包并导出其密钥。
+
+((("key-stretching function")))((("salts"))) 密钥-拉伸函数采用两个参数：助记符和盐_salt_。在密钥拉伸功能中加盐的目的是使构建难以进行暴力攻击的查找表变得困难。在BIP-39标准中，盐的另一个用途是：它允许引入密码短语，该密码短语是保护种子的附加安全因素，我们将在<<mnemonic_passphrase>>进行更详细的描述。
+
+步骤7至9中描述的过程是继续上一节中描述的过程：
+
+[start=7]
+7. PBKDF2 密钥拉伸功能的第一个参数是在步骤6中生成的助记词_mnemonic_。
+8. PBKDF2密钥拉伸功能的第二个参数是盐_salt_。盐由字符串常量+“助记符” +与可选的用户提供的密码短语组成。
+9. PBKDF2使用HMAC-SHA512算法使用2,048轮散列来扩展助记符和盐参数，产生512位值作为其最终输出。该512位值是种子。
+
+<<mnemonic_to_seed_figure>>显示助记符如何用于生成种子。
+
+[[mnemonic_to_seed_figure]]
+.从助记符到种子
+image::images/bip39-part2.png["从助记词到种子"]
+
+[NOTE]
+====
+密钥拉伸功能及其2,048轮哈希运算，在某种程度上可以有效地防止对助记符或密码短语的暴力攻击。尝试数以千计的密码短语和助记符组合非常昂贵（在计算中），而可能派生的种子数量巨大（2 ^ 512 ^，或大约10 ^ 154 ^），远大于原子数在可见的宇宙中（大约10 ^ 80 ^）。
+====
+
+表格：[ <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_no_pass">＃mnemonic_128_no_pass</a> ， <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_w_pass">＃mnemonic_128_w_pass</a>和<a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_256_no_pass">＃mnemonic_256_no_pass</a> ]显示了一些助记码及其产生的种子的例子。
+
+[[mnemonic_128_no_pass]]
+.128位熵助记词，无密码短语，产生的种子
+[cols="h,"]
+|=======
+| *Entropy input (128 bits)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemonic (12 words)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Passphrase*| (none)
+| *Seed  (512 bits)* | +5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39+
++a88b76373733891bfaba16ed27a813ceed498804c0570+
+|=======
+
+[[mnemonic_128_w_pass]]
+.128-bit 位熵助记词，带密码短语，产生的种子
+[cols="h,"]
+|=======
+| *Entropy input (128 bits)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemonic (12 words)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Passphrase*| SuperDuperSecret
+| *Seed  (512 bits)* | +3b5df16df2157104cfdd22830162a5e170c0161653e3afe6c88defeefb0818c793dbb28ab3ab091897d0+
++715861dc8a18358f80b79d49acf64142ae57037d1d54+
+|=======
+
+[role =“ pagebreak-before”]
+[[mnemonic_256_no_pass]]
+.256位熵助记词，无密码短语，产生的种子
+[cols="h,"]
+|=======
+| *Entropy input (256 bits)* | +2041546864449caff939d32d574753fe684d3c947c3346713dd8423e74abcf8c+
+| *Mnemonic (24 words)* | +cake apple borrow silk endorse fitness top denial coil riot stay wolf
+luggage oxygen faint major edit measure invite love trap field dilemma oblige+
+| *Passphrase*| (none)
+| *Seed (512 bits)* | +3269bce2674acbd188d4f120072b13b088a0ecf87c6e4cae41657a0bb78f5315b33b3a04356e53d062e5+
++5f1e0deaa082df8d487381379df848a6ad7e98798404+
+|=======
+
+[[mnemonic_passphrase]]
+===== BIP-39中的可选密码
+
+((("BIP-39 standard","optional passphrase with")))((("mnemonic code words","optional passphrase in BIP-39")))((("passphrases")))((("seeds","optional passphrase with"))) BIP-39标准允许在衍生种子时使用可选的密码短语。如果不使用密码短语，则将助记符与由常量字符串+“助记符” +组成的盐一起拉伸，从而可以从任何给定的助记符生成特定的512位种子。如果使用密码短语，则拉伸函数从同一助记符产生不同的种子。实际上，在给定单个助记符的情况下，每种可能的密码短语都会导致不同的种子。本质上，没有“错误的”密码短语。所有密码短语都是有效的，并且它们都导致不同的种子，从而形成大量可能的未初始化的钱包。可能的钱包如此之大（2 ^ 512 ^），只要密码短语具有足够的复杂性和长度，实际上就不可能有强行破解或意外猜测到正在使用的钱包的可能性。
+
+[TIP]
+====
+BIP-39中没有“错误的”密码短语。每个密码短语都可以推导出一些钱包，不过除非先前使用过，那么这些钱包是空的。
+====
+
+可选密码短语具有两个重要功能：
+
+*第二个因素（记住的东西）使助记符自身无用，从而保护助记符备份免受小偷的侵害。
+
+*((("duress wallet")))((("wallets","duress wallet")))采用 一种合理的可否认性或“胁迫钱包”方式，其中选定的密码短语推导出一个包含少量资金的钱包，可以骗过攻击者，保护包含大部分资金的“真实”钱包。
+
+[role =“ pagebreak-before”]
+但是，请务必注意，使用密码短语会带来丢失的风险：
+
+*如果钱包所有者丧失表达能力或死亡，并且没人知道密码，则种子将无用，并且存储在钱包中的所有资金将永远丢失。
+
+*相反，如果所有者在与备份种子的相同位置备份密码短语，则会破坏第二个目的。
+
+虽然密码短语非常有用，但应考虑到存在继承人可以越过拥有者而恢复加密货币的可能性，仅应将其与精心计划的备份和恢复过程结合使用。
+
+[[working_mnemonic_codes]]
+=====使用助记词
+
+((("BIP-39 standard","libraries")))((("BIP-39 standard","working with mnemonic codes"))) 许多不同编程语言都有BIP-39的库。例如：
+
+https://github.com/trezor/python-mnemonic[python-mnemonic]:: SatoshiLabs团队提出的标准BIP-39的Python库，
+
+https://github.com/ConsenSys/eth-lightwallet[ConsenSys/eth-lightwallet]:: 用于节点和浏览器的轻量级JS以太坊钱包（使用BIP-39）
+
+https://www.npmjs.com/package/bip39[npm/bip39] ::比特币BIP-39的JavaScript实现：用于生成确定性密钥的助记码
+
+在独立网页中也实现了BIP-39生成器（<<a_bip39_generator_as_a_standalone_web_page>>），这对于测试和实验非常有用。 https://iancoleman.io/bip39/[Mnemonic Code Converter] 助记符代码转换器生成助记符，种子和扩展的私钥。可以在浏览器中离线使用，也可以在线访问。(((range="endofrange", startref="ix_05wallets-asciidoc9")))(((range="endofrange", startref="ix_05wallets-asciidoc8")))(((range="endofrange", startref="ix_05wallets-asciidoc7")))(((range="endofrange", startref="ix_05wallets-asciidoc6")))
+
+[[a_bip39_generator_as_a_standalone_web_page]]
+.BIP-39生成器作为独立网页
+image::images/bip39_web.png["BIP-39 生成器网页"]
+
+[[create_hd_wallet]]
+====从种子创建硬件钱包
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","creating from root seed")))((("root seeds, creating HD wallets from")))((("wallets","creating HD wallets from root seed"))) HD钱包是从单个根种子_root seed_创建的，该根种子是128位，256位或512位随机数。最常见的是，此种子是在上一节中详细说明的助记符生成的。
+
+HD钱包中的每个密钥都是确定性地从该根种子派生的，这使得可以在任何兼容的HD钱包中从该种子重新创建整个HD钱包。通过仅传输从其获得根种子的助记符，可以轻松地导出，备份，还原和导入包含数千甚至数百万个密钥的HD钱包。
+
+[[bip32_bip43_44]]
+==== 硬件钱包（BIP-32）和路径（BIP-43 / 44）
+
+((("Bitcoin improvement proposals (BIPs)","Multipurpose HD Wallet Structure (BIP-43)", id="ix_05wallets-asciidoc10", range="startofrange")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","HD wallets (BIP-32) and paths (BIP-43/44)", id="ix_05wallets-asciidoc11", range="startofrange"))) 大多数HD钱包都遵循((("BIP-32 standard","HD wallets and", id="ix_05wallets-asciidoc12", range="startofrange"))) BIP-32标准，它已成为生成确定性密钥的事实上的工业标准。
+
+在这里，我们将不会详细讨论BIP-32标准，而仅是了解在钱包中如何使用它所必需的组件。主要的重要方面是派生密钥可能具有的树状层次关系，如你在<<hd_wallets_figure>>中所看到的。此外，了解扩展密钥_extended keys_和强化密钥_hardened keys_的概念也很重要，我们将在以下各节中进行解释。
+
+许多软件库中提供了数十种BIP-32互操作性实现。这些主要是为比特币钱包设计的，它们以不同的方式实现帐号地址，但是与以太坊的BIP-32兼容钱包共享相同的密钥派生实现方法。你可以使用一个  https://github.com/ConsenSys/eth-lightwallet[designed for Ethereum] 专为以太坊设计的软件库，或通过添加一个以太坊地址编码库从比特币软件库中改编一个。
+
+还有一个实现为 http://bip32.org/[standalone web page] 独立网页的BIP-32生成器，对于使用BIP-32进行测试和试验非常有用。
+
+[WARNING]
+====
+独立的BIP-32生成器不是HTTPS网站。这里提醒你此工具的使用不安全。仅用于测试。你不应将本网站产生的私钥用于真实资金。
+====
+
+[[extended_keys]]
+=====扩展的公钥和私钥
+
+((("BIP-32 standard","extended public and private keys")))((("extended keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","extended public and private keys")))((("keys","extended"))) 在BIP-32术语中，密钥可以“扩展”。通过正确的数学运算，这些扩展的“父”密钥可以用于派生“子”密钥，从而生成前面所述的密钥和地址的层次结构，而父密钥不必位于树的顶部。可以从树层次结构中的任何位置选取。((("chain code")))扩展密钥包括获取密钥本身并在其后附加一个特殊的_chain code_链代码是一个256位二进制字符串，它是与每个密钥混合以产生子密钥。
+
+((("private keys","extended")))如果密钥是一个私钥，它将成为一个扩展私钥，由以下通行符识别：[<span class="keep-together">前缀</span>] +xprv+：
+
+[[xprv_example]]
+----
+xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8i...
+----
+
+((("public keys","extended")))扩展公钥由前缀 +xpub+ 来识别：
+
+[[xpub_example]]
+----
+xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn...
+----
+
+HD钱包的一个非常有用的特征是能够从父公钥派生子公钥，而不需要私钥。这给了我们两种导出子公钥的方法：直接从子私钥或从父公钥导出。
+
+因此，可以使用扩展的公钥来导出HD钱包结构的中的所在分支的所有公钥（仅限于公钥）。
+
+此快捷方式可用于创建非常安全的仅包含公钥的部署，其中服务器或应用程序具有扩展公钥的副本，但不包含私钥。这种部署可以产生无限数量的公钥和以太坊地址，但不能花费发送到这些地址的任何钱。同时，在另一台更安全的服务器上，扩展的私钥可以派生所有相应的私钥来签署交易并支付资金。
+
+此方法的一种常见应用是在为电子商务应用程序提供服务的Web服务器上安装扩展的公共密钥。 Web服务器可以使用公钥派生功能为每个交易（例如，为客户的购物车）创建一个新的以太坊地址，并且不会有任何容易被盗的私钥。没有HD钱包，唯一的方法就是在单独的安全服务器上生成数千个以太坊地址，然后将其预加载到电子商务服务器上。这种方法很麻烦，并且需要不断维护以确保服务器不会用完密钥，因此建议使用HD钱包中的扩展公钥。
+
+((("hardware wallets"))) 此解决方案的另一个常见应用是用于((("cold-storage wallets")))((("wallets","cold-storage wallets"))) 冷存储或硬件钱包。在那种情况下，扩展的私钥可以存储在硬件钱包中，而扩展的公钥可以保持在线状态。用户可以随意创建“接收”地址，而私钥安全地脱机存储。如果需要支付资金，用户可以在脱机签名的以太坊客户端中使用扩展的私钥，或者在硬件钱包设备上签名交易。
+
+[[hardened_child_key]]
+=====强化子密钥派生
+
+((("child private keys")))((("hardened derivation","for child private keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","hardened child key derivation")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","index numbers for normal/hardened derivation")))((("index numbers, for normal/hardened derivation")))((("private keys","hardened child key derivation")))从扩展公钥xpub派生出一系列公钥分支的能力非常有用，但存在潜在的风险。访问xpub不能访问子私钥。但是，由于xpub包含链码（用于从父公钥派生子公钥），因此，如果已知子私钥或以某种方式泄漏了子私钥，则可以将其与链码一起使用，以导出所有其他子私钥。密钥。单个泄露的子私钥以及父链代码将揭示所有子级的全部私钥。更糟糕的是，子私钥与父链代码一起可用于推导父私钥。
+
+为了应对这种风险，HD钱包使用了另一种称为强化派生_hardened derivation_的派生函数，该函数“打破”了父公钥和子链代码之间的关系。强化派生函数使用父私钥而不是父公钥派生子链代码。这将在父/子序列中创建一个“防火墙”，其链码无法用于泄露父私钥或同级私钥。
+
+简而言之，如果您想利用扩展公钥xpub的便利性来派生公钥的分支，而又不会使自己暴露于链代码泄漏的风险中，则应该从强化的父级公钥而不是普通的父级公钥来派生它。最佳实践是让主密钥的1级子代始终通过强化派生来导出，以防止损害主密钥。
+
+[[index_number]]
+=====正常和强化派生的索引号
+
+((("hardened derivation","index numbers for"))) 显然我们希望能够从给定的父密钥派生多个子密钥，比如可以使用索引号。当使用特殊子派生功能将每个索引号与父密钥组合在一起时，会给出不同的子密钥。 BIP-32父子推导函数中使用的索引号是32位整数。为了轻松地区分通过正常（未强化）推导函数得出的密钥与通过强化（衍生）派生的密钥，此索引号分为两个范围。 0和2 ^ 31 ^ -1（+ 0x0 +至+ 0x7FFFFFFF +）之间的索引号仅用于正常派生。介于2 ^ 31 ^和2 ^ 32 ^ -1之间的索引号（+ 0x80000000 +至+ 0xFFFFFFFF +）仅用于强化派生。因此，如果索引号小于2 ^ 31 ^，则该子项是正常的；而如果索引号等于或大于2 ^ 31 ^，则该子项被强化。
+
+为了使索引号更易于阅读和显示，强化子级的索引号从零开始显示，但带有撇号。因此，第一个普通的子项键显示为+0+，而第一个强化的子项（索引+ 0x80000000 +）显示为++ 0&#39;++。然后，第二个强化密钥将依次具有+ 0x80000001 +的索引，并显示为++ 1&#39;++，依此类推。当你看到HD钱包索引++ i&#39;++时，表示2 ^ 31 ^ pass：[+] ++ i ++。(((range="endofrange", startref="ix_05wallets-asciidoc12")))
+
+[[hd_wallet_path]]
+===== 硬件钱包密钥标识符（路径）
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","key identifier")))((("keys","path naming convention"))) HD钱包中的密钥使用“路径”的命名约定，树的每个级别均由斜杠（/）字符分隔（请参见<<hd_path_table>>）。从主私钥派生的私钥以 +m+ 开头。从主公用密钥派生的公用密钥以 +M+ 开头。因此，主私钥的第一个子私钥为+m/0+。第一个子公钥是 +M/0+。第一个子私钥的第二个孙子是 +m/0/1+，依此类推。
+
+从右到左读取密钥的“祖先”，直到到达派生密钥的主密钥为止。例如，标识符+ m / x / y / z +描述的密钥是密钥+ m / x / y +的第++ z ++个子代，后者是密钥+ m / x +的第++ y ++个子代是+ m +的第++ x ++个子代。
+
+[[hd_path_table]]
+.HD钱包路径示例
+[options =“ header”]
+|=======
+| HD路径 | 私钥或公钥说明
+| +m/0+ | 主私钥（+m+）中的第一个（+0+）子私钥
+| +m/0/0+ | 第一个子私钥的第一个孙私钥 (+m/0+)
+| +m/0'/0+ | 第一个强化子私钥的第一个正常孙私钥 (+m/0'+)
+| +m/1/0+ | 第二个子私钥的第一个孙私钥 (+m/1+)
+| + M/23/17/0/0+ | 第一个曾孙公钥的第18个孙公钥：[<span class="keep-together">第24个子公钥</span>]
+|=======
+
+[[navigating_hd_wallet_tree]]
+=====浏览HD钱包树结构
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","tree structure")))((("tree structure, navigating"))) HD钱包树结构非常灵活。另一方面，它也允许无限的复杂性：每个父扩展密钥可以拥有40亿个子密钥：20亿正常子密钥和20亿强化子密钥。这些子密钥中的每个子密钥都可以再有40亿个子密钥，依此类推。这棵树可以随心所欲地生长，可能有无限的世代。拥有所有这些潜力，追踪这些非常大的树木会变得非常困难。
+
+通过为HD钱包树的结构创建标准，两个BIP提供了一种管理这种潜在复杂性的方法。((("BIP-43 standard"))) BIP-43建议使用第一个强化的子索引作为特殊标识符，以表示树结构的“用途”。根据BIP-43，HD钱包应仅使用树的一个1级分支，索引号通过识别树的其余部分的结构和名称空间来定义钱包的用途。更具体地说，仅使用分支 ++m/i&#39;/...++ 的HD钱包旨在表示特定目的，并且该目的由索引号+i+标识。
+
+((("BIP-44 standard"))) 在扩展该规范的同时，BIP-44提出了一种多币种多帐户结构，该结构通过将“用途”号设置为 +44'+ 来表示。遵循BIP-44结构的所有HD钱包的标识是，它们仅使用树的一个分支：+m/44'/*+。
+
+BIP-44将结构指定为包含五个预定义的树级别：
+
+[[bip44_tree]]
+-----
+m / purpose' / coin_type' / account' / change / address_index
+-----
+
+第一层目标+purpose'+始终设置为+44'+。第二层+coin_type'+ 指定加密货币硬币的类型，允许使用多货币HD钱包，其中每种货币在第二层之下都有自己的子树。在称为 https://github.com/satoshilabs/slips/blob/master/slip-0044.md[SLIP0044] 的标准文档中定义了几种货币。例如，以太坊是++m/44'/ 60'++，以太坊经典版是++m/44'/ 61'++，比特币是++m/44'/ 0'++，而Testnet都适用货币为++ m/ 44'/ 1'++。
+
+树的第三层是账户+account'+，它允许用户将其钱包细分为单独的逻辑子帐户，以进行会计或组织用途。例如，一个HD钱包可能包含两个以太坊“帐户”：++m/44'/60'/0'++和++m/44'/60'/1'++。每个帐户都是其自己的子树的根。
+
+因为BIP-44最初是为比特币创建的，所以它包含以太坊平台中不相关的“怪癖”。在路径的第四层+change+上，HD钱包有两个子树：一个用于创建接收地址，另一个用于创建更改地址。以太坊仅使用“接收”路径，因为没有必要像比特币那样更改地址。请注意，尽管先前的级别使用强化派生，但此级别使用正常派生。这是为了允许树的帐户级别导出扩展的公共密钥，以在不安全的环境中使用。 HD钱包将可用地址作为第四层的子级派生，使树的第五层成为+address_index+。例如，主账户中以太坊支付的第三个接收地址将是++M/44'/60'/0'/0/2++。<<bip44_path_examples>>中显示了更多示例 (((range="endofrange", startref="ix_05wallets-asciidoc11")))(((range="endofrange", startref="ix_05wallets-asciidoc10"))).(((range="endofrange", startref="ix_05wallets-asciidoc5")))
+
+[[bip44_path_examples]]
+.BIP-44硬件钱包结构实例
+[options =“ header”]
+|=======
+| HD路径 | 私钥或公钥说明
+| ++M/44&#x27;/60&#x27;/0&#x27;/0/2++ | 以太坊主账户的第三个接收公钥
+| ++M/44&#x27;/0&#x27;/3&#x27;/1/14++ | 第四个比特币帐户的第十五个转换地址公钥
+| ++m/44&#x27;/2&#x27;/0&#x27;/0/1++ |Litecoin主账户中的第二个私钥，用于签署交易
+|=======
+
+===本章小结
+
+钱包是任何面向用户的区块链应用程序的基础。它们允许用户管理密钥和地址的集合。我们在<<tx_chapter>>中还将看到，电子钱包可以允许用户通过应用数字签名来展示其对以太币的所有权并授权交易。(((range="endofrange", startref="ix_05wallets-asciidoc0")))

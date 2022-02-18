@@ -1,0 +1,127 @@
+[appendix]
+[[ethereum_fork_history]]
+== Historia de Bifurcaciones de Ethereum
+((("Ethereum (en general)","historia de bifurcaciones", id="ix_appdx-forks-history-asciidoc0", range="startofrange")))((("bifurcaciones", seealso="bifurcaciones fuertes", id="ix_appdx-forks-history-asciidoc1", range="startofrange")))((("bifurcaciones fuertes", id="ix_appdx-forks-history-asciidoc2", range="startofrange"))La mayoría de las bifurcaciones fuertes se planifican como parte de una hoja de ruta de actualización y consisten en actualizaciones que la comunidad generalmente acepta (es decir, hay consenso social). Sin embargo, algunas bifurcaciones fuertes han carecido de consenso, lo que conduce a múltiples cadenas de bloques distintas. Los eventos que llevaron a la división Ethereum/Ethereum Classic aluden a uno de esos casos y se analizarán en este apéndice.
+
+[[etc_origin]]
+=== Ethereum Classic (ETC)
+((("DAO (Decentralized Autonomous Organization)","y los origenes de Ethereum Classic")))((("Ethereum Classic (ETC)","orígenes")))((("bifurcaciones","ETC")))Ethereum Classic surgió después de que miembros de la comunidad Ethereum implementaran una bifurcación fuerte, sensible al tiempo (con nombre en código &#x201c;DAO&#x201d;). El 20 de julio de 2016, a una altura de bloque de 1,92 millones, Ethereum introdujo un cambio de estado irregular a través de una bifurcación fuerte en un esfuerzo por devolver aproximadamente 3,6 millones de ether que se habían tomado de un contrato inteligente conocido como DAO. Casi todos estuvieron de acuerdo en que el éter tomado había sido robado y que dejarlo todo en manos del ladrón sería un detrimento significativo para el desarrollo del ecosistema Ethereum, así como para la propia plataforma.
+
+Devolver el éter a sus respectivos propietarios como si el DAO nunca hubiera existido fue técnicamente fácil, aunque políticamente controvertido. Varias personas en el ecosistema no estuvieron de acuerdo con este cambio, creyendo que la inmutabilidad debería ser un principio fundamental de la cadena de bloques de Ethereum sin excepción; eligieron continuar la cadena original bajo el nombre de Ethereum Classic. Si bien la división en sí fue inicialmente ideológica, las dos cadenas se han convertido desde entonces en entidades separadas.
+
+[[dao_origin]]
+=== La Organización Autónoma Descentralizada (DAO)
+
+((("DAO (Decentralized Autonomous Organization)","acerca de")))((("bifurcaciones","DAO")))The ((("DAO (Decentralized Autonomous Organization)", id="ix_appdx-forks-history-asciidoc3", range="startofrange")))DAO fue creado por Slock.it, con el objetivo de proporcionar financiación y gobernanza comunitaria para proyectos. La idea central era que se enviarían propuestas, los curadores gestionarían las propuestas, se recaudarían fondos de inversores dentro de la comunidad Ethereum y, si los proyectos tenían éxito, los inversores recibirían una parte de las ganancias.
+
+The DAO (Organización Autónoma Descentralizada) también fue uno de los primeros tokens experimentales de Ethereum. En lugar de financiar proyectos directamente con ether, los participantes cambiarían su ether por tokens DAO, los usarían para votar sobre la financiación del proyecto y luego podrían cambiarlos por ether.
+
+Los tokens de The DAO estaban disponibles para su compra en una venta colectiva que se desarrolló desde el 5 de abril hasta el 30 de abril de 2016, acaudalando https://econ.st/2qfJO1g[casi el 14%] del éter total existente, valorado en ~$150 millones en ese momento.
+
+[[dao_reentrancy_bug]]
+=== El Bug del Re-Ingreso
+
+((("bifurcaciones","bug de reingreso")))((("bug de reingreso")))El 9 de junio de 2016, los desarrolladores Peter Vessenes y Chriseth informaron que la mayoría de los contratos basados en Ethereum que administraban fondos eran potencialmente http://bit.ly/2AAaDmA[vulnerables a un exploit] que podría vaciar los fondos de dichos contratos. Unos días después, el 12 de junio, Stephen Tual (cofundador de Slock.it) informó que el código de http://bit.ly/2qmo3g1[The DAO no era vulnerable] al bug descrito por Peter y Chriseth. Los preocupados colaboradores de DAO dieron un suspiro de alivio, hasta cinco días después, cuando un atacante desconocido comenzó un http://bit.ly/2Q7zR1h[drenaje de los fondos] de The DAO, utilizando un exploit similar a aquel que había sido el motivo de la advertencia. En última instancia, el atacante de The DAO extrajo ~3,6 millones de éter de dicho contrato.
+
+Simultáneamente, un grupo de voluntarios que se llamaban a sí mismos "Robin Hood Group" (RHG) comenzó a usar el mismo exploit para retirar los fondos restantes y evitar que fueran robados por el atacante de The DAO. El 21 de junio, http://bit.ly/2PtX4xl[RHG anunció] que habían asegurado alrededor del 70% de los fondos de DAO (aproximadamente 7.2 millones de ether), con planes de devolverlo a la comunidad (lo que hicieron con éxito en la red ETC, y no necesitaba hacerlo en la red Ethereum después de la bifurcación). Se dieron muchas gracias y elogios a RHG por su pensamiento rápido y acciones rápidas que ayudaron a asegurar la mayor parte del éter de la comunidad.
+
+[[dao_reentrancy_bug_technicals]]
+==== Detalles Técnicos
+((("bug de reingreso","detalles técnicos")))Si bien http://bit.ly/2EQaLCI[Phil Daian] da una explicación más detallada y completa del bug, la explicación breve es que una función crucial en The DAO tenía dos líneas de código en el orden incorrecto, lo que significa que el atacante podría generar solicitudes para retirar ether ejecutadas repetidamente, antes de que se completara la verificación de si el atacante tenía fondos para realizar tal retiro. Este tipo de vulnerabilidad se describe en <<reentrancy_security>>.
+
+[[dao_reentrancy_bug_attack_flow]]
+==== Secuencia del Ataque
+((("bug de reingreso","secuencia del ataque")))Imaginemos tener unos $ 100 en nuestra cuenta bancaria y que podemos llevarle al cajero del banco cualquier número de comprobantes de retiro. Supongamos entonces que el cajero nos da dinero por cada recibo de retiro, y solo después de procesar todos los recibos registra nuestro retiro. ¿Qué pasaría si le traemos tres retiros, cada uno solicitando retirar $ 100? ¿Y si les traemos tres mil?
+
+El ataque de The DAO funcionó así:
+
+1. El atacante de The DAO solicita al contrato The DAO retirar tokens DAO (DAO).
+2. El atacante pide al contrato que retire tokens DAO _de nuevo_, antes de que el contrato actualice sus registros para verificar que los DAOs previos fueron retirados.
+3. El atacante repite el paso 2 tantas veces como le es posible.
+4. El contrato finalmente registra un único retiro de DAO, perdiendo la pista de los retiros que ocurrieron en el ínterin.
+
+[[dao_hard_fork]]
+=== La Bifurcación Fuerte DAO
+((("DAO (Decentralized Autonomous Organization)","bifurcación fuerte", id="ix_appdx-forks-history-asciidoc4", range="startofrange")))((("bifurcaciones","DAO", id="ix_appdx-forks-history-asciidoc5", range="startofrange")))((("bifurcaciones fuertes", id="ix_appdx-forks-history-asciidoc6", range="startofrange")))Afortunadamente, hubo varias capas de protección integradas en The DAO: en particular, todas las solicitudes de retiro estaban sujetas a un retraso de 28 días. Esto le dio a la comunidad un poco de tiempo para discutir qué hacer con el exploit, porque aproximadamente entre el 17 de junio&#x2013;al 20 de julio, el atacante de The DAO no podría convertir sus tokens DAO en ether.
+
+Varios desarrolladores se centraron en encontrar una solución viable y se exploraron múltiples vías en este corto espacio de tiempo. Entre ellos se encontraban una http://bit.ly/2qhruEK[_bifurcación suave para DAO_], anunciado el 24 de junio, para retrasar los retiros de DAO hasta que se alcanzara un consenso, y una http://bit.ly/2AAGjIu[_bifurcación fuerte para DAO_], anunciado el 15 de julio, para revertir los efectos del ataque a The DAO con un cambio de estado excepcional.
+
+El 28 de junio, los desarrolladores descubrieron http://bit.ly/2zgOxUn[un exploit DoS en la bifurcación suave de DAO] y concluyeron que la bifurcación fuerte de DAO sería la única opción viable para resolver completamente la situación. La bifurcación fuerte de DAO transferiría todo el ether que se había invertido en el DAO a un nuevo contrato inteligente de reembolso, lo que permitiría a los propietarios originales del ether reclamar reembolsos completos. Esto proporcionó una solución para devolver los fondos pirateados, pero también significó interferir con los saldos de direcciones específicas en la red, por muy aisladas que estuvieran. También habría algo de éter sobrante en sub-contratos de The DAO conocidas como _childDAOs_. Un grupo de fideicomisarios autorizaría manualmente este éter sobrante, por un valor de http://bit.ly/2RuUrJh[~$6–7 millones] en ese momento.
+
+Con el tiempo agotándose, varios equipos de desarrollo de Ethereum crearon clientes que permitían al usuario decidir si deseaba habilitar esta bifurcación. Sin embargo, los creadores del cliente querían decidir si optar por esta elección (no bifurcar de forma predeterminada) o excluirse (bifurcar de forma predeterminada). El 15 de julio se abrió una votación en http://bit.ly/2ABkTuV[_carbonvote.com_]. Al día siguiente, a la altura del bloque http://bit.ly/2yHb7Gl[1.894.000], se cerró. De los http://bit.ly/2RuUrJh[5.5% del suministro total de ether] que votaron, &#x7e;80% de los votos (&#x7e;4.5% del suministro total de ether) votaron por la exclusión voluntaria. Una cuarta parte del voto de exclusión voluntaria provino de una sola dirección.
+
+En última instancia, la decisión se convirtió en una exclusión voluntaria, por lo que aquellos que se opusieran a la bifurcación de DAO necesitarían declarar explícitamente su oposición cambiando una opción de configuración en el software que estaban ejecutando.
+
+El 20 de julio, a la altura del bloque http://bit.ly/2zfaIKB[1.920.000], Ethereum http://bit.ly/2yJxZ83[implementó la bifurcación DAO] y así se crearon dos redes Ethereum: una que incluye el cambio de estado y el otro ignorándolo.
+
+((("Ethereum Classic (ETC)","orígenes")))Cuando DAO bifurcó fuertemente a Ethereum (en el actual Ethereum) y ganó la mayoría del poder minero, muchos asumieron que se había logrado el consenso y que la cadena minoritaria se desvanecería a fin de cuentas, como en bifurcaciones anteriores. A pesar de esto, una parte considerable de la comunidad de Ethereum (aproximadamente el 10% en valor y poder minero) comenzó a respaldar la cadena no bifurcada, que llegó a conocerse como Ethereum Classic.
+
+A los pocos días de la bifurcación, varias casas de cambio comenzaron a incluir Ethereum ("ETH") y a Ethereum Classic ("ETC"). Debido a la naturaleza de las bifurcaciones fuertes, todos los usuarios de Ethereum que tenían ether en el momento de la división tenían fondos en ambas cadenas, y pronto se estableció un valor de mercado para el ETC con http://bit.ly/2qhuNvP[Poloniex] que comenzó a cotizar al ETC a partir del 24 de julio.
+
+[[dao_hard_fork_timeline]]
+==== Cronología de la Bifurcación Fuerte de DAO
+
+- 5 de abril de 2016: Slock.it http://bit.ly/2Db4boE[publica una revisión de seguridad] de los contratos inteligentes genéricos del entorno DAO hecha por Deja Vu Security.
+- 30 de abril de 2016: Es http://bit.ly/2qhwhpI[lanzada] la venta colectiva de The DAO .
+- 27 de mayo de 2016: finaliza la venta colectiva de The DAO.
+- 9 de junio de 2016: Se descubre un http://bit.ly/2AAaDmA[bug genérico de invocación recursiva]  y se cree que afecta a muchos contratos de Solidity que rastrean los saldos de los usuarios.
+- 12 de junio de 2016: Stephen Tual http://bit.ly/2qmo3g1[declara] que los fondos de DAO no están en riesgo.
+- 17 de junio de 2016: http://bit.ly/2EQaLCI[The DAO sufre un exploit] y se utiliza una variante del bug descubierto (denominado "bug de reingreso") para comenzar a drenar los fondos, y eventualmente echarle el guante al ~30% de los éter.
+- 21 de junio de 2016: RHG http://bit.ly/2zgl3Gk[anuncia] que ha asegurado el otro ~70% del éter almacenado en The DAO.
+- 24 de junio de 2016: Se anuncia una http://bit.ly/2qhruEK[votación pro bifurcación suave] a través de la señalización opcional, a través de los clientes de Geth y Parity, diseñado para retener fondos temporalmente hasta que la comunidad pueda decidir mejor qué hacer.
+- 28 de junio de 2016: Se descubre una http://bit.ly/2zgOxUn[vulnerabilidad] en la bifurcación suave y se abandona.
+- 28 de junio de 2016 al 15 de julio: los usuarios debaten si utilizar la bifurcación fuerte o no; la mayor parte del debate público se produce en el subreddit de _/r/ethereum_.
+- 15 de julio de 2016: Se propone la http://bit.ly/2qmo3g1[bifurcación fuerte de DAO], para devolver los fondos tomados en el ataque a The DAO.
+- 15 de julio de 2016: Una http://bit.ly/2ABkTuV[votación se lleva a cabo] en CarbonVote para decidir si la bifurcación de DAO será optativa (no bifurcar de forma predeterminada) o excluyente (bifurcación por defecto).
+- 16 de julio de 2016: el http://bit.ly/2RuUrJh[5.5% del total del suministro de éter] votó; pass:[~80% de esos votos (~4.5%] del total de suministro de éter) son favorables a la bifurcación de exclusión voluntaria, con una cuarta parte de esos votos a favor, provenientes de una sola dirección.
+- 20 de julio de 2016: la http://bit.ly/2yJxZ83[bifurcación fuerte] se produce en el bloque 1.920.000.
+- 20 de julio de 2016: Aquellos en contra de la bifurcación fuerte de DAO continúan ejecutando el antiguo software cliente; y esto conduce a problemas con http://bit.ly/2qjJm27[transacciones que se reproducen en ambas cadenas].
+- 24 de julio de 2016: http://bit.ly/2qhuNvP[Poloniex etiqueta] la cadena Ethereum original bajo el símbolo de cotización ETC; es la primera casa de cambios en hacerlo.
+- 10 de agosto de 2016: RHG http://bit.ly/2JrLpK2[transfiere 2,9] millones del ETC recuperado a Poloniex para convertirlo en ETH por recomendación de Bity SA; El 14% de las tenencias totales de RHG se convierten de ETC a ETH y otras criptomonedas, y http://bit.ly/2ETDdUc[Poloniex congela] el otro 86% de ETH depositado.
+- 30 de agosto de 2016: Poloniex envía los fondos congelados a RHG, quienes luego establecen un contrato de reembolso en la cadena ETC.
+- 11 de diciembre de 2016: se forma el equipo de desarrollo de ETC denominado IOHK, dirigido por el miembro fundador de Ethereum, Charles Hoskinson.
+- 13 de enero de 2017: la red ETC se actualiza para resolver problemas de reproducción de transacciones; las cadenas ahora están funcionalmente separadas.
+- 20 de febrero de 2017: se forma el equipo de desarrolladores de Ethereum Classic "ETCDEVTeam", dirigido por el desarrollador temprano de ETC, Igor Artamonov(((range="endofrange", startref="ix_appdx-forks-history-asciidoc6"))) (splix).(((range="endofrange", startref="ix_appdx-forks-history-asciidoc5")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc4")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc3")))
+
+[[eth_etc_differences]]
+=== Ethereum y Ethereum Classic
+
+((("Ethereum (en general)","Ethereum Classic comparado con")))((("Ethereum Classic (ETC)","Ethereum comparado con")))((("bifurcaciones","ETC")))((("bifurcaciones","separación entre Ethereum y Ethereum Classic")))Si bien la división inicial se centró en The DAO, las dos redes, Ethereum y Ethereum Classic, ahora son proyectos separados, aunque la mayor parte del desarrollo todavía lo realiza la Comunidad de Ethereum y simplemente transportado a las bases de código de Ethereum Classic. No obstante, el conjunto completo de diferencias está en constante evolución y es demasiado extenso para cubrirlo en este apéndice. Sin embargo, vale la pena señalar que las cadenas difieren significativamente en su desarrollo central y estructura comunitaria. A continuación se analizan algunas de las diferencias técnicas.
+
+
+[[eth_etc_differences_evm]]
+==== La Máquina Virtual
+((("OPCODES de la EVM")))En su mayor parte (en el momento de escribir este artículo), las dos redes siguen siendo altamente compatibles: el código de un contrato producido para una cadena se ejecuta como se esperaba en la otra; pero hay algunas pequeñas diferencias en los OPCODES de cada Maquina Virtual (consulte el enlace de las EIPs: http://bit.ly/2yIajkF[140], link:http://bit.ly/2qhKz9Y[145], y link:http://bit.ly/2SxsrFR[214]).
+
+[[eth_etc_differences_core_development]]
+==== Desarrollo de la Red Principal
+Al ser proyectos abiertos, las plataformas de las cadenas de bloques a menudo tienen muchos usuarios y contribuyentes. Sin embargo, el desarrollo de la red central (es decir, del código que ejecuta la red) a menudo lo realizan grupos pequeños debido a la experiencia y el conocimiento necesarios para desarrollar este tipo de software. En Ethereum, este trabajo lo realizan la Fundación Ethereum y los voluntarios. En Ethereum Classic, lo hacen el equipo ETCDEV, el IOHK y los voluntarios.
+
+[[ethereum_forks]]
+=== Otras Bifurcaciones Destacables de Ethereum
+
+((("Ellaism")))https://ellaism.org/about/[Ellaism] es una red basada en Ethereum que tiene la intención de usar PoW exclusivamente para asegurar la cadena de bloques. No tiene pre-minado ni comisiones para los desarrolladores obligatorias, sino que cuenta con todo el apoyo y el desarrollo donados libremente por la comunidad. Sus desarrolladores creen que esto hace que el suyo sea &#x201c;uno de los proyectos de Ethereum puros más honestos,&#x201d; y uno que es &#x201c;singularmente interesante como plataforma para desarrolladores, educadores y entusiastas serios. Ellaism es una plataforma de contratos inteligentes pura. Su objetivo es crear una plataforma de contratos inteligentes que sea a la vez justa y confiable.&#x201d; Los principios de esta plataforma son los siguientes:
+
+____
+* Todos los cambios y actualizaciones del protocolo deben esforzarse por mantener y reforzar estos Principios de Ellaism.
+* Política Monetaria: 280 millones de monedas.
+* Sin censura: Nadie debería poder evitar que se confirmen transacciones válidas.
+* Código-Abierto: el código fuente de Ellaism siempre debe estar abierto para que cualquiera pueda leerlo, modificarlo, copiarlo o compartirlo.
+* Sin Permisologías: Ningún guardián arbitrario debería impedir que alguien sea parte de la red (usuario, nodo, minero, etc.).
+* Seudónimidad: No se debe requerir identificación para poseer, o usar Ellaism.
+* Fungibilidad: todas las monedas son iguales y deberían poder gastarse por igual.
+* Transacciones Irreversibles: los bloques confirmados deben estar grabados en piedra. El historial de esta cadena de bloques debería ser inmutable.
+* Sin Bifurcaciones Fuertes Contenciosas: no se admitirán bifurcaciones fuertes sin el consenso de toda la comunidad. Solo se romperá el consenso existente cuando sea necesario.
+* Se pueden realizar muchas actualizaciones de funciones sin una bifurcación fuerte, como por ejemplo, mejorar el rendimiento de la EVM.
+____
+
+También se han producido otras bifurcaciones en Ethereum. Algunas de estas han sido bifurcaciones fuertes, en el sentido de que se separan directamente de la red Ethereum preexistente. Otras son bifurcaciones de software: utilizan el software de cliente/nodo de Ethereum pero ejecutan redes completamente separadas sin ningún historial compartido con Ethereum. Es probable que haya más bifurcaciones durante la vida de Ethereum.
+
+También hay varios proyectos diversos que afirman ser bifurcaciones de Ethereum, pero que en realidad se basan en tokens ERC20 y se ejecutan en la red Ethereum. ((("lluvias de monedas")))((("EMOD (Ethereum Modification)")))((("ETHB (EtherBTC)")))((("EtherBTC (ETHB)")))((("Ethereum Modification (EMOD)")))Dos ejemplos de estos son EtherBTC (ETHB) y "Ethereum Modification" (EMOD). No se trata de bifurcaciones en el sentido tradicional y, en ocasiones, pueden denominarse &#x201c;lluvias de monedas.&#x201d;
+
+Aquí hay un breve resumen de algunas de las bifurcaciones más notables que se han producido:
+
+- ((("Expanse")))_Expanse_ fue la primera bifurcación de la cadena de bloques Ethereum en ganar tracción. Se anunció a través del foro Bitcoin Talk el 7 de septiembre de 2015. La bifurcación real ocurrió una semana después, el 14 de septiembre de 2015, a una altura de bloque de 800.000. Originalmente fue fundada por Christopher Franko y James Clayton. Su visión declarada era crear una cadena avanzada para: "la identidad, la gobernanza, la caridad, el comercio y activos".
+- ((("ETF (EthereumFog)")))((("EthereumFog (ETF)")))_EthereumFog_ (ETF) se lanzó el 14 de diciembre de 2017 y se bifurcó a una altura de bloque de 4.730.660. El objetivo declarado del proyecto es desarrollar la "computación de niebla descentralizada a nivel global" centrándose en la computación de niebla y el almacenamiento descentralizado. Todavía hay poca información sobre lo que esto implicará realmente.
+- _EtherZero_ (ETZ) ((("EtherZero (ETZ)")))se lanzó el 19 de enero de 2018, a una altura de bloque de 4,936,270. Sus innovaciones notables fueron la introducción de una arquitectura de "masternodos" y la eliminación de comisiones de transacción para contratos inteligentes para permitir una diversidad más amplia de DApps. Ha habido algunas críticas de algunos miembros prominentes de la comunidad Ethereum, de MyEtherWallet y de MetaMask, debido a la falta de claridad en torno al desarrollo y algunas acusaciones de posible phishing.
+- ((("EtherInc (ETI)")))((("ETI (EtherInc)")))_EtherInc_ (ETI) se lanzó el 13 de febrero de 2018, a una altura de bloque de 5.078.585, con un enfoque en la construcción descentralizada organizaciones. Los objetivos declarados incluyen la reducción de los tiempos de minado de bloque, el aumento de las recompensas a los mineros, la eliminación de las recompensas de bloques-tío y el establecimiento de un límite a las monedas minables. EtherInc utiliza las mismas llaves privadas que Ethereum y ha implementado la protección de reproducción para proteger el éter en la cadena original no bifurcada.(((range="endofrange", startref="ix_appdx-forks-history-asciidoc2")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc1")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc0")))

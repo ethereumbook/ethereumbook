@@ -1,0 +1,795 @@
+[[tx_chapter]]
+== Transakce
+
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Transakce jsou podepsané zprávy pocházející z externě vlastněného účtu, přenášené Ethereum sítí a zaznamenané na Ethereum bločenky. Tato základní definice skrývá mnoho překvapivých a fascinujících detailů. Dalším způsobem, jak se podívat na transakce, je to, že jsou to jediné věci, které mohou vyvolat změnu stavu nebo způsobit vykonání kontraktu v EVM. Ethereum je globální jednoinstanční stavový stroj a transakce jsou důvodem, proč tento stavový stroj „tiká“, mění svůj stav. Kontrakty neběží samy od sebe. Ethereum neběží autonomně. Všechno začíná transakcí.
+
+V této kapitole prozkoumáme transakce, ukážeme, jak fungují, a prozkoumáme podrobnosti. Všimněte si, že velká část této kapitoly je určena těm, kteří mají zájem o správu svých transakcí na nízké úrovni, pravděpodobně proto, že píšou aplikaci peněženky; nemusíte se o to starat, pokud jste spokojeni s používáním existujících aplikací peněženky, i když možná vyhodnotíte podrobnosti jako zajímavé!
+
+[[tx_struct]]
+=== Struktura transakce
+
+((("transactions","basic structure")))Nejprve se podívejme na základní strukturu transakce, protože je ve standardizovaném formátu (serializovaně) přenášena v Ethereum síti. Každý klient a aplikace, která přijme transakci ve standardizovaném formátu, ji uloží do paměti pomocí své vlastní interní datové struktury, možná ozdobenou metadaty, která v samotném standardizovaném síťovovém formátu transakci neexistují. Síťová standardizovaný formát je jedinou standardní formou transakce.
+
+Transakce je formátována jako binární zpráva, která obsahuje následující data:
+
+Nonce:: Pořadové číslo vydané původním EOA, používané k zabránění opakovanému provedení transakce
+
+Cena plynu:: Cena plynu (ve wei), kterou je odesilatel ochoten zaplatit
+
+Limit plynu:: Maximální množství plynu, které je původce ochoten zaplatit za celou transakci
+
+Příjemce:: Cílová Ethereum adresa
+
+Hodnota:: Množství etheru, které se má odeslat do cíle
+
+Data:: Užitečné zatížení binárními dayt s proměnnou délkou
+
+v, r, s:: Tři složky ECDSA digitálního podpisu EOA odesilatele
+
+((("Recursive Length Prefix (RLP)")))((("RLP (Recursive Length Prefix)"))) Struktura transakční zprávy je formátována pomocí schématu rekurzivní prefix délky (RLP), které bylo vytvořeno speciálně pro jednoduchá, formátování binárních dat v Ethereu. Všechna čísla v Ethereu jsou kódována jako big-endian celá čísla, jejichž délky jsou násobky 8 bitů.
+
+Povšimněte si, že popisky polí (+příjemce+, +limit plynu+, atd.) Jsou zde uvedeny pro přehlednost, ale nejsou součástí formátu transakčních dat, která obsahují pole hodnot zakódovaných RLP. Obecně RLP neobsahuje žádné oddělovače polí nebo značky. Předpona délky RLP se používá k identifikaci délky každého pole. Vše, co přesahuje definovanou délku, patří do dalšího pole ve struktuře.
+
+Zatímco jsme si představili skutečnou přenášenou strukturu transakcí, většina interních reprezentací a vizualizací uživatelského rozhraní ji ozdobí dalšími informacemi odvozenými z transakce nebo z bločenky.
+
+Například si můžete všimnout, že zde chybí položka odesilatel transakce. Je to proto, že veřejný klíč EOA lze odvodit ze složek +v,r,s+  ECDSA podpisu. Adresa může být zase odvozena z veřejného klíče. Když vidíte transakci zobrazující pole „odesilatel“, přidal ho tam software použitý k vizualizaci transakce. Další metadata často přidaná do transakce klientským softwarem zahrnují číslo bloku (jakmile je vytěženo a zahrnuto do bločenky) a ID transakce (vypočtený haš). Tato data jsou opět odvozena z transakce a netvoří součást samotné transakční zprávy.
+
+[[tx_nonce]]
+=== Transakční nonce
+
+((("nonces", id="ix_06transactions-asciidoc1", range="startofrange")))((("transactions","nonces", id="ix_06transactions-asciidoc2", range="startofrange")))Nonce je jednou z nejdůležitějších a nejméně srozumitelných složek transakce. Definice ve Žluté knize (viz <<references>>) zní:
+
+____
++nonce+: Skalární hodnota rovnající se počtu transakcí odeslaných z této adresy nebo, v případě účtů s přidruženým kódem, počtu kontraktů vytvořených tímto účtem.
+____
+
+Přesně vzato je nonce atributem původní adresy; to znamená, že má význam pouze v kontextu odesílací adresy. Nonce však není explicitně uložen jako součást stavu účtu na bločence. Místo toho se vypočítává dynamicky, spočítáním počtu potvrzených transakcí, které pocházejí z dané adresy.
+
+Existují dva scénáře, v nichž je důležitá existence nonce počítající transakce: Vykonávání transakcí v pořadí jejich vytvoření a ochrana před vícenásobným vykonáním transakce. Podívejme se na ukázkový scénář pro každý z nich:
+
+1. Představte si, že chcete provést dvě transakce. Máte důležitou platbu, abyste zaplatili 6 etherů, a také další platbu zaplatit 8 etherů. Nejprve podepíšete a vysíláte transakci 6-etherovou, protože ta je důležitější, a poté podepíšete a vysíláte druhou, 8-etherovou transakci. Bohužel jste přehlédli skutečnost, že váš účet obsahuje pouze 10 etherů, takže síť nemůže akceptovat obě transakce: jedna z nich selže. Protože jste nejdřív poslali důležitější 6-etherovou, pochopitelně očekáváte, že ta projde a 8-etherová bude odmítnuta. V decentralizovaném systému, jako je Ethereum, však mohou uzly přijímat transakce v jakémkoli pořadí; neexistuje žádná záruka, že konkrétní uzel bude mít jednu transakci propagovanou před druhou. Téměř jistě nastane případ, že některé uzly obdrží nejprve 6-etherovou transakci a jiné obdrží 8-etherovou transakci jako první. Bez nonce by bylo náhodné, která z nich bude přijata a která odmítnuta. Avšak s použitím nonce bude mít první transakce, kterou jste odeslali, nonce, řekněme 3, zatímco transakce 8-etherová má další hodnotu nonce (tj. 4). Tato transakce bude tedy ignorována, dokud nebudou zpracovány transakce s noncemi od 0 do 3, i kdyby byla přijata jako první. Uff!
+
+
+2. Nyní si představte, že máte účet se 100 ethery. Fantastický! Najdete někoho online, který přijme platbu v éteru za nějaké záhadné zařízení (mcguffin-widget), který si opravdu chcete koupit. Pošlete jim 2 ether a vám pošlou objednané záhadné zařízení. Milé. Chcete-li provést tuto 2-etherovou platbu, podepsali jste transakci, která odeslala 2 ethery z vašeho účtu na jejich účet, a poté ji vyslala do sítě Ethereum, kde má být ověřena a zahrnuta do bločenky. Nyní, bez hodnoty nonce v transakci, bude druhá transakce odesílající 2 ethery na stejnou adresu podruhé vypadat přesně stejně jako první transakce. To znamená, že kdokoli, kdo vidí vaši transakci v síti Ethereum (což znamená každý, včetně příjemce transakce nebo vašich nepřátel), může transakci znovu a znovu přeposílat do sítě, dokud váš veškerý ether neodejde jednoduchým okopírováním původní transakce a jejím opětovným odesláním do sítě. Avšak s hodnotou nonce zahrnutou do transakčních dat je _každá jednotlivá transakce jedinečná_, i když posíláte stejné množství etheru na stejnou adresu příjemce vícekrát. Tím, že máme zvyšující se nonci jako součást transakce, není jednoduše možné, aby někdo „duplikoval“ provedenou platbu.
+
+Když to shrneme, je důležité si uvědomit, že použití nonce je ve skutečnosti pro protokol používající _mechanizmus účtů_ životně důležité. V Bitcoinovém protokolu se transakční nonce nemusejí používat (a nepoužívají se), protože místo mechanizmu účtů využívá mechanismus „neutracených výstupů transakcí“ (Unspent Transaction Output; UTXO).
+
+[[tracking_nonce]]
+==== Sledování noncí
+
+((("nonces","keeping track of"))) Prakticky řečeno, nonce je aktuální počet _potvrzených_ transakcí  (v bločence), které byly odeslány z účtu. Chcete-li zjistit, co je to nonce, můžete se podívat na bločenku, například přes rozhraní web3. Otevřete JavaScript konzoli v Geth (nebo preferovaném rozhraní web3) na testovací síti Ropsten a zadejte:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")</strong>
+40
+</pre>
+++++
+
+[TIP]
+====
+Nonce je počítadlo začínající nulou, což znamená, že první transakce má nonci 0. V tomto příkladu máme počet transakcí 40, což znamená, že uvidíme nonce 0 až 39. Další transakční nonce bude muset být 40.
+====
+
+Vaše peněženka bude sledovat nonce pro každou adresu, kterou spravuje. Je to docela jednoduché, pokud provádíte transakce pouze z jednoho místa. Řekněme, že píšete vlastní software peněženky nebo nějakou jinou aplikaci, která vytváří transakce. Jak sledujete nonce?
+
+Když vytvoříte novou transakci, přiřadíte další nonci v pořadí. Dokud se však transakce nepotvrdí, nebude se počítat do součtu +getTransactionCount+.
+
+[[get_tx_count_bug]]
+[WARNING]
+====
+Při použití funkce +getTransactionCount+ k počítání čekajících transakcí buďte opatrní, protože pokud odešlete několik transakcí krátce po sobě, můžete narazit na některé problémy.
+====
+
+Podívejme se na příklad:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+40
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+</pre>
+++++
+[TIP]
+====
+Pokud se pokusíte tyto příklady kódu sami vytvořit v Geth javascriptové konzoli, měli byste použít web3.toWei () místo web3.utils.toWei (). Je to proto, že Geth používá starší verzi knihovny web3.
+====
+
+Jak vidíte, první odeslaná transakce zvýšila počet transakcí na 41, což ukazuje na čekající transakci. Když jsme však poslali další tři transakce rychle za sebou, volání +getTransactionCount+ je nezapočítalo. Počítalo se to pouze jednu, i když byste mohli očekávat, že v paměťovém úložišti nepotvrzených transakcí (mempool) čekají tři. Pokud počkáme několik sekund, než se síťová komunikace usadí, poté volání +getTransactionCount+ vrátí očekávané číslo. Ale prozatím, když čekáme na více než jednu transakci, nemusí nám pomoci.
+
+Při tvorbě aplikace, která vytváří transakce, nemůže spoléhat na pass:[<span class="keep-together"><code>getTransactionCount</code></span>] pro čekající transakce. Pouze v případě, že čekající a potvrzené počty jsou stejné (všechny nepotvrzené transakce jsou potvrzeny), můžete důvěřovat výstupu +getTransactionCount+ a začít počítat nonce. Proto sledujte nonce ve vaší aplikaci, dokud se každá transakce nepotvrdí.
+
+((("Parity","nonce counting"))) Parity JSON RPC rozhraní nabízí funkci +parity_nextNonce+, která vrací další nonci, která by měla být použita v transakci. Funkce +parity_nextNonce+ počítá nonce správně, i když konstruujete několik transakcí v rychlém sledu bez čekání na jejich potvrzení:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl --data '{"method":"parity_nextNonce", \
+  "params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],\
+  "id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST \
+  localhost:8545</strong>
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+</pre>
+++++
+
+[[parity_curl]]
+[TIP]
+====
+Parita má webovou konzoli pro přístup k rozhraní JSON RPC, ale zde k přístupu používáme HTTP klienta typu příkazová řádka.
+====
+
+[[gaps_nonce]]
+==== Mezery v noncích, stejné nonce a potvrzení
+
+((("nonces","gaps in sequence of"))) Je důležité sledovat nonce, pokud vytváříte transakce programem, zejména pokud tak děláte z více nezávislých procesů pass:[<span class="keep-together">současně</span>].
+
+Síť Ethereum zpracovává transakce postupně na základě nonce. To znamená, že pokud přenesete transakci s noncí 0 a pak přenesete transakci s noncí 2, druhá transakce nebude zahrnuta do žádných bloků. Bude uložena v paměťovém úložišti nepotvrzených transakcí (mempool), zatímco síť Ethereum čeká, až se objeví chybějící nonce. Všechny uzly budou předpokládat, že chybějící nonce byla prostě zpožděna a že transakce s noncí 2 byla přijata mimo pořadí.
+
+Pokud pak odešlete transakci s chybějícím noncí 1, budou obě transakce (nonce 1 a 2) zpracovány a zahrnuty (samozřejmě, pokud jsou platné). Jakmile vyplníte mezeru, může síť těžit transakci mimo posloupnost, kterou držela v paměťovém úložišti nepotvrzených transakcí.
+
+To znamená, že pokud vytvoříte několik transakcí postupně a jedna z nich nebude oficiálně zahrnuta do žádných bloků, budou všechny následující transakce „zaseknuty“ a budou čekat na chybějící nonci. Transakce může vytvořit neúmyslnou „mezeru“ v posloupnosti noncí, protože je neplatná nebo nemá dostatek plynu. Aby se věci znovu rozpohybovaly, musíte předat platnou transakci s chybějící noncí. Stejně tak byste si měli být vědomi toho, že jakmile je transakce s „chybějící“ noncí ověřena sítí, všechny přenosové transakce s následujícími noncesi postupně nabudou platnosti; není možné „odvolat“ transakci!
+
+((("nonces","confirmation")))((("nonces","duplicated")))Pokud na druhou stranu omylem duplikujete nonce, například přenosem dvou transakcí se stejnou noncí, ale pro různé příjemce nebo s různou hodnotou, pak jedna z nich bude potvrzena a jedna bude odmítnuta. Která z nich je potvrzena, bude určeno pořadím, ve které dorazí k prvnímu validačnímu uzlu, který je přijímá - tj. bude celkem náhodná.
+
+Jak vidíte, sledování potřeb je nutné, a pokud vaše aplikace tento proces nespravuje správně, narazíte na problémy. Bohužel, věci se ještě ztíží, pokud se to snažíte dělat souběžně, jak uvidíme v další části.
+
+[[concurrency]]
+==== Souběh, vytvoření transakce a nonce
+
+((("concurrency, nonces and")))((("nonces","concurrency")))((("nonces","transaction origination")))Souběžnost je složitý aspekt informatiky někdy se neočekávaně vynoří, zejména v decentralizovaných a distribuovaných systémech v reálném čase, jako je pass:[<span class="keep-together">Ethereum</span>].
+
+Zjednodušeně řečeno, souběžnost je, když máte simultánní výpočet několika nezávislými systémy. Ty mohou být ve stejném programu (např. více vláken ve stejném procesu), na stejném počítači (např. více procesorů) nebo na různých počítačích (tj. distribuované pass:[<span class="keep-together">systémy</span>]). Ethereum je ze své podstaty systém, který umožňuje souběžnost operací (uzly, klienti, DAppy), ale prosazuje jednoinstanční stav na základě konsensu.
+
+Nyní si představte, že máte více nezávislých peněženkových aplikací, které vytvářejí transakce ze stejné adresy nebo adres. Jedním příkladem takové situace by mohla být burza provádějící výběry z horké peněženky (peněženka, jejíž klíče jsou uloženy online, na rozdíl od studené peněženky, jejíž klíče nejsou nikdy online). V ideálním případě byste chtěli mít více než jeden počítač zpracovávající výběr, aby se to nestalo problémovým bodem nebo jediným bodem selhání. To se však rychle stává problematickým, protože mít více než jeden počítač vytvářející výběry bude mít za následek některé trnité problémy souběžného provádění, v neposlední řadě je to výběr noncí. Jak koordinuje více počítačů vytváření, podepisování a odesílání transakcí ze stejného účtu v peněžence?
+
+Jediný počítač můžete použít k přiřazení noncí na principu, kdo první o nonci požádá, ten jí dostane. Tento počítač je však nyní jediným bodem selhání. Horší je, že pokud je přiděleno více noncí a jedna z nich se nikdy nevyužije (z důvodu selhání počítače, který transakci zpracovává s touto noncí), všechny následné transakce uvíznou.
+
+Dalším přístupem by bylo generování transakcí, ale nepřidělování jim noncí (a proto je ponechat nepodepsané - pamatujte, že nonce je nedílnou součástí transakčních dat, a proto musí být zahrnuta do digitálního podpisu, který autentizuje transakci). Pak je můžete umístit do fronty do jediného uzlu, který je podepíše a také sleduje nonce. Opět by to však bylo v tomto procesu úzké místo: podepisování a sledování noncí je ta část vaší operace, která bude pravděpodobně nejvíce vytížená, zatímco vytváření nepodepsané transakce je ta část, kterou ve skutečnosti nemáte potřebu paralelizovat. Měli byste nějakou souběžnost, ale v kritické části procesu by to chybělo.
+
+Nakonec tyto problémy souběžnosti, kromě obtížnosti sledování zůstatků účtů a potvrzení transakcí v nezávislých procesech, nutí většinu implementací k vyhýbání se souběžnosti a vytváření úzkých míst, jako je jediný proces, který řeší všechny transakce výběru z burzy nebo nastavování více horkých peněženek, které mohou zcela samostatně řešit výběry a musí být pouze občas vyváženy. (((range="endofrange", startref="ix_06transactions-asciidoc2")))(((range="endofrange", startref="ix_06transactions-asciidoc1")))
+
+[[tx_gas]]
+=== Transakční plyn
+
+((("gas","transactions and", id="ix_06transactions-asciidoc3", range="startofrange")))((("transactions","gas", id="ix_06transactions-asciidoc4", range="startofrange")))V předchozích kapitolách jsme trochu mluvili o plynu a podrobněji o tom diskutujeme v <<gas>>. Pojďme však probrat některé základní informace o úloze položek cena plynu (+gasPrice+) a limit plynu (+gasLimit+).
+
+Plyn je Ethereum palivo. Plyn není ether - je to samostatná virtuální měna s vlastním směnným kurzem proti etheru. Ethereum používá plyn k řízení množství zdrojů, které může transakce použít, protože bude zpracována na tisících počítačích po celém světě. Výpočetní model s otevřeným koncem (Turingovsky úplný) vyžaduje určitou formu měření spotřeby zdrojů, aby se zabránilo útokům odmítnutí služby nebo neúmyslně transakcím pohlcujícím zdroje.
+
+Plyn je oddělen od etheru, aby byl systém chráněn před volatilitou, která by mohla nastat spolu s rychlými změnami hodnoty etheru, a také jako způsob řízení důležitých a citlivých poměrů mezi náklady na různé zdroje, které plynem platí (konkrétně výpočet, paměť a úložiště).
+
+((("gasPrice field"))) Pole cena plynu (+gasPrice+) v transakci umožňuje odesilateli transakce stanovit cenu, kterou je ochoten zaplatit za plyn. Cena se měří ve wei za jednotku plynu. Například ve vzorové transakci <<intro_chapter>> vaše peněženka nastavila +gasPrice +na 3 gwei (3 gigawei nebo 3 miliardy wei).
+
+[TIP]
+====
+Populární web https://ethgasstation.info/[ETH Čerpací stanice] poskytuje informace o aktuálních cenách plynu a dalších relevantních metrikách plynu pro hlavní Ethereum  síť.
+====
+
+Peněženky mohou upravit +gasPrice+ v transakcích, z nichž vznikají, aby se dosáhlo rychlejšího potvrzení transakcí. Čím vyšší je +gasPrice+, tím rychlejší bude transakce pravděpodobně potvrzena. Naopak transakce s nižší prioritou mohou nést sníženou cenu, což má za následek pomalejší potvrzení. Minimální hodnota, na kterou lze nastavit +gasPrice+, je nula, což znamená transakci bez poplatků. Během období nízké poptávky po prostoru v bloku by se tyto transakce mohly velmi dobře těžit.
+
+[NOTE]
+====
+Minimální přijatelné +gasPrice+ je nula. To znamená, že peněženky mohou generovat zcela zdarma transakce. V závislosti na kapacitě, nemusí být nikdy potvrzeny, ale v protokolu nic nezakazuje bezplatné transakce. Můžete najít několik příkladů takových transakcí, které byly úspěšně zahrnuty do Ethereum bločenky.
+====
+
+[[gas_price_suggestion]]
+Rozhraní web3 nabízí návrh +gasPrice+, a to spočítáním střední ceny z několika bloků (k tomu můžeme použít truffle příkazovou řádku nebo jakoukoli JavaScript web3 příkazovou řádku):
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(console.log)</strong>
+> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+</pre>
+++++
+
+[[calc_gas_price]]
+((("gasLimit field")))Druhé důležité pole související s plynem je limit plynu (+gasLimit+). Zjednodušeně řečeno, +gasLimit+ udává maximální počet jednotek plynu, které je odesilatel transakce ochoten koupit za účelem dokončení transakce. Pro jednoduché platby, což znamená transakce, které převádějí ether z jednoho EOA do jiného EOA, je potřebné množství plynu stanoveno na 21 000 jednotek plynu. Chcete-li vypočítat, kolik etheru to bude stát, vynásobíte 21 000 hodnotou +gasPrice+, kterou jste ochotni zaplatit. Například:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )</strong>
+> 210000000000000
+</pre>
+++++
+
+Pokud je cílovou adresou vaší transakce kontrakt, pak lze potřebné množství plynu odhadnout, ale nelze jej přesně určit. Je to proto, že kontrakt může vyhodnotit různě podmínky, které vedou k různým větvím provádění kódu, s různými celkovými náklady na plyn. Kontrakt může provést pouze jednoduchý nebo složitější výpočet, v závislosti na podmínkách, které jsou mimo vaši kontrolu a nelze je předvídat. Abychom to demonstrovali, podívejme se na příklad: můžeme napsat chytrý kontrakt, která zvýší počitadlo při každém svém zavolání a provede určitou smyčku tolikrát, kolikrát byl zavolán. Možná, že na 100. zavolání rozdá zvláštní cenu, jako loterie, ale pro výpočet ceny je třeba provést další výpočet. Pokud zavoláte smlouvu 99-krát, stane se jedna věc, ale na 100. volání se stane něco velmi odlišného. Množství plynu, za byste měli zaplatit, závisí na tom, kolik dalších transakcí tuto funkci zavolá, než bude vaše transakce zahrnuta do bloku. Možná je váš odhad založen na 99. transakci, ale těsně před potvrzením vaší transakce někdo zavolá kontrakt po 99.  Nyní jste 100. transakcí, která chcete kontrakt zavolat, a výpočetní náročnost (a náklady na plyn) je mnohem vyšší.
+
+Chcete-li si vypůjčit běžnou analogii s používáním v Ethereu, můžete si představit +gasLimit+ jako kapacitu palivové nádrže v autě (vaše auto je transakce). Naplňte do nádrž tolik plynu, kolik si myslíte, že bude pro cestu potřeba (výpočet potřebný k ověření vaší transakce). Můžete odhadnout částku do určité míry, ale mohou se vyskytnout neočekávané změny na vaší cestě, jako je odklon (složitější cesta provedení), které zvyšují spotřebu paliva.
+
+Analogie k palivové nádrži je však poněkud zavádějící. Je to spíš úvěrový účet u společnost provozující čerpací stanicí, které zaplatíte po dokončení cesty, podle toho, kolik plynu jste skutečně použili. Při přenosu transakce je jedním z prvních ověřovacích kroků ověření, zda účet, ze kterého pochází, má dostatek etheru k zaplacení +gasPrice*gasLimit+. Částka však ve skutečnosti nebude odečtena z vašeho účtu, dokud nebude transakce dokončena. Účtuje se vám pouze plyn skutečně spotřebovaný vaší transakcí, ale před odesláním transakce musíte mít dostatek zůstatku na maximální částku, kterou jste ochotni zaplatit. (((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+
+[[tx_recipient]]
+=== Příjemce transakce
+
+((("transactions","recipient of")))Příjemce transakce je uveden v poli +to+. Tato adresa obsahuje 20-bajtovou Ethereum adresu. Adresa může být EOA nebo adresa kontraktu.
+
+Ethereum již neprovádí další validaci tohoto pole. Jakákoli 20-bajtová hodnota je považována za platnou. Pokud 20-bajtová hodnota odpovídá adrese bez odpovídajícího soukromého klíče nebo bez odpovídajícího kontraktu, je transakce stále platná. Ethereum nemá způsob, jak zjistit, zda byla adresa správně odvozena od veřejného klíče (a tedy ze soukromého klíče).
+
+[WARNING]
+====
+Ethereum protokol neověřuje adresy příjemců v transakcích. Můžete transakci poslat na adresu, která nemá žádný odpovídající soukromý klíč nebo kontrakt, čímž „spálíte“ ether, čímž jej navždy ztratíte. Ověření by mělo být provedeno na úrovni uživatelského rozhraní.
+====
+
+((("ether burn")))Odesláním transakce na nesprávnou adresu bude pravděpodobně odeslaný ether _spálen_, což jej učiní navždy nepřístupným (neutratitelným), protože většina adres nemá známý soukromý klíč, a proto nelze vygenerovat žádný podpis nutný pro jeho utracení. Předpokládá se, že k ověření adresy dochází na úrovni uživatelského rozhraní (viz <<EIP55>>). Ve skutečnosti existuje řada rozumných důvodů pro spalování etheru - například jako odrazující prvek od podvádění v platebních kanálech a jiných chytrých kontraktech - a protože množství etheru je konečné, pálení etheru efektivně distribuuje spálenou hodnotu všem držitelům etheru. (v poměru k množství etheru, které drží).
+
+[[tx_value_data]]
+=== Transakční hodnota a data
+
+((("transactions","value and data fields", id="ix_06transactions-asciidoc5", range="startofrange")))Hlavní „užitečné zatížení“ transakce je obsaženo ve ((("data field", id="ix_06transactions-asciidoc6", range="startofrange")))((("value field", id="ix_06transactions-asciidoc7", range="startofrange"))) dvou polích: hodnota (+value+) and +data+. Transakce mohou mít hodnotu i data, pouze hodnotu, pouze data, ani hodnotu ani data. Všechny čtyři kombinace jsou platné.
+
+((("invocation")))((("payment")))Transakce obsahující pouze hodnotu je _platba_. Transakce obsahující pouze data je _volání_. Transakce s hodnotou i daty je jak platbou, tak i vyvoláním. Transakce bez hodnoty a zároveň bez dat - to je pravděpodobně jen plýtvání plynem! Ale je to stále možné.
+
+Zkusme všechny tyto kombinace. Nejprve nastavíme zdrojovou a cílovou adresu z naší peněženky, abychom ukázku udělali snadněji čitelnou:
+
+[source,javascript]
+----
+src = web3.eth.accounts[0];
+dst = web3.eth.accounts[1];
+----
+
+Naše první transakce obsahuje pouze hodnotu (platbu) a žádné další užitečné datové zatížení:
+
+[[tx_value_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: ""});
+----
+
+Naše peněženka zobrazuje potvrzovací obrazovku označující hodnotu k odeslání, jak je uvedeno v <<parity_txdemo_value_nodata>>.
+
+[[parity_txdemo_value_nodata]]
+.Peněženka Parity ukazuje transakci s hodnotou, ale bez dat
+image::images/parity_txdemo_value_nodata.png["Peněženka Parity ukazuje transakci s hodnotou, ale bez dat"]
+
+
+Následující příklad zadává hodnotu i užitečné datové zatížení:
+
+[[tx_value_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: "0x1234"});
+----
+
+Naše peněženka zobrazuje potvrzovací obrazovku označující hodnotu, která má být odeslána, a užitečné datové zatížení, jak je uvedeno <<parity_txdemo_value_data>>.
+
+[[parity_txdemo_value_data]]
+.Peněženka Parity ukazuje transakci s hodnotou a daty
+image::images/parity_txdemo_value_data.png["Peněženka Parity ukazuje transakci s hodnotou a daty"]
+
+Další transakce zahrnuje užitečné datové zatížení, ale její hodnota je nulová:
+
+[[tx_novalue_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
+----
+
+Naše peněženka zobrazuje potvrzovací obrazovku označující nulovou hodnotu a užitečné datové zatížení, jak je uvedeno v <<parity_txdemo_novalue_data>>.
+
+[[parity_txdemo_novalue_data]]
+.Peněženka Parity ukazuje transakci bez hodnoty, pouze data
+image::images/parity_txdemo_novalue_data.png["Peněženka Parity ukazuje transakci bez hodnoty, pouze data"]
+
+[role="pagebreak-before"]
+Konečně poslední transakce nezahrnuje ani hodnotu k odeslání ani užitečné datové zatížení:
+
+[[tx_novalue_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
+----
+
+Naše peněženka zobrazuje potvrzovací obrazovku označující nulovou hodnotu, jak je uvedeno v <<parity_txdemo_novalue_nodata>>.
+
+[[parity_txdemo_novalue_nodata]]
+.Peněženka Parity ukazuje transakci bez hodnoty a bez dat
+image::images/parity_txdemo_novalue_nodata.png["Peněženka Parity ukazuje transakci bez hodnoty a bez dat"]
+
+[[value_EOA_contracts]]
+==== Přenos hodnoty ve prospěch EOA a kontratu
+
+((("EOA (Externally Owned Account)","transmitting value to")))((("smart contracts","transmitting value to")))((("transactions","transmitting value to EOAs and contract")))Když vytvoříte Ethereum transakci, která obsahuje hodnotu, jedná se o ekvivalent _platby_. Takové transakce se chovají odlišně v závislosti na tom, zda je cílová adresa kontrakt nebo ne.
+
+Pro adresy EOA nebo spíše pro jakoukoli adresu, která není na bločence označena jako kontrakt, Ethereum zaznamená změnu stavu a přidá hodnotu, kterou jste zaslali, do zůstatku adresy. Pokud adresa nebyla dosud použita, hodnota bude přičtena k vnitřní reprezentaci stavu klienta a zůstatek adresy bude inicializován na hodnotu vaší platby.
+
+Pokud je cílová adresa (+to+) kontrakt, pak EVM spustí kontrakt a pokusí se zavolat funkci uvedenou v datovém zatížení vaší transakce. Pokud v transakci nejsou žádná data, EVM zavolá _nouzovou_ funkci a pokud je tato funkce platby přijímající, provede ji, aby se určilo, co dál dělat. Pokud v nouzové funkci neexistuje žádný kód, bude výsledkem transakce zvýšení zůstatku smlouvy, přesně jako platba do peněženky. Pokud neexistuje žádná nouzová funkce nebo nouzová funkce nepřijímá platby, transakce bude vrácena.
+
+Kontrakt může odmítnout příchozí platby okamžitým vyvoláním výjimky při vyvolání funkce nebo podle podmínek kódu funkce. Pokud funkce skončí úspěšně (bez výjimky), pak je stav kontraktu aktualizován, aby odrážel zvýšení etherové zůstatku kontraktu ((range="endofrange", startref="ix_06transactions-asciidoc7")))(((range="endofrange", startref="ix_06transactions-asciidoc6")))
+
+[[data_EOA]]
+==== Přenos užitečného datového zatížení EOA nebo kontraktu
+
+((("data payload, transmitting to EOAs and contracts", id="ix_06transactions-asciidoc8", range="startofrange")))((("EOA (Externally Owned Account)","transmitting data payload to", id="ix_06transactions-asciidoc9", range="startofrange")))((("smart contracts","transmitting data payload to", id="ix_06transactions-asciidoc10", range="startofrange")))((("transactions","transmitting data payload to EOAs and contracts", id="ix_06transactions-asciidoc11", range="startofrange")))Pokud vaše transakce obsahuje data, je s největší pravděpodobností adresována na adresu kontraktu. To neznamená, že do EOA nemůžete odeslat užitečné datové zatížení - je to v Ethereum  protokolu zcela platné. V takovém případě však interpretace dat závisí na peněžence, kterou používáte pro přístup k EOA. Ethereum protokol je ignoruje. Většina peněženek také ignoruje veškerá data přijatá v transakci na účet EOA, který řídí. V budoucnu je možné, že se mohou objevit standardy, které umožní peněženkám interpretovat data způsobem, jakým to dělají kontrakty, což umožní transakcím vyvolat funkce běžící uvnitř uživatelských peněženek. Zásadní rozdíl spočívá v tom, že jakákoli interpretace užitečného datového zatížení prostřednictvím EOA nepodléhá Ethereum pravidlům ohledně konsensu, na rozdíl od pass:[<span class="keep-together">vykonávání</span>] kontraktu.
+
+Prozatím předpokládejme, že vaše transakce doručuje data na adresu kontraktu.  ((("contract invocation")))((("invocation")))In that case, the data will be interpreted by the EVM as a _contract invocation_. ((("function invocation")) Většina smluv používá tato data konkrétněji pro _volání funkcí_, volání pojmenované funkce a předání naformátovaných parametrů této funkci.
+
+Užitečné datové zatížení odeslané ABI-kompatibilnímu kontraktu (můžeme předpokládat, že to jsou všechny kontrakty) má následující formát v hexadecimálním kódování:
+
+Výběr funkce:: Keccak-256 haš prvních 4 bajtů hlavičky funkce. To umožňuje smlouvě jednoznačně určit, kterou funkci chcete vyvolat.
+
+Parametry funkce:: Parametry funkce, kódované podle pravidel pro různé datové typy definovaných ve specifikaci ABI.
+
+V <<solidity_faucet_example>> jsme definovali funkci pro výběry:
+
+[[withdraw_function_src]]
+[source,solidity]
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+((("prototype of a function")))_Hlavička_ funkce je definována jako řetězec obsahující název funkce, následovaný datovými typy každého z jeho parametrů, uzavřených v závorkách a oddělených čárkami. Název funkce je +withdraw+ a vyžaduje jediný parametr, který je typu  +uint+ (což je jiné označení pro +uint256+), takže hlavička +withdraw+ bude:
+
+[source,solidity]
+----
+withdraw(uint256)
+----
+
+Pojďme vypočítat Keccak-256 haš tohoto řetězce:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.utils.sha3("withdraw(uint256)");</strong>
+'0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
+</pre>
+++++
+
+První 4 bajty haše jsou +0x2e1a7d4d+. To je naše hodnota „výběru funkce“, která kontraktu sdělí, jakou funkci chceme volat.
+
+Dále si vypočtěte hodnotu, která bude předána jako parametr +withdraw_amount+. Chceme odebrat 0,01 etheru. Zakódujme to do hexadecimálního big-endian 256-bitového celého čísla bez znaménka, v jednotkách wei:
+
+++++
+<pre data-type="programlisting">
+> <strong>withdraw_amount = web3.utils.toWei(0.01, "ether");</strong>
+'10000000000000000'
+> <strong>withdraw_amount_hex = web3.utils.toHex(withdraw_amount);</strong>
+'0x2386f26fc10000'
+</pre>
+++++
+
+Nyní přidáme výběr funkce k množství (zarovnanému na 32 bajtů):
+
+----
+2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000
+----
+
+To je užitečné datové zatížení pro naši transakci, volající funkci +withdraw+ a vyžadující 0,01 etheru jako +withdraw_amount+  (((range="endofrange", startref="ix_06transactions-asciidoc11")))(((range="endofrange", startref="ix_06transactions-asciidoc10")))(((range="endofrange", startref="ix_06transactions-asciidoc9")))(((range="endofrange", startref="ix_06transactions-asciidoc8"))).(((range="endofrange", startref="ix_06transactions-asciidoc5")))
+
+[[contract_reg]]
+=== Zvláštní transakce: Vytvoření kontraktu
+
+((("contract creation transaction", id="ix_06transactions-asciidoc12", range="startofrange")))((("transactions","contract creation", id="ix_06transactions-asciidoc13", range="startofrange")))Jedním zvláštním případem, který bychom měli zmínit, je transakce, která na bločence _vytvoří nový kontrakt_ a připraví ho pro budoucí použití. ((("zero address","contract creation"))) Transakce vytvoření kontraktu jsou zasílány na zvláštní cílovou adresu zvanou _nulová adresa_; pole +to+ v transakci vytvářející kontrakt obsahuje adresu +0x0+. Tato adresa nepředstavuje EOA (neexistuje žádný odpovídající pár soukromých a veřejných klíčů) ani kontrakt. Nikdy nemůže utratit ether ani zahájit transakci. Používá se pouze jako cíl, se zvláštním významem „vytvořit tento kontrakt“.
+
+Zatímco nulová adresa je určena pouze pro vytvoření kontraktu, občas přijímá platby z různých adres. Existují dvě vysvětlení: buď je to omyl, což má za následek ztrátu etheru, nebo je to záměrné spálení etheru (úmyslně ničí ether jeho odesláním na adresu, ze které ho nelze nikdy utratit). Pokud však chcete provést úmyslné spálení etheru, měli byste svůj záměr objasnit síti a místo toho použít speciálně určenou adresu pro pálení:
+
+[[burn_address]]
+----
+0x000000000000000000000000000000000000dEaD
+----
+
+[WARNING]
+====
+Jakýkoli ether poslaný na určenou adresu pro pálení se stane nevratným a bude navždy ztracen.
+====
+
+Transakce vytvoření kontraktu musí obsahovat pouze užitečné datové  zatížení, které obsahuje kompilovaný bajtkód, který vytvoří kontrakt. Jediným účinkem této transakce je vytvoření kontraktu. Pokud chcete nastavit nový kontrakt s počátečním zůstatkem, můžete do pole +value+ přidat částku etheru, ale to je zcela volitelné. Pokud odešlete hodnotu (ether) na adresu pro vytvoření smlouvy bez užitečného datového zatížení (bez kontraktu), pak je účinek stejný jako odesílání na adresu pro pálení - neexistuje žádný kontrakt v jehož prospěch by ether mohl být započítán, takže ether je ztracen.
+
+Jako příklad můžeme vytvořit ručně kontrakt _Faucet.sol_ použitý v <<intro_chapter>> vytvořením transakce na nulovou adresu se smlouvou v  užitečném datovém zatížení. Smlouva musí být zkompilována do bajtkód reprezentace. To lze provést pomocí Solidity kompilátoru:
+
+++++
+<pre data-type="programlisting" class="pagebreak-before">
+$ <strong>solc --bin Faucet.sol</strong>
+
+Binárně:
+6060604052341561000f57600080fd5b60e58061001d6000396000f30060606040526004361060...
+</pre>
+++++
+
+Stejné informace lze také získat od online kompilátoru Remix.
+
+Nyní můžeme vytvořit transakci:
+
+++++
+<pre data-type="programlisting">
+> <strong>src = web3.eth.accounts[0];</strong>
+> <strong>faucet_code = \
+  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606...f0029";</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, \
+  gas: 113558, gasPrice: 200000000000});</strong>
+
+"0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
+</pre>
+++++
+
+Doporučujeme vždy zadat parametr odesilatele +to+, a to i v případě transakce vytvářející kontrakt (nulovou adresu), protože cena za neúmyslné odeslání etheru na adresu +0x0+ a jeho nenávratné ztracení je příliš vysoká. Měli byste také zadat cenu plynu +gasPrice+ a limit plynu +gasLimit+.
+
+Jakmile je kontrakt vytěžen, můžeme jej vidět v Etherscan průzkumníku bloků, jak je uvedeno v <<publish_contract_from_web3>>.
+
+[[publish_contract_from_web3]]
+.Ethercan zobrazuje úspěšně vytěžený kontrakt
+image::images/contract_published.png["Ethercan zobrazuje úspěšně vytěžený kontrakt"]
+
+Můžeme se podívat na příjemce transakce a získat informace o kontraktu:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getTransactionReceipt( \
+  "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");</strong>
+
+{
+  blockHash: "0x6fa7d8bf982490de6246875deb2c21e5f3665b4422089c060138fc3907a95bb2",
+  blockNumber: 3105256,
+  contractAddress: "0xb226270965b43373e98ffc6e2c7693c17e2cf40b",
+  cumulativeGasUsed: 113558,
+  from: "0x2a966a87db5913c1b22a59b0d8a11cc51c167a89",
+  gasUsed: 113558,
+  logs: [],
+  logsBloom: \
+    "0x00000000000000000000000000000000000000000000000000...00000",
+  status: "0x1",
+  to: null,
+  transactionHash: \
+    "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b",
+  transactionIndex: 0
+}
+</pre>
+++++
+
+To zahrnuje adresu kontraktu, kterou můžeme použít k zasílání prostředků a přijímání prostředků od kontraktu, jak je uvedeno v předchozí části:
+
+++++
+<pre data-type="programlisting">
+> <strong>contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, \
+  value: web3.utils.toWei(0.1, "ether"), data: ""});</strong>
+
+"0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
+
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: \
+  "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
+
+"0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
+</pre>
+++++
+
+Po chvíli jsou obě transakce nviditelné a Etherscan, jak je znázorněno v <<publish_contract_transactions>>. (((range="endofrange", startref="ix_06transactions-asciidoc13")))(((range="endofrange", startref="ix_06transactions-asciidoc12")))
+
+[[publish_contract_transactions]]
+.Etherscan zobrazuje transakce pro odesílání a přijímání prostředků
+image::images/published_contract_transactions.png["Etherscan zobrazuje transakce pro odesílání a přijímání prostředků"]
+
+
+[[digital_sign]]
+=== Digitální podpisy
+
+((("digital signatures", id="ix_06transactions-asciidoc14", range="startofrange")))((("transactions","digital signatures and", id="ix_06transactions-asciidoc15", range="startofrange")))Dosud jsme se nezachytili do podrobností o digitálních podpisech. V této části se podíváme na to, jak digitální podpisy fungují a jak je lze použít k předložení důkazu o vlastnictví soukromého klíče, aniž by tento soukromý klíč byl prozrazen.
+
+[[ecdsa]]
+==== Algoritmus digitálního podpisu pomocí eliptické křivky
+
+((("digital signatures","ECDSA and")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","about")))Algoritmus digitálního podpisu používaný v Ethereu je _algoritmus digitálního podpisu pomocí eliptické křivky_ (Elliptic Curve Digital Signature Algorithm; ECDSA). Je založen na dvojicích soukromých a veřejných klíčů, jak je popsáno <<elliptic_curve>>.
+
+Digitální podpis slouží v Ethereu ke třem účelům (viz následující postranní panel). Podpis nejprve prokazuje, že vlastník soukromého klíče, který je implicitně majitelem Ethereum účtu, povolil utrácení etheru nebo provedení kontraktu. ((("non-repudiation")))Za druhé, zaručuje _nepopiratelnost_: důkaz o autorizaci je nepopiratelný. Za třetí, podpis prokazuje, že data transakce nebyla a _nemohla být_ po podpisu transakce upravena.
+
+[[digital_signature_definition]]
+.Definice digitálního podpisu na Wikipedii
+****
+((("digital signatures","Wikipedia definition")))_Elektronický podpis_ je matematické schéma pro prokazování pravosti digitálních zpráv nebo dokumentů. Platný digitální podpis dává příjemci důvod se domnívat, že zpráva byla vytvořena známým odesílatelem (ověřování), že odesílatel nemůže popřít odeslání zprávy (nepopiratelnost) a že zpráva nebyla změněna při přenosu (integrita) .
+
+_Zdroj: https://en.wikipedia.org/wiki/Digital_signature_
+****
+
+[[digital_sign_work]]
+==== Jak fungují digitální podpisy
+
+((("digital signatures","mechanism of operation")))Digitální podpis je matematické schéma, které se skládá ze dvou částí. První část je algoritmus pro vytvoření podpisu pomocí soukromého klíče (podpisový klíč) ze zprávy (což je v našem případě transakce). Druhá část je algoritmus, který umožňuje komukoli ověřit podpis pouze pomocí zprávy a veřejného klíče.
+
+[[digital_sign_create]]
+===== Vytvoření digitálního podpisu
+
+((("digital signatures","creating")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","signature creation"))) V Ethereum implementaci ECDSA je podepisovanou „zprávou“ transakce nebo přesněji, Keccak-256 haš dat transakce kódovaných RLP. Podpisový klíč je soukromý klíč EOA. Výsledkem je podpis:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <msub><mi>F</mi> <mrow><mi>s</mi><mi>i</mi><mi>g</mi></mrow> </msub>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>F</mi> <mrow><mi>k</mi><mi>e</mi><mi>c</mi><mi>c</mi><mi>a</mi><mi>k</mi><mn>256</mn></mrow> </msub>
+      <mrow>
+        <mo>(</mo>
+        <mi>m</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>,</mo>
+      <mi>k</mi>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+kde:
+
+* _k_ je soukromý klíč provádějící podepisování.
+* _m_ je transakce kódovaná RLP.
+* _F_~_keccak256_~ je hašovací funkce Keccak-256.
+* _F_~_sig_~ je podpisový algoritmus.
+* _Sig_ je výsledný podpis.
+
+[[sign_function]]
+Funkce _F_~_sig_~ vytváří podpis __Sig__, který se skládá ze dvou hodnot, které se běžně označují jako _r_ a _s_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <mo>(</mo>
+    <mi>r</mi>
+    <mo>,</mo>
+    <mi>s</mi>
+    <mo>)</mo>
+  </mrow>
+</math>
+</div>
+++++
+
+[[verify_sign]]
+==== Ověření podpisu
+
+((("digital signatures","verifying"))) Pro ověření podpisu je třeba mít podpis (_r_ a _s_), naformátovanou transakci a veřejný klíč, který odpovídá soukromému klíči použitému k vytvoření podpisu. V zásadě ověření podpisu znamená „pouze vlastník soukromého klíče, který vygeneroval tento veřejný klíč, mohl vyrobit podpis pro tuto transakci.“
+
+Algoritmus ověření podpisu přebírá zprávu (tj. haš transakce pro naše použití), veřejný klíč podpisovatele a podpis (hodnoty _r_ a _s_) a vrací +true+, pokud je podpis platný pro tuto zprávu a veřejný klíč .
+
+[[ecdsa_math]]
+==== Matematika ECDSA
+
+((("digital signatures","ECDSA math", id="ix_06transactions-asciidoc16", range="startofrange")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","mathematics of", id="ix_06transactions-asciidoc17", range="startofrange")))Jak již bylo zmíněno, podpisy jsou vytvářeny matematickou funkcí _F_~_sig_~, která vytváří podpis složený ze dvou hodnot _r_ a _s_. V této sekci se podrobněji podíváme na funkci _F_~_sig_~.
+
+((("ephemeral private key")))Algoritmus podpisu nejprve kryptograficky bezpečným způsobem vygeneruje _dočasný_ soukromý klíč. Tento dočasný klíč se používá při výpočtu hodnot _r_ a _s_, aby se zajistilo, že útočníci sledující podepsané transakce v Ethereum síti nemohou vypočítat skutečný soukromý klíč odesílatele.
+
+Jak víme z <<pubkey>>, dočasný soukromý klíč se používá k odvození odpovídajícího (dočasného) veřejného klíče, takže máme:
+
+* Kryptograficky bezpečné náhodné číslo _q_, které se používá jako dočasný soukromý klíč
+* Odpovídající dočasný veřejný klíč _Q_, vytvořený z _q_ a generátorového bodu eliptické křivky _G_
+
+Hodnota _r_ digitálního podpisu je pak _x_ souřadnicí dočasného veřejného klíče _Q_.
+
+Odtud algoritmus vypočítá hodnotu _s_ podpisu, takže:
+
+++++
+<ul class="simplelist">
+<li><em>s</em> &#8801; <em>q</em><sup>-1</sup> (<em>Keccak256</em>(<em>m</em>) + <em>r</em> * <em>k</em>)  &nbsp;  &nbsp; (<em>mod p</em>)</li>
+</ul>
+++++
+
+kde:
+
+* _q_ je dočasný soukromý klíč.
+* _r_ je _x_ souřadnice souřadnice dočasného veřejného klíče.
+* _k_ je podpisový soukromý klíč (vlastníka EOA).
+* _m_ jsou transakční data.
+* _p_ je prvočíslo, udávající řád konečného tělesa eliptické křivky.
+
+Ověření je inverzní funkce k vytvoření podpisu, pomocí hodnot _r_ a _s_ a veřejného klíče odesílatele vypočte hodnotu _Q_, což je bod na eliptické křivce (dočasný veřejný klíč používaný při vytváření podpisu). Kroky jsou následující:
+
+1. Zkontrolujte, zda jsou všechny vstupy správně vytvořeny
+2. Vypočítejte _w_ = __s__^-1^ _mod p_
+3. Vypočítejte _u~1~_ = __Keccak256__(__m__) * _w_ _mod p_
+4. Vypočítejte _u~2~_ = _r_ * _w_ _mod p_
+5. Nakonec vypočítejte bod na eliptické křivce  _Q_ &#8801; _u~1~_ * _G_ + _u~2~_ * _K_ {nbsp} {nbsp} (_mod p_)
+
+kde:
+
+* _r_ a _s_ jsou hodnoty podpisu.
+* _K_ je veřejný klíč toho, kdo provedl podpis (vlastníka EOA).
+* _m_ jsou transakční data, která byla podepsána.
+* _G_ je generátorový bod eliptické křivky.
+* _p_ je prvočíslo, udávající řád konečného tělesa eliptické křivky.
+
+Pokud je souřadnice _x_ vypočítaného bodu _Q_ rovna _r_, může ověřovatel dojít k závěru, že podpis je platný.
+
+Upozorňujeme, že při ověřování podpisu není soukromý klíč znám ani odhalen.
+
+[TIP]
+====
+ECDSA je nutně docela komplikovaný kus matematiky; úplné vysvětlení je nad rámec této knihy. Několik skvělých průvodců online vás provede krok za krokem: hledejte „vysvětlil ECDSA“ nebo zkuste tuto adresu: http://bit.ly/2r0HhGB[].(((range="endofrange", startref="ix_06transactions-asciidoc17")))(((range="endofrange", startref="ix_06transactions-asciidoc16")))
+====
+
+[[tx_sign]]
+==== Podepisování transakcí v praxi
+
+((("digital signatures","signing in practice")))((("Elliptic Curve Digital Signature Algorithm (ECDSA)","transaction signing in practice")))((("transactions","signing in practice")))Aby bylo možné vytvořit platnou transakci, musí  ji její tvůrce zprávu digitálně podepsat pomocí algoritmu digitálního podpisu pomocí eliptické křivky. Když řekneme „podepsat transakci“, máme na mysli „podepsat Keccak-256 haš z transakčních dat naformátovaných  RLP“. Podpis se použije na haš transakčních dat, nikoli na transakci samotnou.
+
+Chcete-li podepsat transakci v Ethereu, musí její tvůrce:
+
+1. Vytvořte strukturu transakčních dat, která obsahuje devět polí: +nonce+, +gasPrice+, +gasLimit+, +to+, +value+, +data+, +chainID+, +0+, +0+.
+2. Vytvořte zprávu tvořenou RLP kódovanou strukturou transakčních dat.
+3. Vypočítejte Keccak-256 haš této naformátované zprávy.
+4. Vypočítejte ECDSA podpis a podepište haš soukromým klíčem  EOA tvůrce transakce.
+5. K transakci připojte vypočtené hodnoty +v+, +r+, and +s+ ECDSA podpisu.
+
+Speciální proměnná podpisu+v+ označuje dvě věci: ID řetězce a identifikátor zotavení, které pomohou funkci +ECDSArecover+ kontrolují podpis. Vypočítá se jako budťo jako 27 nebo 28, nebo jako dvojnásobek ID řetězce plus 35 nebo 36. Další informace o ID řetězce viz <<raw_tx_eip155>>. Identifikátor zotavení (27 nebo 28 v podpisech „ve starém stylu“ nebo 35 nebo 36 v úplných transakcích typu Spurious Dragon) se používá k označení shodnosti (parity) složky +y+ veřejného klíče (viz <<sign_prefix>> pro více informací).
+
+
+[NOTE]
+====
+((("Spurious Dragon")))V bloku # 2 675 000 implementovalo Ethereum tvrdé rozvětvení „Spurious Dragon,“ která mimo jiné zavedla nové schéma podepisování, které zahrnuje ochranu před zopakováním transakce (zabránění transakcím určeným pro jednu siť jejich použití  ještě na další síti). Toto nové schéma podepisování je uvedeno v EIP-155. Tato změna ovlivňuje formu transakce a její podpis, takže je třeba věnovat pozornost první ze tří proměnných podpisu (tj. +v+), která má jednu ze dvou forem a označují datová pole obsažená v transakční zprávě, která je hašována.
+====
+
+
+[[raw_tx]]
+==== Tvorba a podpisování surových transakcí
+
+((("EthereumJS")))((("transactions","raw transaction creation/signing"))) V této sekci vytvoříme surovou transakci a podepíšeme ji pomocí knihovny +ethereumjs-tx+, která může být nainstalována pomocí npm. To demonstruje funkce, které by se normálně používaly uvnitř peněženky nebo aplikace, která podepisuje transakce jménem uživatele. Zdrojový kód tohoto příkladu je v souboru __raw_tx_demo.js__ v http://bit.ly/2yI2GL3[GitHub úložišti knihy]:
+
+[[raw_tx_demo_source]]
+[source,javascript]
+----
+include::code/web3js/raw_tx/raw_tx_demo.js[]
+----
+
+[[raw_tx_demo_run]]
+Spuštění vzorového kódu přináší následující výsledky:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node raw_tx_demo.js</strong>
+RLP-Encoded Tx: 0xe6808609184e72a0008303000094b0920c523d582040f2bcb1bd7fb1c7c1...
+Tx Hash: 0xaa7f03f9f4e52fcf69f836a6d2bbc7706580adce0a068ff6525ba337218e6992
+Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1...
+</pre>
+++++
+
+[[raw_tx_eip155]]
+==== Tvorba surové transakce dle EIP-155
+
+((("chain identifier")))((("EIP-155 Simple Replay Attack Protection standard")))((("transactions","raw transaction creation with EIP-1455"))) EIP-155 „Standard Simple Replay Attack Protection“ specifikuje kódování transakcí chránící je proti opakovanému použití, což zahrnuje _identifikátor řetězu_ uvnitř transakčních dat před podpisem. Tím je zajištěno, že transakce vytvořené pro jednu  bločenku (např. hlavní Ethereum síť) jsou neplatné na jiném bločence (např. Ethereum Classic nebo testovací síti Ropsten). Transakce vysílané v jedné síti proto nemohou být _zopakovány_ v jiné, což vysvětluje název standardu.
+
+EIP-155 přidá tři pole k hlavním šesti polím struktury transakčních dat, jmenovitě řetězový identifikátor, +0+ a +0+. Tato tři pole jsou přidána k transakčním datům dříve, než jsou zakódována a hašována. Proto mění haš transakce, na kterou se později použije podpis. Zahrnutím identifikátoru řetězu do podepisovaných dat podpis transakce zabrání jakýmkoli změnám, protože podpis je zneplatněn, pokud je identifikátor řetězu změněn. EIP-155 proto znemožňuje, aby byla transakce přehrána v jiném řetězu, protože platnost podpisu závisí na identifikátoru řetězu.
+
+
+Pole identifikátoru řetězu má hodnotu podle sítě, pro kterou je transakce určena, jak je uvedeno v <<chain_id_table>>.
+
+[[chain_id_table]]
+.Identifikátory řetězů
+[options="header"]
+|======
+| Řetěz | ID řetězu
+| Ethereum hlavní síť | 1
+| Morden (již nepodporovaný), Expanse | 2
+| Ropsten | 3
+| Rinkeby | 4
+| Rootstock hlavní síť | 30
+| Rootstock testovací síť | 31
+| Kovan | 42
+| Ethereum Classic hlavní síť | 61
+| Ethereum Classic hlavní síť | 62
+| Geth soukromá testovací síť  | 1337
+|======
+
+Výsledná transakční struktura je kódována RLP, hašovaná a podepsaná. Algoritmus podpisu je mírně upraven tak, aby kódoval identifikátor řetězce také v předponě +v+.
+
+Více podrobností viz http://bit.ly/2CQUgne[specifikace EIP-155]. (((range="endofrange", startref="ix_06transactions-asciidoc15")))(((range="endofrange", startref="ix_06transactions-asciidoc14")))
+
+[[sign_prefix]]
+=== Hodnota předpony podpisu (v) a obnova veřejného klíče
+
+((("digital signatures","signature prefix value (v) and public key recovery")))((("public key recovery")))((("transactions","signature prefix value (v) and public key recovery")))Jak je uvedeno v <<tx_struct> > transakční zpráva neobsahuje pole „odesilatel“. Je to proto, že veřejný klíč odesilatele lze vypočítat přímo z ECDSA podpisu. Jakmile budete mít veřejný klíč, můžete adresu snadno spočítat. Proces obnovy veřejného klíče podpisu se nazývá obnovení veřejného klíče.
+
+K zadaným hodnotám +r+ a +s+, které byly vypočítány v <<ecdsa_math>> můžeme vypočítat dva možné veřejné klíče.
+
+Nejprve vypočítáme dva body eliptické křivky, _R_ a __R__^__'__^ z hodnoty jeho _x_ -ové souřadnice  +r+, která je v podpisu. Existují dva body, protože eliptická křivka je symetrická podle osy x, takže pro jakoukoli hodnotu +x+ jsou dvě možné hodnoty, které odpovídají křivce, jedna na každé straně osy x.
+
+Z +r+ počítáme také  __r__^-1^, což je k +r+ inverzní číslo vzhledem k operaci násobení.
+
+Nakonec vypočítáme _z_, což je _n_ nejnižších bitů haše zprávy, kde _n_ je řád eliptické křivky.
+
+Dva možné veřejné klíče jsou pak:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>1</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+a:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>2</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em><sup>'</sup> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+kde:
+
+* __K__~1~ a __K__~2~ jsou dvě možnosti veřejného klíče podpisovatele.
+* __r__^-1^ je k hodnotě podpisu +r+ inverzní číslo vzhledem k operaci násobení.
+* _s_ je hodnota podpisu +s+.
+* __R__ a __R__^'^ jsou dvě možnosti pro dočasný veřejný klíč _Q_.
+* _z_ je __n __ nejnižších bitů haše zprávy.
+* _G_ je generátorový bod eliptické křivky.
+
+Aby byly věci efektivnější, podpis transakce obsahuje hodnotu předpony +v+, která nám říká, která ze dvou možných hodnot _R_ je dočasný veřejný klíč. Pokud je +v+ sudé, pak _R_ je správná hodnota. Pokud je +v+ liché, pak je to  __R__^'^. Tímto způsobem musíme vypočítat pouze jednu hodnotu pro _R_ a pouze jednu hodnotu pro _K_.
+
+[[offline_sign]]
+=== Oddělení podpisu a přenosu (offline podpis)
+
+((("digital signatures","separating signing and transmission", id="ix_06transactions-asciidoc18", range="startofrange")))((("offline signing", id="ix_06transactions-asciidoc19", range="startofrange")))((("transactions","separating signing and transmission", id="ix_06transactions-asciidoc20", range="startofrange")))Jakmile je transakce podepsána, je připravena k přenosu do sítě Ethereum. Tři kroky vytvoření, podepisování a odeslání transakce se obvykle dějí jako jedna operace, například pomocí +web3.eth.sendTransaction+. Jak jste však viděli v <<raw_tx>> můžete transakci vytvořit a podepsat ve dvou samostatných krocích. Jakmile máte podepsanou transakci, můžete ji odeslat pomocí +web3.eth.sendSignedTransaction+, který hexadecimálně zakódovanou a podepsanou transakci a odešle do sítě Ethereum.
+
+Proč byste chtěli oddělit podpis a přenos transakcí? Nejčastějším důvodem je bezpečnost. Počítač, který podepisuje transakci, musí mít odemčené soukromé klíče načtené v paměti. Počítač, který provádí přenos, musí být připojen k internetu (a musí mít spuštěn Ethereum klienta). Pokud jsou tyto dvě funkce na jednom počítači, máte v online systému soukromé klíče, což je docela nebezpečné. Oddělení funkcí podepisování a přenosu a provádění na různých počítačích (v offline a online zařízení) se nazývá _offline podpis_ a je běžnou bezpečnostní praxí.
+
+<<offline_signing>> ukazuje proces:
+
+1. Vytvořte nepodepsanou transakci v online počítači, kde lze získat aktuální stav účtu, zejména aktuální nonce a dostupné prostředky.
+2. Převeďte nepodepsanou transakci do offline zařízení s „vzduchovou mezerou“ za účelem podepsání transakce, např. Prostřednictvím QR kódu nebo na USB flash disku.
+3. Přeneste podepsanou transakci (zpět) do online zařízení pro její zaslání do Ethereum sítě, např. prostřednictvím QR kódu nebo USB flash disku.
+
+[[offline_signing]]
+.Offline podpis Ethereum transakcí
+image::images/offline_signing.png["Offline podpis Ethereum transakcí"]
+
+V závislosti na úrovni zabezpečení, kterou potřebujete, může váš počítač pro „offline podepisování“ mít různé stupně oddělení od online počítače. Tyto možnosti mohou být od izolované a firewallem oddělené podsítě (online, ale oddělené) až po zcela offline systém známý jako systém _se vzdušnou mezerou_. ((("air-gapped system")))V systému se vzduchovou mezerou neexistuje vůbec žádná síťová konektivita - počítač je oddělen od online prostředí mezerou „vzduchu“. Chcete-li podepsat transakce, převeďte je do a z počítače se vzduchovou mezerou pomocí média pro ukládání dat nebo (lépe) webové kamery a QR kódu. To samozřejmě znamená, že musíte ručně převést každou transakci, kterou chcete podepsat, a to se nemění.
+
+I když ne mnoho prostředí může využívat plně vzduchové mezery, i malý stupeň izolace má významné bezpečnostní výhody. Například izolovaná podsíť s bránou firewall, která umožňuje pouze protokol fronty zpráv, může nabídnout mnohem menší  prostor pro útok a mnohem vyšší zabezpečení než podepisování v online systému. ((("ZeroMQ (0MQ)")))Mnoho společností používá pro tento účel protokol, jako je ZeroMQ (0MQ). S takovým nastavením jsou transakce zformátovány a zařazeny do fronty k podpisu. Protokol fronty přenáší zformátovanou zprávu podobným způsobem jako TCP soket do podepisovacího počítače. Podepisující počítač přečte naformátované transakce z fronty (opatrně), použije podpis s příslušným klíčem a umístí je do odchozí fronty. Odchozí fronta odešle podepsané transakce do počítače s Ethereum klientem, který je vyzvedne z fronty a odešle je. (((range="endofrange", startref="ix_06transactions-asciidoc20")))(((range="endofrange", startref="ix_06transactions-asciidoc19")))(((range="endofrange", startref="ix_06transactions-asciidoc18")))
+
+[[tx_propagation]]
+=== Propagace transakcí
+
+((("flood routing")))((("node","transaction propagation")))((("propagation of transactions")))((("transactions","propagation of")))Ethereum síť používá protokol „směrování vlnou“. Každý Ethereum klient funguje jako _uzel_ v síti typu_peer-to-peer (P2P) _, která (ideálně) tvoří síť _smíšené typologie_. Žádný síťový uzel není zvláštní: všichni fungují jako rovnocenní kolegové. Termín „uzel“ budeme používat k označení Ethereum klienta, který je připojen k síti P2P a účastní se jí.
+
+Šíření transakcí začíná původním Ethereum uzlem, který vytváří (nebo přijímá z offline) podepsanou transakci. Transakce je ověřena a poté přenesena do všech ostatních uzlů Ethereum, které jsou _přímo_ připojeny k původnímu uzlu. ((("neighbor nodes"))) Každý Ethereum uzel udržuje v průměru připojení k nejméně 13 dalším uzlům nazývaným jeho _sousedé_. Každý sousední uzel transakci ověří, jakmile ji obdrží. Pokud se shodnou na tom, že je platná, uloží kopii a rozšíří ji všem svým sousedům (kromě toho, ze které transakce pochází). V důsledku toho se transakce šíří ve vlně směrem ven z původního uzlu _zaplavuje_ celou síť, dokud všechny uzly v síti nemají kopii transakce. Uzly mohou filtrovat zprávy, které šíří, ale výchozí je šířit všechny platné transakční zprávy, které obdrží.
+
+Během několika sekund se Ethereum transakce rozšíří do všech  Ethereum uzlů po celém světě. Z pohledu každého uzlu není možné rozeznat původ transakce. Soused, který ji poslal do uzlu, může být původcem transakce nebo ji mohl obdržet od jednoho ze svých sousedů. Aby mohl útočník sledovat původ transakcí nebo zasahovat do šíření, musel by ovládat významné procento všech uzlů. To je součástí návrhu zabezpečení a ochrany soukromí v P2P sítích, zejména v případě bločenkových sítí.
+
+[[chain_record]]
+=== Zaznamenání na bločence
+
+((("blockchain","recording transactions on")))((("miners")))((("mining farms")))((("transactions","recording on the blockchain")))Zatímco všechny Ethereum uzly jsou si rovnoprávné, některé z nich jsou provozovány _těžaři_ a zajišťují transakce a bloky pro _těžební farmy_, což jsou počítače s vysoce výkonnými grafickými procesory (GPU). Těžební počítače přidávají transakce do kandidátských bloku a pokoušejí se najít _důkaz prací_, který učiní kandidátských blok platným blokem. Budeme o tom diskutovat podrobněji v <<consensus>>.
+
+Aniž bychom šli do příliš mnoha podrobností, budou platné transakce nakonec zahrnuty do bloku transakcí, a tedy zaznamenány do Ethereum bločenky. Jakmile se vytěží blok s touto transakcí, transakce také upravují stav jednoinstančního Etherea, a to buď změnou zůstatku na účtu (v případě jednoduché platby), nebo vyvoláním kontraktů, které mění jejich vnitřní stav. Tyto změny se zaznamenávají spolu s transakcí ve formě _účtenky_ transakce, která může také zahrnovat _události_. To vše podrobněji prozkoumáme v <<evm_chapter>>.
+
+Transakce, která dokončila svou cestu od stvoření přes podpis EOA, propagaci a konečně i těžbu, změnila stav jednoinstančního Etherea a zanechala nesmazatelnou značku na bločence.
+
+=== Transakce s více podpisy (vícepodpisové)
+
+((("multiple-signature (multisig) transactions")))((("transactions","multiple-signature")))Pokud jste obeznámeni s možnostmi Bitcoin skriptování, víte, že je možné vytvořit bitcoinový vícepodpisový (multisig) účet, který může utratit finanční prostředky pouze tehdy, když transakci podepíše více stran (např. 2 ze 2 nebo 3 ze 4 podpisů). Základní transakce EOA společnosti Ethereum neobsahují ustanovení pro více podpisů; libovolná omezení podepisování však mohou být vynucena chytrými kontrakty za jakýchkoli podmínek, na které si vzpomenete, za účelem převodu etheru i tokenů.
+
+Aby bylo možné tuto schopnost využít, musí být ether převeden na „peněženkových kontrakt“, který je naprogramován podle požadovaných pravidel utrácení, jako jsou požadavky na více podpisů nebo limity utrácení (nebo kombinace obou). Peněženkový kontrakt poté odešle finanční prostředky, pokud je k tomu vyzván autorizovaným EOA, jakmile jsou splněny podmínky pro jejich odeslání. Chcete-li například chránit ether pomocí vícenásobného podpisu, převeďte ether do vícepodpisového kontraktu. Kdykoli budete chtít poslat finanční prostředky na jiný účet, všichni oprávnění uživatelé budou muset poslat potvrzující transakci kontraktu pomocí běžné peněženkové aplikace, což účinně opravňuje kontrakt k provedení pass:[<span class="keep-together">transakce</span>].
+
+Tyto kontrakty mohou být také navrženy tak, aby vyžadovaly více  podpisů před provedením místního kódu nebo ke spuštění jiných kontraktů. Zabezpečení systému je jednoznačně určeno kódem vícepodpisového kontraktu.
+
+Schopnost realizovat transakce s více podpisy jako chytrého kontraktu demonstruje flexibilitu Etherea. Jde však o dvojsečný meč, protože mimořádná flexibilita může vést k chybám, které podrývají zabezpečení schémat s více podpisy. Ve skutečnosti existuje řada návrhů na vytvoření vícepodpisových příkazů v EVM, které by odstraňovaly  potřebu chytrých kontraktů, alespoň u jednoduchých vícepodpisových schémat M-z-N. To by bylo rovnocenné s Bitcoinovým vícepodpisovým systémem, který je součástí základních konsensuálních pravidel a prokázal se jako robustní a bezpečný.
+
+=== Závěry
+
+Transakce jsou výchozím bodem každé činnosti v Ethereum systému. Transakce jsou „vstupy“, které způsobují, že virtuální Ethereum počítač vyhodnocuje kontrakty, aktualizuje zůstatky a obecněji upravuje stav Ethereum bločenky. Dále budeme pracovat s chytrými kontrakty mnohem podrobněji a naučíme se, jak programovat v kontraktově orientovaném programovacím jazyce Solidity(((range="endofrange", startref="ix_06transactions-asciidoc0")))

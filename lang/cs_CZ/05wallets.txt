@@ -1,0 +1,422 @@
+[[wallets_chapter]]
+== Peněženky
+
+((("wallets", id="ix_05wallets-asciidoc0", range="startofrange")))Slovo „peněženka“ se v Ethereu používá k popisu několika různých věcí.
+
+Na vysoké úrovni je peněženka softwarová aplikace, která slouží jako primární uživatelské rozhraní pro Ethereum. Peněženka řídí přístup k penězům uživatele, správu klíčů a adres, sledování zůstatku a vytváření a podepisování transakcí. Některé Ethereum peněženky mohou také spolupracovat s kontrakty, jako jsou ERC20 tokeny.
+
+((("wallets","defined")))Přesněji řečeno z pohledu programátora slovo _peněženka_ označuje systém používaný k ukládání a správě klíčů uživatele. Každá peněženka má komponentu správy klíčů. U některých peněženek je to všechno. Ostatní peněženky jsou součástí mnohem širší kategorie, kategorie _prohlížečů_, což jsou rozhraní pro decentralizované aplikace založené na Ethereu, nebo _DApps_, které podrobněji prozkoumáme v <<decentralized_applications_chap>>. Neexistují žádné jasné dané hranice pro rozlišení mezi různými kategoriemi, které patří pod termínem peněženka.
+
+V této kapitole se podíváme na peněženky jako schránky pro soukromé klíče a jako systémy pro správu těchto klíčů.
+
+[[wallet_tech_overview]]
+=== Přehled technologií peněženky
+
+((("wallets","technology overview", id="ix_05wallets-asciidoc1", range="startofrange")))V této části shrnujeme různé technologie používané k vytváření uživatelsky příjemných, bezpečných a flexibilních Ethereum peněženek.
+
+Jedním z klíčových aspektů při navrhování peněženek je vyvážení pohodlí a soukromí. Nejpohodlnější Ethereum peněženka je ta s jediným soukromým klíčem a adresou, kterou znovu použijete pro všechno. Bohužel takové řešení je noční můrou pro soukromí, protože kdokoli může snadno sledovat a korelovat všechny vaše transakce. Použití nového klíče pro každou transakci je nejlepší z hlediska ochrany osobních údajů, ale je velmi obtížné jej spravovat. Správného vyvážení je obtížné dosáhnout, ale proto je prvořadý dobrý návrh peněženky.
+
+Běžná mylná představa o Ethereu je taková, že Ethereum peněženky obsahují ether nebo tokeny. Ve skutečnosti, velmi přísně řečeno, peněženka drží pouze klíče. Ether nebo jiné tokeny jsou zaznamenány na Ethereum bločence. Uživatelé ovládají své tokeny v síti podpisem transakcí pomocí klíčů v jejich peněženkách. ((("keychains")))IV jistém smyslu je Ethereum peněženka  _klíčenkou_. Vzhledem k tomu, že klíče, které drží peněženka, jsou jedinými věcmi, které jsou zapotřebí k přenosu etheru nebo tokenů ve prospěch jiné adresy, je v praxi toto rozlišení dosti bezvýznamné. Tam, kde záleží na rozdílu, je změna myšlení od řešení centralizovaného systému konvenčního bankovnictví (kde jen vy a banka můžete vidět peníze na svém účtu a k provedení transakce potřebujete pouze přesvědčit banku, že chcete přesunout finanční prostředky) k decentralizovanému systému bločenkových platforem (kde každý může vidět etherový zůstatek na účtu, i když pravděpodobně nezná majitele účtu a majitel účtu musí přesvědčit každého, že chce pomocí transakce převést své prostředky). V praxi to znamená, že existuje nezávislý způsob, jak zkontrolovat zůstatek na účtu, aniž byste potřebovali peněženku. Kromě toho můžete přesunout správu účtu z aktuální peněženky do jiné peněženky, pokud se vám nelíbí peněženková aplikace, kterou jste začali používat.
+
+[NOTE]
+====
+Ethereum peněženky obsahují klíče, ne ether nebo tokeny. Peněženky jsou jako klíčenky obsahující páry soukromých a veřejných klíčů. Uživatelé podepisují transakce pomocí soukromých klíčů, čímž prokazují, že vlastní éter. Ether je uložen na bločence.
+====
+
+Existují dva hlavní typy peněženek, které se rozlišují podle toho, zda klíče, které obsahují, spolu souvisí nebo ne.
+
+((("nondeterministic (random) wallets", id="ix_05wallets-asciidoc2", range="startofrange")))((("random (nondeterministic) wallets", id="ix_05wallets-asciidoc3", range="startofrange")))((("wallets","nondeterministic", id="ix_05wallets-asciidoc4", range="startofrange")))Prvním typem je _nedeterministická_ peněženka, u které je každý klíč nezávisle generován z jiného náhodného čísla . Klíče spolu nesouvisejí. ((("JBOK wallets", seealso="nondeterministic (random) wallets"))) Tento typ peněženky je známý také jako peněženka JBOK, z fráze „pouze hromada klíčů“ (Just a Bunch of Keys).
+
+((("deterministic (seeded) wallets","defined")))((("wallets","deterministic")))Druhým typem peněženky je _deterministická peněženka_, kde jsou všechny klíče odvozeny od jednoho hlavního klíč, označovaného jako _semínko_. Všechny klíče v tomto typu peněženky jsou vzájemně propojeny a mohou být vygenerovány znovu z původního semínka. ((("key derivation methods"))) Existuje řada různých metod odvození klíčů používaných v deterministických peněženkách. Nejčastěji používaná odvozovací metoda používá stromovou strukturu, jak je popsáno <<hd_wallets>>.
+
+((("mnemonic code words")))((("seeds","mnemonic code words for")))Chcete-li učinit deterministické peněženky o něco bezpečnější proti nehodám při ztrátě dat, jako je například odcizení telefonu nebo jeho pád do záchodu, semínka jsou často kódována jako seznam slov (v angličtině, češtině nebo jiném jazyce), abyste si je mohli zapsat a použít v případě nehody. Používá se označení _mnemotechnická kódová slova_. Samozřejmě, pokud někdo získá vaše mnemotechnická kódová slova, pak může také znovu vytvořit vaši peněženku a získat tak přístup k vašemu etheru a chytrým kontraktům. Proto buďte velmi opatrní se seznamem slov pro obnovení! Nikdy jej neukládejte elektronicky, do souboru, do počítače nebo telefonu. Zapište si jej na papír a uložte na bezpečné místo.
+
+Několik následujících oddílů představuje každou z těchto technologií na vysoké úrovni.
+
+
+[[random_wallet]]
+==== Nedeterministické (náhodné) peněženky
+
+V první Ethereum peněžence (vyrobené pro předprodej Etherea) každý soubor peněženky ukládal jeden náhodně vygenerovaný soukromý klíč. Tyto peněženky jsou nahrazeny deterministickými peněženkami, protože tyto „staré“ peněženky jsou v mnoha ohledech podřadné. Například se považuje za osvědčený postup vyhnout se opětovnému použití Ethereum adresy v rámci maximalizace vašeho soukromí při používání Etherea - tj. Použít novou adresu (která potřebuje nový soukromý klíč) pokaždé, když obdržíte finanční prostředky. Můžete jít dále a použít novou adresu pro každou transakci, i když to může být dražší, pokud hodně nakládáte s tokeny. Aby bylo možné postupovat podle této praxe, bude muset nedeterministická peněženka pravidelně rozšiřovat seznam svých klíčů, což znamená, že budete muset pravidelně zálohovat. Pokud někdy ztratíte svá data (selhání disku, nehoda s rozlitím pití, odcizení telefonu) dříve, než se vám podaří zálohovat vaši peněženku, ztratíte přístup ke svým prostředkům a chytrým kontraktům. Nedeterministické peněženky typu 0 jsou nejsložitější, protože vytvářejí nový soubor peněženky pro každou novou adresu v okamžiku jejího prvního použití.
+
+((("keystore file")))Mnoho Ethereum klientů (včetně +geth+) však používá soubor _uložiště klíčů_ (keystore), což je soubor kódovaný JSON, který obsahuje jediný (náhodně vygenerovaný) soukromý klíč, šifrovaný přístupovou frází pro zvýšení bezpečnosti. Obsah souboru JSON vypadá takto:
+
+[[keystore_example]]
+[source,json]
+----
+{
+    "address": "001d3f1ef827552ae1114027bd3ecf1f086ba0f9",
+    "crypto": {
+        "cipher": "aes-128-ctr",
+        "ciphertext":
+            "233a9f4d236ed0c13394b504b6da5df02587c8bf1ad8946f6f2b58f055507ece",
+        "cipherparams": {
+            "iv": "d10c6ec5bae81b6cb9144de81037fa15"
+        },
+        "kdf": "scrypt",
+        "kdfparams": {
+            "dklen": 32,
+            "n": 262144,
+            "p": 1,
+            "r": 8,
+            "salt":
+                "99d37a47c7c9429c66976f643f386a61b78b97f3246adca89abe4245d2788407"
+        },
+        "mac": "594c8df1c8ee0ded8255a50caf07e8c12061fd859f4b7c76ab704b17c957e842"
+    },
+    "id": "4fcb2ba4-ccdb-424f-89d5-26cce304bf9c",
+    "version": 3
+}
+----
+
+((("key derivation function (KDF)")))((("password stretching algorithm")))Formát úložiště klíčů používá funkci odvození klíčů _ (KDF), známou také jako algoritmus protahování hesel, který chrání před útokem hrubou chybou, slovníkovým útokem a útokem duhovou tabulkou. Zjednodušeně řečeno, soukromý klíč není šifrován přístupovou frází přímo. Místo toho je přístupová fráze _natažena_, opakovaným hašováním. Hašovací funkce se opakuje pro 262 144 kol, což lze vidět v úložišti klíčů JSON jako parametr +crypto.kdfparams.n+. Útočník, který se pokouší proniknout hrubou silou, by musel použít 262 144 cyklů hašování pro každý pokus uhodnutí přístupové fráze, což útok dostatečně zpomalí, aby ho učinilo neproveditelným pro přístupové fráze dostatečně složitosti a délky.
+
+Existuje celá řada softwarových knihoven, které umí číst a zapisovat formát úložiště klíčů, například JavaScript knihovna  https://github.com/ethereumjs/keythereum[+keythereum+].
+
+[TIP]
+====
+Použití nedeterministických peněženek se nedoporučuje pro nic jiného než pro jednoduché testy. Jsou příliš těžkopádné, než aby jste je mohli zálohovat a používat pro cokoli kromě nejzákladnějších situací. Místo toho použijte průmyslový standard založený na hiearchické deterministické (HD) peněžence s mnemotechnickým semínkem pro zálohování. (((range="endofrange", startref="ix_05wallets-asciidoc4")))(((range="endofrange", startref="ix_05wallets-asciidoc3")))(((range="endofrange", startref="ix_05wallets-asciidoc2")))
+====
+
+[[deterministic_wallets]]
+==== Deterministické (semínkové) peněženky
+
+((("deterministic (seeded) wallets","about")))((("wallets","deterministic")))Deterministické nebo „semínkové“ peněženky jsou peněženky, které obsahují soukromé klíče, které jsou všechny odvozeny od jednoho hlavního klíče neboli semínka. Semínko je náhodně generované číslo, které je kombinováno s dalšími daty, jako je indexové číslo nebo „kód řetězu“ (<<extended_keys>>) pro odvození libovolného počtu soukromých klíčů. V deterministické peněžence je semínko dostatečné k získání všech odvozených klíčů, a proto jediná záloha v době jejího vytvoření postačuje k zálohování všech prostředků a chytrých kontraktů v peněžence. Semínko je také dostatečné pro export nebo import peněženky, což umožňuje snadnou migraci všech klíčů mezi různými implementacemi peněženky.
+
+Díky tomuto návrhu je bezpečnost semínka nanejvýš důležitá, protože k získání přístupu k celé peněžence je potřeba pouze semínko. Na druhou stranu, schopnost soustředit bezpečnostní úsilí na jeden kus dat lze považovat za výhodu.
+
+[[hd_wallets]]
+==== Hierarchické deterministické peněženky (BIP-32 / BIP-44)
+
+((("Bitcoin improvement proposals (BIPs)","Hierarchical Deterministic Wallets (BIP-32/BIP-44)")))((("hierarchical deterministic wallets (BIP-32/BIP-44)")))Deterministické peněženky byly vyvinuty, aby bylo snadné odvodit mnoho klíčů z jednoho semínka. V současné době je nejpokročilejší formou deterministické peněženky _hierarchická deterministická_ (HD) peněženka definovaná v Bitcoinovém http://bit.ly/2B2vQWs[_BIP-32 standardu_]. HD peněženky obsahují klíče odvozené ve stromové struktuře, takže nadřazený klíč může odvodit posloupnost podřízených klíčů, z nichž každý může odvodit posloupnost vnoučat klíčů atd. Tato stromová struktura je znázorněna v <<hd_wallets_figure>>.
+
+[[hd_wallets_figure]]
+.HD peněženka: strom klíčů generovaných z jednoho semínka
+image::images/hd_wallet.png["HD peněženka"]
+
+HD peněženky nabízejí několik klíčových výhod oproti jednodušším deterministickým peněženkám. Za prvé, stromová struktura může být použita k vyjádření dalšího organizačního schématu, například když je určitá větev podklíčů použita pro příjem příchozích plateb a jiná větev se používá pro příjem vratek odchozích plateb. Větve klíčů lze také použít v podnikovém prostředí, přiřadit různé větve pobočkám, dceřiným společnostem, konkrétním funkcím nebo účetním kategoriím.
+
+Druhou výhodou HD peněženek je to, že uživatelé mohou vytvářet posloupnost veřejných klíčů, aniž by měli přístup k odpovídajícím soukromým klíčům. To umožňuje použití HD peněženek na nezabezpečeném serveru nebo v režimu pouze pro sledování nebo příjem, kde peněženka nemá soukromé klíče, které mohou utratit finanční prostředky.
+
+[[mnemonic_codes]]
+==== Semínka a mnemotechnické kódy (BIP-39)
+
+((("BIP-39 standard")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)")))((("mnemonic code words","BIP-39")))((("seeds","mnemonic code words for", seealso="mnemonic code words")))((("wallets","mnemonic codes (BIP-39)")))Existuje mnoho způsobů, jak zakódovat soukromý klíč pro bezpečné zálohování a uchování. Aktuálně upřednostňovanou metodou je použití posloupnosti slov, která, pokud jsou použita dohromady ve správném pořadí, můžou jedinečně znovu vytvořit soukromý klíč. Toto je někdy známé jako _mnemotechnický_ a přístup byl standardizován http://bit.ly/2OEMjUz[BIP-39]. Dnes mnoho Ethereum peněženek  (stejně jako peněženky pro jiné kryptoměny) používá tento standard a může importovat a exportovat semínka pro zálohování a obnovu pomocí vzájemné spolupráce schopné mnemotechniky.
+
+Abychom zjistili, proč se tento přístup stal populárním, podívejme se na příklad:
+
+[[hex_seed_example]]
+.Semínko pro deterministickou peněženku, hexadecimálně
+----
+FCCF1AB3329FD5DA3DA9577511F8F137
+----
+
+[[mnemonic_seed_example]]
+.Semínko pro deterministickou peněženku, 12 mnemotechnických slov
+----
+wolf juice proud gown wool unfair
+wall cliff insect more detail hub
+----
+
+Z praktického hlediska je pravděpodobnost chyby při zápisu hexadecimální sekvence nepřijatelně vysoká. Naproti tomu se seznamem známých slov lze poměrně snadno zacházet, hlavně proto, že při psaní slov je vysoká úroveň nadbytečnosti (zejména u anglických slov). Pokud byl „inzect“ zaznamenán náhodou, bylo by možné rychle zjistit, v případě potřeby obnovy peněženky, že „inzect“ není platné anglické slovo a že místo toho by měl být použit „insect“. Hovoříme o zápisu reprezentace seminka, protože to je dobrá praxe při správě HD peněženek: semínko je potřeba k obnovení peněženky v případě ztráty dat (ať už kvůli nehodě nebo krádeži), takže udržování zálohy je velmi obezřetné. Semínko však musí být uchováváno velmi soukromě, proto byste měli pečlivě vyhýbat digitálním zálohám; proto opakujeme dříve zmíněnou rada, zálohujte perem a papírem.
+
+Stručně řečeno, použití seznamu obnovovacích slov pro zakódování semínka pro peněženku HD umožňuje nejjednodušší způsob, jak bezpečně exportovat, přepisovat, zaznamenávat na papír, číst bez chyby a importovat množinu soukromých klíčů do jiné peněženky. (((range="endofrange", startref="ix_05wallets-asciidoc1")))
+
+
+[[wallet_best_practices]]
+=== Doporučené postupy pro práci s peněženkou
+
+(((range="endofrange", startref="ix_05wallets-asciidoc1")))Vzhledem k tomu, že technologie kryptoměnových peněženek dozrála, objevily se určité společné průmyslové standardy, díky nimž jsou peněženky schopné vzájemné spolupráce a dají se snadno používat a zabezpečit a pružně reagují. Tyto standardy také umožňují peněženkám odvodit klíče pro více různých kryptoměn, vše z jediné mnemotechnické pomůcky. Jedná se o tyto společné normy:
+
+* Mnemonická kódová slova, založená na BIP-39, včetně české sady slov
+* HD peněženky, založené na BIP-32
+* Víceúčelová struktura HD peněženky, založená na BIP-43
+* Peněženky s více měnami a více účty, založené na BIP-44
+
+Tyto standardy se mohou v budoucnu změnit nebo být zastaralé, ale prozatím tvoří sadu vzájemně propojených technologií, které se staly _faktickým_ standardem peněženky pro většinu bločenkových platforem a jejich kryptoměny.
+
+Tyto standardy byly přijaty širokou škálou softwarových a hardwarových peněženek, díky čemuž jsou všechny tyto peněženky schopné vzájemné spolupráce. Uživatel může exportovat mnemotechnikou zálohu vytvořenou v jedné z těchto peněženek a importovat ji do jiné peněženky a obnovit všechny klíče a adresy.
+
+Některé příklady softwarových peněženek podporujících tyto standardy zahrnují (jsou uvedeny abecedně) Jaxx, MetaMask, MyCrypto a MyEtherWallet (MEW). ((("hardware wallets")))Mezi příklady hardwarových peněženek podporujících tyto standardy patří Keepkey, Ledger a Trezor.
+
+Následující sekce podrobně zkoumají každou z těchto technologií.
+
+[TIP]
+====
+Pokud implementujete Ethereum peněženku, měla by být postavena jako HD peněženka, se semínkem kódovaným jako mnemotechnický kód pro zálohování podle standardů BIP-32, BIP-39, BIP-43 a BIP-44, jak je popsáno v následujících sekcích.
+====
+
+[[bip39]]
+[[mnemonic_code_words]]
+==== Mnemotechnická kódová slova (BIP-39)
+
+((("BIP-39 standard", id="ix_05wallets-asciidoc6", range="startofrange")))((("Bitcoin improvement proposals (BIPs)","Mnemonic Code Words (BIP-39)", id="ix_05wallets-asciidoc7", range="startofrange")))((("mnemonic code words","BIP-39", id="ix_05wallets-asciidoc8", range="startofrange")))((("wallets","mnemonic codes (BIP-39)", id="ix_05wallets-asciidoc9", range="startofrange")))Mnemotechnická kódová slova je posloupnost slov, která kódují náhodné číslo používané jako semínko k odvození deterministické peněženky. Posloupnost slov je dostatečná pro opětovné vytvoření semínka a odtud znovu pro vytvoření peněženky a všech odvozených klíčů. Aplikace peněženky, která implementuje deterministické peněženky s mnemotechnickými slovy, ukáže uživateli sekvenci 12 až 24 slov při prvním vytvoření peněženky. Tato posloupnost slov je záloha peněženky a lze ji použít k obnovení a opětovnému vytvoření všech klíčů ve stejné nebo v jakékoli kompatibilní aplikaci peněženky. Jak jsme vysvětlili dříve, seznamy mnemotechnických slov usnadňují uživatelům zálohování peněženek, protože jsou snadno čitelné a správně pass:[<span class="keep-together">přepisovatelné</span>].
+
+[NOTE]
+====
+((("brainwallets, mnemonic words vs.")))Mnemonická slova jsou často zaměňována s „mozkovými peněženkami“ (brainwallets). Nejsou stejné. Primární rozdíl spočívá v tom, že mozková peněženka se skládá ze slov zvolených uživatelem, zatímco mnemotechnická slova jsou peněženkou vytvářena náhodně a prezentována uživateli. Tento důležitý rozdíl dělá mnemotechnická slova mnohem bezpečnější, protože lidé jsou velmi špatnými zdroji náhodnosti. Možná ještě důležitější je, že použití termínu „mozková peněženka“ naznačuje, že slova musí být zapamatována, což je hrozný nápad, a recept na to, že nemáte zálohu, když ji potřebujete.
+====
+
+Mnemotechnické kódy jsou definovány v BIP-39. Všimněte si, že BIP-39 je jedna implementace standardu mnemotechnických kódů. Existuje odlišná norma - s jinou sadou slov - používaná peněženkou Electrum Bitcoin a předcházející BIP-39. BIP-39 byl navržen společností stojící za hardwarovou peněženkou Trezor a je nekompatibilní s implementací společnosti Electrum. BIP-39 však nyní dosáhl široké podpory v desítkách vzájemné spolupráce schopných implementací a měl by být považován za průmyslový "faktický" standard. Kromě toho lze BIP-39 použít k výrobě víceměnových peněženek podporujících Ethereum, zatímco Electrum semínka to nemohou.
+
+BIP-39 definuje vytvoření mnemotechnického kódu a semínka, které zde popisujeme v devíti krocích. Pro přehlednost je proces rozdělen do dvou částí: kroky 1 až 6 jsou uvedeny v <<generating_mnemonic_words>> a kroky 7 až 9 jsou uvedeny v <<mnemonic_to_seed>>.
+
+[[generating_mnemonic_words]]
+===== Generování mnemotechnických slov
+
+((("BIP-39 standard","generating code words with")))((("checksum","in mnemonic code word generation")))((("mnemonic code words","generating")))Mnemotechnická slova jsou generována automaticky peněženkou pomocí standardizovaného procesu definovaného v BIP-39. Peněženka začíná od zdroje entropie, přidá kontrolní součet a poté entropii převede na slova ze slovníku:
+
+1. Vytvoří kryptograficky náhodnou posloupnost bitů +S+ o velikosti od 128 do 256 bitů.
+2. Vytvoří kontrolní součet +S+ tak, že spočte SHA-256 haš +S+ a z něho vezme první bity, konkrétně délka ++S++ / 32 bitů.
+3. Přidá kontrolní součet na konec náhodné posloupností bitů +S+.
+4. Rozdělí posloupnost bitů vzniklou v předchozím kroku na části o velikosti 11 bitů. 
+5. Každá 11-bitová posloupnost je pořadovým číslem slova v předem definovaném slovníku obsahujícím 2 048 slov. V současné době existuje 9 slovníků, včetně angličtiny a češtiny.
+6. Výsledný mnemotechnický kód tvoří posloupnost slov vybraných v předchozím kroku ze slovníku. Je nutné zachovat pořadí slov, ve kterém byly ze slovníky vybírány.
+
+<<generating_entropy_and_encoding>> ukazuje, jak se entropie používá ke generování mnemotechnických slov.
+
+<<table_bip39_entropy>> ukazuje vztah mezi velikostí entropických dat a délkou mnemotechnických kódů měřenou počtem slov.
+
+[[table_bip39_entropy]]
+.Mnemotechnické kódy: entropie a délka slova
+[options="header"]
+|=======
+|Entropie (bity) | Kontrolní součet (bity) | Entropie *+* kontrolní součet (bity) | Mnemotechnická délka (slova)
+| 128 | 4 | 132 | 12
+| 160 | 5 | 165 | 15
+| 192 | 6 | 198 | 18
+| 224 | 7 | 231 | 21
+| 256 | 8 | 264 | 24
+|=======
+
+[[generating_entropy_and_encoding]]
+[role="smallerseventy"]
+.Generování entropie a její kódování do posloupnosti mnemotechnických slov
+image::images/bip39-part1.png["Generování entropie a její kódování do posloupnosti mnemotechnických slov"]
+
+[[mnemonic_to_seed]]
+===== Převod mnemotechnického kódu na semínko
+
+((("BIP-39 standard","deriving seed from mnemonic words")))((("seeds","deriving from mnemonic code words"))) Mnemotechnická slova představují entropii s délkou 128 až 256 bitů. Entropie se potom používá k odvození delšího (512-bitového) semínka pomocí funkce natahování klíčů ((("PBKDF2 function")))PBKDF2. Vytvořené semínko se používá k vytvoření deterministické peněženky a odvození jejích klíčů.
+
+((("key-stretching function")))((("salts")))Funkce protahování klíčů má dva parametry: mnemotechnickou posloupnost slov a _sůl_. Účelem soli ve funkci protahování klíčů je ztěžovat sestavení vyhledávací tabulky umožňující útok hrubou silou. Ve standardu BIP-39 má sůl jiný účel: umožňuje zavedení přístupové fráze, která slouží jako další bezpečnostní faktor chránící semínko, jak podrobněji popíšeme v <<mnemonic_passphrase>>.
+
+Postup popsaný v krocích 7 až 9 pokračuje v postupu popsaného v předchozí části:
+
+[start=7]
+7. Prvním parametrem funkce natahování klíčů PBKDF2 je _mnemotechnická posloupnost slov_ vytvořená v kroku 6.
+8. Druhým parametrem funkce natahování klíčů PBKDF2 je _sůl_. Sůl se skládá z řetězcové konstanty +„mnemonic“+ zřetězené s volitelným přístupovým heslem dodaným uživatelem.
+9. PBKDF2 napíná své parametry (mnemonickou posloupnost slov a sůl) pomocí 2 048 kol hašování algoritmem HMAC-SHA512 a jako konečný výstup vytváří 512-bitovou hodnotu. Tato 512-bitová hodnota je semínko.
+
+<<mnemonic_to_seed_figure>> ukazuje, jak se mnemotechnická posloupnost slov používá ke generování semínka.
+
+[[mnemonic_to_seed_figure]]
+.Převod mnemotechnické posloupnosti na semínko
+image::images/bip39-part2.png["Převod mnemotechnické posloupnosti na semínko"]
+
+[NOTE]
+====
+Funkce natahování klíčů s 2 048 koly hašování je docela účinnou ochranou proti útokům hrubou silou proti mnemotechnické nebo přístupové frázi. Je nákladné (při výpočtu) vyzkoušet více než několik tisíc přístupových frází a mnemotechnických kombinací, zatímco počet možných odvozených semínek je obrovský (2^512^, nebo asi 10^154^) - mnohem větší než počet atomů ve viditelném vesmíru (asi 10^80^).
+====
+
+Tabulky pass:[<a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_no_pass">#mnemonic_128_no_pass</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_128_w_pass">#mnemonic_128_w_pass</a>, a <a data-type="xref" data-xrefstyle="select:labelnumber" href="#mnemonic_256_no_pass">#mnemonic_256_no_pass</a>] ukazují některé příklady mnemotechnických kódů a semínek, které vytvoří.
+
+[[mnemonic_128_no_pass]]
+.Mnemonický kód s entropií 128 bitů, bez přístupové fráze, výsledné semínko
+[cols="h,"]
+|=======
+| *Vstupní entropie (128 bitů)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemotechnická slova (12)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Přístupová fráze* | (žádná)
+| *Semínko  (512 bitů)* | +5b56c417303faa3fcba7e57400e120a0ca83ec5a4fc9ffba757fbe63fbd77a89a1a3be4c67196f57c39+
++a88b76373733891bfaba16ed27a813ceed498804c0570+
+|=======
+
+[[mnemonic_128_w_pass]]
+.Mnemonický kód s entropií 128 bitů, s přístupovou frází, výsledné semínko
+[cols="h,"]
+|=======
+| *Vstupní entropie (128 bitů)*| +0c1e24e5917779d297e14d45f14e1a1a+
+| *Mnemotechnická slova (12)* | +army van defense carry jealous true garbage claim echo media make crunch+
+| *Přístupová fráze* | SuperDuperSecret
+| *Semínko (512 bitů)* | +3b5df16df2157104cfdd22830162a5e170c0161653e3afe6c88defeefb0818c793dbb28ab3ab091897d0+
++715861dc8a18358f80b79d49acf64142ae57037d1d54+
+|=======
+
+[role="pagebreak-before"]
+[[mnemonic_256_no_pass]]
+.Mnemonický kód s entropií 256 bitů, bez přístupové fráze, výsledné semínko
+[cols="h,"]
+|=======
+| *Vstupní entropie (256 bitů)  | +2041546864449caff939d32d574753fe684d3c947c3346713dd8423e74abcf8c+
+| *Mnemotechnická slova (24)* | +cake apple borrow silk endorse fitness top denial coil riot stay wolf
+luggage oxygen faint major edit measure invite love trap field dilemma oblige+
+| *Přístupová fráze* | (žádná)
+| *Semínko (512 bitů)* | +3269bce2674acbd188d4f120072b13b088a0ecf87c6e4cae41657a0bb78f5315b33b3a04356e53d062e5+
++5f1e0deaa082df8d487381379df848a6ad7e98798404+
+|=======
+
+[[mnemonic_passphrase]]
+===== Volitelná přístupová fráze v BIP-39
+
+((("BIP-39 standard","optional passphrase with")))((("mnemonic code words","optional passphrase in BIP-39")))((("passphrases")))((("seeds","optional passphrase with")))Standard BIP-39 umožňuje použití volitelného přístupového fráze při odvozování semínka. Pokud není použita žádná přístupová fráze, mnemotechnická slova se natáhnou solí sestávající z konstantního řetězce +„mnemonic“+, čímž se získá konkrétní 512-bitové semínko pro daná mnemotechnická slova. Je-li použita přístupová fráze, protahovací funkce vytvoří semínko _rozdílné_ od semínka pro téže mnemotechnická slova bez přístupové fráze. Ve skutečnosti, s pro daná mnemotechnická slova, vede každá možná přístupová fráze k jinému semínku. V zásadě neexistuje „špatná“ přístupová fráze. Všechny přístupové fráze jsou platné a všechny vedou k různým semínkům a vytvářejí obrovské množství možných neinicializovaných peněženek. Sada možných peněženek je tak velká (2^512^), že neexistuje žádná praktická možnost násilného prolomení nebo náhodného uhádnutí již používané peněženky, pokud má přístupová fráze dostatečnou složitost a délku.
+
+[TIP]
+====
+V BIP-39 neexistují žádné „nesprávné“ přístupová fráze. Každá přístupová fráze vede k nějaké peněžence, která, pokud nebyla dříve použita, bude prázdná.
+====
+
+Volitelná přístupová fráze přináší dvě důležité funkce:
+
+* Druhý faktor (něco zapamatovaného), díky kterému je mnemotechnická pomůcka sama o sobě k ničemu, uložené mnemotechnické zálohy jsou tak chráněny před kompromitováním zlodějem.
+
+* ((("duress wallet")))((("wallets","duress wallet"))) Forma hodnověrného popření nebo „nátlakové peněženky“, kde zvolené přístupové heslo vede k peněžence s malým množstvím finančních prostředků, používané k odvrácení útočníka od „skutečné“ peněženky, která obsahuje většinu prostředků.
+
+[role="pagebreak-before"]
+Je však důležité si uvědomit, že použití přístupové fráze také představuje riziko ztráty:
+
+* Pokud je majitel peněženky nezpůsobilý nebo mrtvý a nikdo jiný nezná přístupové heslo, je semínko zbytečné a všechny finanční prostředky uložené v peněžence jsou navždy ztraceny.
+
+* Naopak, pokud vlastník zálohuje přístupovou frázi na stejném místě jako semeno, ztrácí se účel druhého faktoru.
+
+Přístupové fráze jsou sice velmi užitečné, ale měly by být použity pouze v kombinaci s pečlivě naplánovaným procesem zálohování a obnovy, přičemž je třeba vzít v úvahu možnost, aby dědicové, kteří přežijí vlastníka, mohli získat kryptoměnu.
+
+[[working_mnemonic_codes]]
+===== Práce s mnemotechnickými kódy
+
+((("BIP-39 standard","libraries")))((("BIP-39 standard","working with mnemonic codes")))BIP-39 je implementován jako knihovna v mnoha různých programovacích jazycích. Například:
+
+https://github.com/trezor/python-mnemonic[python-mnemonic]:: Referenční implementace standardu týmem SatoshiLabs, který navrhl BIP-39, v Pythonu
+
+https://github.com/ConsenSys/eth-lightwallet[ConsenSys/eth-lightwallet]:: Odlehčená JS Ethereum peněženka pro uzly a prohlížeče (s BIP-39)
+
+https://www.npmjs.com/package/bip39[npm/bip39]::  JavaScript implementace Bitcoin BIP-39: Mnemotechnický kód pro generování deterministických klíčů
+
+Existuje také generátor BIP-39 implementovaný do samostatné webové stránky (<<a_bip39_generator_as_a_standalone_web_page>>), což je velmi užitečné pro testování a experimentování. https://iancoleman.io/bip39/[Konvertor mnemotechnických kódů] generuje mnemotechnická slova, semínka a rozšířené soukromé klíče. Může být použit offline v prohlížeči nebo přístupný online. (((range="endofrange", startref="ix_05wallets-asciidoc9")))(((range="endofrange", startref="ix_05wallets-asciidoc8")))(((range="endofrange", startref="ix_05wallets-asciidoc7")))(((range="endofrange", startref="ix_05wallets-asciidoc6")))
+
+[[a_bip39_generator_as_a_standalone_web_page]]
+.Generátor BIP-39 jako samostatná webová stránka
+image::images/bip39_web.png["Generátor BIP-39 jako samostatná webová stránka"]
+
+[[create_hd_wallet]]
+==== Vytváření HD peněženky ze semínka
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","creating from root seed")))((("root seeds, creating HD wallets from")))((("wallets","creating HD wallets from root seed")))HD peněženky jsou vytvořeny z jediného _kořenového semínka_, což je 128-, 256- nebo 512-bitové náhodné číslo. Nejčastěji je toto semínko generováno z mnemotechnických slov, jak je podrobně popsáno v předchozí části.
+
+Každý klíč v peněžence HD je deterministicky odvozen od tohoto kořenového semínka, což umožňuje znovu vytvořit celou HD peněženku z tohoto semínka v jakékoli kompatibilní HD peněžence. To usnadňuje export, zálohování, obnovu a import HD peněženek obsahujících tisíce nebo dokonce miliony klíčů přenesením pouze mnemotechnických slov, ze které pochází kořenové semínko.
+
+[[bip32_bip43_44]]
+==== HD peněženky (BIP-32) a jejich vnitřní struktura (BIP-43/44)
+
+((("Bitcoin improvement proposals (BIPs)","Multipurpose HD Wallet Structure (BIP-43)", id="ix_05wallets-asciidoc10", range="startofrange")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","HD wallets (BIP-32) and paths (BIP-43/44)", id="ix_05wallets-asciidoc11", range="startofrange")))Většina HD peněženek podporuje ((("BIP-32 standard","HD wallets and", id="ix_05wallets-asciidoc12", range="startofrange")))BIP-32 standard, který se _ve skutečnosti_ stal průmyslovým standardem pro deterministické generování klíčů.
+
+Nebudeme zde diskutovat o všech detailech BIP-32, pouze o komponentách nezbytných k pochopení toho, jak se používá v peněženkách. Hlavním důležitým aspektem jsou stromové hierarchické vztahy, které mohou mít odvozené klíče, jak je vidět v <<hd_wallets_figure>>. Je také důležité pochopit myšlenky rozšířených klíčů a tvrzených klíčů, které jsou vysvětleny v následujících částech.
+
+Existuje mnoho desítek vzájemné spolupráce schopných implementací BIP-32 nabízených v mnoha softwarových knihovnách. Většinou jsou určeny pro Bitcoinové peněženky, které implementují adresy jiným způsobem, ale sdílejí stejnou implementaci odvození klíčů jako Ethereum peněženky kompatibilní s BIP-32. Použijte jednu https://github.com/ConsenSys/eth-lightwallet[navrženou pro Ethereum],nebo upravte jednu Bitcoinovou přidáním knihovny kódování Ethereum adres.
+
+K dispozici je také BIP-32 generátor implementovaný jako http://bip32.org/[samostatná] webová stránka, která je velmi užitečná pro testování a experimentování s BIP-32.
+
+[WARNING]
+====
+Samostatný generátor BIP-32 není HTTPS webem. To vám připomíná, že použití tohoto nástroje není bezpečné. Je určen pouze pro testování. Klíče vytvořené touto stránkou byste neměli používat se skutečnými prostředky.
+====
+
+[[extended_keys]]
+===== Rozšířené veřejné a soukromé klíče
+
+((("BIP-32 standard","extended public and private keys")))((("extended keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","extended public and private keys")))((("keys","extended"))) V terminologii BIP-32 lze klíče „rozšířit“. Se správnými matematickými operacemi lze tyto rozšířené „rodičovské“ klíče použít k odvození "dětských" klíčů, čímž se vytvoří hierarchie výše popsaných klíčů a adres. Rodičovský klíč nemusí být ve vrcholu (kořeni) stromu. lze ho vybrat odkudkoli ve stromové hierarchii. ((("chain code")))Rozšíření klíče zahrnuje převzetí klíče samotného a připojení zvláštního _kódu řetězce_. Kód řetězce je 256-bitový binární řetězec, který je smíšené s každým klíčem, aby se vytvořily dětské klíče.
+
+((("private keys","extended")))Pokud je klíč soukromým klíčem, stává se _rozšířeným soukromým klíčem_, odlišený pass:[<span class="keep-together">příponou</span>] +xprv+:
+
+[[xprv_example]]
+----
+xprv9s21ZrQH143K2JF8RafpqtKiTbsbaxEeUaMnNHsm5o6wCW3z8ySyH4UxFVSfZ8n7ESu7fgir8i...
+----
+
+((("public keys","extended"))) _Rozšíření veřejného klíče_ se vyznačuje předponou +xpub+:
+
+[[xpub_example]]
+----
+xpub661MyMwAqRbcEnKbXcCqD2GT1di5zQxVqoHPAgHNe8dv5JP8gWmDproS6kFHJnLZd23tWevhdn...
+----
+
+Velmi užitečnou vlastností HD peněženek je schopnost odvodit dětské veřejné klíče z rodičovských veřejných klíčů, bez znalosti  soukromých klíčů. To nám dává dva způsoby, jak odvodit dětský veřejný klíč: buď přímo z dětského soukromého klíče, nebo z rodičovského veřejného klíče.
+
+Rozšířený veřejný klíč lze proto použít k odvození všech veřejných klíčů (a pouze veřejných klíčů) v této větvi struktury HD peněženky.
+
+Tuto zkratku lze použít k vytvoření velmi bezpečného nasazení veřejného klíče, kde server nebo aplikace má kopii rozšířeného veřejného klíče, ale vůbec žádné soukromé klíče. Takové nasazení může vytvořit  nekonečný počet veřejných klíčů a Ethereum adres, ale nemůže utratit žádné peníze zaslané na tyto adresy. Mezitím na jiném, bezpečnějším serveru může rozšířený soukromý klíč odvodit všechny odpovídající soukromé klíče k podepisování transakcí a utrácení peněz.
+
+Jednou z běžných aplikací této metody je instalace rozšířeného veřejného klíče na webový server, který obsluhuje aplikaci elektronického obchodu. Webový server může pomocí funkce odvození veřejného klíče vytvořit novou Ethereum adresu pro každou transakci (např. pro nákupní košík zákazníka) a nebude mít žádné soukromé klíče, které by byly zranitelné v případě krádeže. Bez HD peněženek je jediným způsobem, jak to provést, vygenerovat tisíce Ethereum adres na samostatném zabezpečeném serveru a poté je předem načíst na serveru elektronického obchodu. Tento přístup je těžkopádný a vyžaduje stálou údržbu, aby se zajistilo, že serveru nedojdou klíče, a proto je preferováno použití rozšířených veřejných klíčů z HD peněženek.
+
+((("hardware wallets")))Další běžnou aplikací tohoto řešení jsou  ((("cold-storage wallets")))((("wallets","cold-storage wallets"))) chladná úložiště nebo hardwarové peněženky. V tomto scénáři lze rozšířený soukromý klíč uložit do hardwarové peněženky, zatímco rozšířený veřejný klíč lze zachovat online. Uživatel může libovolně vytvářet „přijímací“ adresy, zatímco soukromé klíče jsou bezpečně uloženy offline. K utrácení prostředků může uživatel použít rozšířený soukromý klíč v offline Ethereum klientovi nebo podepisovat transakce na hardwarovém peněženkovém zařízení.
+
+[[hardened_child_key]]
+===== Odvození tvrzených dětských klíčů
+
+((("child private keys")))((("hardened derivation","for child private keys")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","hardened child key derivation")))((("hierarchical deterministic wallets (BIP-32/BIP-44)","index numbers for normal/hardened derivation")))((("index numbers, for normal/hardened derivation")))((("private keys","hardened child key derivation"))) Schopnost odvodit větev veřejných klíčů z rozšířeného veřejného klíče neboli _xpub_ je velmi užitečná, ale přináší potenciální riziko. Přístup k xpub nedává přístup k dětským soukromým klíčům. Protože však xpub obsahuje kód řetězce (používaný k odvození dětských veřejných klíčů z rodičovského veřejného klíče), pokud je dětský soukromý klíč známý nebo nějak unikne, může být použit s kódem řetězce k odvození všech ostatních dětských soukromých klíče. Jediný uniklý soukromý klíč spolu s rodičovským kódem řetězce odhalí všechny soukromé klíče všech dětí. Horší je, že podřízený soukromý klíč spolu s kódem rodičovského řetězce lze použít k odvození nadřazeného soukromého klíče.
+
+Aby se tomuto riziku čelilo, používají HD peněženky alternativní odvozovací funkci nazvanou _tvrzené odvozování_, která „narušuje“ vztah mezi rodičovským veřejným klíčem a kódem dětského řetězce. Funkce tvrzeného odvozování používá rodičovský soukromý klíč k odvození kódu dětského řetězce namísto rodičovského veřejného klíče. Tím se vytvoří „firewall“ v rodičovské / dětské posloupnosti  s kódem řetězce, který nelze použít k ohrožení rodičovského nebo sourozeneckého soukromého klíče.
+
+Zjednodušeně řečeno, pokud chcete využít výhod xpub k odvození větví veřejných klíčů, aniž byste se vystavili riziku úniku kódu řetězce, měli byste je odvodit spíše z tvrzeného rodiče než z běžného rodiče. Nejlepší praxí je mít děti úrovně 1 hlavních klíčů vždy odvozené tvrdší derivací, aby nedošlo k ohrožení hlavních klíčů.
+
+[[index_number]]
+===== Číslování potomků pro normální a tvrzené odvození
+
+((("hardened derivation","index numbers for")))Je jasně žádoucí, aby bylo možné odvodit více než jeden dětský klíč z daného rodičovského klíče. Ke správě se používá indexové číslo. Každé číslo indexu, pokud je kombinováno s rodičovským klíčem pomocí speciální funkce odvození dítěte, dává jiný dětský klíč. Indexové číslo použité v BIP-32 odvozovací funkci rodič-dítě je 32-bitové celé číslo. Pro snadné rozlišení mezi klíči odvozenými prostřednictvím normální (netvrzené) odvozovací funkce od klíčů odvozených pomocí tvrzeného odvození je toto indexové číslo rozděleno do dvou rozsahů. Čísla indexu mezi 0 až 2^31^–1 (+0x0+ až +0x7FFFFFFF+) se používají _pouze_ pro normální odvození. Čísla indexů mezi 2^31^ a 2^32^–1 (+0x80000000+ až +0xFFFFFFFF+) se používají pouze pro tvrzené odvození. Proto, pokud je indexové číslo menší než 2^31^, dítě je normální, zatímco pokud je indexové číslo rovné nebo vyšší než 2^31^, dítě je tvrzené.
+
+Pro snazší čtení a zobrazení indexových čísel se indexová čísla pro tvrzené děti zobrazují od nuly, ale se symbolem čárky. První normální dětský klíč je proto zobrazen jako +0+, zatímco první tvrzený dětský klíč (index +0x80000000+) je zobrazen jako ++0'++. Poté by druhý tvrzený klíč měl index +0x80000001+ a zobrazoval by se jako ++1'++ atd. Když vidíte index HD peněženky  ++i'++, znamená to 2^31^ pass:[+] ++i++. (((range="endofrange", startref="ix_05wallets-asciidoc12")))
+
+[[hd_wallet_path]]
+===== Cesta ke klíči v HD peněženkách
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","key identifier")))((("keys","path naming convention")))Klíče v HD peněžence jsou identifikovány pomocí pojmenovávací konvence zvané „cesta“, přičemž každá úroveň stromu je oddělena lomítkem (/) (viz <<hd_path_table>>). Soukromé klíče odvozené od hlavního soukromého klíče začínají +m+. Veřejné klíče odvozené od hlavního veřejného klíče začínají +M+. Proto první dětský soukromý klíč hlavního soukromého klíče je +m/0+. První dětský veřejný klíč je +M/0+. Druhým vnoučetem od prvního dítěte je +m/0/1+ atd.
+
+„Předek“ klíče se čte zprava doleva, dokud nedosáhnete hlavního klíče, ze kterého byl odvozen. Například identifikátor +m/x/y/z+ popisuje klíč, který je ++z++ - tým dítětem klíče +m/x/y+, což je ++y++ - té dítě klíče +m/x+, které je ++x++ - tým dítětem +m+.
+
+[[hd_path_table]]
+Příklady cest v HD peněžence
+[options="header"]
+|=======
+|HD cesta | Popis klíče
+| +m/0+ | První (+0+) dětský soukromý klíč hlavního soukromého klíče (+m+)
+| +m/0/0+ | Soukromý klíč prvního vnuka od prvního dítěte (+m/0+)
+| +m/0'/0+ | Soukromý klíč prvního normálního vnoučete od prvního _tvrzeného_ dítěte (+m/0'+)
+| +m/1/0+ | Soukromý klíč prvního vnuka od druhého dítěte (+m/1+)
+| +M/23/17/0/0+ | Veřejný klíč prvního prapravnuka od prvního pravnuka od 18-tého vnuka od pass:[<span class="keep-together">24. dítě</span>]
+|=======
+
+[[navigating_hd_wallet_tree]]
+===== Navigace ve stromové struktuře HD peněženky
+
+((("hierarchical deterministic wallets (BIP-32/BIP-44)","tree structure")))((("tree structure, navigating")))Stromová struktura HD peněženky je nesmírně flexibilní. Druhou stránkou je, že také umožňuje neomezenou složitost: každý rozšířený klíč rodičů může mít 4 miliardy dětí: 2 miliardy normálních dětí a 2 miliardy tvrzených dětí. Každé z těchto dětí může mít další 4 miliardy dětí atd. Strom může být tak hluboký, jak chcete, s potenciálně nekonečným počtem generací. Se vším tímto potenciálem může být docela obtížné procházet těmito velmi velkými stromy.
+
+Dva BIPy nabízejí způsob, jak zvládnout tuto potenciální složitost vytvořením standardů pro stromovou strukturu HD peněženky. (((„Standard BIP-43“))) BIP-43 navrhuje použití prvního kaleného tvrzeného dětského indexu jako zvláštního identifikátoru, který označuje „účel“ stromové struktury. Na základě BIP-43 by HD peněženka měla používat pouze jednu větev stromu úrovně 1, přičemž indexové číslo určuje účel peněženky identifikováním struktury a jmenného prostoru zbytku stromu. Konkrétně, HD peněženka používající pouze větev ++m/i'/...++ je určena k označení konkrétního účelu a tento účel je identifikován indexovým číslem +i+.
+
+(((„Standard BIP-44“))) BIP-44 rozšiřuje tuto specifikaci a navrhuje strukturu vícečetných účtů s více účty označenou nastavením čísla „účelu“ na +44'+. Všechny HD peněženky, které podporují strukturu BIP-44, jsou identifikovány skutečností, že používají pouze jednu větev stromu: +m/44'/*+.
+
+BIP-44 určuje strukturu skládající se z pěti předdefinovaných úrovní stromu:
+
+[[bip44_tree]]
+-----
+m / účel' / druh měny' / účet' / vratka / pořadí adresy
+-----
+
+První úroveň, +účel'+, je vždy nastavena na +44'+. Druhá úroveň, +druh měny'+, specifikuje typ kryptoměnové mince, což umožňuje víceměnové HD peněženky, kde každá měna má pod druhou úrovní vlastní podstrom. V dokumentu standardu s názvem https://github.com/satoshilabs/slips/blob/master/slip-0044.md[SLIP0044] je definováno několik měn; například Ethereum je ++m/44'/60'++, Ethereum Classic je ++m/44'/61'++, Bitcoin je ++m/44'/0'++ a testovací sítě pro všechny měny jsou ++m/44'/1'++.
+
+Třetí úroveň stromu je + účet'+, což umožňuje uživatelům rozdělit své peněženky do samostatných logických podúčtů pro účely účetnictví nebo organizace. Například HD peněženka může obsahovat dva Ethereum „účty“: ++m/44'/60'/0'++ a++m/44'/60'/1'++. Každý účet je kořenem vlastního podstromu.
+
+Protože BIP-44 byl vytvořen původně pro Bitcoin, obsahuje „vtípek“, který není ve světě Ethereum relevantní. Na čtvrté úrovni cesty +vratka+ má HD peněženka dva podstromy: jeden pro vytváření přijímacích adres a druhou pro vytváření vratkových. V Ethereum se používá pouze cesta pro „přijímání“, protože není třeba (a ani není možné) vytvářet vratky, jako je tomu v Bitcoinu. Všimněte si, že zatímco předchozí úrovně používaly tvrzenou derivaci, tato úroveň používá normální derivaci. To umožňuje, aby tato úroveň stromu exportovala rozšířené veřejné klíče pro použití v nezabezpečeném prostředí. Použitelné adresy jsou odvozeny HD peněženkou jako děti čtvrté úrovně, takže pátá úroveň stromu je +index adresy+. Například třetí přijímací adresa pro Ethereum platby na primárním účtu bude ++M/44'/60'/0'/0/2++. <<bip44_path_examples>> ukazuje několik dalších příkladů (((range="endofrange", startref="ix_05wallets-asciidoc11")))(((range="endofrange", startref="ix_05wallets-asciidoc10"))).(((range="endofrange", startref="ix_05wallets-asciidoc5")))
+
+[[bip44_path_examples]]
+.Příklady struktury BIP-44 HD peněženky
+[options="header"]
+|=======
+|HD cesta | Popis klíče
+| ++M/44'/60'/0'/0/2++ | Třetí přijímající veřejný klíč pro primární Ethereum účet 
+| ++M/44'/0'/3'/1/14++ | Veřejný klíč 15-té vratkové adresy 4-tého Bitcoinového účtu
+| ++m/44'/2'/0'/0/1++ | Druhý soukromý klíč přijímací adresy v hlavním Litecoinovém účtu 
+|=======
+
+=== Závěry
+
+Peněženky jsou základem jakékoli bločenkové aplikace orientované na uživatele. Umožňují uživatelům spravovat kolekce klíčů a adres. Peněženky také umožňují uživatelům prokázat  vlastnictví jejich etheru a autorizovat transakce pomocí digitálních podpisů, jak uvidíme v  <<tx_chapter>>.(((range="endofrange", startref="ix_05wallets-asciidoc0")))

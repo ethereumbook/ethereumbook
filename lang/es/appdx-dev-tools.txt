@@ -1,0 +1,762 @@
+[appendix]
+[[dev_tools_frameworks]]
+== Herramientas de Programación, Entornos, pass:[<span class="keep-together">y Bibliotecas</span>]
+
+=== Entornos
+
+((("entornos", id="ix_appdx-dev-tools-asciidoc0", range="startofrange")))Los entornos se pueden utilizar para facilitar el desarrollo de contratos inteligentes en Ethereum. Al hacer todo usted mismo, obtendrá una mejor comprensión de cómo encaja todo esto, pero es mucho trabajo tedioso y repetitivo. Los entornos descritos en esta sección pueden automatizar determinadas tareas y facilitar el desarrollo de código.
+
+[[truffle]]
+==== Truffle
+
+((("entornos","Truffle", id="ix_appdx-dev-tools-asciidoc1", range="startofrange")))((("Truffle", id="ix_appdx-dev-tools-asciidoc2", range="startofrange")))GitHub: https://github.com/trufflesuite/truffle
+
+Página web: https://truffleframework.com
+
+Documentación: https://truffleframework.com/docs
+
+"Boxes" de Truffle: http://truffleframework.com/boxes/
+
+repositorio del paquete +npm+: https://www.npmjs.com/package/truffle
+
+
+[[installing_truffle]]
+===== Instalando el entorno de Truffle
+
+((("Node.js")))((("Truffle","instalación")))El entorno de Truffle comprende varios paquetes de Node.js. Antes de instalar +truffle+, necesitamos tener una instalación actualizada y funcional de Node.js y Node Package Manager (+npm+).
+
+La forma recomendada de instalar Node.js y +npm+ es usar Node Version Manager (+nvm+). Una vez instalado +nvm+, esta aplicación manejará todas las dependencias y actualizaciones de modo automático, por nosotros. Signase las instrucciones que se encuentran en http://nvm.sh [].
+
+Una vez que +nvm+ está instalado en su sistema operativo, instalar Node.js es simple. Úsese el banderín +-lts+ para decirle a +nvm+ que se desea la versión más reciente de &#x201c;soporte a largo plazo&#x201d; (del inglés "long term support" o LTS) de Node.js:
+
+++++
+<pre data-type="programlisting">
+$ <strong>nvm install --lts</strong>
+</pre>
+++++
+
+Confirmamos si tenemos +node+ y +npm+ instalados:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v</strong>
+v8.9.4
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+A continuación, creamos un archivo oculto, de extensión _.nvmrc_, que contenga la versión de Node.js compatible con su DApp, por lo que los desarrolladores solo necesitan ejecutar `nvm install` en la raíz del directorio del proyecto y la instalación ocurrirá automáticamente adaptada al uso de esa versión:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v &gt; .nvmrc</strong>
+$ <strong>nvm install</strong>
+</pre>
+++++
+
+Lo que se ve bien. Ahora procedemos a instalar +truffle+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install truffle</strong>
+
++ truffle@4.0.6
+installed 1 package in 37.508s
+</pre>
+++++
+
+[[truffle_box]]
+===== Integrando un proyecto de Truffle preconstruido (contenido en una "Truffle Box")
+
+((("Truffle","integrando un proyecto de Truffle preconstruido")))((("Truffle Box")))Si se desea utilizar o crear una DApp que se base en un modelo preconstruido, podemos ir al sitio web de Truffle Boxes, elegir un proyecto Truffle existente y luego ejecutar el siguiente comando para descargarlo y extraerlo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle unbox <em>BOX_NAME</em></strong>
+</pre>
+++++
+
+[[truffle_project_directory]]
+===== Creando un directorio de proyecto para truffle
+
+((("Truffle","creando un directorio del proyecto", id="ix_appdx-dev-tools-asciidoc3", range="startofrange")))Para cada proyecto donde se use +truffle+, se ha de crear un directorio de proyecto y se debe inicializar +truffle+ dentro de ese directorio. +truffle+ creará la estructura de directorio necesaria dentro del directorio de nuestro proyecto. Es costumbre darle al directorio del proyecto un nombre que describa al proyecto. Para este ejemplo, usaremos +truffle+ para implementar nuestro contrato +Faucet+ de <<simple_contract_example>>, y por lo tanto, nombraremos la carpeta del proyecto __Faucet__:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir Faucet</strong>
+$ <strong>cd Faucet</strong>
+Faucet $
+</pre>
+++++
+
+Una vez dentro del directorio _Faucet_, inicializamos +truffle+:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle init</strong>
+</pre>
+++++
+
++truffle+ crea una estructura de directorio y algunos archivos predeterminados:
+
+----
+Faucet
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- test
++---- truffle-config.js
+`---- truffle.js
+----
+
+También usaremos una serie de paquetes de soporte de JavaScript (Node.js), además de +truffle+ en sí. Podemos instalarlos con +npm+. Inicializamos la estructura del directorio +npm+ y aceptamos los valores predeterminados sugeridos por +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+
+package name: (faucet)
+version: (1.0.0)
+description:
+entry point: (truffle-config.js)
+test command:
+git repository:
+keywords:
+author:
+license: (ISC)
+About to write to Faucet/package.json:
+
+{
+  "name": "faucet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" &amp;&amp; exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+
+
+Is this ok? (yes)
+</pre>
+++++
+
+Ahora, podremos instalar las dependencias que usaremos para facilitar el trabajo con +truffle+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install dotenv truffle-wallet-provider ethereumjs-wallet</strong>
+</pre>
+++++
+
+Ahora tenemos un directorio __node_modules__ con varios miles de archivos dentro de nuestro directorio _Faucet_.
+
+Antes de implementar una DApp en un entorno de producción en la nube o de integración continua, es importante especificar el campo +engines+ para que su DApp se compile con la versión correcta de Node.js y se instalen sus dependencias asociadas. Para obtener detalles sobre la configuración de este campo, consúltese el enlace http://bit.ly/2zp2GPF[documentation].(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc3")))
+
+===== Configurando a truffle
+
+((("Truffle","configuración")))+truffle+ crea algunos archivos de configuración vacíos, como _truffle.js_ y _truffle-config.js_. En los sistemas de Windows, el nombre _truffle.js_ puede causar un conflicto cuando intenta ejecutar el comando +truffle+ y Windows intenta ejecutar _truffle.js_ en su lugar. Para evitar esto, eliminaremos _truffle.js_ y usaremos _truffle-config.js_ (en apoyo de los usuarios de Windows, que, sinceramente, ya sufren bastante):
+
+++++
+<pre data-type="programlisting">
+$ <strong>rm truffle.js</strong>
+</pre>
+++++
+
+Ahora editamos _truffle-config.js_ y reemplazamos el contenido con la configuración de muestra que se describe aquí:
+
+[source,javascript]
+----
+module.exports = {
+  networks: {
+    localnode: { // Cualquiera sea la red con la que nuestro nodo local se conecta
+      network_id: "*", // Coincidir con cualquier ID de red
+      host: "localhost",
+      port: 8545,
+    }
+  }
+};
+----
+
+Esta configuración es un buen punto de partida. Le da forma a una red Ethereum predeterminada (llamada +localnode+), que asume que estamos ejecutando un cliente Ethereum como Parity, ya sea como un nodo completo o como un cliente ligero. Esta configuración le indicará a +truffle+ que se comunique con el nodo local a través de RPC, en el puerto 8545. +truffle+ usará cualquier red Ethereum a la que esté conectado el nodo local, como la red principal Ethereum o una red de prueba como Ropsten. El nodo local también proporcionará la funcionalidad de billetera.
+
+En las siguientes secciones, configuraremos redes adicionales para que +truffle+ las use, como la de +ganache+ que es una cadena de bloques de prueba local e Infura, que es un proveedor de red alojado. A medida que agreguemos más redes, el archivo de configuración se volverá más complejo, pero también nos dará más opciones para nuestro flujo de trabajo de pruebas y desarrollo.
+
+===== Usando truffle para desplegar un contrato
+
+((("contratos inteligentes","usando Truffle para el despliegue")))((("Truffle","despliegue de contratos con")))En este punto, tenemos un directorio de trabajo básico para nuestro proyecto _Faucet_, y tenemos +truffle+ y sus dependencias configuradas. Los contratos van en el subdirectorio _contracts_ de nuestro proyecto. El directorio ya contiene un contrato de "ayuda", llamado _Migrations.sol_, que gestiona las actualizaciones del contrato por nosotros. Examinaremos el uso de _Migrations.sol_ en la siguiente sección.
+
+Vamos a copiar el contrato _Faucet.sol_ (del <<solidity_faucet_example>>) en el subdirectorio _contracts_, de modo que el directorio del proyecto se vea así:
+
+----
+Faucet
++---- contracts
+|   +---- Faucet.sol
+|   `---- Migrations.sol
+...
+----
+
+Ahora podemos pedirle a +truffle+ que nos compile el contrato:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle compile</strong>
+Compiling ./contracts/Faucet.sol...
+Compiling ./contracts/Migrations.sol...
+Writing artifacts to ./build/contracts
+</pre>
+++++
+
+[[truffle_migrations_understanding_deployment_scripts]]
+===== Migraciones en Truffle&#x2014;entendiendo los scripts de despliegue
+
+((("scripts de despliegue", id="ix_appdx-dev-tools-asciidoc4", range="startofrange")))((("migraciones", id="ix_appdx-dev-tools-asciidoc5", range="startofrange")))((("Truffle","migraciones", id="ix_appdx-dev-tools-asciidoc6", range="startofrange")))Truffle ofrece un sistema de despliegue llamado _migration_. Si se ha trabajado en otros entornos, es posible haber visto algo similar: Ruby sobre Rails, Python Django y muchos otros lenguajes y entornos tienen un comando +migrate+.
+
+En todos esos entornos, el propósito de una migración es manejar cambios en el esquema de datos entre diferentes versiones del software. El propósito de las migraciones en Ethereum es ligeramente diferente. Debido a que los contratos de Ethereum son inmutables y su implementación cuesta gas, Truffle ofrece un mecanismo de migración para realizar un seguimiento de qué contratos (y qué versiones) ya se han desplegado. En un proyecto complejo con docenas de contratos y dependencias complejas, no querremos tener que pagar combustible para volver a desplegar contratos que no han cambiado. Tampoco querremos realizar un seguimiento manual de las versiones de qué contratos ya se han desplegado. El mecanismo de migración de Truffle hace todo eso mediante el despliegue del contrato inteligente _Migrations.sol_, que luego realiza un seguimiento de todos los demás despliegues de contratos.
+
+Solo tenemos un contrato, _Faucet.sol_, lo que significa que el sistema de migración es excesivo, por decir lo menos. Desafortunadamente, tenemos que usarlo. Pero, al aprender a usarlo para un contrato, podemos comenzar a practicar algunos buenos hábitos para nuestra rutina de trabajo en el desarrollo de código. El esfuerzo dará sus frutos a medida que las cosas se pongan más complicadas.
+
+El directorio _migrations_ de Truffle es donde se encuentran los scripts de migración. En este momento solo hay un script, __1_initial_migration.js__, que despliega el contrato _Migrations.sol_ en sí:
+
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/1_initial_migration.js[]
+----
+
+Necesitamos un segundo script de migración para desplegar _Faucet.sol_. Llamémoslo __2_deploy_contracts.js__. Es muy simple, como __1_initial_migration.js__, con solo algunos pequeños cambios. De hecho, podemos copiar el contenido de __1_initial_migration.js__ y simplemente reemplazar todas las instancias de +Migrations+ con +Faucet+:
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
+----
+
+El script inicializa una variable +Faucet+, identificando el código fuente _Faucet.sol_ de Solidity como el artefacto que define +Faucet+. Luego llama a la función `deploy` para implementar este contrato.
+
+Estamos listos. Usemos +truffle migrate+ para desplegarlo. Tenemos que especificar en qué red desplegar el contrato, usando el argumento +--network+. Solo tenemos una red especificada en el archivo de configuración, que llamamos +localnode+. Asegurémonos de que nuestro cliente Ethereum local se esté ejecutando y luego escribimos:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle migrate --network localnode</strong>
+</pre>
+++++
+
+Debido a que estamos usando un nodo local para conectarnos a la red Ethereum y administrar nuestra billetera, tenemos que autorizar la transacción que +truffle+ crea. Estamos ejecutando +parity+ conectado a la cadena de bloques de prueba de Ropsten, por lo que durante la migración veremos una ventana emergente como la de la <<parity_deployment_confirmation>> en la consola web de Parity.
+
+[[parity_deployment_confirmation]]
+.Parity pidiendo confirmación para desplegar Faucet
+image::images/parity_deployment_confirmation.png["Parity pidiendo confirmación para desplegar Faucet"]
+
+Hay cuatro transacciones en total: una para desplegar +Migrations+, una para actualizar el contador de despliegues a +1+, una para desplegar +Faucet+ y una para actualizar el contador de despliegues a +2+.
+
+Truffle mostrará las migraciones completadas, mostrará cada una de las transacciones y mostrará las direcciones de los contratos: (((range="endofrange", startref="ix_appdx-dev-tools-asciidoc6")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc5")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc4")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle migrate --network localnode</strong>
+Using network 'localnode'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xfa090db179d023d2abae543b4a21a1479e70ca7d35a469a5d1a98bfc6bd80fe8
+  Migrations: 0x8861c27715550bed8362c0345add158489df6db0
+Saving successful migration to network...
+  ... 0x985c4a32716826ddbe4eae284104bef8bc69e959899f62246a1b27c9dfcd6c03
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xecdbeef77f0558edc689440e34b7bba0a3ba7a45e4b680b071b47c30a930e9d6
+  Faucet: 0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300
+Saving successful migration to network...
+  ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
+Saving artifacts...
+</pre>
+++++
+
+===== Usando la consola de Truffle
+
+((("Truffle","consola", id="ix_appdx-dev-tools-asciidoc7", range="startofrange")))Truffle ofrece una consola JavaScript que podemos usar para interactuar con la red Ethereum (a través de la red localnode), interactuar con los contratos desplegados e interactuar con el proveedor de billetera. En nuestra configuración actual (+localnode+), el proveedor del nodo y la billetera es nuestro cliente local de Parity.
+
+Iniciemos la consola de Truffle y probemos algunos comandos:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle console --network localnode</strong>
+truffle(localnode)>
+</pre>
+++++
+
+La consola de Truffle presenta un puntero que muestra la configuración de la red seleccionada (+localnode+).
+
+[TIP]
+====
+Es importante recordar y ser consciente de la red que se está utilizando. No querremos desplegar accidentalmente un contrato de prueba o realizar una transacción en la red principal de Ethereum. ¡Eso podría ser un error costoso!
+====
+
+La consola de Truffle ofrece una función de autocompletar que nos facilita la exploración del entorno. Si presionamos la tecla "Tab" después de un comando parcialmente completado, Truffle completará el comando por nosotros. Presionar "Tab" dos veces mostrará todas las finalizaciones posibles si más de un comando coincide con nuestra entrada. De hecho, si presionamos Tab dos veces en un indicador vacío, Truffle enumera todos los comandos disponibles:
+
+++++
+<pre data-type="programlisting" class="codewrap">
+truffle(localnode)&gt;
+Array Boolean Date Error EvalError Function Infinity JSON Math NaN Number Object RangeError ReferenceError RegExp String SyntaxError TypeError URIError decodeURI decodeURIComponent encodeURI encodeURIComponent eval isFinite isNaN parseFloat parseInt undefined
+
+ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Intl Map Migrations Promise Proxy Reflect Set StateManager Symbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ assert async_hooks buffer child_process clearImmediate clearInterval clearTimeout cluster console crypto dgram dns domain escape events fs global http http2 https module net os path perf_hooks process punycode querystring readline repl require root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
+
+__defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
+</pre>
+++++
+
+La gran mayoría de las funciones relacionadas con la billetera y el nodo las proporciona el objeto +web3+, que es una instancia de la biblioteca web3.js. El objeto +web3+ abstrae la interfaz RPC a nuestro nodo de Parity. También podremos notar dos objetos con nombres familiares: +Migrations+ y +Faucet+. Esos representan los contratos que acabamos de desplegar. Usaremos la consola de Truffle para interactuar con un contrato. Primero, revisemos nuestra billetera a través del objeto +web3+:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.accounts</strong>
+[ '0x9e713963a92c02317a681b9bb3065a8249de124f',
+  '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
+</pre>
+++++
+
+Nuestro cliente de Parity tiene dos billeteras, con un éter de prueba en Ropsten. El atributo +web3.eth.accounts+ contiene una lista de todas las cuentas. Podemos verificar el saldo de la primera cuenta usando la función +getBalance+:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(web3.eth.accounts[0]).toNumber()</strong>
+191198572800000000
+truffle(localnode)&gt;
+</pre>
+++++
+
+web3.js es una gran biblioteca de JavaScript que ofrece una interfaz completa para el sistema Ethereum, a través de un proveedor como un cliente local. Examinaremos web3.js con más detalle en el <<web3js_tutorial>>. Ahora intentemos interactuar con nuestros contratos:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.address</strong>
+'0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+0
+truffle(localnode)&gt;
+</pre>
+++++
+
+A continuación, usaremos +sendTransaction+ para enviar un éter de prueba para financiar el contrato +Faucet+. Tenga en cuenta el uso de +web3.utils.toWei+ para convertir unidades éter para nosotros. Escribir 18 ceros sin cometer un error es difícil y peligroso, por lo que siempre es mejor usar un convertidor de unidades para valores. Así es como enviamos la transacción:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
+                    to:Faucet.address, value:web3.utils.toWei(0.5, 'ether')});</strong>
+'0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
+</pre>
+++++
+
+Si cambiamos a la interfaz web de Parity, veremos una ventana emergente pidiéndonos que confirmemos esta transacción. Una vez que se confirma la transacción, podremos ver el saldo de nuestro contrato +Faucet+:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+500000000000000000
+</pre>
+++++
+
+Invocaremos a la función +withdraw+ ahora, para retirar un éter de prueba del contrato:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                       {instance.withdraw(web3.utils.toWei(0.1,
+                       'ether'))}).then(console.log)</strong>
+</pre>
+++++
+
+Nuevamente, tendremos que aprobar la transacción en la interfaz web de Parity. Si lo comprobamos de nuevo, veremos que el saldo del contrato +Faucet+ ha disminuido y nuestra billetera de prueba ha recibido 0.1 éter(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc7"))):(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc2")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc1")))
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+400000000000000000
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                    {instance.withdraw(web3.utils.toWei(1, 'ether'))})</strong>
+StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c 
+  exited with an error (status 0).
+</pre>
+++++
+
+==== Embark
+
+((("Embark")))((("entornos","Embark")))GitHub: https://github.com/embark-framework/embark/[]
+
+Documentación: https://embark.status.im/docs/[]
+
+repositorio del paquete +npm+: https://www.npmjs.com/package/embark[]
+
+Embark es un entorno creado para permitir a los desarrolladores la creación y el despliegue de manera fácil de aplicaciones descentralizadas.
+Embark se integra con Ethereum, IPFS, Whisper y Swarm para ofrecer las siguientes características:
+
+* Desplegar contratos automáticamente y hacerlos disponibles en código JS.
+* Se mantiene atento a los cambios y actualiza los contratos para volver a desplegarlos si es necesario.
+* Gestión e interacción con diferentes cadenas (por ejemplo, testnet, local, mainnet).
+* Maneja sistemas complejos de contratos interdependientes.
+* Almacena y recuperar datos, incluida la carga y recuperación de archivos alojados en IPFS.
+* Facilita el proceso de despliegue de una aplicación completa en IPFS o Swarm.
+* Enviar y recibir mensajes a través de Whisper.
+
+Podemos instalarlo con +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install embark</strong>
+</pre>
+++++
+
+[role="pagebreak-before"]
+==== OpenZeppelin
+
+((("entornos","suite de OpenZeppelin", id="ix_appdx-dev-tools-asciidoc8", range="startofrange")))((("OpenZeppelin", id="ix_appdx-dev-tools-asciidoc9", range="startofrange")))GitHub: https://github.com/OpenZeppelin/openzeppelin-solidity[]
+
+Website: https://openzeppelin.org/[]
+
+Documentación: https://openzeppelin.org/api/docs/open-zeppelin.html[]
+
+https://openzeppelin.org/[OpenZeppelin] es un entorno abierto de contratos inteligentes reutilizables y seguros en el lenguaje de Solidity.
+
+Está impulsado por la comunidad, dirigido por el equipo https://zeppelin.solutions/[Zeppelin], con más de un centenar de colaboradores externos. El enfoque principal del entorno es la seguridad, que se logra mediante la aplicación de las mejores prácticas y patrones de seguridad de contratos estándar de la industria, aprovechando toda la experiencia que los desarrolladores de Zeppelin han obtenido de https://blog.zeppelin.solutions/tagged/security[auditar] una gran cantidad de contratos, y a través de pruebas y auditorías constantes de la comunidad que utiliza el entorno como base para sus aplicaciones del mundo real.
+
+El entorno de OpenZeppelin es la solución más utilizada para los contratos inteligentes de Ethereum. Actualmente, el marco tiene una amplia biblioteca de contratos que incluye implementaciones de tokens ERC20 y ERC721, muchos tipos de modelos de venta colectiva y comportamientos simples que se encuentran comúnmente en contratos como `Ownable`, `Pausable`, o `LimitBalance`. Los contratos de este repositorio en algunos casos funcionan como implementaciones estándar _de facto_.
+
+El entorno posee una licencia MIT y todos los contratos se han diseñado con un enfoque modular para garantizar la facilidad de reutilización y extensión. Estos son bloques de construcción básicos y limpios, listos para ser utilizados en su próximo proyecto Ethereum. Configuremos el entorno y construyamos una venta colectiva simple usando los contratos de OpenZeppelin, para demostrar lo fácil que es de usar. Este ejemplo también enfatiza la importancia de reutilizar componentes seguros en lugar de escribirlos uno mismo.
+
+Primero, necesitaremos instalar la biblioteca +openzeppelin-solidity+ en nuestro espacio de trabajo. La última versión en el momento de escribir este libro es v1.9.0, por lo que usaremos esa:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir sample-crowdsale</strong>
+$ <strong>cd sample-crowdsale</strong>
+$ <strong>npm install openzeppelin-solidity@1.9.0</strong>
+$ <strong>mkdir contracts</strong>
+</pre>
+++++
+
+En el momento de escribir este libro, OpenZeppelin incluye múltiples contratos de tokens básicos que siguen los estándares ERC20, ERC721 y ERC827, con diferentes características de emisión, límites, concesión, ciclo de vida, etc.
+
+Hagamos un token ERC20 con la capacidad de acuñado, lo que significa que el suministro inicial comienza en 0 y el propietario del token (en nuestro caso, el pass:[<span class="keep-together">contrato</span>] de venta colectiva) puede crear nuevos tokens y venderlos a los compradores. Para hacer esto, crearemos un archivo _contracts/SampleToken.sol_ con el siguiente contenido:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleToken.sol[]
+----
+
+OpenZeppelin ya proporciona un contrato que puede acuñar tokens, el +MintableToken+, que podemos usar como base para nuestro token, por lo que solo definimos los detalles que son específicos de nuestro caso. A continuación, hagamos el contrato de venta colectiva. Al igual que con los tokens, OpenZeppelin ya ofrece una amplia variedad de tipos de venta colectiva. Actualmente, podemos encontrar contratos para varios escenarios que involucran distribución, emisión, precio y validación. Entonces, digamos que deseamos establecer un objetivo para nuestra venta colectiva y si no se cumple para cuando finalice la venta, deseamos reembolsar a todos sus inversores. Para eso, se puede utilizar el contrato http://bit.ly/2yHoh65[+RefundableCrowdsale+]. O tal vez podríamos desear definir una venta colectiva con un precio creciente para incentivar a los primeros compradores; para lo cual hay un contrato, http://bit.ly/2PtWOys[+IncreasingPriceCrowdsale+] solo para eso. También podemos finalizar la venta colectiva cuando el contrato haya recibido una cantidad específica de ether (http://bit.ly/2OVsCN8[+CappedCrowdsale+]), o establecer una hora de finalización con el contrato http://bit.ly/2zp2Nuz[+TimedCrowdsale+] o crear una lista de compradores aprobados con el contrato http://bit.ly/2CN8Hc9[+WhitelistedCrowdsale+].
+
+Como ya hemos dicho antes, los contratos de OpenZeppelin son bloques de construcción básicos. Estos contratos de venta colectiva se han diseñado para combinarse; simplemente léase el código fuente del contrato base http://bit.ly/2ABIQSI[+Crowdsale+] para obtener instrucciones sobre cómo extenderlo. Para la venta colectiva de nuestro token, necesitamos acuñar tokens cuando el contrato de venta colectiva reciba éter, así que usaremos el contrato http://bit.ly/2Sx3HOc[+MintedCrowdsale+] como base. Y para hacerlo más interesante, incluiremos también un contrato de post-despacho, llamado http://bit.ly/2Qef0Jm[+PostDeliveryCrowdsale+], para que los tokens solo se puedan retirar después de que finalice la venta colectiva. Para hacer esto, escribiremos lo siguiente en _contracts/SampleCrowdsale.sol_:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleCrowdsale.sol[]
+----
+
+Una vez más, apenas tuvimos que escribir código; acabamos de reutilizar el código probado en batalla que la comunidad de OpenZeppelin puso a disposición. Sin embargo, es importante tener en cuenta que este caso es diferente al de nuestro contrato `SampleToken`. Si vamos a las http://bit.ly/2Q8lQ3o[Pruebas automatizadas de ventas colectivas], veremos que se prueban de forma aislada. Cuando integramos diferentes unidades de código en un componente más grande, no es suficiente probar todas las unidades por separado, porque las interacciones entre ellas pueden causar comportamientos que no esperábamos. En particular, veremos que aquí introdujimos la herencia múltiple, lo que puede sorprender al desarrollador si no comprende los detalles de Solidity. Nuestro contrato pass:[<span class="keep-together"><code>SampleCrowdsale</code></span>] es simple y funcionará tal como esperamos porque el entorno fue diseñado para simplificar casos como estos; pero no distraigamos nuestra atención por la simplicidad que introduce este entorno. Cada vez que integramos partes del entorno de OpenZeppelin para construir una solución más compleja, se deben probar completamente todos los aspectos de su solución para asegurarnos de que todas las interacciones de las unidades funcionen como se desea.
+
+Finalmente, cuando estemos satisfechos con nuestra solución y la hayamos probado a fondo, necesitaremos desplegarla. OpenZeppelin se integra bien con Truffle, por lo que podemos escribir un archivo de migraciones como el siguiente (_migrations/2_deploy_contracts.js_), como se explica en <<truffle_migrations_understanding_deployment_scripts>>:
+
+[source,js]
+----
+include::code/OpenZeppelin/migrations/2_deploy_contracts.js[]
+----
+
+[NOTE]
+====
+Esta fue solo una descripción general rápida de algunos de los contratos que forman parte del entorno de OpenZeppelin. Le invitamos a unirse a la comunidad de desarrollo de OpenZeppelin para aprender y contribuir.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc9")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc8")))
+====
+
+==== ZeppelinOS
+
+((("entornos","ZeppelinOS")))((("ZeppelinOS")))GitHhub: https://github.com/zeppelinos[]
+
+Website: https://zeppelinos.org[]
+
+Blog: https://blog.zeppelinos.org[]
+
+https://github.com/zeppelinos[ZeppelinOS] es &#x201c;una plataforma distribuida de código abierto de herramientas y servicios, basados en la capa de servicios de la EVM
+para desarrollar y gestionar aplicaciones de contratos inteligentes de forma segura.&#x201d;
+
+A diferencia del código de OpenZeppelin, que debe volver a desplegarse con cada aplicación cada vez que se usa, el código de ZeppelinOS vive en cadena de bloques. Las aplicaciones que necesitan una cierta funcionalidad&#x2014;por ejemplo, un token ERC20&#x2014;no solo no necesitan rediseñarla y volver a auditar su implementación (algo que resolvió OpenZeppelin), sino que ni siquiera necesitan desplegarla. Con ZeppelinOS, una aplicación interactúa directamente con la implementación del token en la cadena de bloques, de la misma manera que una aplicación de una PC de escritorio interactúa con los componentes de su sistema operativo subyacente.
+
+((("proxy")))En el corazón de ZeppelinOS se encuentra un contrato muy perspicaz conocido como _proxy_. Un proxy es un contrato que es capaz de envolver cualquier otro contrato, exponiendo su interfaz sin tener que implementar manualmente "setters" ni "getters" para él, y puede ser actualizado sin perder su estado. En términos de Solidity, se puede ver como un contrato normal cuya lógica operativa está contenida dentro de una biblioteca, que se puede cambiar por una nueva biblioteca en cualquier momento sin que se pierda su estado. La forma en que el proxy se vincula a su implementación está completamente automatizada y encapsulada para el desarrollador. Prácticamente cualquier contrato puede actualizarse con poco o ningún cambio en su código. Puede encontrar más información sobre el mecanismo del proxy de ZeppelinOS en su http://bit.ly/2OfuNpu[blog], y un ejemplo de cómo usarlo se puede encontrar en el enlace http://bit.ly/2OfuE5q[on GitHub].
+
+Desarrollar aplicaciones usando ZeppelinOS es similar a desarrollar aplicaciones JavaScript usando +npm+. Un Administrador de Aplicaciones o +AppManager+ maneja un paquete de aplicación para cada versión de la aplicación. Un paquete es simplemente un directorio de contratos, cada uno de los cuales puede tener uno o más proxies actualizables. El + AppManager + no solo proporciona proxies para contratos específicos de aplicaciones, sino que también lo hace para implementaciones de ZeppelinOS, en forma de biblioteca estándar. Para ver un ejemplo completo de esto, visítese el enlace http://bit.ly/2PtyJb3[examples/complex].
+
+Aunque actualmente en desarrollo, ZeppelinOS tiene como objetivo proporcionar un amplio conjunto de características adicionales, como herramientas de desarrollo, un programador que automatice las operaciones en segundo plano dentro de los contratos, recompensas de desarrollo, un mercado que facilite la comunicación y el intercambio de valor entre aplicaciones y mucho más. Todo esto se describe en el http://bit.ly/2QcxV7K[whitepaper] de ZeppelinOS.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc0")))
+
+
+
+
+=== Utilidades
+
+==== EthereumJS helpeth: Una Utilidad en la Línea de Comandos
+
+((("EthereumJS helpeth")))((("herramienta helpeth en la línea de comandos")))((("utilidades")))((("utilidades","EthereumJS helpeth")))GitHub: https://github.com/ethereumjs/helpeth[]
+
++helpeth+ es una herramienta de línea de comandos para la manipulación de llaves y transacciones que facilita mucho el trabajo de un desarrollador.
+
+Forma parte de la colección EthereumJS de bibliotecas y herramientas basadas en JavaScript:
+
+
+
+----
+Uso: helpeth [comandos]
+
+Comandos:
+  signMessage <mensaje>                     Firma un mensaje
+  verifySig <hash> <firma>                    Verifica una firma
+  verifySigParams <hash> <r> <s> <v>        Verifica los parámetros de firma
+  createTx <nonce> <para> <valor> <data>      Firma una transacción
+  <gasLimit> <gasPrice>
+  assembleTx <nonce> <para> <valor> <data>    Ensambla una transacción a partir de sus
+  <gasLimit> <gasPrice> <v> <r> <s>         componentes
+  parseTx <transacción>                              Interpreta una transacción en formato crudo
+  keyGenerate [formato] [icapdirect]         Genera una nueva llave
+  keyConvert                                Convierte una llave en formato V3 de almacenamiento de llaves
+  keyDetails                                Imprime los detalles de la llave
+  bip32Details <ruta>                       Imprime los detalles de la llave en una ruta de archivo determinada
+  addressDetails <dirección>                  Imprime los detalles relativos a una dirección
+  unitConvert <valor> <de> <a>           Conversión entre unidades Ethereum
+
+Opciones:
+  -p, --private      Llave privada como cadena hexadecimal                        [string]
+  --password         Contraseña para la llave privada                       [string]
+  --password-prompt  Indicador para la contraseña de la llave privada               [boolean]
+  -k, --keyfile      Archivo de llava codificado                                   [string]
+  --show-private     Muestra detalles de la llave privada                          [boolean]
+  --mnemonic         Mnemónico para la derivación de la llave HD                     [string]
+  --version          Muestra el número de versión                               [boolean]
+  --help             Muestra la ayuda                                         [boolean]
+----
+
+==== dapp.tools
+
+((("dapp.tools")))((("utilidades","dapp.tools")))Website: https://dapp.tools/[]
+
+dapp.tools es un conjunto completo de herramientas de desarrollo orientadas a la cadena de bloques creadas en el espíritu de la filosofía Unix. Las herramientas incluidas son:
+
+
+Dapp::
+Dapp es la herramienta básica para el usuario, para crear nuevas DApps, ejecutar pruebas unitarias de Solidity, depurar e implementar contratos, lanzar redes de prueba y más.
+
+Seth::
+Seth se utiliza para redactar transacciones, consultar la cadena de bloques, convertir entre formatos de datos, realizar invocaciones remotas y tareas cotidianas similares.
+
+Hevm::
+Hevm es una implementación de una EVM Haskell, con un depurador de Solidity basado en una terminal ligera. Se usa para probar y depurar DApps.
+
+evmdis::
+evmdis es un desensamblador de la EVM; realiza un análisis estático en el código binario para proporcionar un mayor nivel de abstracción que el de las operaciones crudas de la EVM.
+
+
+==== SputnikVM
+
+https://github.com/etcdevteam/sputnikvm[SputnikVM] ((("SputnikVM")))((("utilidades","SputnikVM")))es una máquina virtual acoplable independiente para diferentes cadenas de bloques basadas en Ethereum. Está escrito en Rust y puede usarse en binario, como "cargo crate" o como biblioteca compartida, o integrado a través de interfaces FFI, Protobuf y JSON. Tiene un binario separado, +sputnikvm-dev+, destinado a fines de prueba, que emula la mayor parte de la API JSON-RPC y la minería de bloques.
+
+=== Bibliotecas
+
+==== web3.js
+
+((("bibliotecas", id="ix_appdx-dev-tools-asciidoc10", range="startofrange")))web3.js ((("bibliotecas","web3.js")))((("web3.js")))es la API de JavaScript compatible con Ethereum para comunicarse con los clientes a través de JSON-RPC, desarrollada por la Fundación Ethereum.
+
+GitHub: https://github.com/ethereum/web3.js[]
+
+repositorio del paquete +npm+: https://www.npmjs.com/package/web3[]
+
+Documentación para la API web3.js versiones 0.2x.x: http://bit.ly/2Qcyq1C[]
+
+Documentación para la API web3.js versiones 1.0.0-beta.xx: http://bit.ly/2CT33p0[]
+
+[role="pagebreak-before"]
+==== web3.py
+
+((("bibliotecas","web3.py")))((("web3.py")))web3.py es una biblioteca de Python para interactuar con la cadena de bloques Ethereum, mantenida por la Fundación Ethereum.
+
+GitHub: https://github.com/ethereum/web3.py[]
+
+PyPi: https://pypi.python.org/pypi/web3/4.0.0b9[]
+
+Documentación: https://web3py.readthedocs.io/[]
+
+==== EthereumJS
+
+((("EthereumJS")))EthereumJS es una colección de bibliotecas y utilidades para Ethereum.
+
+GitHub: https://github.com/ethereumjs[]
+
+Website: https://ethereumjs.github.io/[]
+
+==== web3j
+
+((("bibliotecas","web3j")))((("web3j")))web3j es una biblioteca de Java y Android para integrarse con clientes Ethereum y trabajar con contratos inteligentes.
+
+GitHub: https://github.com/web3j/web3j[]
+
+Website: https://web3j.io[]
+
+Documentación: https://docs.web3j.io[]
+
+==== EtherJar
+
+((("EtherJar")))((("bibliotecas","EtherJar")))EtherJar es otra biblioteca de Java para integrarse con Ethereum y trabajar con contratos inteligentes. Está diseñado para proyectos del lado del servidor basados en Java 8+ y proporciona acceso de bajo nivel y un contenedor de alto nivel alrededor de RPC, estructuras de datos de Ethereum y acceso a contratos inteligentes.
+
+GitHub: https://github.com/infinitape/etherjar[]
+
+==== Nethereum
+
+((("biblioteca","Nethereum")))((("Nethereum")))Nethereum es la biblioteca de integración .Net para Ethereum.
+
+GitHub: https://github.com/Nethereum/Nethereum[]
+
+Website: http://nethereum.com/[]
+
+Documentation: https://nethereum.readthedocs.io/en/latest/[]
+
+==== ethers.js
+
+((("ethers.js")))((("bibliotecas","ethers.js")))La biblioteca ethers.js es una biblioteca Ethereum compacta, completa, con todas las funciones y ampliamente probada con licencia  tipo MIT, que ha recibido una subvención DevEx de la Fundación Ethereum para su extensión y mantenimiento.
+
+GitHub link: https://github.com/ethers-io/ethers.js[]
+
+Documentación: https://docs.ethers.io[]
+
+
+==== Emerald Platform
+
+((("Plataforma Emerald")))((("bibliotecas","Plataforma Emerald")))La Plataforma Emerald proporciona bibliotecas y componentes de interfaz de usuario para crear DApps sobre Ethereum. La Emerald JS y la Emerald JS UI proporcionan conjuntos de módulos y componentes React para crear aplicaciones y sitios web a base de JavaScript; Emerald SVG Icons es un conjunto de iconos relacionados con la cadena de bloques. Además de las bibliotecas de JavaScript, Emerald tiene una biblioteca Rust para operar con llaves privadas y firmas de transacciones. Todas las bibliotecas y componentes de Emerald tienen licencia tipo Apache, versión 2.0.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc10")))
+
+GitHub: https://github.com/etcdevteam/emerald-platform[]
+
+Documentación: https://docs.etcdevteam.com[]
+
+[[testing_frameworks]]
+=== Testing Smart Contracts
+
+((("entornos","para el desarrollo de contratos inteligentes", id="ix_appdx-dev-tools-asciidoc11", range="startofrange")))((("contratos inteligentes","entornos de prueba", id="ix_appdx-dev-tools-asciidoc12", range="startofrange")))((("entornos de prueba","para el desarrollo de contratos inteligentes", id="ix_appdx-dev-tools-asciidoc13", range="startofrange")))Hay varios entornos de prueba de uso común para el desarrollo de contratos inteligentes, resumidos en la <<testing_frameworks_table>>:
+
+[[testing_frameworks_table]]
+[options="header"]
+.Resumen de entornos de prueba para contratos inteligentes
+|=======
+|Entorno | Lenguaje(s) de Prueba    | Entorno de Pruebas | Emulador de Cadena       | Website 
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.status.im/docs/[]
+|Dapp      | Solidity            | +ds-test+ (custom)  | +ethrun+ (Parity)      | https://dapp.tools/dapp/[]
+|Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
+|=======
+
+
+Truffle:: ((("Truffle","como entorno de pruebas")))Truffle permite que las pruebas unitarias se escriban en JavaScript (basándose en Mocha) o Solidity. Estas pruebas se ejecutan contra Ganache.
+
+Embark:: ((("Embark")))Embark se integra con Mocha para ejecutar pruebas unitarias escritas en JavaScript. Las pruebas, a su vez, se ejecutan contra contratos desplegados en TestRPC/Ganache. El entorno Embark implementa automáticamente contratos inteligentes y los volverá a desplegar automáticamente cuando se modifiquen. También realiza un seguimiento de los contratos desplegados y los despliega solo cuando realmente se necesita. Embark incluye una biblioteca de pruebas para ejecutar y probar rápidamente nuestros contratos en un EVM, con funciones como +assert.equal+. El comando +embark test+ ejecutará cualquier archivo de prueba en el directorio _test_.
+
+Dapp:: ((("Dapp")))Dapp usa el código nativo de Solidity (una biblioteca llamada +ds-test+) y una biblioteca Rust construida por Parity llamada +ethrun+ para ejecutar el código binario de Ethereum y luego verificar las correcciones bajo el paradigma "assert". La biblioteca +ds-test+ proporciona funciones "assert" para validar la corrección y los eventos para registrar datos en la consola.
++
+Las funciones tipo "assert" incluyen:
++
+----
+assert(bool condición)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address esperada)
+----
++
+Los comandos de registro llevarán la información en la consola, lo que los hará útiles para depurar:
++
+----
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 llave, bytes32 valor)
+log_named_address(bytes32 llave, address valor)
+log_named_int(bytes32 llave, int valor)
+log_named_uint(bytes32 llave, uint valor)
+log_named_decimal_int(bytes32 llave, int valor, uint decimales)
+log_named_decimal_uint(bytes32 llave, uint valor, uint decimales)
+----
+
+Populus:: ((("Populus")))Populus usa Python y su propio emulador de cadena de bloques, para ejecutar contratos escritos en Solidity. Las pruebas unitarias están escritas en Python con la biblioteca +pytest+. Populus admite la redacción de contratos específicamente para pruebas. Estos nombres de archivo para los contratos deben coincidir con el patrón global _Test*.sol_ y estar ubicados en cualquier lugar del directorio de pruebas del proyecto, _tests_.
+
+
+[[on_blockchain_testing_sec]]
+==== Pruebas en la Cadena de Bloques
+
+((("cadena de bloques","pruebas en-la-cadena-de-bloques")))((("entornos de pruebas","pruebas en-la-cadena-de-bloques")))Aunque la mayoría de las pruebas no deberían ocurrir sobre contratos ya desplegados, se puede verificar el comportamiento de un contrato a través de clientes de Ethereum. Los siguientes comandos se pueden utilizar para evaluar el estado de un contrato inteligente. Estos comandos deben escribirse en la terminal +geth+, aunque cualquier consola web3 también los admitirá.
+
+Para obtener la dirección de un contrato en __++txhash++__, úsese:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getTransactionReceipt(<em>txhash</em>);
+</pre>
+++++
+
+
+Este comando obtiene el código de un contrato desplegado en __++contractaddress++__; esto se puede utilizar para verificar la implementación adecuada:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getCode(<em>contractaddress</em>)
+</pre>
+++++
+
+Esto obtiene los registros completos del contrato ubicados en la address especificada en __++options++__, que es útil para ver el historial de invocaciones de un contrato:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getPastLogs(<em>options</em>)
+</pre>
+++++
+
+Finalmente, este comando obtiene el almacenamiento ubicado en __++address++__ a partir de la data ubicada en el indicador igual a __++position++__:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getStorageAt(<em>address</em>, <em>position</em>)
+</pre>
+++++
+
+[[ganache]]
+==== Ganache: Una Cadena de Bloques de Prueba Local
+
+((("Ganache","una cadena de bloques local de pruebas")))Ganache es una cadena de bloques de prueba local que puede utilizarse para desplegar contratos, desarrollar sus aplicaciones y ejecutar pruebas. Está disponible como una aplicación de escritorio (con una interfaz gráfica de usuario) para Windows, macOS y Linux. También está disponible como una utilidad de línea de comandos llamada +ganache-cli+. Para obtener más detalles e instrucciones de instalación para la aplicación de escritorio de Ganache, consulte https://truffleframework.com/ganache [].
+
+El código abierto de +ganache-cli+ se puede encontrar en https://github.com/trufflesuite/ganache-cli/ [].
+
+Para instalar la línea de comandos de +ganache-cli+, úsese +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g ganache-cli</strong>
+</pre>
+++++
+
+Se puede usar +ganache-cli+ para iniciar una cadena de bloques local para realizar pruebas de la siguiente manera:
+
+++++
+<pre data-type="programlisting">
+$ <strong>ganache-cli \
+  --networkId=3 \
+  --port="8545" \
+  --verbose \
+  --gasLimit=8000000 \
+  --gasPrice=4000000000;</strong>
+</pre>
+++++
+
+Algunas notas sobre esta línea de comandos:
+
+* [ ] Verifique que los valores de las banderas `--networkId` y `--port` coincidan con su configuración en _truffle.js_.
+* [ ] Verifique que el valor del banderín `--gasLimit` coincida con el último límite de gas de la red principal (por ejemplo, 8,000,000 unidades de gas) que se muestra en https://ethstats.net para evitar encontrar excepciones de &#x201c;falta de gas&#x201d; innecesariamente. Tenga en cuenta que un `--gasPrice` de +4000000000+ representa un precio del gas de 4 Gwei.
+* [ ] Opcionalmente, podemos ingresar un valor para el banderín `--mnemonic` para restaurar una billetera HD anterior y sus direcciones asociadas.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc13")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc12")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc11")))

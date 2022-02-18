@@ -1,0 +1,732 @@
+[[decentralized_applications_chap]]
+== Decentralizované aplikace (DApps)
+
+((("DApps (decentralized applications)", id="ix_12dapps-asciidoc0", range="startofrange")))V této kapitole prozkoumáme svět _decentralizovaných aplikací_ nebo _DApps_. Od počátků Etherea byla vize zakladatelů mnohem širší než „chytré kontrakty“: ((("web3")))ne méně než znovuobjevení webu a vytvoření nového světa DApps, vhodně nazývaného _web3_. Chytré kontrakty jsou způsob, jak decentralizovat řídicí logiku a platební funkce aplikací. Web3 DApps jsou o decentralizaci všech ostatních aspektů aplikace: úložiště, zasílání zpráv, pojmenování atd. (Viz <<image_web3_suite>>).
+
+[[image_web3_suite]]
+.Web3: Decentralizovaný web využívající chytré kontrakty a technologie P2P
+image::images/web3suite.png["Web3: Decentralizovaný web využívající chytré kontrakty a technologie P2P"]
+
+[WARNING]
+====
+Zatímco „decentralizované aplikace“ jsou odvážnou vizí budoucnosti, termín „DApp“ je často používán pro každý chytrý kontrakt s webovým rozhraním. Některé z těchto tzv. DApps jsou vysoce centralizované aplikace (CApps?). Dejte si pozor na falešné DApps!
+====
+
+V této kapitole budeme vyvíjet a zavádět ukázkovou aukční platformu DApp. Zdrojový kód najdete v úložišti knihy na adrese http://bit.ly/2DcmjyA[_code/auction_dapp_]. Podíváme se na každý aspekt aukční aplikace a uvidíme, jak můžeme aplikaci co nejvíce decentralizovat. Nejprve se však podrobněji podíváme na definující vlastnosti a výhody DApps.
+
+[[what_is_a_dapp_sec]]
+=== Co je to DApp?
+
+((("DApps (decentralized applications)","elements of", id="ix_12dapps-asciidoc1", range="startofrange")))DApp je aplikace, která je většinou nebo zcela decentralizovaná.
+
+Zvažte všechny možné aspekty aplikace, která můžou být decentralizované:
+
+* Backend software (aplikační logika)
+* Frontend software (uživatelské rozhraní)
+* Datové úložiště
+* Komunikace zpráv
+* Rozlišení názvu
+
+Každý z nich může být poněkud centralizovaný nebo trochu decentralizovaný. Například frontend může být vyvinut jako webová aplikace, která běží na centralizovaném serveru nebo jako mobilní aplikace, která běží na vašem zařízení. Backend a úložiště mohou být na soukromých serverech a proprietárních databázích, nebo můžete použít chytrý kontrakt a úložiště P2P.
+
+Při vytváření DApp existuje mnoho výhod, které typická centralizovaná architektura nemůže poskytnout:
+
+Pružnost::
+Protože obchodní logika je řízena chytrým kontraktem, backend DApp bude plně distribuován a spravován na bločenkové platformě. Na rozdíl od aplikace nasazené na centralizovaném serveru nebude mít DApp žádné prostoje a bude nadále k dispozici, dokud bude platforma stále funkční.
+
+Transparentnost::
+Charakter bločenkové DApp umožňuje každému nahlédnout do kódu a být si jistější jeho funkcí. Jakákoli interakce s DApp bude uložena navždy v bločence
+
+Odolnost proti cenzuře::
+Dokud má uživatel přístup k Ethereum uzlu (v případě potřeby jeden spustí), bude vždy schopen interagovat s DApp bez rušení centralizovanou kontrolou. Žádný poskytovatel služeb nebo dokonce vlastník chytrého kontraktu nemůže změnit kód, jakmile je nasazen v síti.
+
+V současném Ethereum ekosystému dnes existuje jen velmi málo skutečně decentralizovaných aplikací - většina z nich se na svou část provozu stále spoléhá na centralizované služby a servery. V budoucnu očekáváme, že bude možné, aby každá část jakéhokoli DApp byla provozována plně decentralizovaným způsobem.
+
+[[blockchain_smart_contracts_sec]]
+==== Backend (chytrý kontrakt)
+
+((("DApps (decentralized applications)","backend (smart contract)")))((("smart contracts","as DApp backend")))V DApp se chytré kontrakty používají k ukládání obchodní logiky (kód programu) a související stav vaší aplikace. Můžete si představit chytrý kontrakt, která nahradí komponentu na straně serveru (aka „backend“) v běžné aplikaci. Toto je samozřejmě přílišné zjednodušení. Jedním z hlavních rozdílů je to, že jakýkoli výpočet provedený v chytrém kontraktu je velmi nákladný, a proto by měl být co nejmenší. Je proto důležité určit, které aspekty aplikace potřebují důvěryhodnou a decentralizovanou prováděcí platformu.
+
+Ethereum chytré kontrakty vám umožňují stavět architektury, ve kterých síť chytrých kontraktů se mezi sebou volá a předává si data, čte a zapisuje své vlastní stavové proměnné, jak jsou v provozu, přičemž jejich složitost je omezena pouze limitem plynu v bloku. Po nasazení chytrého kontraktu by vaši obchodní logiku mohlo v budoucnu dobře využít mnoho dalších vývojářů.
+
+Jedním z hlavních aspektů návrhu architektury chytrého kontraktu je nemožnost změnit kód chytrého kontraktu po jeho nasazení. Může být vymazán, pokud je programován s přístupnou instrukcí +SELFDESTRUCT+ , ale kromě úplného odstranění nelze kód nijak změnit.
+
+Druhým hlavním aspektem návrhu architektury chytrého kontraktu je velikost DApp. Skutečně velký monolitický chytrý kontrakt může stát hodně plynu při jeho zavedení a použití. Některé aplikace se proto mohou rozhodnout pro mimo bločenkový výpočet a externí zdroj dat. Mějte však na paměti, že základní obchodní logika DApp závisející na externích datech (např. z centralizovaného serveru) znamená, že vaši uživatelé budou muset těmto externím zdrojům důvěřovat.
+
+[[front_end_web_ui_cec]]
+==== Frontend (webové uživatelské rozhraní)
+
+((("DApps (decentralized applications)","frontend (web user interface)")))((("user interface, as DApp frontend")))((("web user interface, as DApp frontend")))Na rozdíl od obchodní logiky DApp, která vyžaduje, aby vývojář porozuměl EVM a novým jazykům, jako je Solidity, může rozhraní DApp na straně klienta používat standardní webové technologie (HTML, CSS, JavaScript atd.). To umožňuje tradičnímu vývojáři webu používat známé nástroje, knihovny a rámce. Interakce s Ethereem, jako je podepisování zpráv, odesílání transakcí a správa klíčů, jsou často prováděny prostřednictvím rozšíření webového prohlížeče, jako je MetaMask (viz <<intro_chapter>>).
+
+I když je možné vytvořit také mobilní DApp, v současné době existuje jen málo zdrojů, které by pomohly vytvořit mobilní rozhraní DApp, zejména kvůli nedostatku mobilních klientů, kteří mohou sloužit jako odlehčený klient s funkcemi správy klíčů.
+
+Frontend je obvykle propojen s programem Ethereum prostřednictvím knihovny JavaScript _web3.js_, která je spojena s prostředky frontendu a je obsluhována v prohlížeči webovým serverem.
+
+[[data_storage_sec]]
+==== Úložiště dat
+
+((("DApps (decentralized applications)","data storage")))((("data storage","DApps and")))Vzhledem k vysokým nákladům na plyn a aktuálně nízkému limitu plynu v bloku nejsou chytré kontrakty vhodné pro ukládání nebo zpracování velkého množství dat. Proto většina DApps využívá služby ukládání dat mimo bločenku, což znamená, že ukládají objemná data mimo Ethereum bločenku, na platformě pro ukládání dat. Tato platforma pro ukládání dat může být centralizována (například typická cloudová databáze) nebo mohou být data decentralizována, ukládána na platformě P2P, jako je IPFS nebo na vlastní platformě Ethereum Swarm.
+
+Decentralizované úložiště P2P je ideální pro ukládání a distribuci velkých statických dat, jako jsou obrázky, videa a zdroje rozhraní frontend webového rozhraní (HTML, CSS, JavaScript atd.). Podíváme se na několik dalších možností.
+
+[[ipfs_sec]]
+===== IPFS
+
+((("DApps (decentralized applications)","IPFS and")))((("data storage","IPFS")))((("IPFS (InterPlanetary File System)"))) _Celoplanetární souborový systém_ (Inter-Planetary File System; IPFS) je decentralizovaný, obsahem adresovatelný úložný systém, který distribuuje uložené objekty mezi  uzly v P2P síti. „Adresovatelným obsahem“ se rozumí, že každá část obsahu (souboru) je hašovaná a haš se používá k identifikaci tohoto souboru. Poté můžete načíst libovolný soubor z libovolného uzlu IPFS tak, že jej požádáte o soubor s daným hašem.
+
+Cílem IPFS je nahradit HTTP jako zvolený protokol pro doručování webových aplikací. Místo ukládání webové aplikace na jeden server jsou soubory ukládány do IPFS a lze je získat z libovolného uzlu IPFS.
+
+Více informací o IPFS naleznete na https://ipfs.io[].
+
+
+[[swarm_sec]]
+===== Swarm
+
+((("DApps (decentralized applications)","Swarm and")))((("data storage","Swarm")))((("Swarm")))Swarm je další úložný systém P2P, který lze adresovat, podobně jako IPFS. Swarm byl vytvořen Nadací Ethereum, jako součást sady nástrojů Go-Ethereum. Stejně jako IPFS umožňuje ukládat soubory, které jsou šířeny a replikovány uzly Swarm. K libovolnému souboru Swarm se dostanete tak, že na něj odkazuje haš. Funkce Swarm umožňuje přístup k webové stránce z decentralizovaného systému P2P místo z centrálního webového serveru.
+
+Domovská stránka Swarm je sama uložena ve službě Swarm a je přístupná ve vašem uzlu Swarm nebo v bráně:
+https://swarm-gateways.net/bzz:/theswarm.eth/[].
+
+
+[[interdapp_coammunications_protocol_sec]]
+==== Decentralizované komunikační protokoly zpráv
+
+((("DApps (decentralized applications)","decentralized message communication protocols")))((("message communication protocols")))Další hlavní součástí každé aplikace je meziprocesová komunikace. To znamená, že si lze vyměňovat zprávy mezi aplikacemi, mezi různými instancemi aplikace nebo mezi uživateli aplikace. Tradičně se toho dosahuje spoléháním na centralizovaný server. Existuje však celá řada decentralizovaných alternativ k serverovým protokolům, které nabízejí zasílání zpráv prostřednictvím sítě P2P. ((("Whisper")))Nejvýznamnějším protokolem pro zasílání P2P zpráv pro DApps je http://bit.ly/2CSls5h[_Whisper_], který je součástí Go-Ethereum sady nástrojů Nadace Ethereum.
+
+Posledním aspektem aplikace, kterou lze decentralizovat, je rozlišení názvu. Podrobněji se podíváme na Ethereum jmennou službu dále v této kapitole; teď se však podívejme na příklad. (((range="endofrange", startref="ix_12dapps-asciidoc1")))
+
+[[auction_dapp_intro]]
+=== Základní příklad DApp: Aukční DApp
+
+((("Auction DApp", id="ix_12dapps-asciidoc2", range="startofrange")))((("DApps (decentralized applications)","Auction DApp example", seealso="Auction DApp", id="ix_12dapps-asciidoc3", range="startofrange")))IV této sekci začneme budovat příklad DApp, abychom prozkoumali různé decentralizační nástroje. Náš DApp bude decentralizovanou aukci.
+
+((("deed","Auction DApp and")))((("nonfungible tokens (NFTs)","Auction DApp and")))Aukční DApp umožňuje uživateli zaregistrovat „vlastnickou listinu tokenu“ token, který představuje nějaké jedinečné aktivum, například dům, auto, ochranná známka atd. Jakmile je token zaregistrován, převede se vlastnictví tokenu na aukční DApp, což umožňuje jeho uvedení na prodej. Aukční DApp obsahuje seznam všech registrovaných tokenů, což umožňuje ostatním uživatelům zadávat nabídky. Během každé aukce se mohou uživatelé připojit k chatovací místnosti vytvořené speciálně pro tuto aukci. Po dokončení aukce je vlastnictví tokenu vlastnictví převedeno na vítěze aukce.
+
+Celkový aukční proces je uveden v <<auction_dapp_overview>>;.
+
+Hlavní komponenty naší aukční DApp jsou:
+
+* Chytrý kontrakt implementující ERC721 nezaměnitelné „vlastnické listiny“ tokenů (pass:[<code><span class="keep-together">DeedRepository</span></code>])
+* Chytrý kontrakt provádějící dražbu (+AuctionRepository+) na prodej vlastnických listin
+* Webové rozhraní využívající JavaScript rámec Vue / Vuetify
+* Knihovna _web3.js_ pro připojení k bločence Etherea (přes MetaMask nebo jiné klienty)
+* Klient Swarm pro ukládání zdrojů, jako jsou obrázky
+* Klient Whisper, pro vytvoření chatovací místnosti pro pro všechny účastníky aukce
+
+[[auction_dapp_overview]]
+.Aukce DApp: Jednoduchý příklad aukční DApp
+image::images/auction_diagram.png["Aukce DApp: Jednoduchý příklad aukční DApp"]
+
+Zdrojový kód aukční DApp najdete http://bit.ly/2DcmjyA[v úložišti knihy].
+
+
+==== Aukční DApp: Backend chytrý kontrakt
+
+((("Auction DApp","backend smart contracts", id="ix_12dapps-asciidoc4", range="startofrange")))((("smart contracts","as DApp backend", id="ix_12dapps-asciidoc5", range="startofrange")))Náš příklad aukční DApp je podporován dvěma chytrými kontrakty, které musíme nasadit na Ethereum bločenku, abychom podporovali aplikaci: pass:[<code><span class="keep-together">AuctionRepository</span></code>] a +DeedRepository+.
+
+Začněme tím, že se podíváme na +DeedRepository+ v <<deed_repository_code>>. This ERC721 kontrakt je nezaměnitelný token (viz <<erc721>>).
+
+[[deed_repository_code]]
+.DeedRepository.sol: Token ERC721 pro použití v aukci
+====
+[source,solidity]
+----
+include::code/auction_dapp/backend/contracts/DeedRepository.sol[]
+----
+====
+
+Jak vidíte, kontrakt +DeedRepository+ je přímá implementace tokenu kompatibilního s ERC721.
+
+Naše aukční DApp používá kontrakt +DeedRepository+ k vydávání a sledování tokenů pro každou aukci. Aukce samotná je řízena kontraktem +AuctionRepository+. Tento kontrakt je příliš dlouhý na to, aby zde byl zahrnut v plném rozsahu, ale <<auction_repository_code>> ukazuje hlavní definici struktury kontraktu a dat. Celý kontrakt je k dispozici v https://bit.ly/2IaOo9i[GitHub úložišti knihy].
+
+[[auction_repository_code]]
+.AuctionRepository.sol: Hlavní chytrý kontrakt aukční DApp
+====
+[source,solidity]
+----
+contract AuctionRepository {
+
+    // Pole se všemi aukcemi
+    Auction[] public auctions;
+
+    // Mapování indexu aukce na uživatelské nabídky
+    mapping(uint256 => Bid[]) public auctionBids;
+
+    // Mapování z vlastníka na seznam vlastněných aukcí
+    mapping(address => uint[]) public auctionOwner;
+
+    // Struktura nabídek obsahuje uchazeče a částku
+    struct Bid {
+        address from;
+        uint256 amount;
+    }
+
+    // Struktura aukce, která obsahuje všechny požadované informace
+    struct Auction {
+        string name;
+        uint256 blockDeadline;
+        uint256 startPrice;
+        string metadata;
+        uint256 deedId;
+        address deedRepositoryAddress;
+        address owner;
+        bool active;
+        bool finalized;
+    }
+----
+====
+
+Kontrakt +AuctionRepository+ spravuje všechny aukce s následujícími funkcemi:
+
+[source,solidity]
+----
+getCount()
+getBidsCount(uint _auctionId)
+getAuctionsOf(address _owner)
+getCurrentBid(uint _auctionId)
+getAuctionsCountOfOwner(address _owner)
+getAuctionById(uint _auctionId)
+createAuction(address _deedRepositoryAddress, uint256 _deedId,
+              string _auctionTitle, string _metadata, uint256 _startPrice, 
+              uint _blockDeadline)
+approveAndTransfer(address _from, address _to, address _deedRepositoryAddress,
+                   uint256 _deedId)
+cancelAuction(uint _auctionId)
+finalizeAuction(uint _auctionId)
+bidOnAuction(uint _auctionId)
+----
+
+Tyto kontrakty můžete nasadit do Ethereum bločenky dle vašeho výběru (např. Ropsten) pomocí +truffle+ v úložišti knihy:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/backend</strong>
+$ <strong>truffle init</strong>
+$ <strong>truffle compile</strong>
+$ <strong>truffle migrate --network ropsten</strong>
+</pre>
+++++
+
+===== Správa DApp
+
+Pokud si přečtete dva chytré kontrakty Aukčního DApp, všimnete si něčeho důležitého: neexistuje žádný zvláštní účet nebo role, která má nad DApp zvláštní oprávnění. Každá aukce má majitele s některými speciálními schopnostmi, ale aukční DApp sám nemá žádného privilegovaného uživatele.
+
+Toto je uvážená volba decentralizovat správu DApp a vzdát se jakékoli kontroly, jakmile bude nasazena. Některé DApps mají pro srovnání jeden nebo více privilegovaných účtů se speciálními schopnostmi, jako je například schopnost ukončit kontrakt DApp, přepsat nebo změnit jeho konfiguraci nebo „vetovat“ určité operace. Obvykle jsou tyto funkce správy zavedeny v DApp, aby se zabránilo neznámým problémům, které mohou nastat v důsledku chyby.
+
+Otázka privilegovaného účtu je obzvláště obtížná, protože představuje dvojsečný meč. Na jedné straně jsou privilegované účty nebezpečné; v případě ohrožení mohou narušit zabezpečení DApp. Na druhou stranu bez privilegovaného účtu neexistují žádné možnosti obnovy, pokud je nalezena chyba. Obě tato rizika jsme viděli v Ethereum DApps. ((("DAO (Decentralized Autonomous Organization)","reentrancy attack")))V případě The DAO (<<real_world_example_the_dao>> a <<ethereum_fork_history>>) existovaly některé privilegované účty zvané „kurátoři“, ale jejich možnosti byly velmi omezené. Tyto účty nebyly schopny přepsat prostředky, které útočník DAO vybral. V novějším případě zažila decentralizovaná burza Bancor masivní krádež, protože byl ohrožen privilegovaný účet pro správu. Ukázalo se, že Bancor nebyl tak decentralizovaný, jak se původně předpokládalo.
+
+Při vytváření DApp se musíte rozhodnout, zda chcete učinit chytré kontrakty skutečně nezávislými, spustit je a poté je ponechat bez kontroly, nebo si vytvořit privilegované účty a vystavit se riziku ohrožení. Každá volba nese riziko, ale z dlouhodobého hlediska nemohou skutečné DApps mít specializovaný přístup pro privilegované účty - to není decentralizované. (((range="endofrange", startref="ix_12dapps-asciidoc5")))(((range="endofrange", startref="ix_12dapps-asciidoc4")))
+
+==== Aukční DApp: Frontend uživatelské rozhraní
+
+((("Auction DApp","frontend user interface")))Jakmile jsou kontrakty aukční DApp nasazeny, můžete s nimi komunikovat pomocí své oblíbené JavaScript příkazové řádky a web3.js nebo jiné knihovny web3. Většina uživatelů však bude potřebovat snadno použitelné rozhraní. Naše uživatelské rozhraní Aukčního DApp je vytvořeno pomocí rámce JavaScript Vue2 / Vuetify od společnosti Google.
+
+Kód uživatelského rozhraní najdete ve složce _code/auction_dapp/frontend_ v https://github.com/ethereumbook/ethereumbook[úložišti knihy]. Adresář má následující strukturu a obsah:
+
+----
+frontend/
+|-- build
+|   |-- build.js
+|   |-- check-versions.js
+|   |-- logo.png
+|   |-- utils.js
+|   |-- vue-loader.conf.js
+|   |-- webpack.base.conf.js
+|   |-- webpack.dev.conf.js
+|   `-- webpack.prod.conf.js
+|-- config
+|   |-- dev.env.js
+|   |-- index.js
+|   `-- prod.env.js
+|-- index.html
+|-- package.json
+|-- package-lock.json
+|-- README.md
+|-- src
+|   |-- App.vue
+|   |-- components
+|   |   |-- Auction.vue
+|   |   `-- Home.vue
+|   |-- config.js
+|   |-- contracts
+|   |   |-- AuctionRepository.json
+|   |   `-- DeedRepository.json
+|   |-- main.js
+|   |-- models
+|   |   |-- AuctionRepository.js
+|   |   |-- ChatRoom.js
+|   |   `-- DeedRepository.js
+|   `-- router
+|       `-- index.js
+----
+
+Jakmile nasadíte kontrakty, upravte konfiguraci frontendu v _frontend/src/config.js_ a zadejte adresy kontraktů+DeedRepository+ a +AuctionRepository+ podle nasazení. Frontend aplikace také potřebuje přístup k Ethereum uzlu nabízejícímu JSON-RPC a rozhraní WebSockets. Jakmile nakonfigurujete rozhraní, spusťte jej pomocí webového serveru v místním počítači:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install</strong>
+$ <strong>npm run dev</strong>
+</pre>
+++++
+
+Bude spuštěn frontend aukce DApp, který bude přístupný prostřednictvím libovolného webového prohlížeče na adrese http://localhost:8080.
+
+Pokud vše půjde dobře, měla by se zobrazit obrazovka uvedená v <<auction_dapp_screen>> která ilustruje aukční DApp spuštěný ve webovém prohlížeči.
+
+[[auction_dapp_screen]]
+.Uživatelské rozhraní aukční DApp
+image::images/auction_dapp_home_screen.png["Uživatelské rozhraní aukční DApp"]
+
+=== Další decentralizace aukčního DApp
+
+((("Auction DApp","further decentralizing of")))Náš DApp je již docela decentralizovaný, ale můžeme věci vylepšit.
+
+Kontrakt +AuctionRepository+ funguje nezávisle na jakémkoli dohledu, otevřeně pro kohokoli. Jakmile je nasazen, nemůže být zastaven, ani nemůže být kontrolována žádná aukce. Každá aukce má samostatnou chatovací místnost, která umožňuje komukoli komunikovat o aukci bez cenzury nebo identifikace. Různá aukční aktiva, jako je popis a související obrázek, jsou uložena na Swarm, takže je obtížné je cenzurovat nebo blokovat.
+
+Kdokoli může komunikovat s DApp vytvořením transakcí ručně nebo spuštěním Vue frontend na svém lokálním počítači. Samotný kód DApp má otevřený zdroj a je skupinově vyvíjen se na veřejném úložišti.
+
+Pro decentralizaci a odolnost tohoto DApp můžeme udělat dvě věci:
+
+* Uložit celý kód aplikace do Swarm nebo IPFS.
+* Přístupovat k DApp odkazem na jméno pomocí služby Ethereum jmenou službu.
+
+První možnost prozkoumáme v další části a druhou možnost uvedeme v <<ethereum_naming_system_ens>>.
+
+=== Uložení aukční DApp na Swarm
+
+((("Auction DApp","storing on Swarm", id="ix_12dapps-asciidoc6", range="startofrange")))((("Swarm","storing Auction DApp on", id="ix_12dapps-asciidoc7", range="startofrange"))) Představili jsme Swarm v <<swarm_sec>>, dříve v této kapitole. Naše aukční DApp již používá Swarm k uložení obrázku ikony pro každou aukci. Toto je mnohem efektivnější řešení než pokus o ukládání dat na Ethereum, což je drahé. Je také mnohem odolnější, než kdyby tyto obrázky byly uloženy v centralizované službě, jako je webový server nebo souborový server.
+
+Ale můžeme věci posunout ještě o krok dále. Můžeme uložit celý frontend samotného DApp ve službě Swarm a spustit jej přímo z uzlu Swarm, namísto spuštění webového serveru.
+
+==== Příprava Swarm
+
+((("Swarm","installing and initializing")))Abyste mohli začít, musíte nainstalovat Swarm a inicializovat uzel Swarm. Swarmj je součástí Go-Ethereum sady nástrojů Nadace Ethereum. Postupujte podle pokynů k instalaci Go-Ethereum v <<go_ethereum_geth>> nebo při instalaci binárního vydání Swarm postupujte podle pokynů v http://bit.ly/2Q75KXw[Swarm dokumentaci].
+
+Po instalaci Swarm si můžete ověřit, že funguje správně spuštěním příkazu +version+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm version</strong>
+Version: 0.3
+Git Commit: 37685930d953bcbe023f9bc65b135a8d8b8f1488
+Go Version: go1.10.1
+OS: linux
+</pre>
+++++
+
+Abyste mohli spustit Swarm, musíte mu sdělit, jak se připojit k instanci Geth, abyste získali přístup k JSON-RPC API. Začínáme podle pokynů v https://swarm-guide.readthedocs.io/en/latest/gettingstarted.html[Průvodci začátečníka].
+
+Když spustíte Swarm, měli byste vidět něco takového:
+
+----
+Maximum peer count                       ETH=25 LES=0 total=25
+Starting peer-to-peer node               instance=swarm/v0.3.1-225171a4/linux...
+connecting to ENS API                    url=http://127.0.0.1:8545
+swarm[5955]: [189B blob data]
+Starting P2P networking
+UDP listener up                          self=enode://f50c8e19ff841bcd5ce7d2d...
+Updated bzz local addr                   oaddr=9c40be8b83e648d50f40ad3... uaddr=e
+Starting Swarm service
+9c40be8b hive starting
+detected an existing store. trying to load peers
+hive 9c40be8b: peers loaded
+Swarm network started on bzz address: 9c40be8b83e648d50f40ad3d35f...
+Pss started
+Streamer started
+IPC endpoint opened                      url=/home/ubuntu/.ethereum/bzzd.ipc
+RLPx listener up                         self=enode://f50c8e19ff841bcd5ce7d2d...
+----
+
+Připojením k místnímu webovému rozhraní Swarm brány můžete potvrdit, že váš uzel Swarm funguje správně:
+http://localhost:8500.
+
+Měli byste vidět obrazovku jako na <<image_swarm_gateway>> a být schopni dotazovat se na libovolný Swarm haš nebo ENS jméno.
+
+[[image_swarm_gateway]]
+.Swarm  brána na localhost
+image::images/swarm-gateway.png["Swarm brána na localhost"]
+
+==== Nahrávání souborů do Swarm
+
+((("Swarm","uploading files to", id="ix_12dapps-asciidoc8", range="startofrange")))Jakmile bude spuštěn váš místní uzel a brána Swarm, můžete nahrát do Swarm soubory a ty budou přístupné na libovolném uzlu Swarm, jednoduše odkazem na haš souboru.
+
+Vyzkoušejte to nahráním souboru:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm up code/auction_dapp/README.md</strong>
+ec13042c83ffc2fb5cb0aa8c53f770d36c9b3b35d0468a0c0a77c97016bb8d7c
+</pre>
+++++
+
+Swarm nahrál soubor _README.md_ a vrátil hash, který můžete použít pro přístup k souboru z libovolného uzlu Swarm. Můžete například použít https://bit.ly/2znWUP9[veřejnou Swarm bránu].
+
+I když je nahrávání jednoho souboru poměrně jednoduché, nahrání celého rozhraní DApp je o něco složitější. Je to proto, že různé prostředky DApp (HTML, CSS, JavaScript, knihovny atd.) Mají vložené odkazy na sebe. Webový server obvykle převádí adresy URL do místních souborů a poskytuje správné zdroje. Totéž můžeme dosáhnout pro Swarm zabalením našeho DApp.
+
+V aukční DApp je skript pro zabalení všech zdrojů:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd code/auction_dapp/frontend</strong>
+$ <strong>npm run build</strong>
+
+> <strong>frontend@1.0.0 build /home/aantonop/Dev/ethereumbook/code/auction_dapp/frontend</strong>
+> <strong>node build/build.js</strong>
+
+Hash: 9ee134d8db3c44dd574d
+Version: webpack 3.10.0
+Time: 25665ms
+Asset     Size
+static/js/vendor.77913f316aaf102cec11.js  1.25 MB
+static/js/app.5396ead17892922422d4.js   502 kB
+static/js/manifest.87447dd4f5e60a5f9652.js  1.54 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css  1.13 kB
+static/css/app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map  2.54 kB
+static/js/vendor.77913f316aaf102cec11.js.map  4.74 MB
+static/js/app.5396ead17892922422d4.js.map   893 kB
+static/js/manifest.87447dd4f5e60a5f9652.js.map  7.86 kB
+index.html  1.15 kB
+
+Build complete.
+</pre>
+++++
+
+Výsledkem tohoto příkazu bude nový adresář _code/auction_dapp/frontend/dist_, který obsahuje celý frontend aukčního DApp, zabalený dohromady:
+
+----
+dist/
+|-- index.html
+`-- static
+    |-- css
+    |   |-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css
+    |   `-- app.0e50d6a1d2b1ed4daa03d306ced779cc.css.map
+    `-- js
+        |-- app.5396ead17892922422d4.js
+        |-- app.5396ead17892922422d4.js.map
+        |-- manifest.87447dd4f5e60a5f9652.js
+        |-- manifest.87447dd4f5e60a5f9652.js.map
+        |-- vendor.77913f316aaf102cec11.js
+        `-- vendor.77913f316aaf102cec11.js.map
+
+----
+
+Nyní můžete nahrát celý DApp do Swarm pomocí příkazu +up+ a volitelného parametru pro rekurzi +--recursive+ . Zde také řekneme Swarmu, že +index.html+ je výchozí cesta +defaultpath+ pro načtení této DApp:
+
+++++
+<pre data-type="programlisting">
+$ <strong>swarm --bzzapi http://localhost:8500 --recursive \
+  --defaultpath dist/index.html up dist/</strong>
+
+ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581
+</pre>
+++++
+
+Nyní je celý náš aukční DApp hostován ve službě Swarm a je přístupný prostřednictvím Swarm URL:(((range="endofrange", startref="ix_12dapps-asciidoc8")))
+
+++++
+<ul class="simplelist">
+<li><em>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+Udělali jsme určitý pokrok v decentralizaci naší DApp, ale ztížili jsme použití. Taková adresa URL je mnohem méně uživatelsky přívětivá než pěkné jméno, jako je __auction_dapp.com__. Jsme nuceni obětovat použitelnost, abychom získali decentralizaci? Ne nutně. V další části prozkoumáme jmennou službu Etherea, která nám umožňuje používat snadno čitelná jména, ale stále zachovává decentralizovanou povahu naší aplikace. (((range="endofrange", startref="ix_12dapps-asciidoc7")))(((range="endofrange", startref="ix_12dapps-asciidoc6")))
+
+[[ethereum_naming_system_ens]]
+=== Ethereum jmenná služba (ENS)
+
+((("Auction DApp","ENS and", id="ix_12dapps-asciidoc9", range="startofrange")))((("ENS (Ethereum Name Service)", id="ix_12dapps-asciidoc10", range="startofrange")))((("ENS (Ethereum Name Service)","DApps and", id="ix_12dapps-asciidoc11", range="startofrange")))Můžete navrhnout nejlepší chytrý kontrakt na světě, ale pokud uživatelům neposkytnete dobré rozhraní, nebudou mít k němu přístup.
+
+Na tradičním internetu nám doménový jmenný systém (Domain Name System; DNS) umožňuje používat v prohlížeči lidsky čitelná jména a převádět je na IP adresy nebo jiné identifikátory v zákulisí. Na Ethereum bločence řeší _Ethereum jmenný systém_ (Ethereum Naming System; ENS) stejný problém, ale decentralizovaným způsobem.
+
+Například dárcovská adresa Nadace Ethereum Foundation je +0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359+; v peněžence, která podporuje ENS, je to jednoduše +ethereum.eth+.
+
+ENS je víc než chytrý kontrakt; je to samotný základní DApp, nabízející decentralizovanou jmennou službu. ENS je navíc podporována řadou DApps pro registraci, správu a aukce registrovaných jmen. ENS ukazuje, jak můžou DApps spolupracovat: je to DApp postavený tak, aby sloužil jiným DApps, podporovaný ekosystémem DApps, zabudovaný v jiných DApps atd.
+
+V této části se podíváme na to, jak funguje ENS. Ukážeme vám, jak si můžete nastavit své vlastní jméno a propojit jej s peněženkou nebo Ethereum adresou, jak můžete vložit ENS do jiného DApp a jak můžete pomocí ENS pojmenovat své DApp prostředky, aby bylo jejich použití snadnější.
+
+==== Historie Ethereum jmenné služby
+
+((("ENS (Ethereum Name Service)","history of")))Registrace jména byla první neobvyklou aplikací bločenky, která byla propagována kryptoměnou Namecoin. Ethereum http://bit.ly/2Of1gfZ[Bílá kniha] dala jako jeden ze svých příkladů použití dvouřádkový registrační systém typu Namecoin.
+
+Včasná vydání Geth a C++ Ethereum klienta měla vestavěný kontrakt +namereg+ (již se nepoužívá) a bylo vytvořeno mnoho návrhů a ERC pro jmenné služby, ale teprve tehdy, když Nick Johnson začal pracovat pro Nadaci Ethereum v roce 2016 a vzal projekt pod svá křídla, seriózní práce na registrátorovi začaly.
+
+ENS byl spuštěn na den Hvězdných válek, 4. května 2017 (po neúspěšném pokusu o spuštění na den čísla Pi, 15. března).
+
+==== Specifikace ENS
+
+((("ENS (Ethereum Name Service)","design of", id="ix_12dapps-asciidoc12", range="startofrange")))ENS je ((("ENS (Ethereum Name Service)","specification")))specifikováno zejména ve třech návrzích na vylepšení Etherea: EIP-137, který specifikuje základní funkce ENS; EIP-162, který popisuje aukční systém pro kořen +.eth+; a EIP-181, který určuje reverzní rozlišení adres.
+
+ENS se řídí „sendvičovou“ filozofií návrhu: velmi jednoduchá vrstva dole, následovaná vrstvami složitějšího, ale vyměnitelného kódu, s velmi jednoduchou horní vrstvou, která udržuje všechny prostředky na samostatných účtech.
+
+==== Dolní vrstva: vlastníci jmen a překladače
+
+((("ENS (Ethereum Name Service)","bottom layer: name owners and resolvers", id="ix_12dapps-asciidoc13", range="startofrange")))ENS pracuje na „uzlech“ místo na lidsky čitelných jména: lidsky čitelné jméno je převedeno na uzel pomocí algoritmu „Namehash“.
+
+Základní vrstva ENS je chytře jednoduchý kontrakt (méně než 50 řádků kódu) definovaný v ERC137, který umožňuje pouze vlastníkům uzlů nastavovat informace o jejich jménech a vytvářet poduzly (ENS ekvivalent DNS subdomén).
+
+Jediné funkce na základní vrstvě jsou ty, které umožňují vlastníkovi uzlu nastavit informace o vlastním uzlu (konkrétně překladač, čas života nebo převést vlastnictví) a vytvořit vlastníky nových podřízených uzlů.
+
+===== Algoritmus Namehash
+
+((("ENS (Ethereum Name Service)","Namehash algorithm")))((("Namehash algorithm")))Namehash je rekurzivní algoritmus, který dokáže převést libovolné jméno na haš, který identifikuje jméno.
+
+„Rekurzivní“ znamená, že problém vyřešíme vyřešením podproblému, který je menším problémem stejného typu, a poté pomocí řešení podproblému vyřešíme původní problém.
+
+Namehash rekurzivně hašuje komponenty názvu a vytváří jedinečný řetězec pevné délky (nebo „uzel“) pro libovolnou platnou vstupní doménu. Například Namehash uzel +subdomain.example.eth+ je `keccak('<example.eth>' uzlu) + keccak ('<subdomain>') `. Dílčí problém, který musíme vyřešit, je spočítat uzel pro +example.eth+, což je ``keccak('<.eth>' node) + keccak('<example>')`. Abychom mohli začít, musíme vypočítat uzel pro +eth+, což je `keccak(<root node>) + keccak ('<eth>')`.
+
+Kořenový uzel je to, čemu říkáme „konec rekurze“ a samozřejmě jej nemůžeme definovat rekurzivně, jinak se algoritmus nikdy nezastaví! Kořenový uzel je definován jako „0x000000000000000000000000000000000000000000000000000000000000000000“ (32 nulových bajtů).
+
+Když to dáme celé dohromady, uzel +subdomain.example.eth+ je proto pass:[<code><span class="keep-together">keccak</span>(keccak(keccak(0x0...0 + keccak('eth')) + keccak('example')) + keccak('subdomain'))</code>].
+
+Zobecněně, můžeme definovat funkci Namehash následovně (kořenový uzel nebo prázdný název, následovaný rekurzivním krokem):
+
+....
+namehash([]) = 0x0000000000000000000000000000000000000000000000000000000000000000
+namehash([label, ...]) = keccak256(namehash(...) + keccak256(label))
+....
+
+V Pythonu se to provede:
+
+....
+def namehash(name):
+  if name == '':
+    return '\0' * 32
+  else:
+    label, _, remainder = name.partition('.')
+    return sha3(namehash(remainder) + sha3(label))
+....
+
++Mastering-ethereum.eth+ bude tedy zpracováno následujícím způsobem:
+
+....
+namehash('mastering-ethereum.eth')
+⇒ sha3(namehash('eth') + sha3('mastering-ethereum'))
+⇒ sha3(sha3(namehash('') + sha3('eth')) + sha3('mastering-ethereum'))
+⇒ sha3(sha3(('\0' * 32) + sha3('eth')) + sha3('mastering-ethereum'))
+....
+
+Samotné subdomény mohou samozřejmě mít i subdomény: může existovat +sub.subdomain.example.eth+ za+ subdomain.example.eth+, potom +sub.sub.subdomain.example.eth+ atd. Abychom se vyhnuli nákladnému výpočtu, protože Namehash závisí pouze na samotném názvu, lze uzel pro dané jméno předběžně spočítat a vložit do kontraktu což odstraní potřebu manipulace s řetězci a umožní okamžité vyhledávání záznamů ENS bez ohledu na počet komponent v surovém jménu.
+
+===== Jak vybrat platné jméno
+((("ENS (Ethereum Name Service)","choosing a valid name")))Jména se skládají z posloupnosti názvů oddělených tečkami. Ačkoli jsou povolena velká a malá písmena, všechny názvy by měly projít normalizačním procesem UTS # 46, který sjednotí velikost písmen před jejich hašováním, takže názvy s odlišnými velkými a malými písmeny získají stejný Namehash.
+
+Můžete použít názvy a domény libovolné délky, ale kvůli kompatibilitě se starým DNS jsou doporučena následující pravidla:
+
+* názvy by neměly mít více než 64 znaků.
+* Celé ENS jméno by nemělo mít více než 255 znaků.
+* Názvy by neměly začínat nebo končit pomlčkami nebo začínat číslicemi.
+
+===== Vlastnictví kořenového uzlu
+
+((("ENS (Ethereum Name Service)","root node ownership")))Jedním z výsledků tohoto hierarchického systému je to, že se spoléhá na vlastníky kořenového uzlu, kteří jsou schopni vytvářet domény nejvyšší úrovně (TLD).
+
+Zatímco konečným cílem je přijmout decentralizovaný rozhodovací proces pro nové TLD, v době psaní této knihy je kořenový uzel řízen 4-z-7 vícepodpisem (multisig), který drží lidé v různých zemích (analogie se 7 držiteli klíčů v systému DNS).
+Výsledkem je, že k provedení jakékoli změny je vyžadována většina alespoň 4 ze 7 držitelů klíčů.
+
+V současné době je účelem a cílem těchto držitelů klíčů pracovat ve shodě s komunitou na:
+
+* Migraci a vylepšení dočasného vlastnictví +.eth+ TLD na trvalejší kontrakt, po vyhodnocení současného stavu systému. 
+* Povolit přidávání nových TLD, pokud komunita odsouhlasí, že jsou potřeba.
+* Migrace vlastnictví kořene pomocí vícepodpisového kontraktu  na decentralizovanější smlouvu, až bude takový systém dohodnut, otestován a implementován.
+* Slouží jako poslední možnost řešení jakýchkoli chyb či zranitelností v registrech nejvyšší úrovně.
+
+===== Překladače
+
+((("ENS (Ethereum Name Service)","resolvers")))((("resolver contracts")))Základní ENS kontrakt nemůže k názvu přidat metadata; to je práce tzv. „překladatelských kontraktů“. Jedná se o kontrakty vytvořené uživatelem, které mohou odpovídat na otázky týkající se názvu, jako je například jaká je  Swarm adresa spojená s aplikací, jaká adresa přijímá platby do aplikace (v etheru nebo tokenu) nebo jaký je haš aplikace (ověření její integrity) (((range="endofrange", startref="ix_12dapps-asciidoc13")))
+
+==== Střední vrstva: .eth uzly
+
+(((".eth nodes")))((("ENS (Ethereum Name Service)","middle layer: .eth nodes")))((("eth nodes")))V době psaní této knihy, jedinou doménou nejvyšší úrovně, kterou lze jedinečně registrovat v chytrém kontraktu, je +.eth+.
+
+[NOTE]
+====
+Probíhá práce na tom, aby tradiční vlastníci DNS domén mohli nárokovat vlastnictví ENS.
+Teoreticky by to mohlo fungovat pro +.com+, jediná doména, která byla doposud implementována, je http://bit.ly/2SwUuFC[+.xyz+, a pouze pro testovací síť Ropsten].
+====
+
+Domény + .eth + jsou distribuovány prostřednictvím aukčního systému. Neexistuje žádný rezervovaný seznam ani priorita a jediným způsobem, jak získat jméno, je použití systému. Aukční systém je složitý kus kódu (přes 500 řádků); většina z počátečních vývojových úsilí (a chyb!) v ENS byla v této části systému. Je však také vyměnitelná a vylepšitelná bez rizika pro prostředky - o tom později.
+
+[[vickrey_auction]]
+===== Vickrey aukce
+
+((("ENS (Ethereum Name Service)","Vickrey auctions")))((("Vickrey auctions")))Jména jsou distribuována prostřednictvím upravené aukce Vickrey. V tradiční aukci Vickrey každý uchazeč předloží zapečetěnou nabídku a všechny z nich budou odhaleny současně, v tom okamžiku nejvyšší nabídka vyhraje aukci, ale zaplatí pouze druhou nejvyšší nabídku. Proto jsou uchazeči motivováni, aby  nenabízeli méně než skutečnou hodnotu jména, protože nabízení jejich skutečné hodnoty zvyšuje pravděpodobnost, že vyhrají, ale neovlivní cenu, kterou nakonec zaplatí.
+
+Na bločence jsou nutné některé změny:
+
+* Aby se zajistilo, že uchazeči nebudou předkládat nabídky, které nemají v úmyslu platit, musí předem uzamknout hodnotu rovnající se nebo vyšší než jejich nabídka, aby byla zaručena platnost nabídky.
+* Protože nemůžete skrýt tajemství na bločence, uchazeči musí provést alespoň dvě transakce (proces odevzdání - odhalení), aby skryli původní hodnotu a jméno, na které nabízejí.
+* Protože nemůžete odhalit všechny nabídky současně v decentralizovaném systému, uchazeči musí sami odhalit své vlastní nabídky; pokud tak neučiní, propadají jejich blokované prostředky. Bez tohoto propadnutí by člověk mohl učinit mnoho nabídek a rozhodnout se odhalit pouze jednu nebo dvě, čímž se aukce uzavřených nabídek promění v tradiční pass:[<span class="keep-together">aukci</span>] s rostoucí cenou.
+
+Aukce je tedy čtyřkrokovým procesem:
+
+1. Zahajte aukci. To je vyžadováno pro vysílání záměru zaregistrovat jméno.
+Tím se vytvoří všechny aukční termíny. Jména jsou hašovaná, takže pouze ti, kteří mají ve svém slovníku toto jméno, budou vědět, která aukce byla otevřena. To umožňuje určité soukromí, což je užitečné, pokud vytváříte nový projekt a nechcete o něm sdílet podrobnosti.
+Můžete otevřít více falešných aukcí současně, takže pokud vás někdo sleduje, nemůže jednoduše podat nabídku na všechny otevřené aukce.
+
+1. Udělejte zapečetěnou nabídku. Musíte to udělat před uzávěrkou nabídkového řízení tím, že dané množství éteru připojíte k haši tajné zprávy (obsahující mimo jiné haš jména, skutečnou částku nabídky a sůl).
+Můžete zamknout více etheru, než jste ve skutečnosti nabízeli, abyste maskovali své skutečné ocenění.
+
+1. Odhalte nabídku. Během období odhalení musíte provést transakci, která odhalí nabídku, která poté vypočítá nejvyšší nabídku a druhou nejvyšší nabídku a odešle ether zpět neúspěšným uchazečům.
+Pokaždé, když je nabídka odhalena, aktuální vítěz se přepočítá; Poslední vítěz, který bude stanoven před uplynutím lhůty pro odhalení, se proto stává celkovým vítězem.
+
+1. Nakonec vyčistěte. Pokud jste vítězem, můžete aukci dokončit, abyste získali zpět rozdíl mezi vaší nabídkou a druhou nejvyšší nabídkou.
+Pokud jste zapomněli odhalit, můžete udělat pozdní odhalení a získat zpět část své nabídky.
+
+==== Vrchní vrstva: vlastnické listiny
+
+((("deed","as ENS top layer")))((("ENS (Ethereum Name Service)","top layer: deeds")))Vrchní vrstva ENS je další velmi jednoduchý kontrakt s jediný účel: držet prostředky.
+
+Když vyhrajete jméno, finanční prostředky nejsou nikde posílány, ale jsou pouze uzamčeny na dobu, kdy chcete jméno držet (alespoň rok).
+Funguje to jako zaručené odkupy: pokud majitel již nechce jméno, může jej prodat zpět do systému a obnovit svůj ether (takže náklady na držení jména jsou příležitostné náklady na provedení něčeho s návratností větší než nula).
+
+Samozřejmě, že mít jediný kontrakt držící miliony dolarů v etheru, se ukázalo být velmi riskantní, takže místo toho ENS vytváří kontrakt o vlastnictví pro každé nové jméno.
+Kontrakt vlastnické lilstiny je velmi jednoduchý (asi 50 řádků kódu) a umožňuje pouze převádět finanční prostředky na jediný účet (vlastník listiny) a vyvolat je jediným subjektem (registrační kontrakt).
+Tento přístup drasticky redukuje prostor pro útok, kde chyby mohou ohrozit finanční prostředky. (((range="endofrange", startref="ix_12dapps-asciidoc12")))
+
+==== Registrace jména
+
+((("ENS (Ethereum Name Service)","registering a name", id="ix_12dapps-asciidoc14", range="startofrange")))((("registering a name", id="ix_12dapps-asciidoc15", range="startofrange")))Registrace jména v ENS je čtyřkrokový proces, jak jsme viděli v  <<vickrey_auction>>. Nejprve umístíme nabídku na jakékoli dostupné jméno a poté po 48 hodinách nabídku zveřejníme, abychom jméno zajistili. <<ens_registration_timeline>> je schéma ukazující časovou osu registrace.
+
+Registrujme naše první jméno!
+
+K vyhledání dostupných jmen použijeme jedno z několika uživatelsky příjemných rozhraní, umístíme nabídku na jméno +ethereumbook.eth+, odhalíme nabídku a zabezpečíme jméno.
+
+Existuje celá řada webových rozhraní s ENS, která nám umožňují interagovat s DApp ENS. V tomto příkladu použijeme https://mycrypto.com/[MyCrypto rozhraní] ve spojení s MetaMaskem jako naší peněženkou.
+
+[[ens_registration_timeline]]
+.Časová osa pro registraci ENS
+image::images/ens-flow.png[]
+
+
+
+Nejprve se musíme ujistit, že je k dispozici požadované jméno. Při psaní této knihy jsme opravdu chtěli zaregistrovat jméno +mastering.eth+, ale bohužel <<ens-name-search>> jsme zjistili, že je již zabráno! Protože registrace ENS trvají pouze jeden rok, je možné, že bude možné toto jméno v budoucnu zabezpečit. Do té doby použijeme +ethereumbook.eth+ (<<ens-name-search>>).
+
+[[ens-name-search]]
+.Vyhledávání ENS jmen na MyCrypto.com
+image::images/ens-checkname.png["Vyhledávání ENS jmen na MyCrypto.com"]
+
+Skvělý! Název je k dispozici. Abychom ji mohli zaregistrovat, musíme se pohnout vpřed pomocí <<ens-auction>>;. Pojďme odemknout MetaMask a zahájit aukci pro +ethereumbook.eth+.
+
+
+[[ens-auction]]
+.Vyvolání aukce pro ENS jméno 
+image::images/ens-auction.png["Vyvolání aukce pro ENS jméno "]
+
+
+Udělejme naši nabídku. Abychom to mohli udělat, musíme postupovat podle kroků v <<ens-bid>>.
+
+
+[[ens-bid]]
+.Udělání nabídky na ENS jméno 
+image::images/ens-bid.png["Udělání nabídky na ENS jméno"]
+
+[WARNING]
+====
+Jak je uvedeno v <<vickrey_auction>> musíte nabídku zveřejnit do 48 hodin po dokončení dražby, nebo _ztratíte prostředky v nabídce_. Zapomněli jsme to udělat a sami jsme ztratili 0,01 ETH? Vsadíte se, že jsme to udělali.
+
+Udělejte snímek obrazovky, uložte tajnou frázi (jako zálohu nabídky) a přidejte do kalendáře připomenutí ohledně data a času odhalení, abyste nezapomněli a neztratili prostředky.
+====
+
+Nakonec transakci potvrdíme kliknutím na velké zelené tlačítko Odeslat zobrazené v  <<ens-metamask-bid>>.
+
+[[ens-metamask-bid]]
+.MetaMask transakce obsahující vaši nabídku
+image::images/ens-metamask-bid.png["MetaMask transaction containing your bid"]
+
+Pokud vše půjde dobře, po odeslání transakce tímto způsobem můžete se do do 48 hodin vrátit a odhalit nabídku a požadované jméno bude zaregistrováno na vaši Ethereum adresu.(((range="endofrange", startref="ix_12dapps-asciidoc15")))(((range="endofrange", startref="ix_12dapps-asciidoc14")))
+
+==== Správa vašeho ENS jména
+
+((("ENS (Ethereum Name Service)","managing your ENS name")))Jakmile zaregistrujete ENS jméno, můžete jej spravovat pomocí jiného uživatelsky přívětivého rozhraní: https://manager.ens.domains/ [Správce ENS].
+
+
+Poté zadejte do vyhledávacího pole jméno, které chcete spravovat (viz < <ens-manager>>). Musíte mít odblokovanou peněženku Ethereum (např. MetaMask), aby  DApp Správce ENS mohla spravovat jméno podle vašich pokynů.
+
+[[ens-manager]]
+.Webové rozhraní Správce ENS
+image::images/ens-manager.png["Webové rozhraní Správce ENS"]
+
+Z tohoto rozhraní můžeme vytvořit subdomény, nastavit kontrakt překladače (více o tom později) a připojit každé jméno k příslušnému zdroji, jako je Swarm adresa frontendu DApp.
+
+===== Vytvoření subdomény ENS
+
+Nejprve vytvořme subdoménu pro náš příklad Aukční DApp (viz  <<ens-manager-add-subdomain>>). Pojmenujeme subdoménu +auction+, takže plně kvalifikovaný název bude +auction.ethereumbook.eth+.
+
+[[ens-manager-add-subdomain]]
+.Přidávání subdomény auction.ethereumbook.eth
+image::images/ens_manager_add_subdomain.png["Přidávání subdomény auction.ethereumbook.eth"]
+
+Jakmile jsme vytvořili subdoménu, můžeme do vyhledávacího pole zadat +auction.ethereumbook.eth+ a spravovat ji, stejně jako jsme spravovali doménu +ethereumbook.eth+ pass:[<span class="keep-together">dříve</span>].
+
+[role="pagebreak-before"]
+==== ENS překladače
+
+((("ENS (Ethereum Name Service)","resolving a name", id="ix_12dapps-asciidoc16", range="startofrange"))) V ENS je rozlišení názvu dvoufázový proces:
+
+1. Registr ENS se  volá s názvem, který má být po jeho zahašování přeložen.
+Pokud záznam existuje, registr vrátí adresu jeho překládače.
+
+2. Překladač je volán pomocí metody vhodné pro požadovaný zdroj. Překladač vrátí požadovaný výsledek.
+
+Tento dvoustupňový proces má několik výhod. Oddělení funkčnosti překladačů od samotného pojmenovacího systému nám dává mnohem větší flexibilitu. Vlastníci jmen mohou pomocí vlastních překladačů vyřešit jakýkoli typ nebo prostředek a rozšířit tak funkčnost ENS. Například, pokud jste v budoucnu chtěli propojit geolokační prostředek (zeměpisná délka / šířka) s názvem ENS, můžete vytvořit nový překladač, který odpovídá dotazu pass:[<span class="keep-together"><code>geolocation</code></span>]. Kdo ví, jaké aplikace mohou být užitečné v budoucnosti? U vlastních překladačů je jediným omezením vaše představivost.
+
+Pro zjednodušení existuje výchozí veřejný překladač, který dokáže vyřešit různé zdroje, včetně adresy (pro peněženky nebo kontrakty) a obsahu (Swarm haš pro DApp nebo zdrojový kód kontraktu).
+
+Protože chceme propojit naši aukční DApp se Swarm hašem, můžeme použít veřejný překladač, který podporuje rozlišení obsahu, jak je uvedeno v<<ens-manager-set-default-resolver> >; nemusíme kódovat ani nasazovat vlastní překladač.
+
+[[ens-manager-set-default-resolver]]
+.Nastavení výchozího veřejného překladače pro auction.ethereumbook.eth
+image::images/ens-manager-set-default-resolver.png["Nastavení výchozího veřejného překladače pro auction.ethereumbook.eth"]
+
+==== Překlad jména na Swarm haš (obsah)
+
+((("ENS (Ethereum Name Service)","resolving a name to a Swarm hash")))((("Swarm","resolving a name to a Swarm hash")))((("Swarm hash, resolving a name to")))Jakmile je překladač pro ++auction.ethereumbook.eth+ nastaven jako veřejný překladač, můžeme jej nastavit tak, aby vrátil Swarm haš ako obsah našeho jména (viz <<ens-set-content>>).
+
+[[ens-set-content]]
+.Nastavení 'obsahu' pro návrat na auction.ethereumbook.eth
+image::images/ens-manager-set-content.png["Nastavení 'obsahu' pro návrat na auction.ethereumbook.eth"]
+
+Po chvíli čekání na potvrzení naší transakce bychom měli být schopni název správně přeložit. Před nastavením názvu, šlo najít naší aukční DApp na Swarm bráně podle haše:
+
+++++
+<ul class="simplelist">
+<li><em>https://swarm-gateways.net/bzz:/ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+nebo v prohlížeči DApp  nebo Swarm bráně hledáním Swarm URL:
+
+++++
+<ul class="simplelist">
+<li><em>bzz://ab164cf37dc10647e43a233486cdeffa8334b026e32a480dd9cbd020c12d4581</em></li>
+</ul>
+++++
+
+[role="pagebreak-before"]
+Nyní, když jsme ji připojili ke jménu, je to mnohem snazší:
+
+++++
+<ul class="simplelist">
+<li><em>http://swarm-gateways.net/bzz:/auction.ethereumbook.eth/</em></li>
+</ul>
+++++
+
+Nalezneme jej také hledáním „aukce.ethereumbook.eth“ v libovolné ENS-kompatibilní peněžence nebo DApp prohlížeči (např. Mist). (((range="endofrange", startref="ix_12dapps-asciidoc16"))).(((range="endofrange", startref="ix_12dapps-asciidoc11")))(((range="endofrange", startref="ix_12dapps-asciidoc10")))(((range="endofrange", startref="ix_12dapps-asciidoc9")))
+
+=== Od aplikace do DApp
+
+Během několika posledních sekcí jsme postupně vytvořili decentralizovanou aplikaci. Začali jsme s párem chytrých kontraktů, abychom mohli zahájit aukci za vlastnickými listinami ERC721. Tyto kontrakty byly navrženy tak, aby neobsahovaly žádné spravované ani privilegované účty, takže jejich provoz je skutečně decentralizovaný. Přidali jsme frontend implementovaný do JavaScriptu, který nabízí pohodlné a uživatelsky přívětivé rozhraní pro náš DApp. Aukce DApp používá k ukládání prostředků aplikace, jako jsou obrázky, decentralizovaný úložný systém Swarm. DApp také používá decentralizovaný komunikační protokol Whisper a nabízí šifrovanou chatovací místnost pro každou aukci bez centrálních serverů.
+
+Celý frontend jsme nahráli do Swarmu, takže náš DApp nespoléhá na žádné webové servery, které by soubory obsluhovaly. Nakonec jsme přidělili jméno pro náš DApp pomocí ENS a připojili jej k rozhraní Swarm haše frontendu, aby k němu uživatelé měli přístup pomocí jednoduchého a snadno zapamatovatelného lidsky čitelného jména.
+
+S každým z těchto kroků jsme zvýšili decentralizaci naší aplikace. Konečným výsledkem je DApp, který nemá centrální autoritu, žádný centrální bod selhání a vyjadřuje vizi „web3“.
+
+<<auction_dapp_final_architecture>> ukazuje úplnou architekturu aukčního DApp. (((range="endofrange", startref="ix_12dapps-asciidoc3")))(((range="endofrange", startref="ix_12dapps-asciidoc2")))
+
+[[auction_dapp_final_architecture]]
+.Architektura aukční DApp
+image::images/auction_dapp_final_architecture.png["Architektura aukční DApp"]
+
+=== Závěry
+
+Decentralizované aplikace jsou vyvrcholením vize Etherea, jak ji vyjádřili zakladatelé od nejranějších návrhů. Zatímco mnoho aplikací se dnes nazývá „DApps“, většina z nich není plně decentralizovaná. Je však již možné vytvářet aplikace, které jsou téměř zcela decentralizované. Postupem času, jak se technologie dále zraje, lze stále více našich aplikací decentralizovat, což vede k odolnějšímu, necenzurovatelnému a bezplatnému webu. (((range="endofrange", startref="ix_12dapps-asciidoc0")))

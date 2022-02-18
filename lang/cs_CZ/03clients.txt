@@ -1,0 +1,577 @@
+[[ethereum_clients_chapter]]
+== Ethereum klienti
+
+((("clients, Ethereum", id="ix_03clients-asciidoc0", range="startofrange")))Ethereum klient je softwarová aplikace, která implementuje specifikaci Etherea a komunikuje přes síť typu peer-to-peer s ostatními Ethereum klienty. Různí Ethereum klienti _spolupracují_, pokud splňují referenční specifikaci a standardizované komunikační protokoly. Zatímco tito různí klienti jsou implementováni různými týmy a v různých programovacích jazycích, všichni „mluví“ stejným protokolem a řídí se stejnými pravidly. Jako takové je lze všechny použít k provozu a interakci ve stejné sítí Ethereum.
+
+Ethereum je projekt s otevřeným zdrojovým kódem a zdrojový kód pro všechny hlavní klienty je k dispozici na základě licencí pro otevřený zdrojový kód (např. LGPL v3.0), můžete ho zdarma stáhnout a použít pro jakýkoli účel. _Otevřený zdrojový kód_ však znamená více než jen bezplatné použití. Znamená to také, že Ethereum je vyvíjeno otevřenou komunitou dobrovolníků a může jej měnit kdokoli. Více očí znamená důvěryhodnější kód.
+
+((("Yellow Paper specification")))Ethereum je definováno formální specifikací nazvanou „Žlutá kniha“ (viz <<references>>).
+
+((("Bitcoin","Ethereum definition compared to")))To je v kontrastu například s Bitcoinem, který není formálně definován. Kde Bitcoinová „specifikace“ je referenční implementací Bitcoin Core, specifikace Ethereum je dokumentována v článku, který kombinuje anglickou a matematickou (formální) specifikaci. Tato formální specifikace, spolu s různých návrhy na vylepšení Etherea, definuje standardní chování Etherea pass:[<span class="keep-together">klient</span>]. Žlutá kniha je pravidelně aktualizována, protože jsou prováděny významné změny pass:[<span class="keep-together">Ethereum</span>].
+
+V důsledku jasné formální specifikace Etherea existuje řada nezávisle vyvinutých, přesto schopných vzájemné spolupráce, softwarových implementací Ethereum klienta. Ethereum má větší rozmanitost implementací běžících v síti než jakékoli jiná bločenka, která je obecně považována za dobrou věc. Ve skutečnosti se tento přístup například osvědčil jako vynikající způsob obrany proti útokům v síti, protože nalezení chyby v implementaci jednoho konkrétního klienta umožňuje jeho vývojářům ji v klidu opravit, zatímco ostatní klienti udržují  téměř bezproblémový běh sítě. 
+
+=== Sítě Etherea
+
+((("clients, Ethereum","Ethereum-based networks and", id="ix_03clients-asciidoc1", range="startofrange")))((("networks (Ethereum)","clients and", id="ix_03clients-asciidoc2", range="startofrange")))Existuje celá řada sítí založených na Ethereu, které do značné míry odpovídají formálním specifikacím definovaným v Žluté knize Etherea, ale které mohou nebo nemusí vzájemně spolupracovat.
+
+Mezi tyto sítě založené na Ethereu patří Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin a mnoho dalších. I když jsou tyto sítě většinou kompatibilní na úrovni protokolu, mají často funkce nebo atributy, které vyžadují, aby správci Ethereum klientského softwaru provedli malé změny, aby podporovali každou síť. Z tohoto důvodu ne každá verze Ethereum klientského softwaru  umožňuje spouštět každou bločenku založenou na Ethereu.
+
+V současné době existuje šest hlavních implementací protokolu Ethereum, psaných v šesti různých jazycích:
+
+* Parity, napsaná v Rustu
+* Geth, napsaná v Go
+* +cpp-ethereum+, napsaná v C++
+* +pyethereum+, napsaná v Pythonu
+* Mantis, napsaná v Scale
+* Harmony, napsaná v Javě
+
+V této části se podíváme na dva nejběžnější klienty, Parity a Geth. Ukážeme, jak nastavit uzel pomocí každého klienta, a prozkoumat některé z možností  jejich příkazového řádku a rozhraní pro programování aplikací (API).
+
+[[full_node_importance]]
+==== Mám provozovat úplný uzel?
+
+((("full node","Ethereum-based networks and", id="ix_03clients-asciidoc3", range="startofrange")))((("networks (Ethereum)","full nodes and", id="ix_03clients-asciidoc4", range="startofrange")))Zdraví, odolnost bločenky a její a schopnost vzdorovat cenzuře závisí na tom, že má mnoho nezávisle provozovaných a geograficky rozptýlených úplných uzlů. Každý úplný uzel může pomoci dalším novým uzlům získat data bloku k nastavení jejich provozu a také nabídnout jeho provozovateli autoritativní a nezávislé ověření všech transakcí a kontraktů.
+
+Provoz celého uzlu však bude znamenat náklady na hardwarové prostředky a internetové připojení. Celý uzel musí stáhnout 80–300 GB dat (k lednu 2020, v závislosti na konfiguraci klienta) a uložit je na místní pevný disk. Toto množství dat se každým dnem zvyšuje, když jsou přidávány nové transakce a bloky. O tomto tématu diskutujeme podrobněji v <<requirements>>.
+
+Úplný uzel spuštěný v živé síti _mainnet_ není pro vývoj v Ethereu nutný. S uzlem _testnet_ (který vás spojí s jednou z menších veřejných testovacích bločenek), s místním soukromou bločenkou jako Ganache nebo s cloudovým klientem Ethereum nabízeným poskytovatelem služeb, jako je Infura, můžete udělat téměř vše, co potřebujete.
+
+Máte také možnost spustit vzdáleného klienta, který neukládá lokální kopii bločenky ani ověřuje bloky a transakce. Tito klienti nabízejí funkčnost peněženky a mohou vytvářet a odesílat transakce. Vzdálené klienty lze použít k připojení k existujícím sítím, jako je váš vlastní úplný uzel, veřejná bločenka, veřejná nebo autorizovaná  (důkaz autoritou) testovací síť nebo soukromá místní bločenka. V praxi budete pravděpodobně používat vzdáleného klienta, jako je MetaMask, Emerald Wallet, pass:[<span class="keep-together">MyEtherWallet</span>] nebo MyCrypto jako pohodlný způsob přepínání mezi všemi různými možnostmi uzlů.
+
+((("remote clients","wallet compared to")))((("wallets","remote clients compared to")))Termíny „vzdálený klient“ a „peněženka“ se používají zaměnitelně, i když existují některé rozdíly. Vzdálený klient obvykle nabízí kromě transakčních funkcí peněženky navíc ještě API (například API web3.js).
+
+((("light/lightweight client")))Nepleťte si koncept vzdálené peněženky v Ethereum s konceptem _odlehčeného klienta_ (který je analogický s Bitcoinovým klientem se zjednodušeným ověřováním plateb). Lehcí klienti ověřují záhlaví bloků a používají Merkle důkazy k ověření zahrnutí transakcí do bločenky a k určení jejich účinků, což jim poskytuje podobnou úroveň zabezpečení jako má úplný uzel. Naopak vzdálení Ethereum klienti neověřují záhlaví bloků nebo transakce. Plně důvěřují úplnému klientovi, že jim umožní přístup k bločence, a proto významně ztrácí záruky zabezpečení a anonymity. Tyto problémy můžete zmírnit pomocí úplného klienta, kterého sami provozujete.
+
+[[full_node_adv_disadv]]
+==== Výhody a nevýhody úplného uzlu
+
+((("full node","advantages/disadvantages")))Pokud zvolíte provozování úplného uzlu, pomůžete tím s provozováním sítí, ke kterým se připojujete, ale také vám vzniknou mírné až střední náklady. Pojďme se podívat na některé z výhod a nevýhod.
+
+*Výhody:*
+
+* Podporuje odolnost a nemožnost provádět cenzuru sítí založených na Ethereu
+* Autoritativně ověřuje všechny transakce
+* Může bez prostředníka komunikovat s jakýmkoliv kontraktem na veřejné bločence
+* Může přímo bez prostředníka zavádět kontrakty do veřejné bločenky
+* Může se  v offline režimu dotazovat (pouze číst) na stav bločenky (účty, smlouvy, atd.)
+* Může se dotazovat v bločence, aniž by třetí strana věděla informace, které čtete
+
+*Nevýhody:*
+
+*Vyžaduje značné a stále rostoucí hardwarové zdroje a internetové připojení
+* Plná synchronizace může vyžadovat několik dní po prvním spuštění
+* Musí být udržováno, upgradováno a  být stále online, aby zůstalo synchronizované (((range="endofrange", startref="ix_03clients-asciidoc4")))(((range="endofrange", startref="ix_03clients-asciidoc3")))
+
+[[pub_test_adv_disadv]]
+==== Výhody a nevýhody veřejné testovací sítě
+
+((("networks (Ethereum)","public testnet advantages/disadvantages")))((("public testnets")))((("testnet","public")))Bez ohledu na to, zda se rozhodnete či nerozhodnete provozovat  úplný uzel, pravděpodobně budete chtít spustit veřejný testovací uzel. Pojďme se podívat na některé z výhod a nevýhod používání veřejné testovací sítě.
+
+*Výhody:*
+
+* Testovací uzel musí synchronizovat a ukládat mnohem méně dat - přibližně 45 GB v závislosti na síti.
+* Testovací uzel lze plně synchronizovat během několika hodin.
+* Zavádění kontraktů nebo provádění transakcí vyžaduje testovací ether, který nemá žádnou hodnotu a lze jej získat zdarma z několika „kohoutků“.
+* Testovací sítě  jsou veřejné bločenky s mnoha dalšími uživateli a kontrakty které běží „na živo“.
+
+*Nevýhody:*
+
+* Na testovací síti nelze použít „skutečné“ peníze; běží na testovacím etheru. V důsledku toho nemůžete otestovat bezpečnost proti skutečným protivníkům, protože v sázce není nic.
+* Existuje několik aspektů veřejné bločenky, které nemůžete realisticky testovat na testovací síti. Například transakční poplatky, i když jsou nezbytné pro odesílání transakcí, nejsou brány v úvahu na testovací síti, protože plyn je zdarma. Dále testovací sítě nezažívají přetížení sítě, jako to někdy dělá hlavní veřejná síť.
+
+[[localtest_adv_dis]]
+==== Výhody a nevýhody místní simulace bločenky
+
+((("Ganache","advantages/disadvantages")))((("local blockchain simulation")))((("networks (Ethereum)","local blockchain simulation advantages/disadvantages")))((("private blockchain")))((("single-instance private blockchain")))Pro mnoho testovacích účelů je nejlepší volbou spustit izolovanou soukromou bločenku. Ganache (dříve pojmenovaný +testrpc+) je jednou z nejpopulárnějších simulací lokálního bločenky, se kterými můžete komunikovat, bez dalších účastníků. Sdílí mnoho výhod a nevýhod veřejné testovací sítě, ale najdeme také určité rozdíly.
+
+*Výhody:*
+
+* Žádná synchronizace a téměř žádná data na disku; sami těžíte první blok 
+* Není třeba získat testovací ether; sami získáváte odměnu za těžbu bloků, kterou můžete použít pro testování
+* Žádní další uživatelé, jen vy
+* Žádné další kontrakty, pouze ty, které nasadíte po spuštění
+
+*Nevýhody:*
+
+* Protože nemá žádné další uživatele, znamená to, že se nechová stejně jako veřejná bločenka. Neexistuje žádná soutěž o transakční prostor nebo pořadí pass:[<span class="keep-together">transakcí</span>].
+* Protože nejsou žádní další těžaři kromě vás, těžba je předvídatelnější; proto nemůžete otestovat některé scénáře, které se vyskytují na veřejné bločence.
+* Protože nejsou žádné další kontrakty, musíte nasadit vše, co chcete testovat, včetně závislostí a knihoven kontraktů.
+* Nemůžete znovu vytvořit některé veřejné kontrakty a jejich adresy, abyste otestovali některé scénáře (např. kontrakt The DAO). (((range="endofrange", startref="ix_03clients-asciidoc2")))(((range="endofrange", startref="ix_03clients-asciidoc1")))
+
+
+[[running_client]]
+=== Provozování Ethereum klienta 
+
+((("clients, Ethereum","running", id="ix_03clients-asciidoc5", range="startofrange")))Pokud máte čas a prostředky, měli byste se pokusit provozovat úplný uzel, případně se alespoň teoreticky seznámit s tímto procesem . V této části se zabýváme tím, jak stahovat, kompilovat a provozovat Ethereum klienty Parity a Geth. To vyžaduje určitou znalost používání rozhraní příkazového řádku ve vašem operačním systému. Je vhodné nainstalovat tyto klienty, ať už se rozhodnete je provozovat jako úplné uzly, jako uzly testovací sítě nebo jako klienty do místní soukromé bločenky.
+
+[[requirements]]
+==== Hardwarové požadavky pro úplný uzel
+
+((("clients, Ethereum","full node hardware requirements")))((("full node","hardware requirements")))Než začneme, měli byste mít počítač s dostatečnými systémovými prostředky pro spuštění úplného uzlu Etherea. K uložení úplné kopie Ethereum bločenky budete potřebovat nejméně 300 GB místa na disku. Pokud chcete také spustit úplný uzel na Ethereum testovací síti, budete potřebovat alespoň dalších 45 GB. Stahování 345 GB dat bločenek může trvat dlouho, takže se doporučuje pracovat na rychlém připojení k internetu.
+
+Synchronizace Ethereum bločenky je velmi náročná na vstupně-výstupní operace. Nejlepší je mít SSD diskovou jednotku. Pokud máte mechanickou jednotku pevného disku (HDD), budete potřebovat alespoň 8 GB paměti RAM, abyste ji mohli použít jako mezipaměť. V opačném případě můžete zjistit, že váš systém je příliš pomalý na to, aby zůstal plně synchronizován.
+
+*Minimální požadavky:*
+
+* CPU s 2+ jádry
+* Nejméně 300 GB volného místa na disku
+* Minimálně 4 GB RAM s SSD, 8 GB +, pokud máte HDD
+* internetové připojení, minimálně 8 MBit/s
+
+Toto jsou minimální požadavky na synchronizaci úplné (ale prořezané) kopie Ethereum bločenky.
+
+V době psaní této knihy je klient Parity méně náročný na systémové zdroje, takže pokud máte k dispozici pouze omezený hardware, pravděpodobně dosáhnete lepších výsledků pomocí Parity.
+
+Pokud chcete synchronizovat v přiměřeném množství času a uložit všechny vývojové nástroje, knihovny, klienty a bločenky, o nichž pojednáváme v této knize, budete potřebovat schopnější počítač počítač.
+
+* Doporučené specifikace: *
+
+* Rychlý procesor se 4 a více jádry
+* 16 GB + RAM
+* Rychlé SSD s nejméně 500 GB volného místa
+* Interentové připojení 25+ MBit/s
+
+Je obtížné předvídat, jak rychle se velikost bločenky zvětšovata kdy bude zapotřebí více místa na disku, takže před zahájením synchronizace doporučujeme zkontrolovat nejnovější velikost bločenky.
+
+[NOTE]
+====
+Zde uvedené požadavky na velikost disku předpokládají, že budete provozovat úplný s výchozím nastavením, kde je bločenka „ořezávána“ od starých stavových dat. Pokud místo toho spustíte úplný „archivační“ uzel, ve kterém je na disku zachován celý stav, bude pravděpodobně vyžadovat více než 1 TB místa na disku.
+====
+
+Tyto odkazy poskytují aktuální odhady velikosti bločenky:
+
+* https://bitinfocharts.com/ethereum/[Ethereum]
+
+* https://bitinfocharts.com/ethereum%20classic/[Ethereum Classic]
+
+[[sw_reqs]]
+==== Softwarové požadavky na zprovoznění klienta (uzel)
+
+((("clients, Ethereum","software requirements for building/running", id="ix_03clients-asciidoc6", range="startofrange")))Tato část se týká softwaru klientů Parity a Geth. Předpokládá také, že používáte prostředí příkazového řádku podobné Unixu. Příklady ukazují příkazy a výstupy, které se objevují v operačním systému Ubuntu GNU / Linux, na kterém běží bash shell (prostředí pro provádění příkazového řádku).
+
+Obvykle bude mít každá bločenka svou vlastní verzi Geth, zatímco Parity poskytuje podporu současně více bločenkám založených na Ethereu (Ethereum, Ethereum Classic, pass: [<span class="keep-together">Ellaism</span>], Expanse, Musicoin) se stejným klientským stahováním.
+
+[TIP]
+=====
+((("$ symbol")))((("command-line interface")))((("shell commands")))((("terminal applications"))) V mnoha příkladech v této kapitole , budeme používat rozhraní příkazového řádku operačního systému (známé také jako „shell“), přístupné prostřednictvím „terminálové“ aplikace. Shell zobrazí výzvu; zadáte příkaz a shell odpoví nějakým textem a novou výzvou k dalšímu příkazu. Výzva se může ve vašem systému lišit, ale v následujících příkladech je označena symbolem +$+. V příkladech, když vidíte text za symbolem +$+, nezadávejte symbol +$+, ale zadejte příkaz bezprostředně za ním (zobrazen tučně) a poté stisknutím klávesy Enter proveďte příkaz. V příkladech jsou řádky pod každým příkazem reakce operačního systému na tento příkaz. Když uvidíte další předponu +$+, budete vědět, že se jedná o nový příkaz, a měli byste postup opakovat.
+=====
+
+Než začneme, možná budete muset nainstalovat nějaký software. Pokud jste v počítači, který právě používáte, nikdy neprovedli žádný vývoj softwaru, budete pravděpodobně muset nainstalovat některé základní nástroje. V následujících příkladech budete muset nainstalovat systém správy zdrojového kódu +git+; +golang+, programovací jazyk Go a standardní knihovny; a Rust, systémový programovací jazyk.
+
+((("git")))Git lze nainstalovat podle pokynů na adrese https://git-scm.com[].
+
+((("Go", seealso="Geth (Go-Ethereum)")))Go lze nainstalovat podle pokynů na https://golang.org[], nebo https://github.com/golang/go/wiki/Ubuntu[], pokud používáte Ubuntu.
+
+[NOTE]
+=====
+((("Geth (Go-Ethereum)")))Požadavky Geth se liší, ale pokud se budete držet Go verze 1.10 nebo vyšší, měli byste být schopni sestavit libovolnou verzi Geth, kterou chcete. Samozřejmě byste se měli vždy podívat do dokumentace k vaší vybrané variantě Geth.
+
+Verze +golang+, která je nainstalována ve vašem operačním systému nebo je k dispozici od správce balíčků vašeho systému, může být výrazně starší než 1.10. Pokud ano, odeberte ji a nainstalujte nejnovější verzi z https://golang.org/[].
+=====
+
+((("Rust")))Rust lze nainstalovat podle pokynů na adrese https://www.rustup.rs/[].
+
+[NOTE]
+=====
+Parity vyžaduje verzi Rust 1.27 nebo vyšší.
+=====
+
+((("Parity","libraries for")))Parity také vyžaduje některé softwarové knihovny, jako jsou OpenSSL a +libudev+. Chcete-li je nainstalovat do systému kompatibilního s Ubuntu nebo Debian GNU / Linux, použijte následující pass: [<span class="keep-together">příkaz</span>]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo apt-get install openssl libssl-dev libudev-dev cmake clang</strong>
+</pre>
+++++
+
+U ostatních operačních systémů použijte správce balíčků vašeho operačního systému nebo podle https://github.com/paritytech/parity/wiki/Setup[pokynů na Wiki] nainstalujte požadované knihovny.
+
+Nyní, když máte nainstalované +git+, +golang+, Rust a potřebné knihovny, pusťme se do práce!
+
+[[parity]]
+==== Parity
+
+((("clients, Ethereum","Parity and")))((("Parity","basics")))Parity je implementace  Ethereum klienta s úplným uzlem a prohlížeče DApp. Bylo napsáno „od základu“ v jazyce Rust, systémovém programovacím jazyce, s cílem vybudovat modulárního, bezpečného a škálovatelného Ethereum klienta. Parity vyvíjí britská společnost Parity Tech a je uvolněna pod licencí na bezplatný software GPLv3.
+
+[NOTE]
+=====
+Upozornění: Jeden z autorů této knihy, Dr. Gavin Wood, je zakladatelem Parity Tech a napsal velkou část klienta Parity. Parity představuje asi 25% nainstalované klientské základny Ethereum.
+=====
+
+Chcete-li nainstalovat Parity, můžete použít Rust správce balíčků +cargo+ nebo si stáhnout zdrojový kód z GitHubu. Správce balíčků také stáhne zdrojový kód, takže mezi těmito dvěma možnostmi není velký rozdíl. V další části vám ukážeme, jak si Parity stáhnout a zkompilovat.
+
+[[install_parity]]
+===== Instalace Parity
+
+((("Parity","installing")))The https://wiki.parity.io/Setup[Parity Wiki] nabízí pokyny pro nainstalování Parity v různých prostředích. Ukážeme vám, jak nainstalovat Paritu ze zdroje. Předpokládá se, že jste již nainstalovali Rust pomocí +rustup+ (viz <<sw_reqs>>).
+
+Nejprve získejte zdrojový kód z GitHubu:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone https://github.com/paritytech/parity</strong>
+</pre>
+++++
+
+Poté přejděte do adresáře _parity_ a vytvořte spustitelný soubor pomocí +cargo+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd parity</strong>
+$ <strong>cargo install --path .</strong>
+</pre>
+++++
+
+Pokud vše půjde dobře, měli byste vidět něco jako:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cargo install --path .</strong>
+Installing parity-ethereum v2.7.0 (/root/parity)
+Updating crates.io index
+Updating git repository `https://github.com/paritytech/rust-ctrlc.git`
+Updating git repository `https://github.com/paritytech/app-dirs-rs`   Updating git repository 
+
+ [...]
+
+Compiling parity-ethereum v2.7.0 (/root/parity)
+Finished release [optimized] target(s) in 10m 16s
+Installing /root/.cargo/bin/parity
+Installed package `parity-ethereum v2.7.0 (/root/parity)` (executable `parity`)
+$
+</pre>
+++++
+
+Vyzkoušejte spustit +parity+, abyste zjistili, zda je nainstalován, vyvoláním volby +--version+:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --version</strong>
+Parity Ethereum Client.
+  version Parity-Ethereum/v2.7.0-unstable-b69a33b3a-20200124/x86_64-unknown-linux-gnu/rustc1.40.0
+Copyright 2015-2020 Parity Technologies (UK) Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+By Wood/Paronyan/Kotewicz/Drwięga/Volf/Greeff
+   Habermeier/Czaban/Gotchac/Redman/Nikolsky
+   Schoedon/Tang/Adolfsson/Silva/Palm/Hirsz et al.
+$
+</pre>
+++++
+
+Skvělý! Nyní, když je Parity nainstalovaná, můžete synchronizovat bločenku a začít s některými základními možnostmi příkazového řádku.
+
+[[go_ethereum_geth]]
+==== Go-Ethereum (Geth)
+
+((("clients, Ethereum","Geth and", id="ix_03clients-asciidoc7", range="startofrange")))((("Geth (Go-Ethereum)","basics", id="ix_03clients-asciidoc8", range="startofrange")))Geth je implementován v jazyku Go, je aktivně vyvíjen Nadací Etherea, takže se považuje za „oficiální“ implementaci Ethereum klienta. Obvykle bude mít každá bločenka na bázi Ethereum vlastní implementaci Geth. Pokud používáte Geth, budete se chtít ujistit, že si vyberete správnou verzi pro svojí bločenku pomocí jednoho z následujících odkazů na úložiště:
+
+
+* https://github.com/ethereum/go-ethereum[Ethereum] (nebo https://geth.ethereum.org/)
+
+* https://github.com/etclabscore/go-ethereum[Ethereum Classic]
+
+* https://github.com/ellaism/go-ellaism[Ellaism]
+
+* https://github.com/expanse-org/go-expanse[Expanse] 
+
+* https://github.com/Musicoin/go-musicoin[Musicoin] 
+
+* https://github.com/ubiq/go-ubiq[Ubiq] 
+
+[NOTE]
+=====
+Můžete také přeskočit tyto pokyny a nainstalovat předkompilovaný binární soubor pro platformu, kterou si vyberete. Předkompilovaná vydání se instalují mnohem snadněji a najdete je v části „vydání“ na kterémkoli z níže uvedených úložišť. Více se však můžete  naučit vlastnoručním stažením a kompilací softwaru.
+=====
+
+[[cloning_repo]]
+===== Okopírování úložiště
+
+((("Geth (Go-Ethereum)","cloning Git repo for")))Prvním krokem je okopírování úložiště Git, aby se získala kopie zdrojového kódu.
+
+Chcete-li vytvořit místní kopii zvoleného úložiště, použijte příkaz +git+ v domovském adresáři nebo v libovolném adresáři, který používáte pro vývoj:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone &lt;Repository Link&gt;</strong>
+</pre>
+++++
+
+Při kopírování úložiště do místního systému byste měli vidět zprávu o postupu:
+
+[[cloning_status]]
+----
+Cloning into 'go-ethereum'...
+remote: Enumerating objects: 86915, done.
+remote: Total 86915 (delta 0), reused 0 (delta 0), pack-reused 86915
+Receiving objects: 100% (86915/86915), 134.73 MiB | 29.30 MiB/s, done.
+Resolving deltas: 100% (57590/57590), done.
+----
+
+Skvělý! Nyní, když máte lokální kopii Geth, můžete sestavit spustitelný soubor pro vaši platformu.
+
+[[build_geth_src]]
+===== Sestavení Geth ze zdrojového kódu
+
+((("Geth (Go-Ethereum)","building from source code"))) Chcete-li sestavit Geth, přejděte do adresáře, kde byl zdrojový kód stažen, a použijte příkaz +make+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd go-ethereum</strong>
+$ <strong>make geth</strong>
+</pre>
+++++
+
+Pokud vše půjde dobře, uvidíte kompilátor Go, jak vytváří každou komponentu, dokud nevytvoří spustitelný soubor +geth+:
+
+[[making_geth_status]]
+----
+build/env.sh go run build/ci.go install ./cmd/geth
+>>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d...
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto/sha3
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/common
+[...]
+github.com/ethereum/go-ethereum/cmd/utils
+github.com/ethereum/go-ethereum/cmd/geth
+Done building.
+Run "build/bin/geth" to launch geth.
+$
+----
+
+Ujistěte se, že +geth+ funguje, aniž byste ho skutečně spuštili.
+
+++++
+<pre data-type="programlisting">
+$ <strong>./build/bin/geth version</strong>
+
+Geth
+Version: 1.9.11-unstable
+Git Commit: 0b284f6c6cfc6df452ca23f9454ee16a6330cb8e
+Git Commit Date: 20200123
+Architecture: amd64
+Protocol Versions: [64 63]
+Go Version: go1.13.4
+Operating System: linux
+[...]
+</pre>
+++++
+
+Váš příkaz +geth version+ může zobrazovat mírně odlišné informace, ale měli byste vidět zprávu o verzi, která je podobná té, kterou vidíte zde.
+
+Následující oddíly vysvětlují počáteční synchronizací Ethereum bločenky(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
+
+
+[[first_sync]]
+=== První synchronizace bločenek založených na Ethereu
+
+((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange")))Tradičně při synchronizaci Ethereum bločenky váš klient  stahuje a ověřuje každý blok a každou transakci od samého začátku - tj. od základního (genesis) bloku.
+
+I když je možné plně synchronizovat bločenku tímto způsobem, bude tento typ synchronizace trvat velmi dlouho a bude vyžadovat vysoké nároky na zdroje (bude vyžadovat mnohem více RAM a bude trvat velmi dlouho, pokud nemáte rychlé úložný prostor).
+
+Koncem roku 2016 bylo mnoho bločenek založených na Ethereu obětí útoků odepření služby. Postižené bločenky budou mít při plné synchronizaci tendenci se synchronizovat pomalu.
+
+Například u Etherea nový klient rychle postupuje, dokud nedosáhne bloku 2 283 397. Tento blok byl těžen 18. září 2016 a označuje začátek útoků DoS. Od tohoto bloku až do bloku 2 700 031 (26. listopadu 2016) se ověřování transakcí stává extrémně pomalým,vyžadujícím mnoho operační paměti a vstupně-výstupních operací. Výsledkem je doba ověření delší než 1 minuta na blok. Ethereum implementovalo řadu upgradů pomocí tvrdých rozštěpení, aby vyřešilo základní zranitelnosti, které byly zneužity při útokech DoS. Tyto upgrady také vyčistily bločenku odstraněním přibližně 20 milionů prázdných účtů vytvořených spamovými transakcemi.
+
+Pokud provádíte synchronizaci s plnou validací, váš klient zpomalí a může trvat několik dní nebo možná i déle, než budou ověřeny bloky ovlivněné útoky DoS.
+
+((("fast synchronization")))Naštěstí většina Ethereum klientů nyní ve výchozím nastavení provádí „rychlou“ synchronizaci, která přeskočí úplnou validaci transakcí, dokud se nesynchronizuje s aktuálním vrcholem bločenky, a teprve poté pokračuje v plné validaci.
+
+Geth provádí ve výchozím nastavení rychlou synchronizaci pro Ethereum. Možná budete muset postupovat podle konkrétních pokynů pro další vybrané bločenky založené na Ethereu.
+
+Parity ve výchozím nastavení také provádí rychlou synchronizaci.
+
+[NOTE]
+=====
+Geth může provádět rychlou synchronizaci pouze při spuštění s prázdnou databází bloků. Pokud jste již zahájili synchronizaci bez rychlého režimu, Geth se nemůže přepnout. Je rychlejší odstranit datový adresář bločenky a začít rychlou synchronizaci od začátku, než pokračovat v synchronizaci s plnou validací. Při mazání dat bločenky buďte opatrní, abyste neodstranili žádné peněženky!
+=====
+
+==== Spuštění Geth nebo Parity
+
+((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Nyní, když rozumíte výzvám „první synchronizace“, jste připraveni spustit Ethereum klienta  a synchronizovat bločenku. Pro Geth i Parity můžete pomocí volby +--help+ zobrazit všechny konfigurační parametry. Výchozí nastavení je obvykle rozumné a vhodné pro většinu použití. Nejprve můžete nakonfigurovat libovolné volitelné parametry podle svých potřeb, poté spusťte Geth nebo Parity a synchronizujte bločenku. Pak počkejte ...
+
+[TIP]
+====
+Synchronizace Ethereum bločenky bude trvat od půl dne na velmi rychlém systému se spoustou paměti RAM až po několik dní na pomalejším systému.
+====
+
+[[json_rpc]]
+==== Rozhraní JSON-RPC
+
+((("clients, Ethereum","and JSON-RPC API", id="ix_03clients-asciidoc12", range="startofrange")))((("first synchronization","and JSON-RPC API", id="ix_03clients-asciidoc13", range="startofrange")))((("JSON-RPC API", id="ix_03clients-asciidoc14", range="startofrange")))Ethereum klienti nabízejí rozhraní pro programování aplikací a sada příkazů vzdáleného volání procedur (RPC), které jsou kódovány v JavaScript Object Notation (JSON). Bývá to označované jako _JSON-RPC API_. JSON-RPC API je v zásadě rozhraní, které nám umožňuje psát programy, které používají Ethereum klienta jako _brány_, do sítě Ethereum a bločenky.
+
+Obvykle je rozhraní RPC nabízeno jako služba HTTP na portu 8545. Z bezpečnostních důvodů je ve výchozím nastavení omezeno, aby přijímalo pouze připojení z localhost (IP adresa vašeho vlastního počítače, která je 127.0.0.1).
+
+Pro přístup k JSON-RPC API můžete použít specializovanou knihovnu (napsanou v programovacím jazyce dle vašeho výběru), která poskytuje volání "pahýlu" funkce  odpovídajícímu každému dostupnému příkazu RPC, nebo můžete ručně vytvářet požadavky HTTP a odesílat / přijímat JSON kódované žádosti. K volání rozhraní RPC můžete dokonce použít generického HTTP klienta z příkazového řádku, například +curl+. Zkusme to. Nejprve se ujistěte, že máte Geth spuštěný a nakonfigurovaný s --rpc, který umožňuje HTTP přístup k rozhraní RPC, poté přepněte do nového okna terminálu (např. s pomocí Ctrl-Shift-N nebo Ctrl-Shift-T ve stávajícím okno terminálu), jak je znázorněno zde:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+</pre>
+++++
+
+V tomto příkladu používáme +cur + k navázání HTTP spojení s adresou _http://localhost:8545_. Již běží +geth+, které nabízí rozhraní JSON-RPC API jako HTTP službu na portu 8545. Nařídíme +curl+, aby použil příkaz HTTP +POST+ a označil obsah jako typ +application/json+. Nakonec předáme požadavek kódovaný JSON jako +data+ součást našeho HTTP požadavku. Většina našeho příkazového řádku právě nastavuje +curl+, aby HTTP připojení správně pracovalo. Zajímavou součástí je JSON-RPC příkaz, který právě vytváříme:
+
+[[JSON_RPC_command]]
+----
+{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}
+----
+
+JSON-RPC požadavek je formátován podle https://www.jsonrpc.org/specification[JSON-RPC 2.0 specifikace]. Každá žádost obsahuje čtyři prvky:
+
+++jsonrpc++:: Verze protokolu JSON-RPC. MUSÍ to být přesně ++"2.0"++.
+
+++method++:: Název metody, která má být vyvolána.
+
+++params++:: Strukturovaná hodnota, která uchovává hodnoty parametrů, které mají být použity během vyvolání metody. Tento prvek může být vynechán.
+
+++id++:: Identifikátor vytvořený klientem, který MUSÍ obsahovat hodnotu +String+, +Number+ nebo +NULL+, je-li zahrnuta. Server MUSÍ odpovídat stejnou hodnotou v objektu odpovědi, pokud je zahrnut. Tento člen se používá ke korelaci kontextu mezi dvěma objekty.
+
+[TIP]
+====
+((("batching")))Parametr +id+ se používá primárně, když zadáváte více požadavků v jednom JSON-RPC volání, což se nazývá _dávkování_. Dávkování se používá k omezení režie za nová HTTP a TCP připojení  pro každý požadavek. Například v Ethereu bychom použili dávkování, pokud bychom chtěli získat tisíce transakcí přes jedno HTTP připojení. Při dávkování nastavíte pro každou žádost jiné +id+ a poté ji spárujeme s odpovídající odpovědí z JSON-RPC serveru s daným  +id+. Nejjednodušší způsob, jak to provést, je udržovat počitadlo a zvyšovat hodnotu pro každý požadavek.
+====
+
+
+Odpověď, kterou dostáváme, je:
+
+----
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+----
+
+To nám říká, že rozhraní JSON-RPC API je obsluhováno klientem Geth verze 1.13.4.
+
+Zkusme něco zajímavějšího. V dalším příkladu požádáme JSON-RPC API o aktuální cenu plynu ve wei:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
+</pre>
+++++
+
+Odpověď +0x430e23400+ nám říká, že aktuální cena plynu je 18 gwei (gigawei nebo miliard wei). Pokud, stejně jako my, nemyslíte v šestnáctkové soustavě, můžete ji v příkazovém řádku převést na číslo v desítkové soustavě  pomocí drobného bash triku:
+
+++++
+<pre data-type="programlisting">
+$ <strong>echo $((0x430e23400))</strong>
+
+18000000000
+</pre>
+++++
+
+Plné rozhraní JSON-RPC API lze prozkoumat na https://github.com/ethereum/wiki/wiki/JSON-RPC[Ethereum wiki].
+
+[[parity_compatibility_mode]]
+===== Parity režim kompatibility s Geth
+
+Parity má speciální „režim kompatibility s Geth“, ve kterém nabízí JSON-RPC API, které je totožné s rozhraním nabízeným Geth. Pro spuštění Parity v tomto režimu použijte přepínač +--geth+ (((range="endofrange", startref="ix_03clients-asciidoc14")))(((range="endofrange", startref="ix_03clients-asciidoc13")))(((range="endofrange", startref="ix_03clients-asciidoc12"))):(((range="endofrange", startref="ix_03clients-asciidoc11")))(((range="endofrange", startref="ix_03clients-asciidoc10")))(((range="endofrange", startref="ix_03clients-asciidoc9")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --geth</strong>
+</pre>
+++++
+
+[[lw_eth_clients]]
+=== Ethereum klienti pro vzdálený přístup
+
+((("clients, Ethereum","remote", id="ix_03clients-asciidoc15", range="startofrange")))((("remote clients", id="ix_03clients-asciidoc16", range="startofrange")))Klienti pro vzdálený přístup nabízejí podmnožinu funkčnosti úplného klienta. Neukládají celo Ethereum bločenku, takže se nastavují rychleji a vyžadují mnohem méně uložených dat.
+
+[role="pagebreak-before"]
+Tito klienti obvykle poskytují možnost provádět jednu nebo více z následujících akcí:
+
+* Spravovat soukromé klíče a Ethereum adresy v peněžence.
+* Vytvářet, podepisovat a odesílat transakce.
+* Pracovat s chytrými kontrakty pomocí užitečného datového nákladu (data payload)
+* Procházet a komunikovat s DApps.
+* Nabídka odkazů na externí služby, jako jsou průzkumníci bloků.
+* Převod etherových jednotek a načítání směnných kurzů z externích zdrojů.
+* Vložit web3  instanci do webového prohlížeče jako JavaScript objekt.
+* Použít web3 instanci poskytnutou / napojenou do prohlížeče jiným klientem.
+* Přístup ke službám RPC v místním nebo vzdáleném Ethereum uzlu .
+
+Někteří klienti pro vzdálený přístup, například mobilní peněženky, nabízejí pouze základní funkce peněženky. Ostatní vzdálení klienti jsou plnohodnotné prohlížeče DApp. Vzdálení klienti obvykle nabízejí některé funkce Ethereum klienta úplným uzlem, aniž by synchronizovali místní kopii Ethereum bločenky připojením k úplnému uzlu, který se spouští jinde, např. lokálně na vašem počítači nebo na webovém serveru nebo prostřednictvím třetí strany na jejich serverech.
+
+Pojďme se podívat na některé z nejpopulárnějších klientů pro vzdálený přístup a funkce, které nabízejí.
+
+[[mobile_wallets]]
+==== Mobilní peněženky pro chytré telefony
+
+((("mobile (smartphone) wallets")))((("remote clients","mobile wallets")))((("wallets","mobile")))Všechny mobilní peněženky jsou klienty pr ovzdálený přístup, protože chytré telefony nemají dostatečné zdroje pro provozování úplného Ethereum klienta. Odlehčení Ethereum klienti  jsou ve stádiu vývoje a obecně se nepoužívají. V případě Parity je odlehčený klient označen jako „experimentální“ a lze jej použít spuštěním +parity+ s volbou +--light+.
+
+Populární mobilní peněženky zahrnují následující (uvádíme je pouze jako příklady; nejedná se o potvrzení ani o označení bezpečnosti nebo funkčnosti těchto peněženek):
+
+https://jaxx.io[Jaxx]:: ((("Jaxx","mobile version")))((("wallets","Jaxx")))Víceměnová mobilní peněženka založená na mnemotechnických semínkách BIP-39 , s podporou Bitcoinu, Litecoinu, Etherea, Etherea Classic, ZCash, různých ERC20 tokenů a mnoha dalších měn. Jaxx je k dispozici pro Android a iOS, jako webová peněženka implementovaná pomocí rozšíření prohlížeče a jako  peněženka pro stolní počítače pro různé operační systémy.
+
+https://status.im[Status]:: ((("Status (mobile wallet)")))Mobilní peněženka a prohlížeč DApp s podporou řady tokenů a populárních DApps. K dispozici pro iOS a Android.
+
+https://trustwalletapp.com/[Trust Wallet]:: ((("Trust Wallet")))((("wallets","Trust")))Mobilní víceměnová peněženka, která podporuje Ethereum a Ethereum Classic, stejně jako tokeny ERC20 a ERC223. Trust Wallet je k dispozici pro iOS a Android.
+
+https://www.cipherbrowser.com[Cipher Browser]:: ((("Cipher Browser")))Plně vybavený mobilní prohlížeč DApp a Ethereum peněženka, který umožňuje integraci s aplikacemi a Ethereum tokeny. K dispozici pro iOS a Android.
+
+[[browser_wallets]]
+==== Webové peněženky
+
+((("browser wallets")))((("remote clients","browser wallets")))((("wallets","browser wallets")))Mnoho různých peněženek prohlížečů DApp  je k dispozici jako rozšíření webových prohlížečů, jako je Chrome a Firefox. Jedná se o vzdálené klienty, které běží ve vašem prohlížeči.
+
+Mezi nejoblíbenější patří MetaMask, Jaxx, MyEtherWallet a MyCrypto.
+
+[[MetaMask]]
+===== MetaMask
+
+https://metamask.io/[MetaMask], ((("MetaMask","as browser wallet"))) představený v <<intro_chapter>> je všestranná webová peněženka, RPC klient, a základní průzkumník kontraktů. Je k dispozici v prohlížečích Chrome, Firefox, Opera a Brave.
+
+Na rozdíl od jiných webových peněženek, MetaMask  napojuje web3 instanci do kontextu JavaScriptu v prohlížeči, který funguje jako klient RPC, který se připojuje k celé řadě Ethereum bločenek (hlavní síť, testovací síť Ropsten, testovací síť Kovan, místní RPC uzel, atd.). Schopnost vložit web3  instanci a fungovat jako brána k externím RPC službám činí z MetaMasku velmi silný nástroj pro vývojáře i uživatele. Lze jej kombinovat například s MyEtherWallet nebo MyCrypto, funguje jako web3 poskytovatel a RPC brána pro tyto nástroje.
+
+[[Jaxx]]
+===== Jaxx
+
+https://jaxx.io[Jaxx], ((("Jaxx","desktop version")))((("wallets","Jaxx")))který byl v předchozí sekci představen jako mobilní peněženka, je k dispozici také jako rozšíření pro Chrome a Firefox a jako peněženka  pro stolní počítače.
+
+[[MEW]]
+===== MyEtherWallet (MEW)
+
+https://www.myetherwallet.com/[MyEtherWallet] ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet"))) webový klient se vzdáleným přístupem naprogramovaný v   JavaScriptu, který nabízí:
+
+* Most k populárním hardwarovým peněženkám, jako jsou Trezor a Ledger
+* Web3 rozhraní, které se může připojit k web3 instanci  jiného klienta (např. MetaMask)
+* RPC klient , který se může připojit k úplnému Ethereum klientovi 
+* Základní rozhraní, které může spolupracovat s chytrými kontrakty, po zadání adresy kontraktu a  aplikační binární rozhraní (ABI)
+* Mobilní aplikace MEWConnect, která umožňuje používat kompatibilní zařízení Android nebo iOS k ukládání prostředků, podobně jako hardwarová peněženka.
+* Softwarová peněženka běžící v JavaScriptu
+
+[WARNING]
+====
+Při přístupu k MyEtherWallet a dalším webovým peněženkám naprogramovaným v JavaScriptu musíte být velmi opatrní, protože jsou častým cílem phishingu. K přístupu na správnou webovou adresu URL vždy používejte záložku a ne webový vyhledávač.
+====
+
+[[MyCrypto]]
+===== MyCrypto
+
+((("MyCrypto (wallet)")))((("wallets","MyCrypto")))In early 2018, the ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))Projekt MyEtherWallet se rozdělil do dvou konkurenčních implementací, vedených dvěma nezávislými vývojovými týmy: „rozštěpení“ jak se tato situace nazývá při vývoj software s otevřeným zdrojovým kódem. Tyto dva projekty se nazývají MyEtherWallet (původní značka) a https://mycrypto.com/[MyCrypto]. MyCrypto nabízí téměř totožnou funkčnost jako MyEtherWallet, ale namísto použití MEWConnect nabízí připojení k mobilní aplikaci Parity Signer. Stejně jako MEWConnect, Parity Signer ukládá klíče do telefonu a rozhraní s MyCrypto podobným způsobem jako hardwarová peněženka.
+
+[[Mist]]
+===== Mist (zastaralá)
+
+https://github.com/ethereum/mist[Mist] ((("Mist (browser-based wallet)")))((("wallets","Mist")))byl první Ethereum prohlížeč, vytvořený Nadací Ethereum. Obsahoval webovou peněženku, která byla první implementací standardu tokenů ERC20 (Fabian Vogelsteller, autor ERC20, byl také hlavním vývojářem Mist). Mist byla také první peněženka, která zavedla kontrolní součet camelCase (EIP-55). V březnu 2019 byla Mist prohlášena za zastaralou a neměla by se nadále používat.
+
+=== Závěry
+
+V této kapitole jsme prozkoumali Ethereum klienty. Stáhli jste, nainstalovali a synchronizovali klienta, stali jste se účastníkem sítě Ethereum a přispívali jste ke zdraví a stabilitě systému replikováním bločenky na vašem počítači. (((range="endofrange", startref="ix_03clients-asciidoc0")))
