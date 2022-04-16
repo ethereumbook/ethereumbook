@@ -8,6 +8,8 @@ import { ChatRoom } from './models/ChatRoom'
 import { DeedRepository } from './models/DeedRepository'
 import { AuctionRepository } from './models/AuctionRepository'
 
+var Web3 = require('web3')
+
 // rename to avoid conflict between metamask
 // will be used for whisper v5/6
 var Web3_1 = require('web3')
@@ -29,6 +31,7 @@ var store = {
 
         // local web3 instance(not metamask)
         web3 : null,
+        contractInstance: null,
 
     },
     networkReady() {
@@ -72,14 +75,15 @@ Vue.mixin({
 
         // one instance of web3 available to all components
         if (typeof web3 !== 'undefined') {
-            web3 = new Web3(web3.currentProvider)
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum)
+            }
             this.$auctionRepoInstance.setWeb3(web3)
             this.$deedRepoInstance.setWeb3(web3)
 
             store.setMetamaskInstalled()
-            web3.version.getNetwork((err, netId) => {
-                store.setNetworkId(netId)
-            })
+            web3.eth.net.getId().then(netId => { store.setNetworkId(netId) })
+
             // pull accounts every 2 seconds
             setInterval(() => {
                 web3.eth.getAccounts((err, data) => {

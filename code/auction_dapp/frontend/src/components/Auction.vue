@@ -47,7 +47,7 @@
                     <v-btn @click="cancelAuction(auc.id)" :disabled="!isAuctionOwner(auc) || !auc.active" style=" margin:0; width:100%;" color="teal" dark> Cancel Auction </v-btn>
                 </div>
                 <div style="margin-top:13px;">
-                    <v-btn @click="finalizeAuction(auc.id)" :disabled="!isAuctionOwner(auc) || !isLastBidder(auc)" style=" margin:0; width:100%;" color="teal" dark> Finalize Auction </v-btn>
+                    <v-btn @click="finalizeAuction(auc.id)" :disabled="!isAuctionOwner(auc)" style=" margin:0; width:100%;" color="teal" dark> Finalize Auction </v-btn>
                 </div>
                 </div>
             </v-flex>
@@ -274,18 +274,21 @@
                     let lastBidAmount = 0, lastBidAccount = 'N/A'
                     if(bidCount > 0) {
                         const res = await this.$auctionRepoInstance.getCurrentBid(auctionId)
-                        lastBidAmount = this.$auctionRepoInstance.getWeb3().fromWei(res[0].toNumber(), 'ether')
+                        lastBidAmount = this.$auctionRepoInstance.getWeb3().utils.fromWei(res[0], 'ether')
                         lastBidAccount = res[1]
                     }
                     let auction = await this.$auctionRepoInstance.findById(auctionId)
                     // get metadata
-                    const swarmResult = await this.$http.get(`${this.$config.BZZ_ENDPOINT}/bzz-list:/${auction[3]}`)
+
+// TODO Refactor for new version bee
+//
+//                    const swarmResult = await this.$http.get(`${this.$config.BZZ_ENDPOINT}/bzz-list:/${auction[3]}`)
                     let imageUrl = ''
-                    swarmResult.body.entries.map((entry) => {
-                        if('contentType' in entry) imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz-raw:/${auction[3]}/${entry.path}`
-                    })
+//                    swarmResult.body.entries.map((entry) => {
+//                        if('contentType' in entry) imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz-raw:/${auction[3]}/${entry.path}`
+//                    })
                     
-                    let expires = new Date(auction[1].toNumber() * 1000 ), now = new Date()
+                    let expires = new Date(auction[1] * 1000 ), now = new Date()
                     const expirationInHuman = moment.duration(moment(now).diff(expires)).humanize()
 
             
@@ -297,10 +300,10 @@
                         image: imageUrl,
                         title: auction[0],
                         timeLeft: expirationInHuman,
-                        expirationDate: moment(new Date(auction[1].toNumber() * 1000)).format('dddd, MMMM Do YYYY, h:mm:ss a'),
-                        startingPrice: this.$auctionRepoInstance.getWeb3().fromWei(auction[2].toNumber(), 'ether'),
+                        expirationDate: moment(new Date(auction[1] * 1000)).format('dddd, MMMM Do YYYY, h:mm:ss a'),
+                        startingPrice: this.$auctionRepoInstance.getWeb3().utils.fromWei(auction[2], 'ether'),
                         metadata: auction[3],
-                        deedId: auction[4].toNumber(),
+                        deedId: auction[4],
                         deedRepositoryAddress: auction[5],
                         owner: auction[6],
                         active: auction[7],
