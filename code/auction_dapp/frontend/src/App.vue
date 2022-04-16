@@ -405,14 +405,17 @@ export default {
                 this.loadingModal = true
 
                 // create from data and attach the auction property
-                let formData = new FormData()
-                Object.keys(this.auction).map((key) => {
-                    formData.append(key, this.auction[key])
-                })
-                const response = await this.$http.post(`${this.$config.BZZ_ENDPOINT}/bzz:/`, formData)
-                this.auction.metadata = response.body
 
-                console.log(this.auction)
+
+                // TODO refactor for new version bee
+//                let formData = new FormData()
+//                Object.keys(this.auction).map((key) => {
+//                    formData.append(key, this.auction[key])
+//                })
+//                const response = await this.$http.post(`${this.$config.BZZ_ENDPOINT}/bzz:/`, formData)
+//                this.auction.metadata = response.body
+
+//                console.log(this.auction)
 
                 // create the smart contract
                 this.$auctionRepoInstance.setAccount(this.getWeb3DefaultAccount)
@@ -441,7 +444,7 @@ export default {
                 this.createAssetError = null
                 
                 this.$deedRepoInstance.setAccount(this.getWeb3DefaultAccount)
-                var trnasaction = await this.$deedRepoInstance.create(this.deed.deedId, this.deed.deedURI)
+                var transaction = await this.$deedRepoInstance.create(this.deed.deedId, this.deed.deedURI)
 
                 this.$deedRepoInstance.watchIfCreated((error, result) => {
                     // might get called multiple times
@@ -495,7 +498,7 @@ export default {
          */
         showAuction() {
             // get random deedid
-            this.deed.deedId = new web3.BigNumber(`${this.$root.$data.globalState.getRandomInt(123456789,999999999)}${this.$root.$data.globalState.getRandomInt(123456789,999999999)}`)
+            this.deed.deedId = new web3.utils.BN(`${this.$root.$data.globalState.getRandomInt(123456789,999999999)}${this.$root.$data.globalState.getRandomInt(123456789,999999999)}`)
             this.dialog = true;
         },
 
