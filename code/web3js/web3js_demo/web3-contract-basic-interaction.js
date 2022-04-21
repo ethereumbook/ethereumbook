@@ -94,14 +94,14 @@ web3.eth.getCode(our_contract_address).then(function(code) {
       console.log("-------------------------------------------------------------\n");
 })
 
-// Let's initialize our contract url in Etherescan for Kovan chain
-var etherescan_url = `http://kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
-console.log(etherescan_url);
+// Let's initialize our contract url in Etherscan for Kovan chain
+var etherscan_url = `http://api-kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
+console.log(etherscan_url);
 
 var client = require('node-rest-client-promise').Client();
 
 // Now we are going to deal with the contract from web3.js in a non-block fashion (async mode)
-client.getPromise(etherescan_url)
+client.getPromise(etherscan_url)
 .then((client_promise) => {
   // Leave this two lines for fure object analisys
   //const util = require('util')
