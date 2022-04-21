@@ -86,7 +86,7 @@ async function basicInterations() {
   console.log("-------------------------------------------------------------\n");
 
   // Let's initialize our contract url in Etherescan for Kovan chain
-  var etherescan_url = `http://kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
+  var etherescan_url = `http://api-kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
   console.log(etherescan_url);
 
   var client = require('node-rest-client-promise').Client();
