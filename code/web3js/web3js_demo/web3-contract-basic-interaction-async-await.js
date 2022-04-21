@@ -85,20 +85,20 @@ async function basicInterations() {
   console.log(code);
   console.log("-------------------------------------------------------------\n");
 
-  // Let's initialize our contract url in Etherescan for Kovan chain
-  var etherescan_url = `http://api-kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
-  console.log(etherescan_url);
+  // Let's initialize our contract url in Etherscan for Kovan chain
+  var etherscan_url = `http://api-kovan.etherscan.io/api?module=contract&action=getabi&address=${our_contract_address}`
+  console.log(etherscan_url);
 
   var client = require('node-rest-client-promise').Client();
 
-  var etherescan_response = await client.getPromise(etherescan_url)
+  var etherscan_response = await client.getPromise(etherscan_url)
 
   // Leave this two lines for future object analysis
   //const util = require('util')
-  //console.log(util.inspect(etherescan_response, false, null))
+  //console.log(util.inspect(etherscan_response, false, null))
 
   // We get here our contract ABI
-  our_contract_abi = JSON.parse(etherescan_response.data.result);
+  our_contract_abi = JSON.parse(etherscan_response.data.result);
 
   // Let's instantiate our contract object
   var our_contract = await new web3.eth.Contract(our_contract_abi, our_contract_address);
