@@ -164,18 +164,13 @@ export default {
     const count = await this.$auctionRepoInstance.getCount();
     for (let i = 0; i < count; i++) {
       let auction = await this.$auctionRepoInstance.findById(i);
-      // get metadata
-
-// TODO Refactor for new version bee
-//
-//      const swarmResult = await this.$http.get(
-//        `${this.$config.BZZ_ENDPOINT}/bzz-list:/${auction[3]}`
-//      );
-      let imageUrl = "";
-//      swarmResult.body.entries.map(entry => {
-//        if ("contentType" in entry)
-//          imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz-raw:/${auction[3]}/${entry.path}`;
-//      });
+      
+      let imageUrl = ''
+      if (auction[3]) {
+        imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz/` + auction[3] + '/AuctionImage'
+      }
+      console.log(imageUrl)
+      
       this.auctions.push({
         id: i,
         image: imageUrl,

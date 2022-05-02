@@ -283,7 +283,7 @@
     </v-app>
 </template>
 <script>
-import { Bee } from '@ethersphere/bee-js'
+
 export default {
     name: 'app',
     data: () => ({
@@ -310,9 +310,10 @@ export default {
             timeInDays: 0,
             timeInBlocks: 0,
             startingPrice: null,
-            reservePrice: null,        
+            reservePrice: null,
+            fileInput: null,
+           
         },
-        auctionFileInput: null,
 
         // network status popup
         statusPopup: true,
@@ -403,14 +404,18 @@ export default {
             try {
                 this.loadingModal = true
 
-                const auctionString =  JSON.stringify(this.auction)
-                const auctionInfo = new File([auctionString], "AuctionInfo.txt", { type: "text/plain" })
-                const auctionImage = new File([this.auctionFileInput], "AuctionImage", { type: "application/octet-stream" })
+                // create from data and attach the auction property
 
-                const bee = new Bee(`${this.$config.BZZ_ENDPOINT}`)
-                const result = await bee.uploadFiles(`${this.$config.BEE_POSTAGE_BATCH}`, [auctionInfo, auctionImage])
 
-                this.auction.metadata = result.reference
+                // TODO refactor for new version bee
+//                let formData = new FormData()
+//                Object.keys(this.auction).map((key) => {
+//                    formData.append(key, this.auction[key])
+//                })
+//                const response = await this.$http.post(`${this.$config.BZZ_ENDPOINT}/bzz:/`, formData)
+//                this.auction.metadata = response.body
+
+//                console.log(this.auction)
 
                 // create the smart contract
                 this.$auctionRepoInstance.setAccount(this.getWeb3DefaultAccount)
@@ -501,7 +506,7 @@ export default {
          * Event gets triggered when a file input is changed
          */
         fileSelectionEvent(event){
-            this.auctionFileInput = event.target.files[0]
+            this.auction.fileInput = event.target.files[0]
         },
 
 
