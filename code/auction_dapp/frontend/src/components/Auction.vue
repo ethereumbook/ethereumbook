@@ -278,15 +278,12 @@
                         lastBidAccount = res[1]
                     }
                     let auction = await this.$auctionRepoInstance.findById(auctionId)
-                    // get metadata
 
-// TODO Refactor for new version bee
-//
-//                    const swarmResult = await this.$http.get(`${this.$config.BZZ_ENDPOINT}/bzz-list:/${auction[3]}`)
                     let imageUrl = ''
-//                    swarmResult.body.entries.map((entry) => {
-//                        if('contentType' in entry) imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz-raw:/${auction[3]}/${entry.path}`
-//                    })
+                    if (auction[3]) {
+                        imageUrl = `${this.$config.BZZ_ENDPOINT}/bzz/` + auction[3] + '/AuctionImage'
+                    }
+                    console.log(imageUrl)
                     
                     let expires = new Date(auction[1] * 1000 ), now = new Date()
                     const expirationInHuman = moment.duration(moment(now).diff(expires)).humanize()
