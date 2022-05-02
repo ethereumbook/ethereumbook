@@ -11,6 +11,7 @@ function resolve (dir) {
 
 
 module.exports = {
+  mode: 'development',
   context: path.resolve(__dirname, '../'),
   entry: {
     app: './src/main.js'
@@ -37,9 +38,14 @@ module.exports = {
         options: vueLoaderConfig
       },
       {
-        test: /\.js$/,
-        loader: 'babel-loader',
-        include: [resolve('src'), resolve('test'), resolve('node_modules/webpack-dev-server/client')]
+        test: /\.m?js$/,
+        exclude: /(node_modules|bower_components)/,
+        use: {
+           loader: 'babel-loader',
+           options: {
+             presets: ['@babel/preset-env']
+           }
+        }
       },
       {
         test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,

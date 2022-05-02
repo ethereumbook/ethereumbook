@@ -17,7 +17,7 @@ contract('DeedRepository', async (accounts) => {
     });
 
     it("It should register a deed with id: 123456789", async () => {
-        await instance.registerDeed(accounts[0], 123456789);
+        await instance.registerDeed(123456789,"test");
         let ownerOfDeed = await instance.exists(123456789);
         assert.equal(ownerOfDeed.valueOf(), true , `Result should be true`);
     });

@@ -13,7 +13,7 @@ export class AuctionRepository {
 
     setWeb3(web3) {
         this.web3 = web3
-        this.contractInstance = this.web3.eth.contract(Config.AUCTIONREPOSITORY_ABI).at(Config.AUCTIONREPOSITORY_ADDRESS)
+        this.contractInstance = new this.web3.eth.Contract(Config.AUCTIONREPOSITORY_ABI,Config.AUCTIONREPOSITORY_ADDRESS)
     }
 
     getWeb3() {
@@ -34,33 +34,41 @@ export class AuctionRepository {
         })
     }
 
-    async watchIfCreated(cb) {
+async watchIfCreated(cb) {
         const currentBlock = await this.getCurrentBlock()
-        const eventWatcher = this.contractInstance.AuctionCreated({}, {fromBlock: currentBlock - 1, toBlock: 'latest'})
-        eventWatcher.watch(cb)
+        this.contractInstance.events.AuctionCreated({
+            filter: {}, 
+            fromBlock: currentBlock - 1
+            }, cb)
     }
 
     async watchIfBidSuccess(cb) {
-        const currentBlock = await this.getCurrentBlock()
-        const eventWatcher = this.contractInstance.BidSuccess({}, {fromBlock: currentBlock - 1, toBlock: 'latest'})
-        eventWatcher.watch(cb)
+	const currentBlock = await this.getCurrentBlock()
+        this.contractInstance.events.BidSuccess({
+            filter: {}, 
+            fromBlock: currentBlock - 1
+            }, cb)
     }
 
     async watchIfCanceled(cb) {
         const currentBlock = await this.getCurrentBlock()
-        const eventWatcher = this.contractInstance.AuctionCanceled({}, {fromBlock: currentBlock - 1, toBlock: 'latest'})
-        eventWatcher.watch(cb)
+        this.contractInstance.events.AuctionCanceled({
+            filter: {}, 
+            fromBlock: currentBlock - 1
+            }, cb)
     }
 
     async watchIfFinalized(cb) {
         const currentBlock = await this.getCurrentBlock()
-        const eventWatcher = this.contractInstance.AuctionFinalized({}, {fromBlock: currentBlock - 1, toBlock: 'latest'})
-        eventWatcher.watch(cb)
+        this.contractInstance.events.AuctionFinalized({
+            filter: {}, 
+            fromBlock: currentBlock - 1
+            }, cb)
     }
-    getCurrentBid(auctionId) {
+getCurrentBid(auctionId) {
         return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.getCurrentBid(auctionId, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.methods.getCurrentBid(auctionId).call({from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -71,9 +79,9 @@ export class AuctionRepository {
     }
 
     getBidCount(auctionId) {
-        return new Promise(async (resolve, reject) => {
+	    return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.getBidsCount(auctionId, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.methods.getBidsCount(auctionId).call({from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -83,11 +91,12 @@ export class AuctionRepository {
         })
     }
 
-    getCount() {
-        return new Promise(async (resolve, reject) => {
+    getCount() {	    
+	    return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.getCount({from: this.account, gas: this.gas }, (err, transaction) => {
-                    if(!err) resolve(transaction)
+		    await web3.eth.getAccounts((err, data) => { if(data.length > 0) this.setAccount(data[0]) })
+		    this.contractInstance.methods.getCount().call({from: this.account, gas: this.gas }, function(err, transaction) {
+	            if(!err) resolve(transaction)
                     reject(err)
                 })
             } catch(e) {
@@ -100,7 +109,7 @@ export class AuctionRepository {
         console.log(auctionId, this.web3.utils.toWei(price, 'ether'))
         return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.bidOnAuction(auctionId, {from: this.account, gas: this.gas, value: this.web3.utils.toWei(price, 'ether') }, (err, transaction) => {
+                this.contractInstance.methods.bidOnAuction(auctionId).send({from: this.account, gas: this.gas, value: this.web3.utils.toWei(price, 'ether') }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -113,8 +122,7 @@ export class AuctionRepository {
     create(deedId, auctionTitle, metadata, startingPrice, blockDeadline) {
         return new Promise(async (resolve, reject) => {
             try {
-
-                this.contractInstance.createAuction(Config.DEEDREPOSITORY_ADDRESS, deedId, auctionTitle, metadata, this.web3.utils.toWei(startingPrice, 'ether'), blockDeadline, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.methods.createAuction(Config.DEEDREPOSITORY_ADDRESS, deedId, auctionTitle, metadata, this.web3.utils.toWei(startingPrice, 'ether'), blockDeadline).send({from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -127,7 +135,7 @@ export class AuctionRepository {
     cancel(auctionId) {
         return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.cancelAuction(auctionId, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.methods.cancelAuction(auctionId).send({from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -140,7 +148,7 @@ export class AuctionRepository {
     finalize(auctionId) {
         return new Promise(async (resolve, reject) => {
             try {
-                this.contractInstance.finalizeAuction(auctionId, {from: this.account, gas: this.gas }, (err, transaction) => {
+                this.contractInstance.methods.finalizeAuction(auctionId).send({from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
@@ -152,8 +160,8 @@ export class AuctionRepository {
 
     findById(auctionId) {
         return new Promise(async (resolve, reject) => {
-            try {
-                this.contractInstance.getAuctionById(auctionId, { from: this.account, gas: this.gas }, (err, transaction) => {
+	    try {
+                this.contractInstance.methods.getAuctionById(auctionId).call({ from: this.account, gas: this.gas }, function(err, transaction) {
                     if(!err) resolve(transaction)
                     reject(err)
                 })
