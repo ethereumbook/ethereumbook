@@ -21,12 +21,12 @@ contract METFaucet {
 
 	function withdraw(uint withdraw_amount) public {
 
-    	// Limit withdrawal amount to 10 MET
-    	require(withdraw_amount <= 1000);
+		// Limit withdrawal amount to 10 MET
+		require(withdraw_amount <= 1000);
 
 		// Use the transferFrom function of METoken
 		METoken.transferFrom(METOwner, msg.sender, withdraw_amount);
-    }
+	}
 
 	// REJECT any incoming ether
 	function () external payable { revert(); }
