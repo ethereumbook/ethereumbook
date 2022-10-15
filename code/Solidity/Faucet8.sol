@@ -16,6 +16,17 @@ contract Owned {
         require(msg.sender == owner, "Only the contract owner can call this function");
         _;
     }
+    
+    // Getting contract owner
+    function getOwner() public view returns(address payable) {
+        return owner;
+    }
+    
+    // Change owner
+    
+    function changeOwner(address payable newOwner) public onlyOwner {
+        onwer = newOwner;
+    }
 }
 
 contract Mortal is Owned {
