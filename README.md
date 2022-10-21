@@ -2,7 +2,7 @@
 
 ![Mastering Ethereum Cover](images/cover_thumb.png)
 
-Mastering Ethereum is a book for developers, offering a guide to the operation and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
+Mastering Ethereum is a book for developers, that offers a complete guide to the operations and use of the Ethereum, Ethereum Classic, RootStock (RSK) and other compatible EVM-based open blockchains.
 
 ## Reading this book
 
