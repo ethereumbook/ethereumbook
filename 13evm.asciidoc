@@ -1,10 +1,10 @@
 [[evm_chapter]]
-== The Ethereum Virtual Machine
+# The Ethereum Virtual Machine
 
 ((("EVM (Ethereum Virtual Machine)", id="ix_13evm-asciidoc0", range="startofrange")))At the heart of the Ethereum protocol and operation is the Ethereum Virtual Machine, or EVM for short. As you might guess from the name, it is a computation engine, not hugely dissimilar to the virtual machines of Microsoft's .NET Framework, or interpreters of other bytecode-compiled programming languages such as Java. In this chapter we take a detailed look at the EVM, including its instruction set, structure, and operation, within the context of Ethereum state updates.
 
 [[evm_description]]
-=== What Is the EVM?
+## What Is EVM?
 ((("EVM (Ethereum Virtual Machine)","about")))The EVM is the part of Ethereum that handles smart contract deployment and execution. Simple value transfer transactions from one EOA to another don't need to involve it, practically speaking, but everything else will involve a state update computed by the EVM. At a high level, the EVM running on the Ethereum blockchain can be thought of as a global decentralized computer containing millions of executable objects, each with its own permanent data store.
 
 ((("Turing completeness","EVM and")))The EVM is a quasi–Turing-complete state machine; "quasi" because all execution processes are limited to a finite number of computational steps by the amount of gas available for any given smart contract execution. As such, the halting problem is "solved" (all program executions will halt) and the situation where execution might (accidentally or maliciously) run forever, thus bringing the Ethereum platform to halt in its entirety, is avoided.
@@ -25,7 +25,7 @@ There is also a set of environment variables and data that is available during e
 image::images/evm-architecture.png["The Ethereum Virtual Machine (EVM) Architecture and Execution Context"]
 
 [[evm_comparison]]
-==== Comparison with Existing Technology
+### Comparison with Existing Technology
 
 ((("EVM (Ethereum Virtual Machine)","comparison with existing technology")))The term "virtual machine" is often applied to the virtualization of a real computer, typically by a "hypervisor" such as VirtualBox or QEMU, or of an entire operating system instance, such as Linux's KVM. These must provide a software abstraction, respectively, of actual hardware, and of system calls and other kernel functionality.
 
@@ -34,7 +34,7 @@ The EVM operates in a much more limited domain: it is just a computation engine,
 The EVM, therefore, has no scheduling capability, because execution ordering is organized externally to it&#x2014;Ethereum clients run through verified block transactions to determine which smart contracts need executing and in which order. In this sense, the Ethereum world computer is single-threaded, like JavaScript. Neither does the EVM have any "system interface" handling or &#x201c;hardware support&#x201d;&#x2014;there is no physical machine to interface with. The Ethereum world computer is completely virtual.
 
 [[evm_bytecode_overview]]
-==== The EVM Instruction Set (Bytecode Operations)
+### The EVM Instruction Set (Bytecode Operations)
 
 ((("bytecode operations", id="ix_13evm-asciidoc1", range="startofrange")))((("EVM (Ethereum Virtual Machine)","instruction set (bytecode operations)", id="ix_13evm-asciidoc2", range="startofrange")))((("EVM bytecode","instruction set", id="ix_13evm-asciidoc3", range="startofrange")))The EVM instruction set offers most of the operations you might expect, including:
 
@@ -50,9 +50,9 @@ Let's start our exploration of the EVM in more detail by looking at the availabl
 put back on the top of the stack.
 
 [NOTE]
-====
+=====
 A complete list of opcodes and their corresponding gas cost can be found in <<evm_opcodes>>.
-====
+=====
 
 The available opcodes can be divided into the following categories:
 
@@ -192,7 +192,7 @@ GASLIMIT   //Get the block's gas limit
 ----
 
 [[evm_state_descriptions]]
-==== Ethereum State
+### Ethereum State
 
 ((("EVM (Ethereum Virtual Machine)","Ethereum state updating")))The job of the EVM is to update the Ethereum state by computing valid state transitions as a result of smart contract code execution, as defined by the Ethereum protocol. This aspect leads to the description of Ethereum as a _transaction-based state machine_, which reflects the fact that external actors (i.e., account holders and miners) initiate state transitions by creating, accepting, and ordering transactions. It is useful at this point to consider what constitutes the Ethereum state.
 
@@ -369,7 +369,7 @@ The next opcode is +CALLVALUE+, which is an environmental opcode that pushes ont
 We could continue to step through this program in this way until we had a full understanding of the low-level state changes that this code effects, but it wouldn't help us at this stage. We'll come back to it later in the chapter.(((range="endofrange", startref="ix_13evm-asciidoc6")))(((range="endofrange", startref="ix_13evm-asciidoc5")))(((range="endofrange", startref="ix_13evm-asciidoc4")))
 
 [[contract_deployment_code]]
-==== Contract Deployment Code
+### Contract Deployment Code
 
 ((("EVM (Ethereum Virtual Machine)","contract deployment code", id="ix_13evm-asciidoc7", range="startofrange")))((("EVM bytecode","contract deployment code", id="ix_13evm-asciidoc8", range="startofrange")))There is an important but subtle difference between the code used when creating and deploying a new contract on the Ethereum platform and the code of the contract itself. In order to create a new contract, a special transaction is needed that has its +to+ field set to the special +0x0+ address and its +data+ field set to the contract's _initiation code_. When such a contract creation transaction is processed, the code for the new contract account is _not_ the code in the +data+ field of the transaction. Instead, an EVM is instantiated with the code in the +data+ field of the transaction loaded into its program code ROM, and then the output of the execution of that deployment code is taken as the code for the new contract account. This is so that new contracts can be programmatically initialized using the Ethereum world state at the time of deployment, setting values in the contract's storage and even sending ether or creating further new contracts.
 
@@ -589,7 +589,7 @@ Next, we have +PUSH1 0x41+, which is the address at which the +withdraw(uint256)
 The +JUMPI+ instruction is next, and it once again accepts the top two elements on the stack as arguments. In this case, we have +jumpi(0x41, 1)+, which tells the EVM to execute the jump to the location of the +withdraw(uint256)+ function, and the execution of that function's code can proceed.(((range="endofrange", startref="ix_13evm-asciidoc10")))(((range="endofrange", startref="ix_13evm-asciidoc9")))
 
 [[turing_completeness_and_gas]]
-=== Turing Completeness and Gas
+## Turing Completeness and Gas
 
 ((("EVM (Ethereum Virtual Machine)","Turing completeness and Gas")))((("Turing completeness","EVM and")))As we have already touched on, in simple terms, a system or programming language is _Turing complete_ if it can run any program. This capability, however, comes with a very important caveat: some programs take forever to run. An important aspect of this is that we can't tell, just by looking at a program, whether it will take forever or not to execute. We have to actually go through with the execution of the program and wait for it to finish to find out. ((("halting problem")))Of course, if it is going to take forever to execute, we will have to wait forever to find out. This is called the _halting problem_ and would be a huge problem for Ethereum if it were not addressed.
 
@@ -600,7 +600,7 @@ However, with gas, there is a solution: if after a prespecified maximum amount o
 In the following sections, we will look at gas and examine how it works in detail.
 
 [[gas]]
-=== Gas
+## Gas
 
 ((("EVM (Ethereum Virtual Machine)","gas and", id="ix_13evm-asciidoc11", range="startofrange")))((("gas","EVM and", id="ix_13evm-asciidoc12", range="startofrange")))_Gas_ is Ethereum's unit for measuring the computational and storage resources required to perform actions on the Ethereum blockchain. In contrast to Bitcoin, whose transaction fees only take into account the size of a transaction in kilobytes, Ethereum must account for every computational step performed by transactions and smart contract code execution.
 
@@ -642,7 +642,7 @@ More computationally intensive operations cost more gas. For example, executing 
 
 The importance of matching gas cost to the real-world cost of resources was demonstrated in 2016 when an attacker found and exploited a mismatch in costs. The attack generated transactions that were very computationally expensive, and made the Ethereum mainnet almost grind to a halt. This mismatch was resolved by a hard fork (codenamed "Tangerine Whistle") that tweaked the relative gas costs.
 
-==== Gas Cost Versus Gas Price
+### Gas Cost Versus Gas Price
 ((("EVM (Ethereum Virtual Machine)","gas cost vs. gas price")))((("gas","cost vs. price")))((("gas cost, gas price vs.")))While the gas _cost_ is a measure of computation and storage used in the EVM, the gas itself also has a _price_ measured in ether. When performing a transaction, the sender specifies the gas price they are willing to pay (in ether) for each unit of gas, allowing the market to decide the relationship between the price of ether and the cost of computing operations (as measured in gas):
 
 ----
@@ -676,7 +676,7 @@ There are two operations in the EVM with negative gas costs:
 
 To avoid exploitation of the refund mechanism, the maximum refund for a transaction is set to half the total amount of gas used (rounded down).
 
-==== Block Gas Limit
+### Block Gas Limit
 
 ((("block gas limit")))((("EVM (Ethereum Virtual Machine)","block gas limit")))((("gas","block gas limit")))The block gas limit is the maximum amount of gas that may be consumed by all the transactions in a block, and constrains how many transactions can fit into a block.
 
@@ -684,10 +684,10 @@ For example, let’s say we have 5 transactions whose gas limits have been set t
 
 If a miner tries to include a transaction that requires more gas than the current block gas limit, the block will be rejected by the network. Most Ethereum clients will stop you from issuing such a transaction by giving a warning along the lines of “transaction exceeds block gas limit.” The block gas limit on the Ethereum mainnet is 8 million gas at the time of writing according to https://etherscan.io, meaning that around 380 basic transactions (each consuming 21,000 gas) could fit into a block.
 
-===== Who decides what the block gas limit is?
+#### Who decides what the block gas limit is?
 
 The miners on the network collectively decide the block gas limit. Individuals who want to mine on the Ethereum network use a mining program, such as Ethminer, which connects to a Geth or Parity Ethereum client. The Ethereum protocol has a built-in mechanism where miners can vote on the gas limit so capacity can be increased or decreased in subsequent blocks. The miner of a block can vote to adjust the block gas limit by a factor of 1/1,024 (0.0976%) in either direction. The result of this is an adjustable block size based on the needs of the network at the time. This mechanism is coupled with a default mining strategy where miners vote on a gas limit that is at least 4.7 million gas, but which targets a value of 150% of the average of recent total gas usage per block (using a 1,024-block exponential moving average).(((range="endofrange", startref="ix_13evm-asciidoc12")))(((range="endofrange", startref="ix_13evm-asciidoc11")))
 
-=== Conclusions
+## Conclusions
 
 In this chapter we have explored the Ethereum Virtual Machine, tracing the execution of various smart contracts and looking at how the EVM executes bytecode. We also looked at gas, the EVM's accounting mechanism, and saw how it solves the halting problem and protects Ethereum from denial-of-service attacks. Next, in <<consensus>>, we will look at the mechanism used by Ethereum to achieve decentralized consensus.(((range="endofrange", startref="ix_13evm-asciidoc0")))
