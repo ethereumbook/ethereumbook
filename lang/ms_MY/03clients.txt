@@ -1,0 +1,577 @@
+[[ethereum_clients_chapter]]
+== Klien Ethereum
+
+((("clients, Ethereum", id="ix_03clients-asciidoc0", range="startofrange")))Klien Ethereum adalah aplikasi perisian yang melaksanakan perincian dan komunikasi Ethereum melalui rangkaian rakan-ke-rakan dengan klien Ethereum yang lain. Pebezaan _cara kerja_ klien Ethereum seandainya ia mematuhi perincian rujukan dan protokol komunikasi piawai. Walaupun klien yang berbeza ini dilaksanakan oleh pasukan yang berbeza dan dalam bahasa pengaturcaraan yang berbeza, mereka semua "bercakap" dalam bahasa protokol yang sama dan mengikuti peraturan yang sama. Oleh itu, mereka semua boleh digunakan untuk beroperasi dan berinteraksi dengan rangkaian Ethereum yang sama.
+
+Ethereum adalah projek sumber terbuka, dan kod sumber untuk semua klien utama tersedia di bawah lesen sumber terbuka (contohnya, LGPL v3.0), bebas untuk memuat turun dan digunakan untuk sebarang tujuan. _Sumber terbuka_ (open source) bermakna percuma untuk digunakan. Ini juga bermakna Ethereum dibangunkan oleh komuniti sukarelawan dan boleh diubahsuai oleh sesiapa sahaja. Lebih banyak mata memantau bereti lebih banyak kod yang boleh dipercayai.
+
+((("Yellow Paper specification")))Ethereum dihuraikan secara berperaturan dalam "Kertas Kuning" (lihat di <<references>>).
+
+((("Bitcoin","Ethereum definition compared to")))Ia berbeza dengan sebagai contoh, Bitcoin, yang tidak ditakrifkan dalam apa cara secara rinci. Di mana "butiran terperinci" Bitcoin adalah rujukan pelaksanaan Bitcoin Core, Perincian Ethereum kumpul bukti dalam kertas yang menggabungkan perincian dalam bahasa Inggeris dan perincian matematik (mengikut aturan), sebagai tambahan kepada pelbagai Cadangan Peningkatan Ethereum, mentakrifkan kelakuan piawaian Ethereum pass:[<span class="keep-together">client</span>]. Kertas Kuning dikemaskini secara berkala kerana perubahan besar yang dibuat pass:[<span class="keep-together">Ethereum</span>].
+
+Sebagai hasil daripada perincian jelas yang teratur dalam Ethereum, terdapat beberapa perisian yang dibangunkan, boleh saling guna, dari klien Ethereum. Ethereum mempunyai kepelbagaian pelaksanaan yang dijalankan di rangkaian daripada mana-mana blok lain yang umumnya dianggap ianya sebagai perkara yang baik. Sebagai contohnya, ia telah membuktikan dirinya sebagai cara terbaik untuk mempertahankan diri terhadap serangan ke atas rangkaian, kerana tindakan strategi berlebih-lebihan oleh pelaksanaan klien tertentu yang hanya mengganggu pembangun dengan memasang sesuatu eksploit pada sistem, namu. begitu, klien lain tetap meneruskan rangkaian kerana tidak terkesan dengan perbuatan itu.
+
+=== Rangkaian Ethereum
+
+((("clients, Ethereum","Ethereum-based networks and", id="ix_03clients-asciidoc1", range="startofrange")))((("networks (Ethereum)","clients and", id="ix_03clients-asciidoc2", range="startofrange")))Terdapat pelbagai rangkaian berasaskan Ethereum yang sebahagian besarnya mematuhi spesifikasi berperaturan yang ditakrifkan dalam Kertas Kuning Ethereum, tetapi  mungkin ada atau mungkin tidak, untuk saling bersambung antara satu sama lain.
+
+Antara rangkaian berasaskan Ethereum ialah Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin, dan banyak lagi. Walaupun kebanyakan serasi pada tahap protokol, rangkaian ini sering mempunyai ciri atau struktur data yang memerlukan penyelenggara perisian klien Ethereum untuk membuat perubahan kecil bagi menyokong setiap rangkaian. Oleh kerana itu, tidak semua versi perisian klien Ethereum mampu berjalan pada setiap rantai blok berasaskan Ethereum.
+
+Pada masa ini, terdapat enam pelaksanaan utama protokol Ethereum, yang ditulis dalam enam bahasa yang berbeza:
+
+* Parity, ditulis dengan bahasa Rust
+* Geth, ditulis dengan bahasa Go
+* +cpp-ethereum+, ditulis dengan bahasa Cpass:[++]
+* +pyethereum+, ditulis dengan bahasa Python
+* Mantis, ditulis dengan bahasa Scala
+* Harmony, ditulis dengan bahasa Java
+
+Dalam bahagian ini, kita akan melihat dua klien yang paling biasa iaitu Parity dan Geth. Kami akan menunjukkan cara menyediakan nod menggunakan setiap klien, dan meneroka beberapa pilihan baris arahan dan antara muka pengaturcaraan aplikasi (API).
+
+[[full_node_importance]]
+==== Perlukah Saya Jalankan Nod Penuh?
+
+((("full node","Ethereum-based networks and", id="ix_03clients-asciidoc3", range="startofrange")))((("networks (Ethereum)","full nodes and", id="ix_03clients-asciidoc4", range="startofrange")))Kesihatan, kesihatan, ketahanan, dan kalis sekatan pada rantaian blok bergantung kepada mereka yang mengendalikan nod penuh secara bebas dan secara geografi bertebaran merata-rata. Setiap nod penuh dapat membantu nod baharu yang lain memperoleh data blok untuk kerangka kerja (bootstrap) operasi mereka, serta menawarkan pengendali sebuah kuasa yang berwibawa, bebas mengesahkan semua transaksi dan kontrak.
+
+Walau bagaimanapun, menjalankan nod penuh mengakibatkan menanggung kos sumber perkakasan dan internet jalur lebar. Nod penuh mesti memuat turun 80&#x2013;300 GB data (sehingga Januari 2020, bergantung pada penetapan klien) dan disimpan pada pemacu keras setempat. Beban data ini meningkat dengan pesat setiap hari apabila urus niaga baru dan blok ditambahkan. Kita akan membincangkan topik ini dengan lebih terperinci dalam <<requirements>>.
+
+Satu nod penuh yang dijalankan pada rangkaian langsung _mainnet_  tidak wajib untuk pembangunan Ethereum. Anda boleh melakukan hampir semua perkara yang perlu anda lakukan dengan nod _testnet_ (yang menghubungkan anda ke salah satu rantai blok uji umum yang lebih kecil), dengan rantai blok peribadi setempat seperti Ganache, atau dengan klien Ethereum berasaskan awan yang ditawarkan oleh pembekal perkhidmatan seperti Infura
+
+Anda juga mempunyai pilihan untuk menjalankan klien jarak jauh, yang tidak menyimpan salinan blok setempat atau mengesahkan blok dan urusniaga. Klien ini menawarkan fungsi dompet dan boleh membuat dan menyiarkan urusniaga. Klien jarak jauh boleh digunakan untuk menyambung ke rangkaian sedia ada, seperti nod penuh anda, rantai blok umum, testnet umum atau testnet dengan kebenaran bukti kuasa (proof-of-authority), atau rantai blok tempatan peribadi. Secara amalannya, anda mungkin pernah menggunakan klien jauh seperti MetaMask, Emerald Wallet, pass:[<span class="keep-together">MyEtherWallet</span>], atau MyCrypto sebagai cara yang mudah untuk menukar antara semua pilihan nod yang berbeza.
+
+((("remote clients","wallet compared to")))((("wallets","remote clients compared to")))Istilah "klien jarak jauh (remote client)" dan "dompet" digunakan secara bergantian, walaupun terdapat beberapa perbezaan. Biasanya, klien jarak jauh menawarkan API (seperti API web3.js) sebagai tambahan kepada fungsi transaksi dompet.
+
+((("light/lightweight client")))Jangan terkeliru antara konsep dompet jarak jauh di Ethereum dengan dompet _klien ringan_ (light node) (yang sama seperti klien Pengesahan Bayaran Ringkas dalam Bitcoin). Klien ringan mengesahkan kepala blok dan menggunakan bukti Merkle untuk mengesahkan kemasukan urusniaga di rantai blok bagi menentukan kesannya, memberikan mereka tahap keselamatan yang sama ke nod penuh. Sebaliknya, klien jarak jauh Ethereum tidak mengesahkan kepala atau transaksi blok. Mereka sepenuhnya mempercayai klien penuh untuk memberi mereka kemasukan kepada rantai blok, dengan itu ianya kehilangan keselamatan yang ketara dan jaminan ketidaktahuan (anonymity). Anda boleh mengurangkan masalah ini dengan menggunakan klien penuh yang anda jalankannya sendiri.
+
+[[full_node_adv_disadv]]
+==== Kelebihan dan Kelemahan Nod Penuh
+
+((("full node","advantages/disadvantages")))Memilih untuk menjalankan nod penuh akan membantu gerak kerja rangkaian yang disambungkan, tetapi juga mengakibatkan timbul beberapa kos sama ada rendah atau sederhana. Mari lihat beberapa kelebihan dan kekurangannya.
+
+*Kelebihan:*
+
+* Menyokong rintangan daya tahan sekatan rangkaian berasaskan rangkaian Ethereum
+* Berkuasa mengesahkan semua urusniaga
+* Boleh bertindak balas dengan mana-mana kontrak di rantai blok umum tanpa seorang perantara
+* Membolehkan menyerahkan kontrak terus ke dalam rantai blok umum tanpa pengantara
+* Boleh membuat pertanyaan (baca sahaja) status rantai blok (akaun, kontrak, dll) di luar talian
+* Boleh membuat pertanyaan rantai blok tanpa membiarkan pihak ketiga mengetahui maklumat yang anda baca
+
+*Kelemahan:*
+
+* Memerlukan perkakasan terkini yang penting dan bekalan internet jalur lebar
+* Mungkin memerlukan beberapa hari untuk disegerakkan (sync) sepenuhnya ketika bermula buat pertama kali
+* Harus sentiasa dijaga, dinaik taraf, dan sentiasa di dalam talian untuk terus disegerakkan(((range="endofrange", startref="ix_03clients-asciidoc4")))(((range="endofrange", startref="ix_03clients-asciidoc3")))
+
+[[pub_test_adv_disadv]]
+==== Testnet Umum, Kelebihan dan Kelemahan
+
+((("networks (Ethereum)","public testnet advantages/disadvantages")))((("public testnets")))((("testnet","public")))Sama ada anda memilih untuk menjalankan nod penuh, anda mungkin mahu menjalankan nod testnet umum. Mari kita lihat beberapa kelebihan dan kekurangan menggunakan testnet awam.
+
+*Kelebihan:*
+
+* Satu node testnet perlu disegerakkan dan menyimpan paling kurang data&#x2014 kira-kira 45 GB bergantung kepada rangkaian.
+* Nod testnet boleh disegerakkan sepenuhnya dalam beberapa jam.
+* Menerapkan kontrak atau membuat urusniaga memerlukan ether uji, yang tidak mempunyai nilai dan boleh dibeli secara percuma dari beberapa jenis "faucet."
+* Testnets adalah rantai blok umum mempunyai ramai pengguna dan kontrak, yang berjalan "secara langsung."
+
+*Kelemahan:*
+
+* Anda tidak boleh menggunakan wang kripto "sebenar"; pada testnet; ia hanya untuk ujian ujian. Akibatnya, anda tidak boleh menguji keselamatan terhadap musuh sebenar, kerana tidak ada yang dipertaruhkan.
+* Terdapat beberapa aspek rantai blok awam yang anda tidak boleh menguji secara sebenar pada testnet. Sebagai contoh, yuran transaksi, walaupun perlu untuk menghantar transaksi, bukanlah satu benda yang wajib pada testnet, kerana gasnya percuma. Selanjutnya, testnet tidak mengalami kesesakan rangkaian seperti halnyayang berlaku kepada mainnet umum.
+
+[[localtest_adv_dis]]
+==== Kelebihan dan Kekurangan Penurut Rantai Blok Setempat
+
+((("Ganache","advantages/disadvantages")))((("local blockchain simulation")))((("networks (Ethereum)","local blockchain simulation advantages/disadvantages")))((("private blockchain")))((("single-instance private blockchain")))Bagi tujuan pengujian berulang kali, pilihan terbaik adalah untuk melancarkan rantai blok peribadi yang tunggal. Ganache (dahulunya bernama +testrpc+) adalah salah satu penurut rantai blok setempat yang paling popular yang anda boleh bertindak balas dengan, tanpa peserta lain. Ia berkongsi banyak kelebihan dan kekurangan testnet umum, tetapi juga mempunyai beberapa perbezaan.
+
+*Kelebihan:*
+
+* Tiada penyegerakan dan hampir tiada data pada cakera; anda melombong blok pertama anda sendiri
+* Tidak perlu mendapatkan ether ujian; anda "menghadiahkan" kepada diri anda sendiri ganjaran perlombongan yang anda gunakan untuk ujian
+* Tiada pengguna lain, hanya anda sahaja
+* Tiada kontrak lain, hanya yang anda gunakan selepas anda melancarkannya
+
+*Kelemahan:*
+
+* Tidak mempunyai pengguna lain yang bermakna ia tidak berkelakuam sama seperti rantai blok umum. Tiada persaingan untuk ruang urusniaga atau penjujukan pass: [ <span class="keep-together">transaksi</span> ].
+* Tiada pelombong selain daripada anda bermakna perlombongan lebih mudah diramalkan; Oleh itu, anda tidak dapat menguji beberapa senario yang berlaku di rantai blok awam.
+* Tidak mempunyai kontrak lain bermakna anda perlu melancarkam sendiri semua yang anda mahu uji, termasuk kebergantungan dan perpustakaan kontrak.
+* Anda tidak boleh membuat semula beberapa kontrak awam dan alamat mereka untuk menguji beberapa senario (misalnya, kontrak DAO).(((range="endofrange", startref="ix_03clients-asciidoc2")))(((range="endofrange", startref="ix_03clients-asciidoc1")))
+
+
+[[running_client]]
+=== Menjalankan Klien Ethereum
+
+((("clients, Ethereum","running", id="ix_03clients-asciidoc5", range="startofrange")))Jika anda mempunyai masa dan sumber, anda harus cuba untuk menjalankan nod penuh, walaupun hanya sekadar tahu lebih lanjut mengenai proses tersebut. Dalam seksyen ini, kami tunjukkan bagaimana untuk memuat turun, menyusun dan menjalankan klien Ethereum Parity and Geth. Anda perlu biasakan diri dengan menggunakan antara muka baris arahan pada sistem pengendalian anda. Ia berbaloi jika anda memasang klien ini, sama ada anda memilih untuk menjalankannya sebagai nod penuh, sebagai nod testnet, atau sebagai klien kepada rantai blok peribadi setempat.
+
+[[keperluan]]
+==== Keperluan Perkakasan untuk Nod Penuh
+
+((("clients, Ethereum","full node hardware requirements")))((("full node","hardware requirements")))Sebelum kita memulakan, pastikan anda mempunyai komputer dengan sumber yang mencukupi untuk menjalankan nod penuh Ethereum. Anda memerlukan sekurang-kurangnya 300 GB ruang cakera untuk menyimpan salinan penuh rantai blok Ethereum. Jika anda juga ingin menjalankan node penuh pada testnet Ethereum, anda memerlukan sekurang-kurangnya 45 GB tambahan. Memuat turun 345 GB data rantai blok boleh mengambil masa yang lama, jadi disyorkan bahawa anda mempunyai sambungan internet yang laju.
+
+Menyegerakkan rantai blok Ethereum adalah perbuatan input/output (I/O) yang bersungguh. Disarankan mempunyai pemacu jenis pejal (SSD). Jika anda mempunyai pemacu cakera keras mekanikal (HDD), anda memerlukan sekurang-kurangnya 8 GB RAM untuk digunakan sebagai cache. Jika tidak, anda mungkin mendapati bahawa sistem terlalu perlahan untuk bersaing dan disegerakkan sepenuhnya.
+
+* Keperluan paling rendah: *
+
+* CPU dengan 2+ cores
+* Sekurang-kurangnya 300 GB ruang simpanan bebas memori
+* Paling rendah, 4 GB RAM dengan SSD, 8 GB + jika anda menggunakan HDD
+* 8 MBit/saat memuat turun perkhidmatan internet jalur lebar
+
+Ini adalah keperluan paling rendah untuk menyegerakkan secara penuh (boleh dipangkas) bagi satu salinan rantai blok yang berasaskan Ethereum.
+
+Pada masa menulis kod pangkalan data Parity lebih ringan pada sumber yang lebih ringan, jadi jika anda menjalankan dengan perkakasan terhad anda mungkin akan melihat hasil yang lebih baik jika menggunakan Parity.
+
+Jika anda ingin menyegerakkan dalam masa yang munasabah dan menyimpan semua alat pembangunan, perpustakaan, klien, dan blok yang telah dibincangkan dalam buku ini, anda pasti mahukan komputer yang lebih berkebolehan.
+
+* Perincian yang disyorkan: *
+
+* CPU yang laju dengan 4+ cores
+* 16 GB+ RAM
+* SSD yang laju sekurang-kurangnya 500 GB ruang bebas
+* 25+ MBit/saat muat turun perkhidmatan internet jalur lebar
+
+Sukar untuk meramalkan berapa pantaskah saiz rantai blok akan meningkat dan bilakah lebih banyak ruang cakera diperlukan, jadi disyorkan untuk memantau saiz terbaharu rantai blok sebelum anda mula menyegerakkan.
+
+[NOTA]
+====
+Keperluan saiz cakera yang disenaraikan di sini, anggaplah anda akan menjalankan nod dengan tetapan lalai, di mana rantai blok itu telah dipangkas (pruned) semua data-data yang lama. Jika anda sebaliknya menjalankan nod "arkib" penuh, di mana semua pernyataan disimpan pada cakera, ia mungkin memerlukan lebih daripada 1 TB ruang cakera.
+====
+
+Pautan-pautan ini menyediakan anggaran terkini dari saiz blockchain:
+
+* https://bitinfocharts.com/ethereum/[Ethereum] 
+
+* https://bitinfocharts.com/ethereum%20classic/[Ethereum Classic]
+
+[[sw_reqs]]
+==== Keperluan Perisian untuk Membina dan Menjalankan Klien (Nod)
+
+((("clients, Ethereum","software requirements for building/running", id="ix_03clients-asciidoc6", range="startofrange")))Bahagian ini meliputi perisian klien Parity dan Geth. Ia juga mengandaikan bahawa anda menggunakan persekitaran baris perintah seperti Unix. Contoh-contoh ini menunjukkan arahan dan output seperti yang ditunjukkan pada sistem operasi Ubuntu GNU/Linux yang menjalankan bash shell (iaitu persekitaran pelaksanaan baris perintah).
+
+Biasanya setiap rantai blok akan mempunyai versi Geth sendiri, sementara Parity memberikan sokongan untuk pelbagai rantai blok berasaskan Ethereum (Ethereum, Ethereum Classic, pass [<span class="keep-together">Ellaism</span>], Expanse, Musicoin) dengan unduhan klien yang sama.
+
+[PETUA]
+=====
+((("$ symbol")))((("command-line interface")))((("shell commands")))((("terminal applications")))Dalam contoh kali ini, kita akan menggunakan baris perintah antara muka sistem operasi (juga dikenali sebagai "shell"), diakses melalui aplikasi "terminal". Cakera akan memaparkan "prompt"; anda pula menaip perintah, dan shell bertindak balas dengan beberapa teks dan petikan baru untuk arahan seterusnya. Prompt mungkin kelihatan berbeza pada sistem anda, tetapi dalam contoh berikut, ia dilambangkan dengan simbol +$+. Dalam contoh, apabila anda melihat teks selepas simbol +$+, jangan taip simbol +$+ tetapi taipkan arahan dengan segera selepas itu (ditunjukkan dalam huruf tebal), kemudian tekan "Enter" untuk melaksanakan arahan. Dalam contoh ini, baris di bawah setiap arahan adalah maklum balas sistem operasi kepada arahan itu. Apabila anda melihat awalan +$+ seterusnya, anda akan tahu ia adalah arahan baru dan anda harus mengulangi proses tersebut.
+=====
+
+Sebelum kita memulakan, anda mungkin perlu memasang beberapa perisian. Jika anda tidak pernah melakukan apa-apa pembangunan perisian pada komputer yang sedang anda akan gunakan, anda mungkin perlu memasang beberapa alat asas. Untuk contoh yang berikut, anda perlu memasang +git+, sistem pengurusan kod sumber; +golang+, bahasa pengaturan Go dan perpustakaan standard; serta Rust, bahasa pengaturcaraan sistem.
+
+((("git")))Git boleh dipasang dengan mengikuti arahan di https://git-scm.com [].
+
+((("Go", seealso="Geth (Go-Ethereum)")))Go boleh dipasang dengan mengikuti arahan di https://golang.org [], atau https://github.com/golang/go/wiki/Ubuntu [] jika anda menggunakan Ubuntu.
+
+[NOTA]
+=====
+((("Geth (Go-Ethereum)")))Keperluan Geth berbeza-beza, tetapi jika anda kekal dengan Go versi 1.10 atau terkini, anda seharusnya mampu menyusun mana-mana versi Geth yang anda inginkan. Sudah tentu, anda harus selalu merujuk kepada buku pandua untuk pilihan Geth sendiri.
+
+Versi +golang+ yang dipasang pada sistem pengendalian anda atau jika tersedia dari pengurus pakej sistem anda, kemungkinan  rendah daripada versi 1.10. Jika ya, keluarkannya dan pasangkan versi terkini dari https://golang.org/[].
+=====
+
+((("Rust")))Rust boleh dipasang dengan mengikuti arahan di https://www.rustup.rs/[].
+
+[NOTA]
+=====
+Pariti memerlukan Rust versi 1.27 atau terkini
+=====
+
+((("Parity","libraries for")))Parity juga memerlukan beberapa perpustakaan perisian, seperti OpenSSL dan +libudev+. Untuk memasang ini pada sistem serasi Ubuntu atau Debian GNU/Linux, gunakan arahan pass: [ <span class="keep-together">command</span> ]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo apt-get install openssl libssl-dev libudev-dev cmake clang</strong>
+</pre>
+++++
+
+Untuk sistem pengendalian lain, gunakan pengurus pakej OS anda atau ikut arahan https://github.com/paritytech/parity/wiki/Setup[Wiki instructions] untuk memasang perpustakaan yang diperlukan.
+
+Sekarang anda mempunyai +git+, +golang+, Rust, dan perpustakaan yang diperlukan, jom kita mulakan!
+
+[[parity]]
+==== Parity
+
+((("clients, Ethereum","Parity and")))((("Parity","basics")))Parity adalah pelaksanaan klien Ethereum nod penuh dan pelayar DApp. Ia ditulis &#x201c;dari bawah ke atas&#x201d; dalam bahasa pengaturcaraan sistem Rust, dengan tujuan membina klien Ethereum yang terjamin, mengikut pecahan ilmu dan berskala. Parity dikembangkan oleh Parity Tech, sebuah syarikat UK, dan dikeluarkan di bawah lesen perisian percuma GPLv3.
+
+[NOTA]
+=====
+Pendedahan: Salah satu pengarang buku ini, Dr Gavin Wood, adalah pengasas Parity Tech dan menulis banyak mengenai klien Parity. Pariti mewakili kira-kira 25% daripada asas klien Ethereum yang dipasang.
+=====
+
+Untuk memasang Parity, anda boleh menggunakan pengurus pakej Rust iaitu +cargo+ atau memuat turun kod sumber dari GitHub. Pengurus pakej juga memuat turun kod sumber, jadi tidak banyak perbezaan antara kedua-dua pilihan. Di bahagian seterusnya, kami akan menunjukkan kepada anda bagaimana untuk memuat turun dan menyusun Pariti sendiri.
+
+[[install_parity]]
+===== Pemasangan Parity
+
+((("((("Parity","installing")))Laman https://wiki.parity.io/Setup[Parity Wiki] menawarkan arahan untuk membina Pariti dalam persekitaran dan kandungan yang berbeza. Kami akan menunjukkan kepada anda cara membina Pariti dari sumber. Ini mengandaikan anda telah memasang Rust menggunakan +rustup+  (lihat di <<sw_reqs>>).
+
+Pertama, dapatkan kod sumber dari GitHub:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone https://github.com/paritytech/parity</strong>
+</pre>
+++++
+
+Kemudian tukar ke direktori _parity_ dan gunakan +cargo+ untuk membina pelaksanaan:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd parity</strong>
+$ <strong>cargo install --path .</strong>
+</pre>
+++++
+
+Sekiranya semuanya berjalan lancar, anda sepatutnya melihat sesuatu seperti:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cargo install --path .</strong>
+Installing parity-ethereum v2.7.0 (/root/parity)
+Updating crates.io index
+Updating git repository `https://github.com/paritytech/rust-ctrlc.git`
+Updating git repository `https://github.com/paritytech/app-dirs-rs`   Updating git repository 
+
+ [...]
+
+Compiling parity-ethereum v2.7.0 (/root/parity)
+Finished release [optimized] target(s) in 10m 16s
+Installing /root/.cargo/bin/parity
+Installed package `parity-ethereum v2.7.0 (/root/parity)` (executable `parity`)
+$
+</pre>
+++++
+
+Cuba jalankan +parity+ untuk melihat sama ada telah dipasang, dengan menggunakan pilihan +--version+:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --version</strong>
+Klien Parity Ethereum.
+  version Parity-Ethereum/v2.7.0-unstable-b69a33b3a-20200124/x86_64-unknown-linux-gnu/rustc1.40.0
+Copyright 2015-2020 Parity Technologies (UK) Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+Ini adalah perisian percuma: anda bebas untuk mengubahsuai dan mengedarkannya.
+Tidak ada WARANTI, setakat yang dibenarkan oleh undang-undang.
+
+Oleh Wood/Paronyan/Kotewicz/Drwięga/Volf/Greeff
+   Habermeier/Czaban/Gotchac/Redman/Nikolsky
+   Schoedon/Tang/Adolfsson/Silva/Palm/Hirsz et al.
+$
+</pre>
+++++
+
+Hebat! Sekarang Parity telah dipasang, anda boleh menyegerakkan rantai blok dan memulakan dengan beberapa pilihan baris arahan asas.
+
+[[go_ethereum_geth]]
+==== Go-Ethereum (Geth)
+
+((("clients, Ethereum","Geth and", id="ix_03clients-asciidoc7", range="startofrange")))((("Geth (Go-Ethereum)","basics", id="ix_03clients-asciidoc8", range="startofrange")))Geth adalah pelaksanaan bahasa Go yang aktif dibangunkan oleh Yayasan Ethereum, oleh itu dianggap pelaksanaan "rasmi" dari klien Ethereum. Biasanya, setiap rantai blok berasaskan Ethereum akan mempunyai pelaksanaan Geth sendiri. Sekiranya anda menjalankan Geth, anda perlu memastikan anda menggunakan versi yang betul untuk rantai blok anda menggunakan salah satu pautan gudang berikut:
+
+
+* https://github.com/ethereum/go-ethereum[Ethereum] (or https://geth.ethereum.org/)
+
+* https://github.com/etclabscore/go-ethereum[Ethereum Classic]
+
+* https://github.com/ellaism/go-ellaism[Ellaism]
+
+* https://github.com/expanse-org/go-expanse[Expanse] 
+
+* https://github.com/Musicoin/go-musicoin[Musicoin] 
+
+* https://github.com/ubiq/go-ubiq[Ubiq] 
+
+[NOTA]
+=====
+Anda juga boleh melangkau arahan ini dan memasang pendua pra-susun (precompiled binary) untuk pilihan platform anda. Ia lebih mudah dipasang dan boleh didapati di bahagian "releases" mana-mana gudang (repositori) yang disenaraikan di sini. Walau bagaimanapun, anda belajar lebih banyak jika memuat turun dan menyusun perisian itu sendiri.
+=====
+
+[[cloning_repo]]
+===== Menghasilkan baka repositori
+
+((("Geth (Go-Ethereum)","cloning Git repo for")))Langkah pertama ialah membuat baka kepada gudang Git, untuk mendapatkan salinan kod sumber.
+
+Untuk membuat baka setempat bagi gudang pilihan anda, gunakan perintah +git+ seperti berikut, di dalam direktori rumah anda atau di bawah direktori yang anda sedang gunakan untuk pembangunan ini:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone &lt;Repository Link&gt;</strong>
+</pre>
+++++
+
+Anda seharusnya dapat melihat laporan kemajuan sewaktu gudang disalin ke sistem setempat anda:
+
+[[cloning_status]]
+----
+Cloning into 'go-ethereum'...
+remote: Enumerating objects: 86915, done.
+remote: Total 86915 (delta 0), reused 0 (delta 0), pack-reused 86915
+Receiving objects: 100% (86915/86915), 134.73 MiB | 29.30 MiB/s, done.
+Resolving deltas: 100% (57590/57590), done.
+----
+
+Hebat! Sekarang anda mempunyai salinan setempat Geth, anda boleh menyusun pelaksana untuk platform anda.
+
+[[build_geth_src]]
+===== Membina Geth dari kod sumber
+
+((("Geth (Go-Ethereum)","building from source code")))Untuk membina Geth, tukar ke direktori di mana kod sumber dimuat turun dan gunakan arahan +make+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd go-ethereum</strong>
+$ <strong>make geth</strong>
+</pre>
+++++
+
+Sekiranya semuanya berjalan dengan lancar, anda akan melihat pengkomputeran Go membina setiap komponen sehingga ia menghasilkan pelaksana +geth+:
+
+[[making_geth_status]]
+----
+build/env.sh go run build/ci.go install ./cmd/geth
+>>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d...
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto/sha3
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/common
+[...]
+github.com/ethereum/go-ethereum/cmd/utils
+github.com/ethereum/go-ethereum/cmd/geth
+Done building.
+Run "build/bin/geth" to launch geth.
+$
+----
+
+Mari pastikan +geth+ berfungsi tanpa memulakannya berjalan:
+
+++++
+<pre data-type="programlisting">
+$ <strong>./build/bin/geth version</strong>
+
+Geth
+Version: 1.9.11-unstable
+Git Commit: 0b284f6c6cfc6df452ca23f9454ee16a6330cb8e
+Git Commit Date: 20200123
+Architecture: amd64
+Protocol Versions: [64 63]
+Go Version: go1.13.4
+Operating System: linux
+[...]
+</pre>
+++++
+
+Perintah +geth version+ mungkin menunjukkan maklumat yang sedikit berbeza, tetapi anda harus melihat laporan versi seperti yang dilihat di sini.
+
+Bahagian seterusnya menerangkan cabaran dengan penyegerakan awal rantai blok Ethereum(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
+
+
+[[first_sync]]
+=== Penyegerakan Pertama Rantai Blok Berasaskan Ethereum
+
+((("blockchain","first synchronization of", id="ix_03clients-asciidoc9", range="startofrange")))((("clients, Ethereum","first synchronization of Ethereum-based blockchains", id="ix_03clients-asciidoc10", range="startofrange")))((("first synchronization","of Ethereum-based blockchains", id="ix_03clients-asciidoc11", range="startofrange"))Kebiasaannya, apabila mula penyegerakkan (syncing) rantai blok Ethereum, klien anda akan memuat turun dan mengesahkan setiap blok dan setiap transaksi sejak mula&#x2014; iaitu sejak dari blok genesis.
+
+Walaupun boleh menyegerakkan rantai blok sepenuhnya dengan cara sebegini, jenis penyegerakan ini akan mengambil masa yang sangat panjang dan mempunyai keperluan sumber tinggi (ia memerlukan lebih banyak RAM, dan akan mengambil masa yang sangat lama jika anda tidak mempunyai kelajuan penyimpanan).
+
+Kebanyakkan rantai blok berasaskan Ethereum adalah mangsa serangan penafian (Dos) pada akhir tahun 2016. Rangkaian blok yang terjejas akan cenderung untuk menyegerakkan secara perlahan apabila melakukan penyegerakan penuh.
+
+Sebagai contoh, dalam Ethereum, klien baharu akan membuat kemajuan yang pesat sehingga ia mencapai blok 2,283,397. Blok ini dilombong pada 18 September 2016, dan menandakan permulaan serangan DoS. Dari blok ini kepada blok 2,700,031 (26 November 2016), pengesahan urusniaga menjadi sangat perlahan, memori berkerja keras, dan intensif I/O. Ini mengakibatkan masa pengesahan melebihi 1 minit setiap blok. Ethereum melaksanakan satu siri peningkatan, menggunakan garpu keras (hard fork), untuk menangani kelemahan asas yang digiatkan dalam serangan DoS. Peningkatan ini juga membersihkan blok barunya dengan mengeluarkan kira-kira 20 juta akaun kosong yang dibuat oleh transaksi sampah (spam).
+
+Jika anda menyegerakkan dengan pengesahan penuh, klien anda akan melambatkan dan mungkin mengambil masa beberapa hari, atau mungkin lebih lama, untuk mengesahkan blok yang terjejas oleh serangan DoS.
+
+((("fast synchronization")))Nasib baik, kebanyakan klien Ethereum secara lalai kini melakukan penyegerakkan "pantas" yang melangkaui pengesahan penuh urusniaga sehingga ia diselaraskan ke hujung blokchain, kemudian meneruskan pengesahan penuh.
+
+Geth melakukan penyegerakkan cepat secara lalai untuk Ethereum. Anda mungkin perlu merujuk kepada arahan khusus untuk rangkaian Ethereum yang dipilih.
+
+Pariti juga melakukan penyegerakan cepat secara lalai.
+
+[NOTA]
+=====
+Geth hanya boleh menjalankan penyegerakkan pantas apabila bermula dengan pangkalan blok kosong. Sekiranya anda telah memulakan penyegerakkan tanpa mod pantas, Geth tidak boleh bertukar. Ianya lebih cepat jika memadamkan direktori data rantai blok dan mula menyegerakkan cepat dari awal berbanding terus menyegerakkan dengan pengesahan penuh. Berhati-hati agar tidak memadam mana-mana dompet apabila memadam data rantai blok!
+=====
+
+==== Menjalankan Geth atau Parity
+
+((("first synchronization","Geth or Parity for")))((("Geth (Go-Ethereum)","for first synchronization")))((("Parity","for first synchronization")))Sekarang anda telah memahami cabaran "sync pertama" dan telah bersedia untuk memulakan klien Ethereum dan menyegerakkan rantai blok. Untuk Geth dan Parity, anda boleh menggunakan pilihan +-help+ untuk melihat semua parameter tetapan. Tetapan lalai biasanya boleh diterima orang dan sesuai untuk kebanyakan kegunaan. Pilih cara menetapkan sebarang parameter pilihan untuk memenuhi keperluan anda, kemudian mulakan Geth atau Parity untuk menyegerakkan rantai. Kemudian tunggu ...
+
+[PETUA]
+====
+Menegerakkan rantai blok Ethereum akan mengambil masa setengah hari pada sistem yang sangat cepat dengan banyak RAM, atau hingga beberapa hari pada sistem yang lebih perlahan.
+====
+
+[[json_rpc]]
+==== Antara Muka JSON-RPC
+
+((("clients, Ethereum","and JSON-RPC API", id="ix_03clients-asciidoc12", range="startofrange")))((("first synchronization","and JSON-RPC API", id="ix_03clients-asciidoc13", range="startofrange")))((("JSON-RPC API", id="ix_03clients-asciidoc14", range="startofrange")))Klien Ethereum menawarkan antara muka pengaturcaraan aplikasi dan set arahan Panggilan Prosedur Jauh (RPC), yang dikodkan sebagai Nota Objek JavaScript (JSON). Anda akan melihat ini dirujuk sebagai _JSON-RPC API_. Pada asasnya, API JSON-RPC adalah antara muka yang membolehkan kita menulis program yang menggunakan klien Ethereum sebagai _pintu masuk_ (gateway) ke rangkaian Ethereum dan rantai blok..
+
+Biasanya, antara muka RPC ditawarkan sebagai perkhidmatan HTTP pada port 8545. Atas alasan keselamatan, ia hanya dibatasi, hanya untuk menerima sambungan dari "localhost" (alamat IP komputer anda sendiri, iaitu 127.0.0.1).
+
+Untuk mengakses API JSON-RPC, anda boleh menggunakan perpustakaan khusus (ditulis dalam bahasa pengaturcaraan pilihan anda) yang menyediakan panggilan "stub" yakni fungsi memanggil sepadan dengan setiap arahan RPC yang ada, atau anda boleh membina sendiri permintaan HTTP dengan buku rujukan dan menghantar/menerima permintaan JSON yang dikodkan itu. Anda juga boleh menggunakan klien HTTP baris arahan kelompok khusus, seperti +curl+, untuk memanggil antara muka RPC. Mari kita cuba buat. Mula-mula, pastikan anda mempunyai Geth yang telah dimuat naik dan berjalan, yang telah disusun dengan --rpc untuk membolehkan akses HTTP ke antara muka RPC, kemudian bertukar ke tetingkap terminal baharu (contohnya, Dengan menekan kekunci Ctrl-Shift-N atau Ctrl-Shift-T dalam tetingkap terminal sedia ada) seperti ditunjukkan di sini:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+</pre>
+++++
+
+Dalam contoh ini, kita menggunakan +curl+ untuk membuat sambungan HTTP ke alamat _http://localhost:8545_. Kita sudah menjalankan +geth+, yang menawarkan API JSON-RPC sebagai perkhidmatan HTTP pada port 8545. Kita akan mengarahkan +curl+ untuk menggunakan perintah HTTP +POST+ dan untuk mengenal pasti kandungan sebagai jenis +aplikasi/json+. Akhir sekali, kita meluluskan permintaan yang dikodkan JSON sebagai +data+ komponen permintaan HTTP. Kebanyakan baris arahan hanya menyediakan +curl+ untuk membuat sambungan HTTP dengan betul. Bahagian yang menarik adalah arahan JSON-RPC yang sebenarnya kami hasilkan:
+
+[[JSON_RPC_command]]
+----
+{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}
+----
+
+JSON-RPC membuat permintaan susunan tercetak sebagaimana  https://www.jsonrpc.org/specification[JSON-RPC 2.0 specification]. Setiap permintaan terkandung empat unsur:
+
+++jsonrpc++:: Versi protokol JSON-RPC. MESTILAH tepat ++"2.0"++.
+
+++method++:: Nama kaedah yang akan digunakan.
+
+++params++:: Nilai berstruktur yang memegang nilai-nilai parameter yang akan digunakan semasa penyerahan kaedah. Bahagian ini MUNGKIN dikecualikan.
+
+++id++:: Pengenalpasti yang ditetapkan oleh klien yang HARUS mengandungi +String+, +Number+, atau +NULL+ jika disertakan. Pelayan MESTI membalas dengan nilai yang sama dalam objek tindak balas jika disertakan. Bahagian ini digunakan untuk mengaitkan keadaan antara kedua benda.
+
+[PETUA]
+====
+((("batching")))Parameter +id+ digunakan terutamanya apabila anda membuat pelbagai permintaan dalam panggilan JSON-RPC tunggal, amalan ini dipanggil _batching_. Pengumpulan ini digunakan untuk mengelakkan sambungan berterusan HTTP dan TCP baharu bagi setiap permintaan. Dalam konteks Ethereum, sebagai contoh, kami akan menggunakan "batching" jika kami ingin mendapatkan beribu-ribu urusniaga lebih daripada satu sambungan HTTP. Apabila terkumpul, anda menetapkan +id+ yang berbeza untuk setiap permintaan dan kemudian sepadan dengan +id+ dalam setiap jawapan dari pelayan JSON-RPC. Cara termudah untuk melaksanakan ini adalah untuk mengekalkan pengira dan menaikkan setiap nilai bagi setiap permintaan.
+====
+
+
+Maklum balas yang diterima:
+
+----
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+----
+
+Ia memaklumkan API JSON-RPC disediakan oleh Geth versi klien 1.13.4.
+
+Mari kita cuba sesuatu yang lebih menarik. Dalam contoh seterusnya, kami meminta API JSON-RPC untuk memberikan harga terkini gas dalam wei:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
+</pre>
+++++
+
+Maklumbalas, +0x430e23400+, memberitahu kita bahawa harga gas semasa adalah 18 gwei (gigawei atau bilion wei). Jika anda seperti kami, tidak berurusan dengan bentuk heksadesimal, anda boleh menukarnya kepada perpuluhan pada baris arahan dengan bash-fu:
+
+++++
+<pre data-type="programlisting">
+$ <strong>echo $((0x430e23400))</strong>
+
+18000000000
+</pre>
+++++
+
+API bagi JSON-RPC boleh diteroka lagi di https://github.com/ethereum/wiki/wiki/JSON-RPC[Ethereum wiki].
+
+[[parity_compatibility_mode]]
+===== Capaian Keserasian Geth dalam Parity
+
+Parity mempunyai "Geth capaian keserasian,&#x201d; khusus di mana ia menawarkan API JSON-RPC yang dikenal pasti ditawarkan di dalam Geth.Untuk menjalankan Parity di dalam capaian itu, sila guna arahan +--geth+ switch(((range="endofrange", startref="ix_03clients-asciidoc14")))(((range="endofrange", startref="ix_03clients-asciidoc13")))(((range="endofrange", startref="ix_03clients-asciidoc12"))):(((range="endofrange", startref="ix_03clients-asciidoc11")))(((range="endofrange", startref="ix_03clients-asciidoc10")))(((range="endofrange", startref="ix_03clients-asciidoc9")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --geth</strong>
+</pre>
+++++
+
+[[lw_eth_clients]]
+=== Klien Ethereum Terpisah
+
+((("clients, Ethereum","remote", id="ix_03clients-asciidoc15", range="startofrange")))((("remote clients", id="ix_03clients-asciidoc16", range="startofrange")))Klien jauh menawarkan subset fungsi klien penuh. Ia tidak menyimpan rantai blok Ethereum penuh, jadi ianya lebih cepat untuk dibuat tetapan dan memerlukan penyimpanan data yang kurang sedikit.
+
+[role="pagebreak-before"]
+Klien ini biasanya memberikan keupayaan untuk melakukan satu atau lebih perkara berikut:
+
+* Mengurus kunci peribadi dan alamat Ethereum dalam dompet.
+* Mencipta, menandatangani dan menyiarkan transaksi.
+* Bertindak balas dengan kontrak pintar, menggunakan muatan data.
+* Melayari dan berinteraksi dengan DApps.
+* Menawarkan pautan ke perkhidmatan luaran seperti penjelajah blok.
+* Menukar unit ether dan mendapatkan kadar urup wang kripto dari sumber luaran.
+* Suntik penunjuk web3 ke dalam pelayar sesawang itu sebagai objek JavaScript.
+* Menggunakan contoh web3 yang disediakan atau menyuntik ke pelayar milik klien lain.
+* Memasuki perkhidmatan RPC pada nod Ethereum setempat atau nod terpencil.
+
+Sesetengah klien terpencil, misalnya dompet mudah alih (telefon pintar), hanya menawarkan fungsi dompet asas. Klien jauh adalah DApp yang terbina sepenuhnya. Klien luaran biasanya menawarkan beberapa fungsi klien Ethereum nod penuh tanpa menyegerakkan salinan tempatan rantai blok Ethereum dengan menyambung ke nod penuh yang dijalankan di tempat lain, contohnya, oleh anda secara setempat pada mesin anda atau pelayan sesawang, atau oleh pihak ketiga di pelayan mereka.
+
+Mari lihat beberapa klien terpencil yang paling popular dan fungsi yang mereka tawarkan.
+
+[[mobile_wallets]]
+==== Dompet Mudah Alih (Telefon Pintar)
+
+((("mobile (smartphone) wallets")))((("remote clients","mobile wallets")))((("wallets","mobile")))Dompet Mudah alih adalah klien terpencil kerana ianya tidak mempunyai sumber yang mencukupi untuk menjalankan klien Ethereum penuh. Pelanggan ringan sedang dalam pembangunan dan tidak digunakan secara umum untuk Ethereum. Dalam kes Pariti, klien ringan ditandakan "eksperimental" dan boleh digunakan dengan menjalankan +parity+ dengan pilihan +-light+.
+
+Dompet mudah alih masyhur termasuk yang berikut (kami menyenaraikannya sebagai contoh; ini bukan bermaksud ianya mempunyai punca fungsi dan selamat):
+
+https://jaxx.io[Jaxx]:: ((("Jaxx","mobile version")))((("wallets","Jaxx")))Sebuah dompet mudah alih pelbagai matawang berdasarkan suapan mnemonik BIP-39, dengan sokongan untuk Bitcoin, Litecoin, Ethereum, Ethereum Classic, ZCash, pelbagai token ERC20, dan banyak mata wang kripto lain. Jaxx boleh didapati di Android dan iOS, sebagai dompet pelayar terpasang, dan sebagai dompet komputer meja bagi pelbagai sistem operasi.
+
+https://status.im[Status]:: ((("Status (mobile wallet)")))Satu dompet mudah alih terbina pelayar DApp, dengan sokongan untuk pelbagai token dan DApps yang popular. Tersedia untuk iOS dan Android.
+
+https://trustwalletapp.com/[Trust Wallet]:: ((("Trust Wallet")))((("wallets","Trust")))Dompet pelbagai mata wang kripto mudah alih yang menyokong Ethereum dan Ethereum Classic serta token ERC20 dan ERC223. Dompet Trust tersedia untuk iOS dan Android.
+
+https://www.cipherbrowser.com[Cipher Browser]:: ((("Cipher Browser")))Ciri penuh dompet mudah alih Ethereum yang terbina pelayar DApp yang membolehkan penyepaduan dengan aplikasi dan token Ethereum. Tersedia untuk iOS dan Android.
+
+[[browser_wallets]]
+==== Dompet Jenis Pelayar
+
+((("browser wallets")))((("remote clients","browser wallets")))((("wallets","browser wallets")))Kepelbagaian dompet dan pelayar DApp dengan ciri guna pasang atau penyambungan pelayar sesawang seperti Chrome dan Firefox. Ini adalah pelanggan jarak jauh yang berjalan di dalam pelayar anda.
+
+Antara yang lebih popular ialah MetaMask, Jaxx, MyEtherWallet, dan MyCrypto.
+
+[[MetaMask]]
+===== MetaMask
+
+https://metamask.io/[MetaMask], ((("MetaMask","as browser wallet")))Diperkenalkan di <<intro_chapter>>, adalah dompet berasaskan pelayar serba boleh, klien RPC, dan penjelajah kontrak asas. Ia boleh didapati di Chrome, Firefox, Opera, dan Brave..
+
+Tidak seperti dompet pelayar yang lain, MetaMask menyuntikkan web3 ke dalam pelayar kamdungan JavaScript, bertindak sebagai klien RPC yang menghubungkan ke pelbagai rantai blok Ethereum (mainnet, testnet Ropsten, testnet Kovan, nod RPC setempat, dll). Keupayaan untuk menyuntik contoh web3 dan bertindak sebagai pintu masuk ke perkhidmatan RPC luaran menjadikan MetaMask menjadi alat yang sangat berkuasa untuk pembangun dan pengguna. Ia boleh digabungkan, contohnya, dengan MyEtherWallet atau MyCrypto, bertindak sebagai penyedia web3 dan pintu masuk RPC bagi alat tersebut.
+
+[[Jaxx]]
+===== Jaxx
+
+https://jaxx.io[Jaxx], ((("Jaxx","desktop version")))((("wallets","Jaxx")))yang diperkenalkan sebagai dompet mudah alih di bab sebelumnya, juga tersedia sebagai sambungan Chrome dan Firefox dan sebagai dompet komputer meja.
+
+[[MEW]]
+===== MyEtherWallet (MEW)
+
+https://www.myetherwallet.com/[MyEtherWallet] ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))adalah klien terpencil JavaScript berasaskan pelayar yang menawarkan:
+
+* Jejambat untuk dompet perkakasan masyhur seperti Trezor dan Lejar
+* Antara muka web3 yang boleh menyambung ke contoh web3 yang disuntik oleh klien lain (misalnya, MetaMask)
+* Klien RPC yang boleh menyambung ke klien penuh Ethereum
+* Antara muka asas yang boleh bertindak balas dengan kontrak pintar, diberikan alamat kontrak dan Antaramuka Perduaan Aplikasi (ABI)
+* Aplikasi mudah alih MEWConnect, yang membolehkan seseorang menggunakan peranti Android atau iOS yang sesuai untuk menyimpan dana, sama seperti dompet perkakasan (Ledger, Trezor dll).
+* Sebuah dompet perisian berjalan dengan JavaScript
+
+[AMARAN]
+====
+Anda mesti berhati-hati semasa memasuki MyEtherWallet dan dompet JavaScript berasaskan pelayar lain, kerana ia adalah sasaran yang kerap untuk pancingan (phishing) penggodam. Sentiasa gunakan penanda halaman (yang telah disimpan) dan bukan enjin carian (google, bing) atau pautan yang betul untuk memasuki sesawang URL.
+====
+
+[[MyCrypto]]
+===== MyCrypto
+
+((("MyCrypto (wallet)")))((("wallets","MyCrypto")))In early 2018, the ((("MyEtherWallet (MEW)")))((("wallets","MyEtherWallet")))Projek MyEtherWallet terbahagi kepada dua perlaksanaan saling bersaing, diwakili oleh dua pasukan pembangunan bebas: iaitu garpu (fork), seperti gelarannya dalam pembangunan sumber terbuka. Kedua-dua projek itu dipanggil MyEtherWallet (penjenamaan asal) dan https://mycrypto.com/[MyCrypto]. MyCrypto menawarkan fungsi hampir sama dengan MyEtherWallet, tetapi bukan menggunakan MEWConnect, ia menawarkan sambungan ke aplikasi mudah alih Penanda Parity. Seperti MEWConnect, Penandatangan Parity menyimpan kunci pada telefon dan antara muka dengan MyCrypto dengan cara yang sama sebagai dompet perkakasan (Ledger, Trezor dll).
+
+[[Mist]]
+===== Mist (Sudah Tiada)
+
+https://github.com/ethereum/mist[Mist] ((("Mist (browser-based wallet)")))((("wallets","Mist")))Dahulunya menjadi pelayar Ethereum yang dibolehkan pertama, dibina oleh Yayasan Ethereum. Ia mengandungi dompet berasaskan pelayar yang merupakan pelaksanaan pertama piawaian token ERC20 (Fabian Vogelsteller, pengarang ERC20, juga merupakan pemaju utama Mist). Mist juga merupakan dompet pertama untuk memperkenalkan camelCase checksum (EIP-55). Sehingga Mac, 2019, Mist telah ditamatkan dan tidak lagi digunakan.
+
+=== Kesimpulan
+
+Dalam bab ini, kita meneroka klien Ethereum. Anda memuat turun, memasang, dan menyegerakkan klien, menjadi peserta dalam rangkaian Ethereum, dan menyumbang kepada kesihatan dan kestabilan sistem dengan membuat sesuatu menyamai rantai blok pada komputer anda sendiri. (((range="endofrange", startref="ix_03clients-asciidoc0")))

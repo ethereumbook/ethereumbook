@@ -1,0 +1,762 @@
+[appendix]
+[[dev_tools_frameworks]]
+== Vývojové nástroje, rámce pass:[<span class="keep-together">a knihovny</span>]
+
+=== Rámce
+
+((("frameworks", id="ix_appdx-dev-tools-asciidoc0", range="startofrange"))Pomocí rámců lze usnadnit vývoj Ethereum chytrých kontraktů. Když uděláte všechno sami, získáte lepší představu o tom, jak všechno zapadá do sebe, ale je to spousta únavné a opakující se práce. Rámce popsané v této části mohou automatizovat určité úkoly a usnadnit vývoj.
+
+[[truffle]]
+==== Truffle
+
+((("frameworks","Truffle", id="ix_appdx-dev-tools-asciidoc1", range="startofrange")))((("Truffle", id="ix_appdx-dev-tools-asciidoc2", range="startofrange")))GitHub: https://github.com/trufflesuite/truffle
+
+Web: https://truffleframework.com
+
+Dokumentace: https://truffleframework.com/docs
+
+Truffle vzorové projekty: http://truffleframework.com/boxes/
+
++npm+ úložiště balíčku: https://www.npmjs.com/package/truffle
+
+
+[[installing_truffle]]
+===== Instalace Truffle rámce
+
+((("Node.js")))((("Truffle","installing")))Rámec Truffle zahrnuje několik balíčků Node.js. Před instalací +truffle+ musíte mít aktuální a funkční instalaci Node.js a Node Package Manager (+npm+).
+
+Doporučeným způsobem instalace Node.js a +npm+ je použití Správce verzí uzlů (+nvm+). Po instalaci +nvm+ se za vás postará o všechny závislosti a aktualizace. Postupujte podle pokynů na adrese http://nvm.sh[].
+
+Jakmile je +nvm+  nainstalované ve vašem operačním systému,  installing Node.js je jednoduchá. Použijte nastavení +--lts+, abyste oznámili  +nvm+, že chcete nejnovější dlouhodobě podporovanou (LTS) verzi Node.js:
+
+++++
+<pre data-type="programlisting">
+$ <strong>nvm install --lts</strong>
+</pre>
+++++
+
+Ujistěte se, že jste nainstalovali  +node+ a +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v</strong>
+v8.9.4
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+Dále vytvořte skrytý soubor _.nvmrc_, který obsahuje verzi Node.js podporovanou vaším DApp, takže vývojáři stačí spustit `nvm install` v kořenovém adresáři projektového adresáře a automaticky se nainstaluje a přepne na použití této verze:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node -v &gt; .nvmrc</strong>
+$ <strong>nvm install</strong>
+</pre>
+++++
+
+Vypadá to dobře, nyní nainstalujeme +truffle+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install truffle</strong>
+
++ truffle@4.0.6
+installed 1 package in 37.508s
+</pre>
+++++
+
+[[truffle_box]]
+===== Integrace předpřipraveného Truffle projektu (Truffle Box)
+
+((("Truffle","integrating a prebuilt Truffle project")))((("Truffle Box")))Pokud chcete použít nebo vytvořit DApp, který staví na předdefinované základové desce, přejděte na web Truffle Boxes, vyberte existující projekt Truffle a poté spusťte následující příkaz pro jeho stažení a rozbalení:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle unbox <em>BOX_NAME</em></strong>
+</pre>
+++++
+
+[[truffle_project_directory]]
+===== Vytvoření adresáře projektu truffle
+
+((("Truffle","creating a project directory", id="ix_appdx-dev-tools-asciidoc3", range="startofrange")))Pro každý projekt, kde budete používat +truffle+, vytvořte adresář projektu a inicializujte +truffle+ v tomto adresáři. +truffle+ vytvoří nezbytnou strukturu adresářů v adresáři projektu. Je obvyklé dát adresáři projektu název, který projekt popisuje. V tomto příkladu použijeme +truffle+  k nasazení našeho kontraktu +Faucet+ <<simple_contract_example>>, a proto pojmenujeme adresář projektu __Faucet__:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir Faucet</strong>
+$ <strong>cd Faucet</strong>
+Faucet $
+</pre>
+++++
+
+Jakmile jsme v adresáři _Faucet_, inicializujeme +truffle+:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle init</strong>
+</pre>
+++++
+
++truffle+ vytvoří strukturu adresářů a některé výchozí soubory:
+
+----
+Faucet
++---- contracts
+|   `---- Migrations.sol
++---- migrations
+|   `---- 1_initial_migration.js
++---- test
++---- truffle-config.js
+`---- truffle.js
+----
+
+Kromě samotného +truffle+ také použijeme řadu podporovaných balíčků JavaScriptu (Node.js). Můžeme je nainstalovat s +npm+. Inicializujeme strukturu adresáře +npm+ a přijímáme výchozí hodnoty navržené +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+
+package name: (faucet)
+version: (1.0.0)
+description:
+entry point: (truffle-config.js)
+test command:
+git repository:
+keywords:
+author:
+license: (ISC)
+About to write to Faucet/package.json:
+
+{
+  "name": "faucet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" &amp;&amp; exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
+
+
+Is this ok? (yes)
+</pre>
+++++
+
+Nyní můžeme nainstalovat závislosti, pomocí kterých budeme snadněji pracovat s +truffle+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install dotenv truffle-wallet-provider ethereumjs-wallet</strong>
+</pre>
+++++
+
+Nyní máme adresář __node_modules__ s několika tisíci soubory uvnitř našeho _Faucet_ adresáře.
+
+Před nasazením DApp do cloudového produkčního nebo kontinuálního integračního prostředí je důležité zadat pole +engines+ , aby byl váš DApp vytvořen se správnou verzí Node.js a byly nainstalovány související závislosti. Podrobnosti o konfiguraci tohoto pole naleznete v http://bit.ly/2zp2GPF[dokumentaci].(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc3")))
+
+===== Konfigurace truffle
+
+((("Truffle","configuring")))+truffle+ vytváří pouze prázdné konfigurační soubory, _truffle.js_ a _truffle-config.js_. V operačním systému  Windows_truffle.js_  může způdobit potíže, když se pokusíte spustit příkaz  +truffle+ a Windows se místo toho pokusí spustit _truffle.js_. Abysme se tomu vyhnuli, smažeme _truffle.js_ a místo toho použijeme _truffle-config.js_ (na podporu uživatelů Windows, kteří, upřímně, už dost trpí):
+
+++++
+<pre data-type="programlisting">
+$ <strong>rm truffle.js</strong>
+</pre>
+++++
+
+Nyní upravíme soubor _truffle-config.js_ a nahradíme obsah ukázkovou konfigurací uvedenou zde:
+
+[source,javascript]
+----
+module.exports = {
+  networks: {
+    localnode: { // Jakákoli síť, ke které se náš místní uzel připojuje
+      network_id: "*", // Odpovídající ID sítě
+      host: "localhost",
+      port: 8545,
+    }
+  }
+};
+----
+
+Tato konfigurace je dobrým výchozím bodem. Nastaví jednu výchozí Ethereum síť  (pojmenovanou +localnode+), která předpokládá, že provozujeme klienta Ethereum, jako je Parity, buď jako úplný uzel nebo jako odlehčený klient. Tato konfigurace dá pokyn +truffle+ ke komunikaci s lokálním uzlem přes RPC, na portu 8545. +truffle+ použije jakoukoli Ethereum síť, k níž je místní uzel připojen, jako je Ethereum hlavní síť  nebo testovací síť jako Ropsten. Lokální uzel bude také poskytovat funkce peněženky.
+
+V následujících sekcích nakonfigurujeme další sítě pro použití +truffle+, jako je +ganache+ lokální testovací bločenka a Infura, hostovaný poskytovatel sítě. Když přidáváme další sítě, bude konfigurační soubor složitější, ale také nám poskytne více možností pro náš pracovní postup testování a vývoje.
+
+===== Použití truffle k nasazení kontraktu
+
+((("smart contracts","using Truffle to deploy")))((("Truffle","contract deployment with")))Nyní máme základní pracovní adresář pro náš projekt _Faucet_ a máme nakonfigurovaný +truffle+ a jeho závislosti. Kontrykty se nacházejí v podadresáři _contracts_ našeho projektu. Adresář již obsahuje „pomocný“ kontakt _Migrations.sol_, který pro nás spravuje vylepšování kontraktu. V další části prozkoumáme použití _Migrations.sol_.
+
+Okopírujme kontrakt _Faucet.sol_ (z <<solidity_faucet_example>>) do podadresáře _contracts_, takže projektový adresář bude vypadat následovně:
+
+----
+Faucet
++---- contracts
+|   +---- Faucet.sol
+|   `---- Migrations.sol
+...
+----
+
+Nyní můžeme požádat +truffle+, aby pro nás sestavil smlouvu:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle compile</strong>
+Compiling ./contracts/Faucet.sol...
+Compiling ./contracts/Migrations.sol...
+Writing artifacts to ./build/contracts
+</pre>
+++++
+
+[[truffle_migrations_understanding_deployment_scripts]]
+===== Truffle migrace a porozumění nasazovacím skriptům
+
+((("deployment scripts", id="ix_appdx-dev-tools-asciidoc4", range="startofrange")))((("migrations", id="ix_appdx-dev-tools-asciidoc5", range="startofrange")))((("Truffle","migrations", id="ix_appdx-dev-tools-asciidoc6", range="startofrange")))Truffle nabízí systém nasazení zvaný _migrace_. Pokud jste pracovali v jiných rámcích, možná jste viděli něco podobného: Ruby on Rails, Python Django a mnoho dalších jazyků a rámců má příkaz +migrate+.
+
+Ve všech těchto rámcích je účelem migrace zpracovat změny v datovém schématu mezi různými verzemi softwaru. Účel migrace v Ethereum je poněkud odlišný. Protože Ethereum kontrakty jsou neměnné a jejich zavedení je nákladné, Truffle nabízí mechanismus migrace, který sleduje, které kontrakty (a které verze) již byly zavedeny. V komplexním projektu s desítkami kontraktů a složitými závislostmi byste nemuseli platit za opakované nasazení kontraktů, které se nezměnily. Také byste nechtěli ručně sledovat, které verze kontraktů již byly nasazeny. Mechanismus Truffle migrace to vše provádí nasazením chytrého kontraktu _Migrations.sol_, která pak sleduje všechna další nasazení kontraktů.
+
+Máme pouze jeden kontrakt, _Faucet.sol_, což znamená, že migrační systém je přinejmenším kanónem na vrabce. Bohužel ho musíme použít. Když se však naučíme, jak je použít pro jednu smlouvu, můžeme začít procvičovat některé dobré návyky pro náš vývojový pracovní postup. Úsilí se vyplatí, jak se věci komplikují.
+
+Truffle  _migrační_ adresář je místo, kde se nachází migrační skripty. Právě teď existuje pouze jeden skript __1_initial_migration.js__, který nasazuje samotný kontrakt _Migrations.sol_:
+
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/1_initial_migration.js[]
+----
+
+K nasazení _Faucet.sol_ potřebujeme druhý migrační skript. Nazvěme ho __2_deploy_contracts.js__. Je to velmi jednoduché, stejně jako __1_initial_migration.js__, s několika malými změnami. Ve skutečnosti můžete zkopírovat obsah __1_initial_migration.j__ a jednoduše nahradit všechny výskyty +Migrations+ za +Faucet+:
+
+[source,javascript,linenums]
+----
+include::code/truffle/Faucet/migrations/2_deploy_contracts.js[]
+----
+
+Skript inicializuje proměnnou +Faucet+, označí tím Solidity zdrojový kód _Faucet.sol_ Solidity jako artefakt, který definuje +Faucet+. Poté zavolá funkci `deploy` pro nasazení tohoto kontraktu.
+
+Vše je připraveno. K nasazení použijte +truffle migrate+. Musíme specifikovat, která síť se má použít, pomocí parametru +--network+. V konfiguračním souboru jsme zadali pouze jednu síť, kterou jsme nazvali +localnode+. Zkontrolujte, zda je spuštěn váš Ethereum místní klient a potom zadejte:
+
+++++
+<pre data-type="programlisting">
+Faucet $ <strong>truffle migrate --network localnode</strong>
+</pre>
+++++
+
+Protože k připojení k Ethereum síti a správě naší peněženky používáme místní uzel, musíme autorizovat transakci, kterou +truffle+ vytvoří. Provozujeme +parity+ připojeného k testovací bločence Ropsten, takže během migrace uvidíme vyskakovací okno jako v <<parity_deployment_confirmation>> on Parity webové příkazové řádce.
+
+[[parity_deployment_confirmation]]
+.Parity žádající o potvrzení nasazení Faucet
+image::images/parity_deployment_confirmation.png["Parity žádající o potvrzení nasazení Faucet"]
+
+Celkem existují čtyři transakce: jedna k nasazení +Migrations+, jedna k aktualizaci čítače nasazení na +1+, jedna k nasazení +Faucet+ a jedna k aktualizaci čítače nasazení na +2+.
+
+Truffle zobrazí dokončení migrace, zobrazí každou transakci a adresy kontraktů:(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc6")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc5")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc4")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle migrate --network localnode</strong>
+Using network 'localnode'.
+
+Running migration: 1_initial_migration.js
+  Deploying Migrations...
+  ... 0xfa090db179d023d2abae543b4a21a1479e70ca7d35a469a5d1a98bfc6bd80fe8
+  Migrations: 0x8861c27715550bed8362c0345add158489df6db0
+Saving successful migration to network...
+  ... 0x985c4a32716826ddbe4eae284104bef8bc69e959899f62246a1b27c9dfcd6c03
+Saving artifacts...
+Running migration: 2_deploy_contracts.js
+  Deploying Faucet...
+  ... 0xecdbeef77f0558edc689440e34b7bba0a3ba7a45e4b680b071b47c30a930e9d6
+  Faucet: 0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300
+Saving successful migration to network...
+  ... 0x11f376bd7307edddfd40dc4a14c3f7cb84b6c921ac2465602060b67d08f9fd8a
+Saving artifacts...
+</pre>
+++++
+
+===== Používání Truffle příkazové řádky
+
+((("Truffle","console", id="ix_appdx-dev-tools-asciidoc7", range="startofrange")))Truffle nabízí JavaScript příkazovou řádku, kterou můžeme použít k interakci s Ethereum sítí (prostřednictvím místního uzlu), interakci s nasazenými kontrakty a interakci s poskytovatelem peněženky. V naší současné konfiguraci (+localnode+) je poskytovatelem uzlů a peněženek náš místní klient Parity.
+
+Spusťte Truffle příkazovou řádku a vyzkoušejte některé příkazy:
+
+++++
+<pre data-type="programlisting">
+$ <strong>truffle console --network localnode</strong>
+truffle(localnode)>
+</pre>
+++++
+
+Truffle zobrazí výzvu ukazující vybranou konfiguraci sítě (+localnode+).
+
+[TIP]
+====
+Je důležité si zapamatovat a uvědomit si, kterou síť používáte. Nechtěli byste nechtěně nasadit zkušební kontrakt nebo provést zkušební transakci v hlavní Ethereum síti. To by mohla být nákladná chyba!
+====
+
+Příkazová řádka Truffle nabízí funkci automatického doplňování, která nám usnadňuje prozkoumávat prostředí. Pokud stiskneme Tab po částečně dokončeném příkazu, Truffle dokončí příkaz pro nás. Dvojím stisknutím klávesy Tab se zobrazí všechna možná dokončení, pokud našemu vstupu odpovídá více než jeden příkaz. Pokud na prázdnou výzvu stiskneme dvakrát klávesu Tab, Truffle zobrazí všechny dostupné příkazy:
+
+++++
+<pre data-type="programlisting" class="codewrap">
+truffle(localnode)&gt;
+Array Boolean Date Error EvalError Function Infinity JSON Math NaN Number Object RangeError ReferenceError RegExp String SyntaxError TypeError URIError decodeURI decodeURIComponent encodeURI encodeURIComponent eval isFinite isNaN parseFloat parseInt undefined
+
+ArrayBuffer Buffer DataView Faucet Float32Array Float64Array GLOBAL Int16Array Int32Array Int8Array Intl Map Migrations Promise Proxy Reflect Set StateManager Symbol Uint16Array Uint32Array Uint8Array Uint8ClampedArray WeakMap WeakSet WebAssembly XMLHttpRequest _ assert async_hooks buffer child_process clearImmediate clearInterval clearTimeout cluster console crypto dgram dns domain escape events fs global http http2 https module net os path perf_hooks process punycode querystring readline repl require root setImmediate setInterval setTimeout stream string_decoder tls tty unescape url util v8 vm web3 zlib
+
+__defineGetter__ __defineSetter__ __lookupGetter__ __lookupSetter__ __proto__ constructor hasOwnProperty isPrototypeOf propertyIsEnumerable toLocaleString toString valueOf
+</pre>
+++++
+
+Převážnou většinu funkcí souvisejících s peněženkami a uzly poskytuje objekt +web3+, což je instance knihovny web3.js. Objekt +web3+ abstrahuje rozhraní RPC do našeho Parity uzlu. Všimněte si také dvou objektů se známými jmény: +Migrations+ a +Faucet+. To jsou kontrakty, které jsme právě nasadili. K interakci s kontrakty použijeme Truffle příkazovou řádku. Nejprve zkontrolujeme naši peněženku pomocí objektu +web3+:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.accounts</strong>
+[ '0x9e713963a92c02317a681b9bb3065a8249de124f',
+  '0xdb5dc1a13e3a55cf3b4587cd8d1e5fdeb6738145' ]
+</pre>
+++++
+
+Náš Parity klient má dvě peněženky, s testovacím etherem na Ropstenu. Atribut +web3.eth.accounts+ obsahuje seznam všech účtů. Můžeme zkontrolovat zůstatek prvního účtu pomocí funkce +getBalance+:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(web3.eth.accounts[0]).toNumber()</strong>
+191198572800000000
+truffle(localnode)&gt;
+</pre>
+++++
+
+web3.js je velká JavaScript knihovna, která nabízí komplexní rozhraní systému Ethereum prostřednictvím poskytovatele, jako je například místní klient. Podrobněji prozkoumáme web3.js v <<web3js_tutorial>>. Nyní se pokusíme spolupracovat s našimi kontrakty::
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.address</strong>
+'0xd01cd8e7bd29e4bff8c1693f59eee46137a9f300'
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+0
+truffle(localnode)&gt;
+</pre>
+++++
+
+Dále použijeme +sendTransaction+ k odeslání testovacího etheru k financování kontraktu +Faucet+. Všimněte si použití +web3.utils.toWei+ k převodu jednotek etheru pro nás. Zadání 18 nul, aniž by došlo k chybě, je obtížné a nebezpečné, takže je vždy lepší použít pro převod jednotek převodník jednotek. Takto odesíláme transakci:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.sendTransaction({from:web3.eth.accounts[0],
+                    to:Faucet.address, value:web3.utils.toWei(0.5, 'ether')});</strong>
+'0xf134c75b985dc0e0c27c2f0412251e0860eb530a5055e660f21e7483ab336808'
+</pre>
+++++
+
+Pokud přepneme na webové rozhraní Parity, zobrazí se vyskakovací okno s žádostí o potvrzení této transakce. Jakmile bude transakce vytěžena, uvidíme zůstatek v našem +Faucet+ kontraktu:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+500000000000000000
+</pre>
+++++
+
+Zavolejme nyní funkci +withdraw+, abychom ze smlouvy odebrali nějaký testovací ether:
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                       {instance.withdraw(web3.utils.toWei(0.1,
+                       'ether'))}).then(console.log)</strong>
+</pre>
+++++
+
+Znovu budeme muset transakci schválit ve webovém rozhraní Parity. Pokud se znovu podíváme, uvidíme, že zůstatek kontraktu +Faucet+ se snížil a naše testovací peněženka obdržela 0,1 etheru(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc7"))):(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc2")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc1")))
+
+++++
+<pre data-type="programlisting">
+truffle(localnode)&gt; <strong>web3.eth.getBalance(Faucet.address).toNumber()</strong>
+400000000000000000
+truffle(localnode)&gt; <strong>Faucet.deployed().then(instance =>
+                    {instance.withdraw(web3.utils.toWei(1, 'ether'))})</strong>
+StatusError: Transaction: 0xe147ae9e3610334...8612b92d3f9c 
+  exited with an error (status 0).
+</pre>
+++++
+
+==== Embark
+
+((("Embark")))((("frameworks","Embark")))GitHub: https://github.com/embark-framework/embark/[]
+
+Documentation: https://embark.status.im/docs/[]
+
++npm+ package repository: https://www.npmjs.com/package/embark[]
+
+Embark je rámec vytvořený tak, aby vývojářům umožnil snadný vývoj a nasazení decentralizovaných aplikací.
+Embark se integruje s Ethereum, IPFS, Whisper a Swarm a nabízí následující funkce:
+
+* automatické nasazení kontraktů a jejich zpřístupnění v JS kódu.
+* Sledujte změny a aktualizujte kontrakty, abyste v případě potřeby je mohli znovu nasadit.
+* Správa a interakce s různými bločenkami (např. testovací, lokální, hlavní).
+* Spravujte složité systémy vzájemně závislých kontraktů.
+* Ukládá a získává data, včetně nahrávání a načítání souborů uložených v IPFS.
+* Usnadňuje proces nasazení celé aplikace na IPFS nebo Swarm.
+* Odesílá a přijímá zprávy prostřednictvím Whisper.
+
+Můžete jej nainstalovat pomocí +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -g install embark</strong>
+</pre>
+++++
+
+[role="pagebreak-before"]
+==== OpenZeppelin
+
+((("frameworks","OpenZeppelin suite", id="ix_appdx-dev-tools-asciidoc8", range="startofrange")))((("OpenZeppelin", id="ix_appdx-dev-tools-asciidoc9", range="startofrange")))GitHub: https://github.com/OpenZeppelin/openzeppelin-solidity[]
+
+Web: https://openzeppelin.org/[]
+
+Dokumentace: https://openzeppelin.org/api/docs/open-zeppelin.html[]
+
+https://openzeppelin.org/[OpenZeppelin] je otevřený rámec opakovaně použitelných a bezpečných chytrých kontraktů v jazyce Solidity.
+
+Je řízen komunitou pod vedením týmu https://zeppelin.solutions/[Zeppelin] s více než stovkou externích přispěvatelů. Hlavním zaměřením rámce je bezpečnost, dosažená použitím standardních bezpečnostních vzorů chytrých kontraktů a osvědčených postupů, čerpající ze všech zkušeností, které vývojáři Zeppelin získali z https://blog.zeppelin.solutions/tagged/security[auditu] a obrovského množství zakázek a prostřednictvím neustálého testování a auditu ze strany komunity, která používá rámec jako základ pro jejich aplikace v reálném světě.
+
+Rámec OpenZeppelin je nejrozšířenějším řešením Ethereum chytrých kontraktů. Rámec má v současné době bohatou knihovnu kontraktů, včetně implementace tokenů ERC20 a ERC721, mnoho variant modelů pro skupinový prodej a jednoduchá chování běžně vyskytující se v kontraktech, jako jsou `Ownable`, `Pausable`, nebo `LimitBalance`. Kontrakty v tomto úložišti fungují v některých případech jako standardní implementace.
+
+Rámec je licencován na základě licence MIT a všechny kontrakty byly navrženy s modulárním přístupem, který zaručuje snadné opětovné použití a rozšíření. Jedná se o čisté a základní stavební kameny, připravené k použití v příštím Ethereum projektu. Nastavme rámec a vytvoříme jednoduchý kontrakt skupinového prodeje pomocí OpenZeppelin kontraktu, abychom ukázali, jak snadné je ho používat. Tento příklad také zdůrazňuje důležitost opětovného použití bezpečných součástí namísto jejich napsání námi samotnými.
+
+Nejprve budeme muset nainstalovat knihovnu +openzeppelin-solidity+ do našeho pracovního prostoru. Nejnovější vydání v době tohoto psaní je v1.9.0, takže použijeme toto:
+
+++++
+<pre data-type="programlisting">
+$ <strong>mkdir sample-crowdsale</strong>
+$ <strong>cd sample-crowdsale</strong>
+$ <strong>npm install openzeppelin-solidity@1.9.0</strong>
+$ <strong>mkdir contracts</strong>
+</pre>
+++++
+
+V době psaní této knihy obsahuje OpenZeppelin několik základních kontraktů tokenů, které dodržují standardy ERC20, ERC721 a ERC827, s různými charakteristikami emisí, limitů, získávání, životního cyklu atd.
+
+Vytvořme ERC20 token, který je razitelný což znamená, že počáteční zásoba začíná na 0 a nový token může být vytvořen vlastníkem tokenu (v našem případě při veřejném prodeji) pass:[<span class="keep-together">kontraktu</span>]) a prodáván nakupujícím. Za tímto účelem vytvoříme soubor _contracts/SampleToken.sol_ s následujícím obsahem:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleToken.sol[]
+----
+
+OpenZeppelin již poskytuje kontrakt +MintableToken+, který můžeme použít jako základnu pro náš token, takže definujeme pouze podrobnosti, které jsou specifické pro náš případ. Dále udělejme kontrakt pro veřejný prodej. Stejně jako u tokenů, OpenZeppelin již nabízí širokou škálu variant. V současné době najdete kontrakty na různé scénáře zahrnující distribuci, emise, cenu a validaci. Řekněme tedy, že chcete nastavit cíl pro náš veřejný prodej a pokud není splněn do konce prodeje, chcete vrátit peníze všem našim investorům. K tomu můžete použít http://bit.ly/2yHoh65[+RefundableCrowdsale+] kontrakt. Nebo možná budete chtít definovat veřejný prodej s rostoucí cenou, abyste motivovali začínající kupce; tady http://bit.ly/2PtWOys[+IncreasingPriceCrowdsale+] kontrakt dělá přesně tohle. Veřejný prodej můžete také ukončit, jakmile kontrakt obdrží určité množství etheru(http://bit.ly/2OVsCN8[+CappedCrowdsale+]), nebo uplyne daný čas http://bit.ly/2zp2Nuz[+TimedCrowdsale+] kontrakt, nebo vytvořit seznam povolených adres kupujících http://bit.ly/2CN8Hc9[+WhitelistedCrowdsale+] kontrakt.
+
+Jak jsme již uvedli, OpenZeppelin kontrakty jsou základními stavebními kameny. Tyto kontrakty veřejného prodeje byly navrženy tak, aby byly kombinovatelné; přečtěte si zdrojový kód základního http://bit.ly/2ABIQSI[+Crowdsale+] kontraktu pro pokyny jak ho rozšířit. Pro veřejný prodej našeho tokenu potřebujeme razit tokeny, když je kontrakt veřejného prodeje získá ether, použijme. http://bit.ly/2Sx3HOc[+MintedCrowdsale+] jako základ. A aby to bylo ještě zajímavější, udělejme to také http://bit.ly/2Qef0Jm[+PostDeliveryCrowdsale+] takže tokeny mohou být odebrány až po skončení veřejného prodeje. Za tímto účelem napíšeme následující _contracts/SampleCrowdsale.sol_:
+
+[source,solidity]
+----
+include::code/OpenZeppelin/contracts/SampleCrowdsale.sol[]
+----
+
+Opět jsme skoro nemuseli psát jakýkoli kód; znovu jsme použili bitvou testovaný kód, který komunita OpenZeppelin zpřístupnila. Je však důležité si uvědomit, že tento případ je odlišný od případu našeho kontraktu `SampleToken`. Pokud jdete na http://bit.ly/2Q8lQ3o[Crowdsale automated tests] uvidíte, že jsou testovány izolovaně. Když integrujete různé jednotky kódu do větší komponenty, nestačí otestovat všechny jednotky samostatně, protože vzájemné působení mezi nimi může způsobit chování, které jste neočekávali. Zejména uvidíte, že jsme zde zavedli vícenásobnou dědičnost, které může vývojáře překvapit, pokud nerozumí detailům Solidity. Náš pass:[<span class="keep-together"><code>SampleCrowdsale</code></span>] kontrakt je jednoduchý a bude fungovat tak, jak očekáváme, protože rámec byl navržen tak, aby případy jako tyto byly jednoduché; ale nepolevte ve vaši ostražitost kvůli jednoduchosti, kterou tento rámec zavádí. Pokaždé, když integrujete části rámce OpenZeppelin za účelem vytvoření komplexnějšího řešení, musíte plně otestovat všechny aspekty svého řešení, abyste se ujistili, že všechny interakce jednotek fungují podle vašich představ.
+
+A konečně, když jsme s naším řešením spokojeni a je důkladně vyzkoušeno, musíme jej nasadit. OpenZeppelin se dobře integruje s Truffle, takže můžeme napsat pouze migrační soubor, jako je následující (_migrations/2_deploy_contracts.js_), jak je vysvětleno v <<truffle_migrations_understanding_deployment_scripts>>:
+
+[source,js]
+----
+include::code/OpenZeppelin/migrations/2_deploy_contracts.js[]
+----
+
+[NOTE]
+====
+Byl to jen rychlý přehled několika kontraktů, které jsou součástí rámce OpenZeppelin. Můžete se připojit k vývojové komunitě OpenZeppelin a učit se a přispívat.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc9")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc8")))
+====
+
+==== ZeppelinOS
+
+((("frameworks","ZeppelinOS")))((("ZeppelinOS")))GitHhub: https://github.com/zeppelinos[]
+
+Web: https://zeppelinos.org[]
+
+Blog: https://blog.zeppelinos.org[]
+
+https://github.com/zeppelinos[ZeppelinOS] je distribuovaná platforma nástrojů a služeb s otevřeným zdrojovým kódem, postavená na vrcholu EVM
+k bezpečnému vyvíjení a správě aplikací chytrých kontraktů.
+
+Na rozdíl od kódu OpenZeppelin, který je třeba při každé aplikaci znovu nasadit s každou aplikací, zůstává kód ZeppelinOS v bločence. Aplikace, které potřebují danou funkčnost, řekněme ERC20 token, a to nejen, že nemusí přepracovávat a opakovat jeho implementaci (něco, co OpenZeppelin vyřešil), ale ani jej nemusí implementovat. S ZeppelinOS, aplikace interaguje s implementací tokenu přímo bločence, téměř stejným způsobem, jako aplikace stolního počítače interaguje se součástmi svého základního OS.
+
+((("proxy"))Jádrem ZeppelinOS je velmi chytrý kontrakt známý jako _proxy_. Proxy je kontrakt, která je schopen zabalit jakýkoli jiný kontrakt, odhalit  jeho rozhraní, aniž by pro něj musela ručně implementovat funkce nastavení a čtení parametrů a může ho vylepšovat bez ztráty stavu. Z hlediska Solidity to lze považovat za normální kontrakt, jejíž obchodní logika je obsažena v knihovně, kterou lze kdykoli vyměnit za novou knihovnu, aniž by došlo ke ztrátě jejího stavu. Způsob, jakým se proxy připojuje k jeho implementaci, je pro vývojáře zcela automatizovaný a zapouzdřený. Prakticky může být každý kontrakt vylepšován s malou až žádnou změnou jejo kódu. Více o proxy mechanismu ZeppelinOS lze nalézt v http://bit.ly/2OfuNpu[blog], a příklad použití lze nalézt http://bit.ly/2OfuE5q[na GitHubu].
+
+Vývoj aplikací pomocí ZeppelinOS je podobný vývoji JavaScript aplikací pomocí +npm+. +AppManager+ zpracovává balíček aplikací pro každou verzi aplikace. Balíček je jednoduše adresář kontraktů, z nichž každá může mít jeden nebo více vylepšovatelných proxy. +AppManager+ poskytuje nejen proxy pro kontrakty specifické pro aplikaci, ale také pro implementace ZeppelinOS, ve formě standardní knihovny. Úplný příklad toho naleznete na adrese http://bit.ly/2PtyJb3[examples/complex].
+
+Přestože je ZeppelinOS v současné době ve vývoji, usiluje o poskytování široké škály dalších funkcí, jako jsou vývojářské nástroje, plánovač, který automatizuje operace na pozadí v rámci kontraktů, vývojové odměny, tržiště, které usnadňuje komunikaci a výměnu hodnoty mezi aplikacemi, a ještě mnohem více. To vše je popsáno v ZeppelinOS http://bit.ly/2QcxV7K[Bílé knize].(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc0")))
+
+
+
+
+=== Nástroje
+
+==== EthereumJS helpeth: nástroj příkazové řádky
+
+((("EthereumJS helpeth")))((("helpeth command-line tool")))((("utilities")))((("utilities","EthereumJS helpeth")))GitHub: https://github.com/ethereumjs/helpeth[]
+
++helpeth+ je nástroj příkazové řádky pro manipulaci s klíči a transakcemi, který vývojářům v mnohém usnadňuje práci.
+
+Je součástí kolekce EthereumJS knihoven a nástrojů založených na JavaScriptu:
+
+
+
+----
+Použití: helpeth [command]
+
+Příkazy:
+  signMessage <message>                     Podepíše zprávu
+  verifySig <hash> <sig>                    Ověří podpis
+  verifySigParams <hash> <r> <s> <v>        Ověří parametry podpisu
+  createTx <nonce> <to> <value> <data>      Podepíše zprávu
+  <gasLimit> <gasPrice>
+  assembleTx <nonce> <to> <value> <data>    Složí transakci z
+  <gasLimit> <gasPrice> <v> <r> <s>         částí
+  parseTx <tx>                               Zpracuje surovou transakci
+  keyGenerate [format] [icapdirect]         Vytvoří nový klíč
+  keyConvert                                Převede klíč do V3 formátu
+  keyDetails                                Vytiskne podrobnosti o klíči
+  bip32Details <path>                       Vytiskne podrobnosti o klíči zadané cesty
+  addressDetails <address>                  Vytiskne podrobnosti o adrese
+  unitConvert <value> <from> <to>           Převod mezi Ethereum jednotkami
+
+Nastavení:
+  -p, --private      Soukromý klíč jako hex řetězec                   [string]
+  --password         Heslo pro soukromý klíč                            [string]
+  --password-prompt  Výzva k zadání soukromého klíče               [boolean]
+  -k, --keyfile      Soubor se zakódovaným klíčem                      [string]
+  --show-private     Zobrazí podrobnosti soukromého kliče         [boolean]
+  --mnemonic         Mnemotechnická slovo pro odvození HD klíče   [string]
+  --version          Zobrazí číslo verze                               [boolean]
+  --help             Zobrazí nápovědu                                [boolean]
+----
+
+==== dapp.tools
+
+((("dapp.tools")))((("utilities","dapp.tools")))Web: https://dapp.tools/[]
+
+dapp.tools je komplexní sada vývojových nástrojů orientovaných na bločenku vytvořená v duchu filozofie Unixu. Zahrnuty jsou tyto nástroje:
+
+
+Dapp::
+Dapp je základní uživatelsky orientovaný nástroj pro vytváření nových DApps, spouštění testů Solidity jednotek, ladění a nasazování kontraktů, spouštění testovacích sítí a další.
+
+Seth::
+Seth se používá pro vytváření transakcí, dotazování bločenky, převod mezi datovými formáty, provádění vzdálených volání a podobných každodenních úkolů.
+
+Hevm::
+Hevm je implementace Haskell EVM s hbitým nástrojem pro ladění Solidity. Používá se k testování a ladění DApps.
+
+evmdis::
+evmdis je dekompilátor EVM; provádí statickou analýzu v bajtkódu, aby poskytl vyšší úroveň abstrakce než surové instrukce EVM.
+
+
+==== SputnikVM
+
+https://github.com/etcdevteam/sputnikvm[SputnikVM] ((("SputnikVM")))((("utilities","SputnikVM"))) je samostatný zásuvný virtuální stroj pro různé bločenky na bázi Etherea. Je psán v Rustu a lze jej použít jako binární, přepravní bednu nebo sdílenou knihovnu, nebo integrovat prostřednictvím rozhraní FFI, Protobuf a JSON. Má samostatný binární soubor +sputnikvm-dev+ určený pro testovací účely, který emuluje většinu rozhraní JSON-RPC API a těžby bloku.
+
+=== Knihovny
+
+==== web3.js
+
+((("libraries", id="ix_appdx-dev-tools-asciidoc10", range="startofrange")))web3.js ((("libraries","web3.js")))((("web3.js"))je rozhraní API kompatibilní s Ethereum pro komunikaci s klienty prostřednictvím JSON-RPC, vyvinuté Nadací Ethereum.
+
+GitHub: https://github.com/ethereum/web3.js[]
+
++npm+ úložiště balíčku: https://www.npmjs.com/package/web3[]
+
+Dokumentace pro web3.js API 0.2x.x: http://bit.ly/2Qcyq1C[]
+
+Dokumentace pro web3.js API 1.0.0-beta.xx: http://bit.ly/2CT33p0[]
+
+[role="pagebreak-before"]
+==== web3.py
+
+((("libraries","web3.py")))((("web3.py")))web3.py je Python knihovna pro interakce s Ethereum bločenkou, spravovaný Nadací Ethereum.
+
+GitHub: https://github.com/ethereum/web3.py[]
+
+PyPi: https://pypi.python.org/pypi/web3/4.0.0b9[]
+
+Dokumentace: https://web3py.readthedocs.io/[]
+
+==== EthereumJS
+
+((("EthereumJS")))EthereumJS kolepce knihoven a nástrojů pro Ethereum.
+
+GitHub: https://github.com/ethereumjs[]
+
+Web: https://ethereumjs.github.io/[]
+
+==== web3j
+
+((("libraries","web3j")))((("web3j")))web3j is a Java and Android knihovna pro pro integraci s Ethereum klienty a práci s chytrými kontrakty.
+
+GitHub: https://github.com/web3j/web3j[]
+
+Web: https://web3j.io[]
+
+Dokumentace: https://docs.web3j.io[]
+
+==== EtherJar
+
+((("EtherJar")))((("libraries","EtherJar")))EtherJar je další Java knihovna pro integraci s Ethereem a práci s chytrými kontrakty. Je navržen pro projekty na straně serveru založené na Java 8+ a poskytuje nízkoúrovňový přístup a vysokou úroveň obalů kolem RPC, datových struktur Etherea a přístupu k chytrým kontraktům.
+
+GitHub: https://github.com/infinitape/etherjar[]
+
+==== Nethereum
+
+((("libraries","Nethereum")))((("Nethereum")))Nethereum je .Net integrovaná knihovna pro Ethereum.
+
+GitHub: https://github.com/Nethereum/Nethereum[]
+
+Web: http://nethereum.com/[]
+
+Dokumentace: https://nethereum.readthedocs.io/en/latest/[]
+
+==== ethers.js
+
+((("ethers.js")))((("libraries","ethers.js")))The ethers.js knihovna je kompaktní, úplná, plně vybavená, rozsáhle testovaná Ethereum knihovna s licencí MIT, která od Nadace Ethereum získala grant DevEx na její rozšíření a údržbu.
+
+GitHub odkaz: https://github.com/ethers-io/ethers.js[]
+
+Dokumentace: https://docs.ethers.io[]
+
+
+==== Emerald Platform
+
+((("Emerald Platform")))((("libraries","Emerald Platform")))Emerald Platform poskytuje knihovny a komponenty uživatelského rozhraní k vytváření DApps nad Ethereem. Emerald JS a Emerald JS UI poskytují sady modulů a komponenty React pro vytváření JavaScript aplikací a webových stránek; Emerald SVG Icons je sada ikon souvisejících s bločenkou. Kromě JavaScript knihoven má Emerald knihovnu Rust pro provozování soukromých klíčů a podpisů transakcí. Všechny knihovny a součásti Emerald jsou licencovány na základě licence Apache, verze 2.0.((range="endofrange", startref="ix_appdx-dev-tools-asciidoc10")))
+
+GitHub: https://github.com/etcdevteam/emerald-platform[]
+
+Dokumentace: https://docs.etcdevteam.com[]
+
+[[testing_frameworks]]
+=== Testování chytrých kontraktů
+
+((("frameworks","for smart contract development", id="ix_appdx-dev-tools-asciidoc11", range="startofrange")))((("smart contracts","test frameworks", id="ix_appdx-dev-tools-asciidoc12", range="startofrange")))((("test frameworks","for smart contract development", id="ix_appdx-dev-tools-asciidoc13", range="startofrange")))Existuje několik běžně používaných testovacích rámců pro vývoj chytrých kontraktů, shrnuto v <<testing_frameworks_table>>:
+
+[[testing_frameworks_table]]
+[options="header"]
+.Shrnutí rámců testování chytrých kontraktů
+|=======
+|Rámec | jazyk testů    | Testovací rámec | Emulátor bločenky       | Web
+|Truffle   | JavaScript/Solidity | Mocha             | TestRPC/Ganache      | https://truffleframework.com/[]
+|Embark    | JavaScript          | Mocha             | TestRPC/Ganache      | https://embark.status.im/docs/[]
+|Dapp      | Solidity            | +ds-test+ (custom)  | +ethrun+ (Parity)      | https://dapp.tools/dapp/[]
+|Populus   | Python              | +pytest+             | Python chain emulator| https://populus.readthedocs.io[]
+|=======
+
+
+Truffle:: ((("Truffle","as test framework")))Truffle umožňuje psaní testů jednotek v JavaScriptu (založeném na Mocha) nebo Solidity. Tyto testy probíhají proti Ganache.
+
+Embark:: ((("Embark")))Embark se integruje s Mochou pro spuštění jednotkových testů napsaných v JavaScriptu. Testy jsou zase prováděny proti kontraktům nasazeným na TestRPC / Ganache. Rámec Embark automaticky zavádí chytré kontrakty a automaticky znovu nasadí kontrakty, které byly změny. Sleduje také nasazené kontraktů a nasazuje kontrakty, pouze pokud je to skutečně nutné. Embark obsahuje testovací knihovnu, která vám umožní rychle provozovat a testovat vaše kontrakty v EVM, s funkcemi jako +assert.equal+. Příkaz +embark test+ spustí všechny testovací soubory v adresáři _test_.
+
+Dapp:: ((("Dapp")))Dapp používá čistý Solidity kód (knihovna pojmenována +ds-test+) a vestavěnou Parity Rust knihovnou zvanou +ethrun+ pro vykonávání Ethereum bajtkódu a poté správnost volání assert. Knihovna +ds-test+ poskytuje assert funkce pro ověřování správnosti a události pro protokolování dat z příkazové řádky.
++
+Assert funkce obsahují:
++
+----
+assert(bool condition)
+assertEq(address a, address b)
+assertEq(bytes32 a, bytes32 b)
+assertEq(int a, int b)
+assertEq(uint a, uint b)
+assertEq0(bytes a, bytes b)
+expectEventsExact(address target)
+----
++
+Příkazy protokolování budou vypisovat informace do příkazové řádky, což je činí užitečnými pro ladění:
++
+----
+logs(bytes)
+log_bytes32(bytes32)
+log_named_bytes32(bytes32 key, bytes32 val)
+log_named_address(bytes32 key, address val)
+log_named_int(bytes32 key, int val)
+log_named_uint(bytes32 key, uint val)
+log_named_decimal_int(bytes32 key, int val, uint decimals)
+log_named_decimal_uint(bytes32 key, uint val, uint decimals)
+----
+
+Populus:: ((("Populus")))Populus používá Python a jeho vlastní emulátor bločenky k spouštění kontraktů napsaných v Solidity. Testy jednotek jsou psány v Pythonu s knihovnou +pytest+. Populus podporuje psaní kontraktů speciálně pro testování. Tyto názvy souborů kontraktů by se měly shodovat s globálním vzorem _Test*.sol_ a měly by být umístěny kdekoli v adresáři testů projektů _tests_.
+
+
+[[on_blockchain_testing_sec]]
+==== Testování na bločence
+
+((("blockchain","on-blockchain testing")))((("test frameworks","on-blockchain testing")))Ačkoli většina testů by neměla nastat u nasazených kontraktů, chování kontraktu lze zkontrolovat prostřednictvím Ethereum klientů. Následující příkazy lze použít k posouzení stavu chytrého kontraktu Tyto příkazy by měly být zadány na terminálu +geth+, ačkoli je bude podporovat také jakákoli příkazové řádky web3.
+
+Adresu kontraktu získáte na adrese __++txhash++__, použitím:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getTransactionReceipt(<em>txhash</em>);
+</pre>
+++++
+
+
+Tento příkaz získá kód kontraktu nasazený na __++contractaddress++__; to lze použít k ověření správného nasazení:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getCode(<em>contractaddress</em>)
+</pre>
+++++
+
+Tím získáte úplné protokoly kontraktu umístěného na adrese uvedené v __++options++__,, což je užitečné pro prohlížení historie volání v kontraktu:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getPastLogs(<em>options</em>)
+</pre>
+++++
+
+Nakonec tento příkaz získá úložiště umístěné na __++address++__  na pozici __++position++__:
+
+++++
+<pre data-type="programlisting">
+web3.eth.getStorageAt(<em>address</em>, <em>position</em>)
+</pre>
+++++
+
+[[ganache]]
+==== Ganache: Místní testovací bločenka
+
+((("Ganache","local blockchain testing with")))Ganache je místní testovací bločenka, který můžete použít k nasazení kontraktů, vývoji aplikací a provádění testů. Je k dispozici jako aplikace pro stolní počítače (s grafickým uživatelským rozhraním) pro Windows, MacOS a Linux. Je také k dispozici jako obslužný program příkazové řádky s názvem +ganache-cli+. Další podrobnosti a pokyny k instalaci stolní aplikace Ganache najdete na stránce https://truffleframework.com/ganache[].
+
+The +ganache-cli+ kód se nechází na https://github.com/trufflesuite/ganache-cli/[].
+
+Chcete-li nainstalovat příkazový řádek +ganache-cli+, pomocí +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g ganache-cli</strong>
+</pre>
+++++
+
+Pomocí +ganache-cli+ můžete spustit místní bločenku pro testování následujícím způsobem:
+
+++++
+<pre data-type="programlisting">
+$ <strong>ganache-cli \
+  --networkId=3 \
+  --port="8545" \
+  --verbose \
+  --gasLimit=8000000 \
+  --gasPrice=4000000000;</strong>
+</pre>
+++++
+
+Několik poznámek k této příkazové řádce:
+
+* [ ] Zkontrolujte, zda hodnoty příznaků  `--networkId` a `--port` odpovídají vašemu nastavení v  _truffle.js_.
+* [ ] Zkontrolujte, zda hodnota příznaku  `--gasLimit` odpovídá poslední hodnotě limitu plynu na hlavní síti (např. 8,000,000 plynu) zobrazené na https://ethstats.net, abyste se vyhnuli nechtěnému vyvolání vyjímky "nedostatek plynu". Všimněte si, že „`--gasPrice`  ve výši +4000000000+ představuje cenu plynu 4 gwei.
+* [ ] Volitelně můžete zadat hodnotu příznaku `--mnemonic`  a obnovit předchozí HD peněženku a přidružené adresy.(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc13")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc12")))(((range="endofrange", startref="ix_appdx-dev-tools-asciidoc11")))

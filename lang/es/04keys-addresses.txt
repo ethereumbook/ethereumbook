@@ -1,0 +1,634 @@
+[[keys_addresses]]
+== Criptografía
+
+((("criptografía", id="ix_04keys-addresses-asciidoc0", range="startofrange")))Una de las tecnologías fundamentales de Ethereum es la ((("criptografía","definida")))_criptografía_, la cual es una rama de las matemáticas usada ampliamente en seguridad informática. Criptografía significa "escritura secreta" en Griego, pero el estudio de la criptografía es mas que sólo escritura secreta, lo cual hace referencia al _cifrado_. La criptografía puede también ser usada, por ejemplo para probar el conocimiento de un secreto sin revelar ese secreto (por ejemplo, con  una firma digital), o para probar la autenticidad de ciertos datos (por ejemplo, con "huellas digitales", también conocidas como "hashes"). Este tipo de pruebas criptográficas son herramientas matemáticas criticas para la operación de la plataforma de Ethereum (y, de hecho, para todos los sistemas basados en cadenas de bloques), y son también ampliamente usados en aplicaciones de Ethereum.((("cifrado", seealso="llaves y direcciones")))
+
+Téngase en cuenta que, en el momento de esta publicación, ninguna parte del protocolo de Ethereum implica cifrado; es decir, ninguna de las comunicaciones con la plataforma Ethereum ni entre los nodos (incluidos los datos de transacciones) están encriptadas y pueden (necesariamente) ser leídas por cualquier persona. Esto es para que todos puedan verificar la exactitud de las actualizaciones de estado y se pueda llegar a un consenso. En el futuro, estarán disponibles herramientas criptográficas avanzadas, como pruebas de conocimiento cero y encriptación homomórfica, que permitirán que se registren algunos cálculos encriptados en la cadena de bloques mientras se permite el consenso; sin embargo, si bien se han previsto, aún no se han implementado.
+
+En este capítulo presentaremos algunas de las técnicas criptográficas utilizadas en Ethereum: a saber, la criptografía de llave pública (del inglés, PKC), que se utiliza para controlar la propiedad de los fondos, en forma de llaves privadas y direcciones.
+
+[[keys_addresses_intro]]
+=== Llaves y Direcciones
+
+((("criptografía","llaves y direcciones")))((("EOA (Externally Owned Account)","llaves y direcciones")))((("llaves y direcciones")))Como vimos al principio del libro, Ethereum tiene dos diferentes tipos de cuentas: _cuentas manejadas externamente_ (del inglés "externally owned accounts" o EOAs) y _contratos_. La titularidad de un éter por parte de EOAs, es establecida mediante _llaves privadas_ digitales, _direcciones de Ethereum_, y _firmas digitales_.((("llaves privadas", seealso="llaves y direcciones")))Las llaves privadas están en el corazón de todas las interacciones de los usuarios con Ethereum. De hecho, las direcciones de cuentas son derivadas directamente a partir de las llaves privadas: una llave privada únicamente determina una sola dirección Ethereum, también conocida como _cuenta_.
+
+Las llaves privadas no se utilizan directamente en el sistema Ethereum de ninguna manera; nunca se transmiten ni se almacenan en Ethereum. Es decir que las llaves privadas deben permanecer privadas y nunca aparecer en mensajes pasados a la red, ni deben almacenarse en la cadena; solo las direcciones de cuentas y las firmas digitales se transmiten y se almacenan en el sistema Ethereum. Para obtener más información sobre cómo mantener las llaves privadas seguras y protegidas, consúltese <<control_responsibility>> y el <<wallets_chapter>>. 
+
+((("firmas digitales")))El acceso y el control de los fondos se logra mediante firmas digitales, que también se crean utilizando las llaves privadas. Las transacciones de Ethereum requieren que se incluya una firma digital válida en la cadena de bloques. Cualquiera que tenga una copia de una llave privada tiene el control de la cuenta correspondiente y de cualquier éter que esta contenga. Suponiendo que un usuario mantiene su llave privada segura, las firmas digitales en las transacciones de Ethereum prueban la titularidad del verdadero propietario de los fondos, porque demuestran la propiedad de la llave privada.
+
+((("pares de llaves")))En los sistemas con base a&#x2013;criptografía de llave pública, como el que usa Ethereum, las llaves vienen en pares que consisten en una llave privada (que es secreta) y una llave pública. Podemos pensar en la llave pública como un dato similar a un número de cuenta bancaria y la llave privada como dato similar al PIN secreto; es este último el que proporciona control sobre la cuenta y el primero dato es el que identifica dicha cuenta ante los demás. Los usuarios de Ethereum rara vez ven las llaves privadas en sí mismas; en su mayor parte, se almacenan (en forma encriptada) en archivos especiales y son administrados por el software de las billeteras de Ethereum.
+
+En la sección del pago de una transacción de Ethereum, el destinatario previsto está representado por una dirección de Ethereum, que se utiliza de la misma manera que los detalles de la cuenta del beneficiario de una transferencia bancaria. Como veremos con más detalle en breve, se genera una dirección de Ethereum para una EOA a partir de la llave pública de un par de claves. Sin embargo, no todas las direcciones de Ethereum representan pares de llaves público–privadas; también pueden representar contratos, que, como veremos en el <<smart_contracts_chapter>>, no están respaldados por llaves privadas.
+
+En el resto de este capítulo, primero exploraremos la criptografía básica con un poco más de detalle y explicaremos las matemáticas utilizadas en Ethereum. Luego veremos cómo se generan, almacenan y administran las llaves. Finalmente, revisaremos los diversos formatos de codificación utilizados para representar llaves privadas, llaves públicas y direcciones.
+
+[[pkc]]
+=== Criptografía de Llave Pública y Criptomoneda
+
+((("criptografía","criptografía de llave pública y criptomoneda", id="ix_04keys-addresses-asciidoc1", range="startofrange")))((("criptografía de llave pública", id="ix_04keys-addresses-asciidoc2", range="startofrange")))La criptografía de llave pública (también conocida como "criptografía asimétrica") es una parte fundamental de la seguridad informática moderna. ((("Diffie, Whitfield")))((("Hellman, Martin")))((("protocolo de intercambio de llaves")))((("Merkle, Ralph")))El protocolo de intercambio de llaves, primero publicado en la década de 1970 por Martin Hellman, Whitfield Diffie y Ralph Merkle, fue un avance monumental que provocó la primera gran ola de interés público en el campo de la criptografía. Antes de la década de los 1970s, el conocimiento criptográfico sólido se mantenía en secreto por los pass:[<span class="keep-together">gobiernos</span>].
+
+La criptografía de llave pública utiliza llaves únicas para proteger la información. Estas llaves se basan en funciones matemáticas que tienen una propiedad especial: son fáciles de calcular, pero  su inversa es difícil de calcular. Basándose en estas funciones, la criptografía permite la creación de secretos digitales y firmas digitales imposibles de falsificar, que están aseguradas por las leyes de las matemáticas.
+
+Por ejemplo, multiplicar dos números primos grandes entre sí es trivial. ((("factorización de primos")))Pero dado el producto de dos números primos grandes, es muy difícil encontrar los factores primos (un problema llamado _factorización de primos_). Digamos que presentamos el número 8.018.009 y declaramos que es el producto de dos números primos. El encontrar esos dos números primos es mucho más difícil para cualquiera, que para nosotros multiplicarlos para producir 8.018.009.
+
+((("funciones de trampa")))Algunas de estas funciones matemáticas pueden invertirse fácilmente si se conoce alguna información secreta. En el ejemplo anterior, si decimos que uno de los factores primos es el número 2.003, podríamos encontrar trivialmente el otro con una división simple: 8.018.009 ÷ 2.003 = 4.003. Estas funciones a menudo se denominan _funciones de trampa_ porque son muy difíciles de invertir a menos que se nos proporcione una información secreta que pueda utilizarse como atajo para invertir la función.
+
+((("criptografía de curva elíptica")))Una categoría más avanzada de funciones matemáticas que es útil en criptografía se basa en operaciones aritméticas en una curva elíptica. En la aritmética de curva elíptica, la multiplicación módulo de un número primo es simple pero la división (la inversa) es prácticamente imposible. ((("problema del logaritmo discreto")))Esto se denomina _problema del logaritmo discreto_ y actualmente no hay trampillas conocidas. La _criptografía de curva elíptica_ se usa ampliamente en los sistemas informáticos modernos y es la base del uso de Ethereum (y otras criptomonedas) de llaves privadas y firmas digitales.
+
+[NOTE]
+====
+Eche un vistazo a los siguientes recursos si está interesado en leer más sobre criptografía y las funciones matemáticas que se utilizan en la criptografía moderna:
+
+* http://bit.ly/2DcwNhn[Cryptography]
+
+* http://bit.ly/2zeZV3c[Trapdoor function]
+
+* http://bit.ly/2ACJjnV[Prime factorization]
+
+* http://bit.ly/2Q7mZYI[Discrete logarithm]
+
+* http://bit.ly/2zfeKCP[Elliptic curve cryptography]
+====
+
+En Ethereum, se utiliza la criptografía de llave pública (también conocida como criptografía asimétrica) para crear el par de llaves público-privada del que hemos estado hablando en este capítulo. Se consideran un "par" porque la llave pública se deriva de la llave privada. Juntos, representan una cuenta de Ethereum al proporcionar, respectivamente, un identificador de cuenta de acceso público (la dirección) y control privado sobre el acceso a cualquier éter en la cuenta y sobre cualquier autenticación que la cuenta necesite cuando se utilizan contratos inteligentes. ((("firmas digitales","llaves privadas y")))La llave privada controla el acceso al ser la pieza única de información necesaria para crear _firmas digitales_, las cuales se requieren para firmar transacciones que permitan gastar los fondos en una cuenta. Las firmas digitales también se utilizan para autenticar propietarios o usuarios de contratos, como veremos en el <<smart_contracts_chapter>>.
+
+[TIP]
+====
+((("pares de llaves")))En la mayoría de las implementaciones de monederos, las llaves públicas y privadas se almacenan juntas como un _par de llaves_ para mayor comodidad. Sin embargo, la llave pública se puede calcular trivialmente a partir de la llave privada, por lo que también es posible almacenar solo la llave privada.
+====
+
+Se puede crear una firma digital para firmar cualquier mensaje. Para las transacciones de Ethereum, los detalles de la transacción en sí se utilizan como mensaje. Las matemáticas de la criptografía&#x2014;en este caso, la criptografía de curva elíptica&#x2014;proporcionan una forma para que el mensaje (es decir, los detalles de la transacción) se combinen con la llave privada para crear un código que solo puede producirse con el conocimiento de esa llave privada. Ése
+código se llama firma digital. Téngase en cuenta que una transacción de Ethereum es básicamente una solicitud para acceder a una cuenta en particular con una dirección de Ethereum en particular. Cuando se envía una transacción a la red de Ethereum para mover fondos o interactuar con contratos inteligentes, debe enviarse con una firma digital creada con la llave privada correspondiente a la dirección Ethereum en cuestión. Las matemáticas de la curva elíptica significan que _cualquiera_ puede verificar que una transacción es válida, al verificar que la firma digital coincide con los detalles de la transacción _y_ la dirección de Ethereum a la que se solicita el acceso. La verificación no involucra la llave privada en absoluto; eso sigue siendo privado. Sin embargo, el proceso de verificación determina sin lugar a dudas que la transacción solo pudo provenir de alguien con posesión de la llave privada que corresponde a la llave pública detrás de la dirección de Ethereum. Ésta es la "magia" de la criptografía de llave pública.
+
+
+[TIP]
+====
+No hay ningún cifrado como parte del protocolo de Ethereum&#x2014;todos los mensajes que se envían como parte del funcionamiento de la red Ethereum, pueden (necesariamente) ser leídos por cualquiera. Como tal, las llaves privadas solo se utilizan para crear firmas digitales para la autenticación de transacciones.(((range="endofrange", startref="ix_04keys-addresses-asciidoc2")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc1")))
+====
+
+[[private_keys]]
+=== Llaves Privadas
+
+((("llaves privadas", id="ix_04keys-addresses-asciidoc3", range="startofrange")))Una llave privada es simplemente un número, elegido al azar. El dominio y el control de la llave privada es la raíz del control del usuario sobre todos los fondos asociados con la dirección de Ethereum correspondiente, así como el acceso a los contratos que autorizan esa dirección. La llave privada se utiliza para crear las firmas necesarias para gastar los éter al demostrar la propiedad de los fondos utilizados en una transacción. ((("advertencias y precauciones","protección de la llave privada")))La llave privada debe permanecer secreta en todo momento, porque revelarla a terceros equivale a darles el control sobre el éter y los contratos asegurados por esa llave privada. La llave privada también debe estar respaldada y protegida contra pérdida accidental. Si se pierde, no se puede recuperar y los fondos asegurados también se pierden para siempre.
+
+[TIP]
+====
+La llave privada en Ethereum es solo un número. Una forma de elegir nuestras llaves privadas al azar es simplemente usar una moneda, lápiz y papel: lance una moneda 256 veces y tendrá los dígitos binarios de una llave privada aleatoria que puede usar en una billetera de Ethereum (probablemente&#x2014;vea la siguiente sección ). La llave pública y la dirección se pueden generar a partir de la llave privada.
+====
+
+[[generating_private_key]]
+==== Generación de una Llave Privada a Partir de un Número Aleatorio
+
+((("entropía","generación de llaves privadas y")))((("llaves privadas","generándolas a partir de un número aleatorio")))((("números aleatorios, generación de llaves privadas a partir de")))El primero y más importante paso en la generación de llaves es encontrar una fuente segura de entropía o de aleatoriedad. Crear una llave privada de Ethereum implica esencialmente elegir un número entre 1 y 2^256^. El método exacto que utilicemos para elegir ese número no importa siempre que no sea predecible o determinista. El software de Ethereum utiliza el generador de números aleatorios del sistema operativo subyacente para producir 256 bits aleatorios. Por lo general, el generador de números aleatorios del sistema operativo se inicializa mediante una fuente humana de aleatoriedad, por lo que es posible que se le pida que mueva el mouse durante unos segundos o que presione teclas aleatorias en su teclado. Una alternativa podría ser el ruido de la radiación cósmica en el canal del micrófono de la computadora.
+
+Para ser más precisos, una llave privada puede ser cualquier número distinto de cero, hasta un número muy grande ligeramente menor que 2^256^&#x2014;un número enorme de 78 dígitos, cuyo valor ronda el valor 1.158 * 10^77^. El número exacto comparte sus primeros 38 dígitos con 2^256^ y se define como el orden de la curva elíptica utilizada en Ethereum (véase <<elliptic_curve>>). Para crear una llave privada, elegimos aleatoriamente un número de 256 bits y verificamos que esté dentro del rango válido. En términos de programación, esto generalmente se logra alimentando una cadena aún mayor de bits aleatorios (recopilados de una fuente de aleatoriedad criptográficamente segura) y se introducen en un algoritmo hash de 256 bits como Keccak-256 o SHA-256, los cuales producirán convenientemente un número de 256 bits. Si el resultado está dentro del rango válido, tenemos una llave privada adecuada. De lo contrario, simplemente intentamos de nuevo con otro número aleatorio.
+
+[TIP]
+====
+2^256^&#x2014;el tamaño del espacio de llaves privadas de Ethereum&#x2014;es un número insondablemente grande. Equivale aproximadamente a 10^77^ en base decimal; es decir, un número con 77 dígitos. A modo de comparación, se estima que el universo visible contiene 10^80^ átomos. Por lo tanto, hay casi suficientes llaves privadas para dar a cada átomo del universo una cuenta de Ethereum. Si elegimos una llave privada al azar, no hay modo concebible de que alguien la adivine o la elija para sí mismo.
+====
+
+Téngase en cuenta que el proceso de generación de llaves privadas se lleva a cabo sin conexión; no requiere ninguna comunicación con la red Ethereum, ni tampoco ninguna comunicación con nadie. Como tal, para elegir un número que nadie más elegirá, debe ser verdaderamente aleatorio. Si elige el número usted mismo, la posibilidad de que alguien más lo pruebe (y luego se escape con su éter) es demasiado alta. Usar un generador de números aleatorios incorrecto (como la función pseudoaleatoria +rand+ en la mayoría de los lenguajes de programación) es aún peor, porque es aún más obvio y aún más fácil de replicar. Al igual que con las contraseñas para cuentas en línea, la llave privada debe ser indescifrable. Afortunadamente, nunca necesitaremos recordar nuestra llave privada, por lo que podemos tomar el mejor enfoque posible para elegirla: es decir, la verdadera aleatoriedad.
+
+[WARNING]
+====
+Evitemos improvisar nuestro propio código para crear un número aleatorio y tampoco utilicemos un generador de números aleatorios "simple" ofrecido por nuestro lenguaje de programación. Es vital que utilicemos un generador de números pseudo-aleatorios criptográficamente seguro (como CSPRNG) con una semilla de una fuente de entropía suficiente. Estúdiese la documentación de la biblioteca del generador de números aleatorios que se elija para asegurarnos de que sea criptográficamente segura. La implementación correcta de la biblioteca CSPRNG es fundamental para la seguridad de las llaves.
+====
+
+La siguiente es una llave privada generada aleatoriamente que se muestra en formato hexadecimal (256 bits mostrados como 64 dígitos hexadecimales, cada uno de ellos, de 4 bits):(((range="endofrange", startref="ix_04keys-addresses-asciidoc3")))
+
+[[prv_key_example]]
+----
+f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+
+[[pubkey]]
+=== Llaves Públicas
+
+((("criptografía","llaves públicas", id="ix_04keys-addresses-asciidoc4", range="startofrange")))((("criptografía de curva elíptica","generación de llave pública", id="ix_04keys-addresses-asciidoc5", range="startofrange")))((("llaves públicas", seealso="llaves y direcciones", id="ix_04keys-addresses-asciidoc6", range="startofrange")))Una llave pública de Ethereum es un _punto_ en una curva elíptica, lo que significa que se trata de un conjunto de coordenadas _x_ e _y_ que satisfacen la ecuación de la curva elíptica.
+
+En términos más simples, una llave pública de Ethereum son dos números, unidos. Estos números se obtienen a partir de la llave privada mediante un cálculo que _sólo puede ir en una dirección_. Eso significa que es trivial calcular una llave pública si se tiene la llave privada, pero no se puede calcular la llave privada a partir de la llave pública.
+
+[WARNING]
+====
+¡La MATEMÁTICA está a punto de suceder! Que no cunda el pánico. Si comienzan a hacerse confusos cualquiera de los puntos de los siguientes párrafos, se pueden omitir las siguientes secciones. Hay muchas herramientas y bibliotecas que harán los cálculos por nosotros.
+====
+
+La llave pública es calculada a partir de la llave privada usando la multiplicación de curva elíptica, la cual es prácticamente irreversible: _K_ = _k_ * _G_, donde _k_ es la llave privada, _G_ es un punto constante llamado ((("punto generador")))el _punto generador_, _K_ es la llave pública resultante, y * es el operador especial de "multiplicación" de curva elíptica. Téngase en cuenta que la multiplicación de curvas elípticas no es como la multiplicación normal. Comparte atributos funcionales con la multiplicación normal, pero eso es todo. Por ejemplo, la operación reversa (que sería la división para números normales), se conoce como "cálculo del logaritmo discreto&#x201d;&#x2014;es decir, hallar el valor de _k_ si se conoce el valor de __K__&#x2014;lo cual es tan dificil como probar con todos los posibles valores de _k_ (una búsqueda de "fuerza bruta" que probablemente llevará más tiempo del que este universo permitirá).
+
+En términos más simples: la aritmética en la curva elíptica es diferente de la aritmética "regular" de números enteros. Un punto (_G_) se puede multiplicar por un número entero (_k_) para producir otro punto (_K_). Pero aquí no existe tal cosa como la _división_, por lo que no es posible simplemente "dividir" la llave pública _K_ por el punto _G_ para calcular la llave privada _k_. Esta es la función matemática unidireccional descrita en <<pkc>>.
+
+[NOTE]
+====
+((("funciones unidireccionales")))La multiplicación de curvas elípticas es un tipo de función que los criptógrafos denominan función ""unidireccional": es fácil de hacer en una dirección (multiplicación) e imposible de hacer en la dirección inversa (división). El propietario de la llave privada puede crear fácilmente la llave pública y luego compartirla con el mundo, sabiendo que nadie puede revertir la función y calcular la llave privada a partir de la llave pública. Este truco matemático se convierte en la base de firmas digitales seguras e imposibles de falsificar que demuestran la propiedad de los fondos de Ethereum y el control de los contratos.
+====
+
+Antes de demostrar cómo generar una llave pública a partir de una llave privada, veamos la criptografía de curva elíptica con un poco más de detalle.
+
+
+[[elliptic_curve]]
+==== Criptografía de la Curva Elíptica Explicada
+
+((("criptografía de curva elíptica","fundamentos", id="ix_04keys-addresses-asciidoc7", range="startofrange")))La criptografía de curva elíptica ((("criptografía de curva elíptica", id="ix_04keys-addresses-asciidoc8", range="startofrange")))((("llaves públicas","criptografía de curva elíptica y", id="ix_04keys-addresses-asciidoc9", range="startofrange")))es un tipo de criptografía asimétrica o criptografía de llave pública basada en el problema del logaritmo discreto expresado por suma y multiplicación en los puntos de una curva elíptica.
+
+La <<ecc-curve>> es un ejemplo de una curva elíptica, similar a la que es utilizada por Ethereum.
+
+[NOTE]
+====
+((("curva elíptica secp256k1", id="ix_04keys-addresses-asciidoc10", range="startofrange")))Ethereum utiliza exactamente la misma curva elíptica, llamada +secp256k1+, que la que usa Bitcoin. Eso hace posible reutilizar muchas de las bibliotecas y herramientas de curvas elípticas de Bitcoin.
+====
+
+[[ecc-curve]]
+.Una visualización de una curva elíptica
+image::images/simple_elliptic_curve.png["ecc-curve"]
+
+Ethereum utiliza una curva elíptica específica y un conjunto de constantes matemáticas, como se define en un estándar llamado +secp256k1+, establecido por el Instituto Nacional de Estándares y Tecnología de EE.UU. (el "NIST"). La curva +secp256k1+ se define mediante la siguiente función, que produce una curva elíptica:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <msup><mi>y</mi> <mn>2</mn> </msup>
+      <mo>=</mo>
+      <mrow>
+        <mo>(</mo>
+        <msup><mi>x</mi> <mn>3</mn> </msup>
+        <mo>+</mo>
+        <mn>7</mn>
+        <mo>)</mo>
+      </mrow>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mtext>sobre</mtext>
+    <mspace width="3.33333pt"/>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>&#x1d53d;</mi> <mi>p</mi> </msub>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+o:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <msup><mi>y</mi> <mn>2</mn> </msup>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+    <mo>=</mo>
+    <mrow>
+      <mo>(</mo>
+      <msup><mi>x</mi> <mn>3</mn> </msup>
+      <mo>+</mo>
+      <mn>7</mn>
+      <mo>)</mo>
+    </mrow>
+    <mspace width="3.33333pt"/>
+    <mo form="prefix">mod</mo>
+    <mspace width="0.277778em"/>
+    <mi>p</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+La expresión _mod p_ (módulo primo número _p_) indica que esta curva está sobre un campo finito cuyo orden primo es _p_, que también se escribe como latexmath:[\( \mathbb{F}_p \)], donde _p_ = 2^256^ – 2^32^ – 2^9^ – 2^8^ – 2^7^ – 2^6^ – 2^4^ – 1, el cual es un número primo muy grande.
+
+Debido a que esta curva se define sobre un campo finito de orden primo, en lugar de definirse sobre números reales, la misma parece un patrón de puntos dispersos en dos dimensiones, lo que dificulta su visualización. Sin embargo, las matemáticas son idénticas a las de una curva elíptica sobre números reales. Como ejemplo, la <<ecc-over-F17-math>> muestra la misma curva elíptica sobre un campo finito mucho más pequeño de orden primo igual a 17, mostrando un patrón de puntos en una cuadrícula. La curva elíptica +secp256k1+ de Ethereum se puede considerar como un patrón de puntos mucho más complejo en una cuadrícula insondablemente más grande.
+
+[[ecc-over-F17-math]]
+[role="smallersixty"]
+.Criptografía de curva elíptica: visualización de una curva elíptica sobre F(p), con p=17
+image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
+
+Entonces, por ejemplo, el siguiente es un punto _Q_ con coordenadas (_x_, _y_) que corresponde a un punto en la curva +secp256k1+:
+
+[[coordinates_example]]
+----
+Q = 
+(49790390825249384486033144355916864607616083520101638681403973749255924539515,
+59574132161899900045862086493921015780032175291755807399284007721050341297360)
+----
+
+El <<example_1>> muestra cómo podemos verificar esto por nosotros mismos usando Python. Las variables +x+ y +y+ son las coordenadas del punto _Q_, como en el ejemplo anterior. La variable +p+ es el orden primo de la curva elíptica (el número primo que se usa para todas las operaciones de esta particular aritmética modular). La última línea de Python es la ecuación de la curva elíptica (el operador +%+ en Python, representa el operador "módulo"). Si +x+ y +y+ son de hecho las coordenadas de un punto en la curva elíptica, entonces satisfacen la ecuación y el resultado es cero (+0L+ es un entero largo con valor cero). Podemos probar esto nosotros mismos, escribiendo ++**python**++ en una línea de comandos y copiando cada línea (después del indicador +>>>+) de la lista(((range="endofrange", startref="ix_04keys-addresses-asciidoc10"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc9")))
+
+++++
+<div data-type="example" id="example_1">
+<h5>Usando Python para confirmar que cierto punto pertenece a la curva elíptica</h5>
+<pre data-type="programlisting">
+Python 3.4.0 (default, Mar 30 2014, 19:23:13)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.38)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <strong>p = 115792089237316195423570985008687907853269984665640564039457584007908834 \
+671663</strong>
+>>> <strong>x = 49790390825249384486033144355916864607616083520101638681403973749255924539515</strong>
+>>> <strong>y = 59574132161899900045862086493921015780032175291755807399284007721050341297360</strong>
+>>> <strong>(x ** 3 + 7 - y**2) % p</strong>
+0L
+</pre>
+</div>
+++++
+
+[[EC_math]]
+==== Operaciones Aritméticas en Curvas Elípticas
+
+((("criptografía de curva elíptica","operaciones aritméticas")))Mucha de las matemáticas de la curva elíptica se ve y funciona de manera muy parecida a la aritmética de enteros que aprendimos en la escuela. Específicamente, podemos definir un operador de suma, que en lugar de saltar a lo largo de la recta numérica, está saltando a otros puntos de la curva. Una vez que tenemos el operador de suma, también podemos definir la multiplicación de un punto y un número entero, que es equivalente a la suma repetida.
+
+La suma en la curva elíptica puede definirse de manera tal que para cada dos puntos _P_~1~ y _P_~2~ ubicados en la curva elíptica, habrá un tercer punto _P_~3~ = _P_~1~ + _P_~2~, también perteneciente a la curva elíptica.
+
+Geométricamente, este tercer punto _P_~3~ es calculado mediante el trazo de una linea entre _P_~1~ y _P_~2~. Esta linea intersectará a la curva elíptica exactamente en un lugar adicional (sorprendentemente). Denominemos a este punto _P_~3~' = (_x_, _y_). Entonces realizamos una reflexión en torno al eje-x para obtener a _P_~3~ = (_x_, _–y_).
+
+Si _P_~1~ y _P_~2~ fuesen el mismo punto, la línea "entre" _P_~1~ y _P_~2~ debería extenderse para terminar siendo la tangente a la curva en este punto _P_~1~. Esta tangente cortará la curva en exactamente un nuevo punto. Se pueden utilizar técnicas del cálculo diferencial para determinar la pendiente de la recta tangente. Curiosamente, estas técnicas funcionarían, ¡aunque estemos restringiendo nuestro interés a puntos en una curva referida a dos coordenadas de sólo números enteros!
+
+En las matemáticas de las curvas elípticas, también hay un punto llamado “punto en el infinito”, que más o menos corresponde al papel del número cero en la suma. En las computadoras, a veces se representa mediante _x_ = _y_ = 0 (que no satisface la ecuación de la curva elíptica, pero es un caso aislado fácil que se puede verificar). Hay un par de casos especiales que explican la necesidad del punto en el infinito. 
+
+En algunos casos (por ejemplo, si _P_~1~ y _P_~2~ poseen los mismos valores de _x_ pero diferentes valores de _y_), la línea será exactamente vertical, en cuyo caso _P_~3~ = al punto en el infinito.
+
+Si _P_~1~ es el punto en el infinito, entonces _P_~1~ + _P_~2~ = _P_~2~. De manera similar, si _P_~2~ es el punto en el infinito, entonces _P_~1~ + _P_~2~ = _P_~1~. Esto muestra cómo el punto en el infinito juega el papel que asume el cero en la aritmética "normal".
+
+Resulta que el operador pass:[+] es asociativo, lo que significa que (_A_ pass:[+] _B_) pass:[+] _C_ = _A_ pass:[+] (_B_ pass:[+] _C_). Eso significa que podemos escribir _A_ pass:[+] _B_ pass:[+] _C_ (sin paréntesis) sin que ello resulte ambiguo.
+
+Ahora que hemos definido la suma, podemos definir la multiplicación de la forma estándar que se deriva de la suma. Para un punto _P_ en la curva elíptica, si _k_ es un número entero, entonces _k_ pass:[*] _P_ = _P_ pass:[+] _P_ pass:[+] _P_ pass:[+] ... pass:[+] _P_ (_k_ veces). Nótese que, en este caso,  _k_ se denomina a veces (quizás de manera confusa) un "exponente".(((range="endofrange", startref="ix_04keys-addresses-asciidoc8")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc7")))
+
+[[public_key_derivation]]
+==== Generando una Llave Pública
+
+((("criptografía de curva elíptica","generación de curva elíptica mediante")))((("punto generador")))((("llaves públicas","generando")))Comenzando con una llave privada en forma de un número _k_, generado aleatoriamente, lo multiplicamos por un punto predeterminado en la curva elíptica llamado el _punto generador_ _G_ para producir otro punto en algún otro lugar de la curva, que es la llave pública correspondiente _K_: 
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mi>K</mi>
+    <mo>=</mo>
+    <mi>k</mi>
+    <mo>*</mo>
+    <mi>G</mi>
+  </mrow>
+</math>
+</div>
+++++
+
+((("curva elíptica secp256k1")))El punto generador se especifica como parte del estándar +secp256k1+; es el mismo para todas las implementaciones de +secp256k1+, y todas las llaves derivadas de esa curva usan el mismo punto _G_. Debido a que el punto generador es siempre el mismo para todos los usuarios de Ethereum, una llave privada _k_ multiplicada por _G_ siempre dará como resultado la misma llave pública _K_. La relación entre _k_ y _K_ es fija, pero solo se puede calcular en una dirección, desde _k_ hacia _K_. Es por eso que una dirección de Ethereum (derivada de _K_) se puede compartir con cualquier persona y no revela la llave privada del usuario (_k_).
+
+Como describimos en la sección anterior, la multiplicación de _k_ * _G_ es equivalente a una suma repetida, de este modo, equivale a _G_ pass:[+] _G_ pass:[+] _G_ pass:[+] ... pass:[+] _G_, repetido _k_ veces. En resumen, para producir una llave pública _K_ a partir de una llave privada _k_, sumamos el punto generador _G_ consigo mismo, _k_ veces.
+
+[TIP]
+====
+Una llave privada se puede convertir en una llave pública, pero una llave pública no se puede volver a convertir en una llave privada, porque las matemáticas solo funcionan en un solo sentido.
+====
+
+Apliquemos este cálculo para encontrar la llave pública correspondiente a la llave privada específica que abordamos en <<private_keys>>:
+
+
+[[example_privkey]]
+.Ejemplo de cálculo de llave pública a partir de una llave privada
+----
+K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
+----
+
+Una biblioteca criptográfica puede ayudarnos a calcular _K_, mediante la multiplicación de curvas elípticas. La llave pública resultante _K_ se define como el punto:
+
+----
+K = (x, y)
+----
+
+dónde:
+
+----
+x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
+y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+((("SECG (Standards for Efficient Cryptography Group)")))((("Standards for Efficient Cryptography Group (SECG)")))En Ethereum, podremos ver llaves públicas representadas como una serialización de 130 caracteres hexadecimales (65 bytes ). Esto se adopta a partir de un formato de serialización estándar propuesto por el consorcio de la industria "Agrupación de Estándares por una Criptografía Eficiente" o del inglés: "Standards for Efficient Cryptography Group" (o "SECG"), el cual está documentado en http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. El estándar define cuatro posibles prefijos que se pueden usar para identificar puntos en una curva elíptica, enumerados en <<EC_prefix_table>>.
+
+[[EC_prefix_table]]
+.Prefijos para llaves públicas serializadas tipo EC
+[options="header"]
+|===
+| Prefijo | Significado | Longitud (bytes incluyendo el prefijo)
+| +0x00+ | Punto en el infinito | 1
+| +0x04+ | Punto No Comprimido | 65
+| +0x02+ | Punto Comprimido con Valor +y+ Par | 33
+| +0x03+ | Punto Comprimido con Valor +y+ Impar | 33
+|===
+
+Ethereum solo utiliza llaves públicas sin comprimir; por lo tanto, el único prefijo que es relevante es (en formato hexadecimal) +04+. La serialización concatena las coordenadas _x_ y _y_ de la llave pública:
+
+[[concat_coordinates]]
+----
+04 + coordenada-x (32 bytes/64 dígitos hexadecimales) + coordenada-y (32 bytes/64 dígitos hexadecimales)
+----
+
+Por lo tanto, la llave pública que calculamos anteriormente se serializa como:
+
+[[serialized_pubkey]]
+----
+046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0 \
+c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+[[EC_lib]]
+==== Bibliotecas de Curvas Elípticas
+
+((("criptografía de curva elíptica","bibliotecas")))((("curva elíptica secp256k1")))Hay un par de implementaciones de la curva elíptica +secp256k1+ que se utilizan en proyectos relacionados con criptomonedas:
+
+((("biblioteca criptográfica OpenSSL")))https://www.openssl.org/[OpenSSL]:: La biblioteca OpenSSL ofrece un conjunto completo de primitivas criptográficas, incluyendo una implementación completa del estándar +secp256k1+. Por ejemplo, para derivar la llave pública, se puede utilizar la función +EC_POINT_mul+.
+
+((("libsecp256k1 cryptographic library")))https://github.com/bitcoin-core/secp256k1[libsecp256k1]:: El estándar del Bitcoin Core, +libsecp256k1+ es una implementación en lenguaje C de la curva elíptica +secp256k1+ y otras primitivas criptográficas. Fue escrito recomenzando desde cero, para reemplazar a la biblioteca OpenSSL en el software del Bitcoin Core, y se considera superior tanto en rendimiento como en seguridad.(((range="endofrange", startref="ix_04keys-addresses-asciidoc6")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc5")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc4")))
+
+[[hash_functions]]
+=== Funciones Hash Criptográficas
+
+((("funciones hash criptográficas", id="ix_04keys-addresses-asciidoc11", range="startofrange")))((("criptografía","funciones hash", id="ix_04keys-addresses-asciidoc12", range="startofrange")))((("funciones hash", id="ix_04keys-addresses-asciidoc13", range="startofrange")))Las funciones hash criptográficas son extensamente utilizadas en Ethereum. De hecho, las funciones hash son utilizadas extensivamente en prácticamente todos los sistemas criptográficos&#x2014;un hecho destacado por el ((("Schneier, Bruce")))pass:[<span class="keep-together">criptógrafo</span>] http://bit.ly/2Q79qZp[Bruce Schneier], quien dijo que, "Mucho más que los algoritmos de encriptación, las funciones hash de un solo sentido son los caballos de batalla de la criptografía moderna."
+
+En esta sección analizaremos las funciones hash, exploraremos sus propiedades básicas y veremos cómo esas propiedades las hacen tan útiles en tantas áreas de la criptografía moderna. Abordamos las funciones hash aquí porque son parte de la transformación de las llaves públicas de Ethereum en direcciones. ((("huellas digitales")))También se pueden utilizar para crear _huellas digitales_, que permiten la verificación de datos.
+
+((("funciones de un solo sentido")))En términos simples, una http://bit.ly/2CR26gD[_función hash_] es &#x201c;cualquier función que puede ser utilizada mapear datos de tamaño arbitrario y convertirlos en datos de tamaño fijo.&#x201d; ((("pre-imagen")))El argumento que se ingresa a una función hash es denominado una _pre-imagen_, el _mensaje_, o simplemente la _data de entrada_. La salida se denomina valor _hash_. Las http://bit.ly/2Jrn3jM[_Funciones hash criptográficas_] son una sub-categoría especial que tiene propiedades específicas que son útiles para proteger plataformas, como Ethereum.
+
+Una función hash criptográfica es una función hash _unidireccional_ que asigna datos de tamaño arbitrario a una cadena de bits de tamaño fijo. La naturaleza "unidireccional" significa que no es factible computacionalmente recrear los datos de entrada si solo se conoce el valor hash de salida. La única forma de determinar una posible entrada es realizar una búsqueda de fuerza bruta, comprobando cada candidato para una salida coincidente; dado que el espacio de búsqueda es prácticamente infinito, es fácil comprender la imposibilidad práctica de la tarea. Incluso si encuentran algunas cadenas de datos de entrada que pudieran recrean un hash coincidente, es posible que esos no sean los datos de entrada originales: las funciones hash son funciones "de muchos a uno". ((("colisión hash")))Encontrar dos conjuntos de datos de entrada que conducen a la misma salida se conoce como encontrar una _colisión hash_. En términos generales, cuanto mejor sea la función hash, más raras son las colisiones hash. Para Ethereum, éstas son prácticamente imposibles.
+
+((("funciones hash","principales propiedades")))Echemos un vistazo más de cerca a las propiedades principales de las funciones hash criptográficas. Éstas incluyen:
+
+Determinismo:: Un mensaje de entrada dado siempre produce la misma salida hash.
+
+Verificabilidad:: Calcular el hash de un mensaje es eficiente (tiene una complejidad lineal).
+
+No Correlatividad:: Un pequeño cambio en el mensaje (por ejemplo, un cambio de 1 bit) debería cambiar la salida del hash de manera tan extensa que no puede correlacionarse con el hash del mensaje original.
+
+Irreversibilidad:: Calcular el mensaje a partir de su hash es inviable, equivalente a una búsqueda de fuerza bruta a través de todos los mensajes posibles.
+
+Protección Contra Colisiones:: No debería ser factible calcular dos mensajes diferentes que produzcan la misma salida hash.
+
+La resistencia a las colisiones de hash es particularmente importante para evitar la falsificación de firmas digitales en Ethereum.
+
+La combinación de estas propiedades hace que las funciones hash criptográficas sean útiles para una amplia gama de aplicaciones de seguridad, que incluyen:
+
+* Otorgar una huella digital a la data
+* Integridad de los mensajes (detección de errores)
+* Prueba de trabajo
+* Autenticación (verificar contraseñas por su valor hash y extensión de llaves)
+* Generación de números pseudo-aleatorios
+* Comprometer mensajes (mecanismos de compromiso-revelado)
+* Unicidad de Identificadores
+
+Encontraremos muchas de estas aplicaciones en Ethereum a medida que avancemos a través de las distintas capas del sistema.
+
+[[keccak256]]
+==== Función Hash Criptográfica de Ethereum: Keccak-256
+
+((("funciones hash","Keccak-256")))((("función hash Keccak-256")))((("Función Hash SHA-3")))Ethereum utiliza la función hash criptográfica _Keccak-256_ en muchas instancias. La función Keccak-256 fue diseñada como candidata para la Competencia de Función Hash Criptográfica SHA-3, celebrada en 2007 por el ((("National Institute of Standards and Technology (NIST)")))((("NIST (National Institute of Standards and Technology)")))Instituto Norteamericano de Estándares y Tecnología (del inglés "National Institute of Standards and Technology"). Keccak fue el algoritmo ganador, que se estandarizó como ((("Federal Information Processing Standard (FIPS)")))((("FIPS (Federal Information Processing Standard)")))((("FIPS-202")))Estándar Federal Norteamericano de Procesamiento de la Información (del inglés "Federal Information Processing Standard" o FIPS) número 202, en 2015.
+
+Sin embargo, durante el período en el que se desarrolló Ethereum, la estandarización del NIST aún no se había finalizado. El NIST ajustó algunos de los parámetros del protocolo Keccak después de la finalización del proceso de estándares, supuestamente para mejorar su eficiencia. Esto ocurrió al mismo tiempo que el heroico denunciante ((("Snowden, Edward")))Edward Snowden reveló documentos que implicaban que el NIST pudo haber sido influenciado indebidamente por la Agencia de Seguridad Nacional Norteamericana para debilitar intencionalmente el estándar generador de números aleatorios, el ((("Dual_EC_DRBG")))"Dual_EC_DRBG", colocando efectivamente una puerta trasera o trampilla en el generador de números aleatorios estándar. El resultado de esta controversia fue una reacción violenta contra los cambios propuestos y un retraso significativo en la estandarización del protocolo SHA-3. En su momento, la Fundación Ethereum decidió implementar el algoritmo Keccak original, según lo propuesto por sus inventores, en lugar del estándar SHA-3 modificado por el NIST.
+
+[WARNING]
+====
+Si bien es posible que veamos "SHA-3" mencionado a lo largo de los documentos y el código de Ethereum, muchas, si no todas, esas instancias en realidad se refieren al estándar Keccak-256, no al estándar FIPS-202 SHA-3 finalizado. Las diferencias de implementación son leves, y tienen que ver con los parámetros de relleno, pero son significativas en el sentido de que Keccak-256 produce diferentes salidas hash de aquellas que produce el estándar FIPS-202 SHA-3 para la misma entrada.
+====
+
+[[which_hash]]
+==== ¿Qué Función Hash Estamos Usando?
+
+((("funciones hash","vector de pruebas para su determinación")))((("vector de pruebas, determinando funciones hash con")))¿Cómo podríamos saber si la biblioteca de software que estamos utilizando implementa el estándar FIPS-202 SHA-3 o el Keccak-256, si ambos pudieran llamarse "SHA-3"?
+
+Una forma fácil de saberlo es usar un _vector de pruebas_, una salida esperada para una entrada dada. ((("prueba de la entrada vacía")))La prueba más utilizada para una función hash es la de la _entrada vacía_. Si ejecutamos la función hash con una cadena vacía como entrada, deberíamos ver los siguientes resultados:
+
+----
+Keccak256("") =
+  c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+SHA3("") =
+  a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
+----
+
+
+Independientemente de cómo se llame la función, puede probarla para ver si es el estándar Keccak-256 original o el estándar final FIPS-202 SHA-3 del NIST, ejecutando esta simple prueba. Recuerde, Ethereum usa el estándar Keccak-256, aunque a menudo se le llama SHA-3 en el código.
+
+[NOTE]
+====
+Debido a la confusión creada por la diferencia entre la función hash utilizada en Ethereum (Keccak-256) y el estándar final (FIP-202 SHA-3), se está realizando un esfuerzo para cambiar el nombre de todas las instancias de +sha3+ en todos los códigos, códigos operacionales, y bibliotecas por +keccak256+. Consúltese el enlace https://github.com/ethereum/EIPs/issues/59[ERC59] para obtener más detalles.
+====
+
+
+A continuación, examinemos la primera aplicación de Keccak-256 en Ethereum, que consiste en producir direcciones Ethereum a partir de llaves públicas.(((range="endofrange", startref="ix_04keys-addresses-asciidoc13")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc12")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc11")))
+
+[[eth_address]]
+=== Direcciones Ethereum
+
+((("direcciones", id="ix_04keys-addresses-asciidoc14", range="startofrange")))((("criptografía","direcciones Ethereum y", id="ix_04keys-addresses-asciidoc15", range="startofrange")))Las direcciones de Ethereum son _identificadores únicos_ que se derivan de llaves públicas o contratos que utilizan la función hash unidireccional Keccak-256.
+
+En nuestros ejemplos anteriores, comenzamos con una llave privada y usamos la multiplicación de curva elíptica para derivar una llave pública:
+
+[role="pagebreak-before"]
+Llave privada _k_:
+
+----
+k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+[[concat_pubkey]]
+Llave pública _K_ (las coordenadas _x_ y _y_ se muestran concatenadas y como cadenas de dígitos hexadecimales):
+
+----
+K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e...
+----
+
+[NOTE]
+====
+Vale la pena señalar que la llave pública no está formateada con el prefijo (hexadecimal) +04+ cuando se calcula su dirección correspondiente.
+====
+
+Usamos la función Keccak-256 para calcular el valor _hash_ de esta llave pública:
+
+[[calculate_hash]]
+----
+Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Luego guardamos solo los últimos 20 bytes (los 20 bytes menos significativos), que es nuestra dirección Ethereum:
+
+[[keep_last_20]]
+----
+001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+La mayoría de las veces veremos las direcciones de Ethereum con el prefijo +0x+ que indica que los datos están codificados en formato hexadecimal, así:
+
+[[hex_prefix]]
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+[[eth_address_format]]
+==== Formatos de Direcciones en Ethereum
+
+((("direcciones","formatos")))Las direcciones de Ethereum son números hexadecimales, fungen como identificadores derivados de los últimos 20 bytes del hash Keccak-256 de la llave pública.
+
+((("suma de comprobación","en formatos de direcciones de Ethereum")))A diferencia de las direcciones de Bitcoin, que están codificadas en la interfaz de usuario de todos los clientes para incluir una suma de comprobación incorporada que ofrezca una protección contra direcciones mal escritas, las direcciones de Ethereum se presentan como cadenas hexadecimales sin procesar y sin ninguna suma de comprobación.
+
+La razón detrás de esta decisión fue que las direcciones de Ethereum eventualmente se ocultarían detrás de abstracciones (como los servicios de nombres) en las capas más altas del sistema y que las sumas de verificación deberían agregarse en las capas más altas si fuera necesario.
+
+En realidad, estas capas superiores se desarrollaron con demasiada lentitud y esta elección de diseño provocó una serie de problemas en los primeros días del ecosistema, incluida la pérdida de fondos debido a direcciones mal escritas y errores de validación de datos de entrada. Además, debido a que los servicios de nombres de Ethereum se desarrollaron más lentamente de lo esperado inicialmente, los desarrolladores de billeteras adoptaron codificaciones alternativas muy lentamente. A continuación, veremos algunas de las opciones de codificación.
+
+[[ICAP]]
+==== Protocolo de Direcciones del Cliente de Inter Exchange
+
+((("direcciones","codificación ICAP", id="ix_04keys-addresses-asciidoc16", range="startofrange")))((("ICAP (Inter-exchange Client Address Protocol)", id="ix_04keys-addresses-asciidoc17", range="startofrange")))((("Inter-exchange Client Address Protocol (ICAP)", id="ix_04keys-addresses-asciidoc18", range="startofrange")))El _Protocolo de Direcciones del Cliente de Inter exchange_ (del inglés "Inter-exchange Client Address Protocol" o ICAP) es una codificación de direcciones de Ethereum que es parcialmente compatible con la ((("IBAN (International Bank Account Number)")))((("International Bank Account Number (IBAN)")))codificación de Números de Cuentas Bancarias Internacionales (del inglés "International Bank Account Number" o IBAN), ofreciendo una codificación versátil, con suma de comprobación e interoperabilidad para con direcciones de Ethereum. Las direcciones ICAP pueden codificar direcciones de Ethereum o nombres comunes registrados en un registro de nombres Ethereum. Puede leerse más sobre la codificación ICAP en el enlace http://bit.ly/2JsZHKu[Ethereum Wiki].
+
+IBAN es un estándar internacional para identificar números de cuentas bancarias, que se utiliza principalmente para transferencias bancarias. Se adopta ampliamente en la Zona Única Europea de Pagos en Euros (SEPA) y más allá. IBAN es un servicio centralizado y fuertemente regulado. ICAP es una implementación descentralizada pero compatible para direcciones Ethereum.
+
+Una codificación IBAN consta de una cadena de hasta 34 caracteres alfanuméricos (que no distinguen entre mayúsculas y minúsculas) que incluye un código de país, una suma de comprobación y un identificador de cuenta bancaria (que es específico del país).
+
+ICAP utiliza la misma estructura al introducir un código de país no estándar, &#x201c;XE,&#x201d; que significa "Ethereum,&#x201d; seguido de una suma de verificación de dos caracteres y tres posibles variaciones de un identificador de cuenta:
+
+Directo:: Un entero de base-36 bajo formato de serialización "big-endian" compuesto por hasta 30 caracteres alfanuméricos, que representan los 155 bits menos significativos de una dirección Ethereum. Debido a que esta codificación se ajusta a menos de los 160 bits completos de una dirección Ethereum general, solo funciona para direcciones Ethereum que comienzan con uno o más bytes que tienen el número cero. La ventaja es que es compatible con IBAN, en términos de longitud de campo y suma de comprobación. Ejemplo: +XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD+ (33 caracteres de longitud).
+
+Básico:: Igual que la codificación directa, excepto que tiene 31 caracteres. Esto le permite codificar cualquier dirección de Ethereum, pero lo hace incompatible con la validación de campos de la codificación IBAN. Ejemplo: +XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P+ (35 caracteres de longitud).
+
+Indirecto:: codifica un identificador que se resuelve en una dirección Ethereum a través de un proveedor de registro de nombres. Utiliza 16 caracteres alfanuméricos, que comprenden un _identificador de activos_ (Por ejemplo, ETH), un servicio de nombres (Por ejemplo, XREG) y un nombre legible por humanos de 9 caracteres (Por ejemplo, KITTYCATS). Ejemplo: +XEpass:[##]ETHXREGKITTYCATS+ (20 caracteres de longitud), donde +##+ debe reemplazarse por los dos caracteres de la suma de comprobación calculados.
+
+((("EthereumJS helpeth")))((("herramienta de línea de comandos helpeth")))Podemos usar la herramienta de la línea de comandos +helpeth+ para crear direcciones ICAP. Podemos obtener helpeth instalándolo con:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g helpeth</strong>
+</pre>
+++++
+
+Si sino está instalado el npm, es posible que primero debamos instalar nodeJS, lo que puede hacerse siguiendo las instrucciones de https://nodeJS.org.
+
+Una vez instalado helpeth, podremos intentar crear una dirección ICAP con nuestra llave privada de ejemplo (con el prefijo +0x+ y pasada como parámetro a +helpeth+).
+
+++++
+<pre data-type="programlisting">
+$ <strong>helpeth keyDetails \
+  -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315</strong>
+
+Address: 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+ICAP: XE60 HAMI CDXS V5QX VJA7 TJW4 7Q9C HWKJ D
+Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b...
+</pre>
+++++
+
+El comando +helpeth+ construye una dirección Ethereum hexadecimal, así como una dirección ICAP para nosotros. La dirección ICAP para nuestra llave de ejemplo es:
+
+[[ICAP_example]]
+----
+XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
+----
+
+Debido a que nuestra dirección Ethereum de ejemplo comienza con un byte igual a cero, ésta se puede codificar utilizando el método de codificación ICAP directo que es válido en formato IBAN. Se nota porque tiene 33 caracteres.
+
+Si nuestra dirección no comenzara con cero, estaría codificada con la codificación básica, que tendría 35 caracteres de longitud y no sería válida para el estándar IBAN.
+
+[TIP]
+====
+Las posibilidades de que cualquier dirección de Ethereum comience con un byte igual a cero son 1 en 256. Para generar una dirección como esa, se necesitarán en promedio 256 intentos con 256 llaves privadas aleatorias diferentes antes de encontrar una dirección ICAP que funcione como una codificación "Directa" compatible con el estándar IBAN.
+====
+
+Desafortunadamente, en este momento, ICAP solo es compatible con algunas pocas billeteras.(((range="endofrange", startref="ix_04keys-addresses-asciidoc18")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc17")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc16")))
+
+[[EIP55]]
+==== Codificación Hexadecimal con Sumas de Comprobación Vinculadas a las Mayúsculas (EIP-55)
+
+((("direcciones","codificación hexadecimal con suma de comprobación vinculada a mayúsculas (EIP-55)", id="ix_04keys-addresses-asciidoc19", range="startofrange")))((("suma de comprobación","EIP-55 y", id="ix_04keys-addresses-asciidoc20", range="startofrange")))((("EIP-55 (Ethereum Improvement Proposal 55)","sumas de comprobación para direcciones", id="ix_04keys-addresses-asciidoc21", range="startofrange")))Debido a la lenta implementación de ICAP y los servicios de nombres, en la propuesta de mejoras: https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md[Ethereum Improvement Proposal 55 (EIP-55)], se propuso un estándar. EIP-55 ofrece una suma de comprobación compatible con versiones anteriores para las direcciones de Ethereum modificando el uso de mayúsculas en la dirección hexadecimal. La idea es que las direcciones de Ethereum no distinguen entre mayúsculas y minúsculas y se supone que todas las billeteras aceptan direcciones de Ethereum expresadas en mayúsculas o minúsculas, sin ninguna diferencia en la interpretación.
+
+Al modificar el uso de mayúsculas en los caracteres alfabéticos de la dirección, podemos transmitir una suma de comprobación que se puede utilizarse para proteger la integridad de la dirección contra errores de escritura o lectura. Los monederos que no admiten sumas de comprobación EIP-55 simplemente ignoran el hecho de que la dirección contiene mayúsculas mixtas, pero aquellos que sí lo admiten pueden validarlo y detectar errores con una precisión del 99,986%.
+
+La codificación de mayúsculas mixtas es sutil y es posible que no la notemos al principio. Nuestra dirección de ejemplo es:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Con una suma de comprobación con uso mixto de mayúsculas según EIP-55, esta dirección se convierte en:
+
+[[mixed_capitalization]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+¿Quién podría notar la diferencia? Algunos de los caracteres alfabéticos (A&#x2013;F) del alfabeto de codificación hexadecimal ahora están en mayúsculas, mientras que otros están en minúsculas.
+
+La propuesta de mejoras EIP-55 es bastante sencilla de implementar. Tomamos el hash Keccak-256 de la dirección hexadecimal en minúsculas. Este hash actúa como una huella digital de la dirección, brindándonos una suma de verificación conveniente. Cualquier pequeño cambio en la entrada (la dirección) debería causar un gran cambio en el hash resultante (la suma de verificación), lo que nos permitirá detectar errores de manera efectiva. El hash de nuestra dirección luego se codifica en las mayúsculas de la propia dirección. Vamos a desglosarlo, paso a paso:
+
+1. Obténgase el valor hash para la dirección con únicamente caracteres alfabéticos en minúscula, y sin el prefijo +0x+:
+
+[[hash_lower_case_address]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9") =
+23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
+----
+
+[start=2]
+1. Conviértase en mayúscula cada caracter alfabético de la dirección si el dígito hexadecimal correspondiente del valor hash es mayor o igual a +0x8+. Esto es más fácil demostrar si alineamos la cadena de dígitos de la dirección con la del valor hash:
+
+[[capitalize_input]]
+----
+Address: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+Nuestra dirección contiene un carácter alfabético +d+ en la cuarta posición. El cuarto carácter del valor hash es +6+, que es menor que +8+. Entonces, dejamos la +d+ en minúscula. El siguiente carácter alfabético en nuestra dirección es +f+, en la sexta posición. El sexto carácter hexadecimal del valor hash es +c+, que es mayor que +8+. Por lo tanto, escribimos ése caracter de la dirección con mayúscula, es decir, +F+, y así sucesivamente. Como puede verse, solo utilizamos los primeros 20 bytes (40 caracteres hexadecimales) del valor hash como patrón para nuestra suma de comprobación, ya que solo tenemos 20 bytes (40 caracteres hexadecimales) en la dirección para elegir o no mayúsculas adecuadamente.
+
+Podemos comprobar por nosotros mismos la dirección resultante en mayúsculas mixtas para verificar si podemos saber qué caracteres fueron cambiados a mayúscula y a qué caracteres corresponden en el valor hash de la dirección:
+
+[[capitalize_output]]
+----
+Address: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+Hash   : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+[[EIP55_error]]
+===== Detectando un error en una dirección codificada según EIP-55
+
+((("EIP-55 (Ethereum Improvement Proposal 55)","detectando un error en una dirección codificada")))Ahora, veamos cómo las direcciones bajo el formato EIP-55, nos ayudarán a encontrar un error. Supongamos que hemos impreso una dirección Ethereum, que está codificada con EIP-55:
+
+[[correct_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Ahora cometamos un error básico al leer esa dirección. El carácter antes del último es una mayúscula, +F+. Para este ejemplo, supongamos que lo malinterpretamos como una mayúscula +E+, y escribimos la siguiente dirección (incorrecta) en nuestra billetera:
+
+[[incorrect_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+----
+
+Afortunadamente, nuestra billetera cumple con el estándar EIP-55. Obsérvense las mayúsculas mixtas, e intentemos validar la dirección. Primero, convertimos la dirección a sólo minúsculas y calculamos el valor hash de la suma de comprobación:
+
+[[hash_demo]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9") =
+5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
+----
+
+Como puede verse, aunque la dirección solo ha cambiado en un carácter (de hecho, solo un bit, ya que entre +e+ y +f+ la diferencia es de sólo un bit), el hash de la dirección ha cambiado radicalmente. ¡Esa es la propiedad de las funciones hash que las hace tan útiles para sumas de comprobación!
+
+Ahora, alineemos los dos valores y verifiquemos las mayúsculas:
+
+[[incorrect_capitalization]]
+----
+001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+5429b5d9460122fb4b11af9cb88b7bb76d892886...
+----
+
+¡Está todo mal! Varios de los caracteres alfabéticos están en mayúsculas incorrectamente. Recuérdese que las mayúsculas son la codificación de la suma de comprobación _correcta_.
+
+El cambio a mayúsculas en la dirección que hemos suministrado no se corresponde con la suma de comprobación que acabamos de calcular, lo que significa que algo cambió en la dirección, y que un error ha sido pass:[<span class="keep-together">introducido</span>](((range="endofrange", startref="ix_04keys-addresses-asciidoc21")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc20")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc19"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc15")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc14")))
+
+
+[[keys-addresses-conclusions]]
+=== Conclusiones
+
+En este capítulo proporcionamos una breve revisión de la criptografía de llave pública y nos enfocamos en el uso de llaves públicas y privadas en Ethereum y el uso de herramientas criptográficas, como funciones hash, en la creación y verificación de direcciones de Ethereum. También analizamos las firmas digitales y cómo pueden demostrar la propiedad de una llave privada sin revelar esa llave privada. En el <<wallets_chapter>>, agruparemos estas ideas y veremos cómo se pueden usar las billeteras para administrar colecciones de llaves.(((range="endofrange", startref="ix_04keys-addresses-asciidoc0")))

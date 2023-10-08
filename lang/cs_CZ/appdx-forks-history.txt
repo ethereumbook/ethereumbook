@@ -1,0 +1,127 @@
+[appendix]
+[[ethereum_fork_history]]
+== Historie Ethereum rozštěpení
+((("Ethereum (generally)","fork history", id="ix_appdx-forks-history-asciidoc0", range="startofrange")))((("forks", seealso="hard forks", id="ix_appdx-forks-history-asciidoc1", range="startofrange")))((("hard forks", id="ix_appdx-forks-history-asciidoc2", range="startofrange")))Většina tvrdých rozštěpení je plánována jako součást plánu vylepšení a sestává z aktualizací, se kterými komunita obecně souhlasí (tj. existuje společenská shoda). Některá tvrdá rozštěpení však nejsou výsledkem konsensu, což vede k několika odlišným bločenkám. Události, které vedly k rozdělení Ethereum / Ethereum Classic, jsou jedním z takových případů a jsou diskutovány v této příloze.
+
+[[etc_origin]]
+=== Ethereum Classic (ETC)
+((("DAO (Decentralized Autonomous Organization)","and Ethereum Classic origins")))((("Ethereum Classic (ETC)","origins")))((("forks","ETC")))Ethereum Classic vzniklo poté, co členové Ethereum komunity implementovali časově citlivé tvrdé rozštěpení (kódově nazvané DAO;). Dne 20. července 2016, v  bloku výšky 1,92 milionu, zavedlo Ethereum nepravidelnou změnu stavu prostřednictvím tvrdého rozštěpení ve snaze vrátit přibližně 3,6 milionu etheru, který byl vybrán z chytrého kontraktu známého jako The DAO. Téměř všichni souhlasili s tím, že odebraný éter byl ukraden a že ponechání všeho v rukou zloděje by bylo na úkor rozvoje ekosystému Ethereum i samotné platformy.
+
+Vrácení etheru příslušným vlastníkům, jako by The DAO nikdy neexistovalo, bylo technicky snadné, i když spíše politicky kontroverzní. Řada lidí v ekosystému nesouhlasí s touto změnou a věří, že neměnitelnost by měla být základním principem  Ethereum bločenky bez výjimky; rozhodli se pokračovat v původní bločence pod názvem Ethereum Classic. Zatímco samotné rozdělení bylo původně ideologické, oba řetězce se od té doby vyvinuly do samostatných entit.
+
+[[dao_origin]]
+=== Decentralizovaná autonomní organizace (The DAO)
+
+((("DAO (Decentralized Autonomous Organization)","about")))((("forks","DAO")))The ((("DAO (Decentralized Autonomous Organization)", id="ix_appdx-forks-history-asciidoc3", range="startofrange")))The DAO kontrakt byl vytvořen Slock.it s cílem poskytovat komunitní financování a správu projektů. Hlavní myšlenkou bylo, že návrhy budou předloženy, kurátoři budou řídit návrhy, budou získávány finanční prostředky od investorů v komunitě Ethereum, a pokud by se projekty osvědčily, investoři by získali podíl na zisku.
+
+The DAO byl také jedním z prvních experimentálních tokenů v Ethereu. Namísto financování projektů přímo s etherem by účastníci obchodovali se svým etherem za tokeny DAO, použili je k hlasování o financování projektu a později je mohli vyměnit za ether.
+
+The DAO tokeny byly k dispozici k zakoupení ve veřejném prodeji, který probíhal od 5. do 30. dubna 2016 a shromáždil  https://econ.st/2qfJO1g[téměř 14%] z celkového existujícího etheru, v té době v hodnotě ~ 150 miliónů USD.
+
+[[dao_reentrancy_bug]]
+=== Chyba vícenásobného volání
+
+((("forks","reentrancy bug")))((("reentrancy bug")))Dne 9. června 2016 vývojáři Peter Vessenes a Chriseth oznámili, že většina kontraktů na bázi Etherea, které spravují finanční prostředky, byla potenciálně http://bit.ly/2AAaDmA[zranitelná], že tyto kontrakty mohou ztratit finanční prostředky. O několik dní později, 12 června, Stephen Tual (spoluzakladatel Slock.it) oznámil, že http://bit.ly/2qmo3g1[The DAO's kód není zranitelný] chybou popsanou Peterem a Chrisethem. Znepokojení investoři do The DAO vydechli úlevou, nicméně o pět dní později neznámý útočník začal http://bit.ly/2Q7zR1h[vysávat The DAO] pomocí využití chyby podobné té, pro kterou bylo varování vydáno. Nakonec útočník  vysál z The DAO ~ 3,6 milionu etherů.
+
+Zároveň shromáždění dobrovolníků, kteří si říkali Skupina Robina Hooda (Robin Hood Group; RHG), začalo používat stejnou chybu k výběru zbývajících prostředků, aby je zachránilo před ukradením DAO útočníkem. Dne 21. června http://bit.ly/2PtX4xl[RHG oznámila], že mají zajištěno asi 70% z fondů DAO (zhruba 7,2 milionu etheru), s plány vrátit je do komunity (což úspěšně udělali na síti ETC a po rozštěpení nemuseli dělat na Ethereum síti). RHG dostalo mnoho poděkování a vyznamenání za jejich rychlé přemýšlení a rychlé akce, které pomohly zajistit většinu ehteru komunity.
+
+[[dao_reentrancy_bug_technicals]]
+==== Technické detaily
+((("reentrancy bug","technical details")))Zatímco podrobnější a důkladnější vysvětlení chyby je dáno http://bit.ly/2EQaLCI[Phil Daian], krátké vysvětlení je, že zásadní funkce v The DAO měla dva řádky kódu v nesprávném pořadí, což znamená, že útočník mohl požádat o výběr etheru opakovaně, než byla dokončena kontrola, zda má útočník nárok na výběr Tento typ chyby zabezpečení je popsán v části <<reentrancy_security>>.
+
+[[dao_reentrancy_bug_attack_flow]]
+==== Průběh útoku
+((("reentrancy bug","attack flow")))Představte si, že jste na svém bankovním účtu měli 100 USD a mohli byste své bankovce přinést libovolný počet výběrových lístků. Pokladník vám dá peníze za každý tiket v pořádku, a teprve po zpracování všech tiketů zaznamená váš výběr. Co když jim přinesete tři lístky, z nichž každý požaduje výběr 100 $? Co kdybys jim přinesl tři tisíce lístků?
+
+The DAO útok probíhal následovně:
+
+1. DAO útočník požádal kontrakt The DAO o výběr DAO tokenů (DAO).
+2. Útočník požádal The DAO _znovu_ o výběr, dříve než kontrakt aktualizoval záznamy, že byl proveden výběr.
+3. Útočník opakoval krok 2 tolikrát, kolikrát bylo možné.
+4. Kontrakt The DAO nakonec zaznamenal jeden výběr, ztrácí přehled o výběrech, které se mezitím staly.
+
+[[dao_hard_fork]]
+=== The DAO tvrdé rozštěpení
+((("DAO (Decentralized Autonomous Organization)","hard fork", id="ix_appdx-forks-history-asciidoc4", range="startofrange")))((("forks","DAO", id="ix_appdx-forks-history-asciidoc5", range="startofrange")))((("hard forks", id="ix_appdx-forks-history-asciidoc6", range="startofrange")))Naštěstí bylo v The DAO zabudováno několik ochranných opatření: zejména všechny žádosti o výběr byly předmětem 28-denního zpoždění. Komunitě to dalo čas k diskuzi o tom, co s využitím chyby udělat, protože zhruba od 17. června do 20. července nebude útočník DAO schopen převést své DAO tokeny na ether.
+
+Několik vývojářů se zaměřilo na nalezení životaschopného řešení a v tomto krátkém časovém období bylo prozkoumáno několik cest. Mezi nimi bylo http://bit.ly/2qhruEK[_DAO měkké rozštěpení_], ohlášené 24. června, aby odložilo výběr DAO až do dosažení konsensu, a http://bit.ly/2AAGjIu[_DAO tvrdé rozštěpení_], oznámené 15. července, které zvrátilo účinky DAO útoku výjimečnou změnou stavu.
+
+Dne 28. června vývojáři objevili http://bit.ly/2zgOxUn[možnost DoS útoku na DAO měkkém rozštěpení] a dospěli k závěru, že DAO tvrdé rozštěpení bude jedinou schůdnou možností, jak situaci plně vyřešit. DAO tvrdé rozštěpení přenese veškerý ether, který byl do DAO investován, do nového chytrého kontraktu na vrácení prostředků investorům, což umožní původním majitelům etheru požadovat plné náhrady. To poskytlo řešení pro vrácení odcizených prostředků, ale také to znamenalo zásah do zůstatků konkrétních adres v síti, i když byly izolované. V částech DAO, které se nazývají _childDAOs_, by také existoval nějaký zbylý ether. Skupina správců by ručně povolila zbylý ether v hodnotě http://bit.ly/2RuUrJh[~$6–7 milionů] v té době.
+
+Po nějakém čase několik Ethereum vývojových týmů vytvořilo klienty, kteří uživateli umožnily rozhodnout se, zda chtějí toto rozštěpení povolit. Tvůrci klientů se však chtěli dohodnout, zda tuto volbu nastavit jako doporučenou (ve výchozím nastavení není rozštěpení) nebo nedoporučenou (ve výchozím nastavení je rozštěpení). Dne 15. července bylo zahájeno hlasování http://bit.ly/2ABkTuV[_carbonvote.com_]. Další den, v bloku číslo  http://bit.ly/2yHb7Gl[1,894,000], bylo dokončeno. Volilo pouze http://bit.ly/2RuUrJh[5.5% celkového množství etherů], 80% hlasů (4.5% celkového množství etherů) volilo pro rozštěpení jako doporučené nastavení. Jedna čtvrtina z těchto hlasů pocházela z jediné adresy.
+
+Nakonec se rozhodnutí stalo doporučeným, takže ti, kteří se postavili proti tvrdému rozštěpení DAO, museli výslovně vyjádřit svou opozici změnou možnosti konfigurace v softwaru, který provozovali.
+
+20. července v bloku číslo http://bit.ly/2zfaIKB[1,920,000], Ethereum http://bit.ly/2yJxZ83[implementovalo tvrdé rozštěpení DAO] a tak byly vytvořeny dvěEthereum  sítě: jedna přijala změny stavu a druhá ji odmítla.
+
+((("Ethereum Classic (ETC)","origins")))Když Ethereum s tvrdým rozštěpením (dnešní Ethereum) získalo většinu těžební síly, mnozí předpokládali, že bylo dosaženo konsensu a menšinový řetězec zmizí, jako v předchozích rozštěpeních. Navzdory tomu začala značná část komunity Ethereum (zhruba 10% hodnoty a těžební síly) podporovat bločenku bez tvrdého rozštěpení, která se stal známá jako Ethereum Classic.
+
+Během několika dnů od rozštěpení začalo několik burz uvádět jak Ethereum („ETH“), tak Ethereum Classic („ETC“). Vzhledem k povaze tvrdých rozštěpení všichni uživatelé Etherea, kteří v době rozštěpení drželi ether, pak drželi prostředky na obou bločenkách a brzy byla stanovena tržní hodnota pro ETC pomocí http://bit.ly/2qhuNvP[Poloniex] uvedl ETC 24. července.
+
+[[dao_hard_fork_timeline]]
+==== Časová osa tvrdého rozštěpení DAO
+
+- 5. dubna 2016: Slock.it http://bit.ly/2Db4boE[představuje přehled zabezpečení] obecného rámce DAO chytrých kontraktů od Deja Vu Security.
+- 30. dubna 2016: veřejný prodej The DAO  http://bit.ly/2qhwhpI[spuštěn].
+- 27. května 2016: The DAO veřejný prodej končí.
+- 9. června 2016: Byl objevena obecná http://bit.ly/2AAaDmA[chyba rekurzivního volání] a předpokládá se, že ovlivňuje mnoho Solidity kontraktů, které uchovávají zůstatky uživatelů.
+- 12. června 2016: Stephen Tual http://bit.ly/2qmo3g1[prohlásil], že finanční prostředky The DAO nejsou ohroženy.
+- 17. června 2016: http://bit.ly/2EQaLCI[The DAO byl napaden] variantou objevené chyby (nazývané „chyba vícenásobného vstupu“), bylo zahájeno vysávání  finančních prostředků, nakonec zmizelo ~ 30% z etheru.
+- 21. června 2016: RHG http://bit.ly/2zgl3Gk[oznámila] zajištění dalších ~ 70% etheru uloženého v DAO.
+- 24. června 2016: http://bit.ly/2qhruEK[hlasování o měkkém rozštěpeníí] je vyhlášeno prostřednictvím volitelné nepřednastavené signalizace prostřednictvím klientů Geth a Parity, jehož účelem je dočasně zadržet prostředky, dokud se komunita nemůže lépe rozhodnout, co dělat.
+- 28. června 2016: http://bit.ly/2zgOxUn[zranitelnost] je objevena na měkkém rozštěpení a je opuštěno.
+- 28. června 2016 do 15. července: Uživatelé debatují o tom, zda se má provést tvrdé rozštěpení, většina veřejné debaty o hlasování se odehrává na fóru reddit v tématu _/r/ethereum_
+- 15. července 2016: Je navrženo http://bit.ly/2qmo3g1[tvrdé rozštěpení DAO], aby se vrátily prostředky získané při útoku DAO.
+- 15. července 2016: http://bit.ly/2ABkTuV[koná se hlasování] na CarbonVote, aby se rozhodlo, zda bude tvrdé rozštěpení DAO nepřednastavené (ve výchozím nastavení není rozštěpení) nebo přednastavené (ve výchozím nastavení je rozštěpení).
+- 16. července 2016: http://bit.ly/2RuUrJh[5.5% z celkového počtu celkového etheru]; pass:[~80% hlasů (~4.5%] z celkového množství) hlasuje pro přednastavené tvrdé rozštěpení, jedna čtvrtina souhlasných hlasů pochází z jedné adresy.
+- 20. července 2016: http://bit.ly/2yJxZ83[tvrdé rozštěpení] se vyskytuje v bloku 1 920 000.
+- 20. července 2016: Ti, kteří jsou proti tvrdému rozštěpení DAO, pokračují v používání starého klientského softwaru; to vede k problémům s přeposílání http://bit.ly/2qjJm27[transakcí na obou bločenkách].
+- 24. července 2016: http://bit.ly/2qhuNvP[Poloniex uvádí] původní bločenku Ethereum pod symbolem ETC; je to první burza, která to dělá.
+- 10. srpna 2016: RHG http://bit.ly/2JrLpK2[převádí 2,9] milionu zpětně získaných ETC na Poloniex za účelem jejich převodu na ETH na radu Bity SA; 14% z celkového objemu RHG je převedeno z ETC na ETH a další kryptoměny a http://bit.ly/2ETDdUc[Poloniex zmrazí] zbývajících 86% uloženého ETH.
+- 30. srpna 2016: Zmrazené finanční prostředky jsou společností Poloniex zaslány zpět do RHG, která poté vytvoří kontrakt pro navrácení prostředků v bločence ETC.
+- 11. prosince 2016: Vytvoření vývojového týmu ETC IOHK, vedeného zakládajícím členem Etherea Charlesem Hoskinsonem.
+- 13. ledna 2017: Síť ETC je aktualizována, aby vyřešila problémy s opakováním prováděním transakcí; bločenky jsou nyní funkčně oddělené.
+- 20. února 2017: Vytvořen ETCDEVTeam vedený raným vývojářem ETC Igorem Artamonovem(((range="endofrange", startref="ix_appdx-forks-history-asciidoc6"))) (splix).(((range="endofrange", startref="ix_appdx-forks-history-asciidoc5")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc4")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc3")))
+
+[[eth_etc_differences]]
+=== Ethereum and Ethereum Classic
+
+((("Ethereum (generally)","Ethereum Classic compared to")))((("Ethereum Classic (ETC)","Ethereum compared to")))((("forks","ETC")))((("forks","Ethereum and Ethereum Classic split")))Zatímco počáteční rozdělení bylo soustředěno kolem The DAO, dvě sítě, Ethereum a Ethereum Classic, jsou nyní oddělené projekty, ačkoli většina vývoje je stále prováděna komunitou Etherea a jednoduše portována do zdrojových kódů Etherea Classic. Celý soubor rozdílů se však neustále vyvíjí a je příliš rozsáhlý na to, aby byl pokryty v této příloze. Je však třeba poznamenat, že bločenky se výrazně liší v jejich hlavním vývoji a struktuře komunity. Dále je popsáno několik technických rozdílů.
+
+
+[[eth_etc_differences_evm]]
+==== The EVM
+((("EVM OPCODES")))Z velké části (v době psaní) zůstávají obě sítě vysoce kompatibilní: kód kontraktu vytvořený pro jednu bločenku běží podle očekávání na straně druhé; ale existují malé rozdíly v EVM instrukcích(viz EIPs link:http://bit.ly/2yIajkF[140], link:http://bit.ly/2qhKz9Y[145], a link:http://bit.ly/2SxsrFR[214]).
+
+[[eth_etc_differences_core_development]]
+==== Vývoj základní sítě
+Protože jsou bločenkové platformy otevřené projekty, mají často mnoho uživatelů a přispěvatelů. Vývoj jádrové sítě (tj. kódu, který provozuje síť) je však často prováděn malými skupinami kvůli odbornosti a znalostem potřebným pro vývoj tohoto typu softwaru. Pokud jde o Ethereum, tuto práci provádí Nadace Ethereum a dobrovolníci. Na Ethereum Classic to provádí ETCDEV, IOHK a dobrovolníci.
+
+[[ethereum_forks]]
+=== Další významná Ethereum rozštěpení
+
+((("Ellaism")))https://ellaism.org/about/[Ellaism] je síť založená na Ethereu, která hodlá používat k zabezpečení bločenky výhradně PoW. Nemá žádné předtěžení a žádné povinné poplatky pro vývojáře, veškerou podporu a vývoj poskytuje komunita zdarma. Jeho vývojáři se domnívají, že to dělá jejich, jeden z nejpřímějších čistých Ethereum projektů  a ten, který je jedinečně zajímavý jako platforma pro seriózní vývojáře, pedagogy a nadšence. Ellaismus je čistě platforma chytrých kontraktů. Jeho cílem je vytvořit platformu chytrých kontraktů, která bude spravedlivá a důvěryhodná. Principy platformy jsou následující:
+
+____
+* Všechny změny a rozšíření protokolu by se měly snažit udržovat a posilovat tyto principy Ellaism.
+* Měnová politika: 280 milionů mincí.
+* Žádná cenzura: Nikdo by neměl být schopen zabránit tomu, aby byly platné transakce potvrzeny.
+* Open-Source: Zdrojový kód Ellaism by měl být vždy otevřený pro kohokoli, aby ho mohl číst, upravovat, kopírovat, sdílet.
+* Nevyžadující povolení: Žádní libovolní strážci by nikdy neměli zabránit nikomu být součástí sítě (uživatel, uzel, těžař atd.).
+* Pseudo-anonymní: neměla by být vyžadována žádná identifikace pro vlastnění a používání  Ellaism.
+* Zaměnitelné: Všechny mince jsou stejné a měly by být stejně utratitelné.
+* Nevratné transakce: Potvrzené bloky by měly být vytesány do kamene. Historie bločenky by měla být neměnná.
+* Žádná sporná tvrdá rozštěpení: Nikdy neprovádět tvrdá rozštěpení bez  konsensu celé komunity. Stávající konsenzus přerušit pouze v případě nezbytné potřeby.
+* Mnoho vylepšení funkcí lze provádět bez tvrdého rozštěpení, jako je zlepšení výkonu EVM.
+____
+
+Na Ethereu se také objevilo několik dalších rozštěpení. Některé z nich jsou tvrdými rozštěpeními v tom smyslu, že se oddělují přímo od existující sítě Etherea. Jiné jsou softwarová rozštěpení: používají klientský / uzlový software Ethereum, ale provozují zcela oddělené sítě bez historie sdílené s Ethereem. Během života Etherea bude pravděpodobně více rozštěpení.
+
+Existuje také několik dalších projektů, které prohlašují, že se jedná o rozštěpení Etherea, ale ve skutečnosti jsou založeny na ERC20 tokenech a běží na síti Ethereum.((("airdrops")))((("EMOD (Ethereum Modification)")))((("ETHB (EtherBTC)")))((("EtherBTC (ETHB)")))((("Ethereum Modification (EMOD)")))Dva příklady z nich jsou EtherBTC (ETHB) a Ethereum Modification (EMOD). Nejedná se o rozštěpení v tradičním slova smyslu a někdy je lze nazvat „výsadky“ (airdrop).
+
+Zde je stručné shrnutí některých z pozoruhodnějších rozštěpení, která se vyskytla:
+
+- ((("Expanse")))_Expanse_ bylo první rozštěpení Ethereum bločenky, která získala ohlas. Bylo oznámeno prostřednictvím fóra Bitcoin Talk 7. září 2015. Skutečné rozštěpení se objevilo o týden později 14. září 2015 v bloku číslo 800 000. Původně jej založili Christopher Franko a James Clayton. Jejich stanovenou vizí bylo vytvořit pokročilou bločenku pro: „identitu, vládnutí, charitu, obchod a rovnost“.
+- ((("ETF (EthereumFog)")))((("EthereumFog (ETF)")))_EthereumFog_ (ETF) byl spuštěn 14. prosince 2017 a vidličkou byl v bloku číslo 4 730 660. Cílem projektu je vyvinout „světovou decentralizovanou výpočetní mlhovinu“ se zaměřením na výpočetní mlhovinu a decentralizované úložiště. Stále existuje jen málo informací o tom, co to ve skutečnosti bude.
+- _EtherZero_ (ETZ) ((("EtherZero (ETZ)"))) byl zahájen 19. ledna 2018 v bloku číslo 4 936 270. Mezi jeho významné inovace patřilo zavedení architektury hlavních uzů a odstranění transakčních poplatků za chytré kontrakty, které umožnily širší rozmanitost DApps. Někteří významní členové komunity Etherea, MyEtherWallet a MetaMask, projekt kritizovali kvůli nedostatečné jasnosti okolního vývoje a některým obviněním z možné snahy o získávání citlivých údajů uživatelů.
+- ((("EtherInc (ETI)")))((("ETI (EtherInc)")))_EtherInc_ (ETI) byl zahájen 13. února 2018 v bloku číslo 5 078 585 se zaměřením na budování decentralizovaných organizací. Stanovené cíle zahrnují zkrácení doby tvorby bloku, zvýšení odměn pro těžaře, odstranění strýčkových (ommer) odměn a stanovení stropu na vytěžitelné mince. EtherInc používá stejné soukromé klíče jako Ethereum a implementoval ochranu proti opakování transakce, aby ochránil ether v původní bločence bez rozštěpení.(((range="endofrange", startref="ix_appdx-forks-history-asciidoc2")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc1")))(((range="endofrange", startref="ix_appdx-forks-history-asciidoc0")))

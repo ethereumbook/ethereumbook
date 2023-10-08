@@ -1,0 +1,634 @@
+[[keys_addresses]]
+== Kryptografia
+
+((((„kryptografia”, id=„ix_04keys-adresy-asciidoc0”, range=„startofrange”)))Jedną z podstawowych technologii Ethereum jest (((„kryptografia”, "zdefiniowana”))) _ kryptografia_, która jest gałęzią matematyki szeroko stosowanej w bezpieczeństwie komputerowym. Kryptografia oznacza po grecku „tajne pisanie”, ale nauka o kryptografii obejmuje coś więcej niż tylko tajne pisanie, które nazywa się „szyfrowaniem”. Kryptografia może na przykład zostać również wykorzystana do udowodnienia znajomości tajemnicy bez ujawnienia tego tajnego klucza (np. podpisem cyfrowym) lub do potwierdzenia autentyczności danych (np. cyfrowymi odciskami palców, znanymi również jako „hashe”). Tego rodzaju dowody kryptograficzne są narzędziami matematycznymi o kluczowym znaczeniu dla działania platformy Ethereum (i rzeczywiście wszystkich systemów blockchain), a także są szeroko stosowane w aplikacjach Ethereum. (((„szyfrowanie”, seealso „klucze i adresy”)))
+
+Należy pamiętać, że w momencie publikacji żadna część protokołu Ethereum nie obejmuje szyfrowania; to znaczy cała komunikacja z platformą Ethereum i między węzłami (w tym dane transakcyjne) jest nieszyfrowana i może (koniecznie) być odczytana przez każdego. Dzięki temu każdy może zweryfikować poprawność aktualizacji stanu i osiągnąć konsensus. W przyszłości będą dostępne zaawansowane narzędzia kryptograficzne, takie jak zerowe dowody wiedzy i szyfrowanie homomorficzne, które umożliwią zapisanie niektórych zaszyfrowanych obliczeń w łańcuchu bloków, przy jednoczesnym zapewnieniu konsensusu; jednakże, mimo że przewidziano dla nich przepisy, nie zostały one jeszcze wdrożone.
+
+W tym rozdziale przedstawimy niektóre z kryptografii wykorzystywanej w Ethereum: mianowicie kryptografię klucza publicznego (PKC), która służy do kontrolowania własności funduszy, w postaci kluczy prywatnych i adresów.
+
+[[keys_addresses_intro]]
+=== Keys and Addresses
+
+(((„kryptografia”, „klucze i adresy”))) (((„EOA (konto posiadane zewnętrznie))”, „klucze i adresy”))) (((„klucze i adresy”))) Jak widzieliśmy wcześniej w książce Ethereum ma dwa różne typy kont: _podmioty zewnętrzne_ (EOA) i _contracts_. Własność eteru przez EOAs ustala się za pomocą cyfrowych _prywatnych kluczy_, _Ethereum adresów_ i _podpisów cyfrowych_. (((„klucze prywatne”, seealso= „klucze i adresy”))) Klucze prywatne są centralnym elementem interakcji użytkownika z Ethereum. W rzeczywistości adresy kont są uzyskiwane bezpośrednio z kluczy prywatnych: klucz prywatny jednoznacznie określa pojedynczy adres Ethereum, znany również jako _account_.
+
+Klucze prywatne nie są w żaden sposób wykorzystywane bezpośrednio w systemie Ethereum; nigdy nie są przesyłane ani przechowywane w Ethereum. To znaczy, że klucze prywatne powinny pozostać prywatne i nigdy nie pojawiać się w wiadomościach przesyłanych do sieci, ani nie powinny być przechowywane w łańcuchu; tylko adresy kont i podpisy cyfrowe są zawsze przesyłane i przechowywane w systemie Ethereum. Aby uzyskać więcej informacji o tym, jak zabezpieczyć klucze prywatne, zobacz <<control_responsibility>> i <<wallets_chapter>>.
+
+(((„podpisy cyfrowe”))) Dostęp do funduszy i kontrolę nad nimi można uzyskać dzięki podpisom cyfrowym, które są również tworzone przy użyciu klucza prywatnego. Transakcje Ethereum wymagają włączenia ważnego podpisu cyfrowego do łańcucha bloków. Każdy, kto posiada kopię klucza prywatnego, ma kontrolę nad odpowiednim kontem i posiadanym przez niego eterem. Zakładając, że użytkownik dba o bezpieczeństwo swojego klucza prywatnego, podpisy cyfrowe w transakcjach Ethereum dowodzą prawdziwego właściciela funduszy, ponieważ potwierdzają własność klucza prywatnego.
+
+(((„pary kluczy”)) W systemach opartych na kryptografii&#x2013; kluczy publicznych, takich jak te używane przez Ethereum, klucze występują w parach składających się z klucza prywatnego (tajnego) i klucza publicznego. Traktuj klucz publiczny jako podobny do numeru konta bankowego, a klucz prywatny podobny do tajnego kodu PIN; to drugie zapewnia kontrolę nad kontem, a drugie identyfikuje je dla innych. Same klucze prywatne bardzo rzadko są widziane przez użytkowników Ethereum; w większości są one przechowywane (w postaci zaszyfrowanej) w specjalnych plikach i zarządzane przez oprogramowanie portfela Ethereum.
+
+W części płatniczej transakcji Ethereum docelowy odbiorca jest reprezentowany przez adres Ethereum, który jest używany w taki sam sposób, jak dane rachunku beneficjenta przelewu bankowego. Jak zobaczymy bardziej szczegółowo wkrótce, adres Ethereum dla EOA jest generowany z części klucza publicznego pary kluczy. Jednak nie wszystkie adresy Ethereum reprezentują pary kluczy publiczny-prywatny; mogą również reprezentować kontrakty, które, jak zobaczymy w <<smart_contracts_chapter>>, nie są poparte kluczami prywatnymi.
+
+W dalszej części tego rozdziału najpierw bardziej szczegółowo zbadamy podstawową kryptografię i wyjaśnimy matematykę stosowaną w Ethereum. Następnie przyjrzymy się, w jaki sposób klucze są generowane, przechowywane i zarządzane. Na koniec przejrzymy różne formaty kodowania używane do reprezentowania kluczy prywatnych, kluczy publicznych i adresów.
+
+[[pkc]]
+=== Kryptografia klucza publicznego i kryptowaluta
+
+((((„kryptografia”, „kryptografia klucza publicznego i kryptowaluta”), id =„ix_04keys-address-asciidoc1”, range =„startofrange”)))((((„kryptografia klucza publicznego”, id =„ix_04keys-address-asciidoc2)”, range=„startofrange”)))Kryptografia klucza publicznego (zwana również „kryptografią asymetryczną”) jest kluczową częścią współczesnego bezpieczeństwa informacji. (((„Diffie, Whitfield”)))(((„Hellman, Martin”))))(((„protokół wymiany kluczy”))))(((„Merkle, Ralph”)))) Protokół wymiany kluczy, pierwszy opublikowany w 1970 roku przez Martina Hellmana, Whitfielda Diffiego i Ralpha Merkle'a, był monumentalnym przełomem, który zainicjował pierwszą wielką falę zainteresowania opinii publicznej w dziedzinie kryptografii. Przed 1970 rokiem silna wiedza kryptograficzna była utrzymywana w tajemnicy: [<span class="keep-together">rządy</span>].
+
+Kryptografia klucza publicznego wykorzystuje unikalne klucze do zabezpieczenia informacji. Te klucze są oparte na funkcjach matematycznych, które mają specjalną właściwość: łatwo je obliczyć, ale trudno jest obliczyć ich odwrotność. W oparciu o te funkcje kryptografia umożliwia tworzenie tajemnic cyfrowych i niezbywalnych podpisów cyfrowych, które są zabezpieczone prawami matematyki.
+
+Na przykład pomnożenie dwóch dużych liczb pierwszych jest banalne. (((„rozkład na czynniki pierwsze”))) Jednak biorąc pod uwagę iloczyn dwóch dużych liczb pierwszych, bardzo trudno jest znaleźć czynniki pierwsze (problem zwany „rozkładem liczb pierwszych”). Powiedzmy, że prezentujemy liczbę 8,018,009 i mówimy, że jest to iloczyn dwóch liczb pierwszych. Znalezienie tych dwóch liczb pierwszych jest dla ciebie znacznie trudniejsze niż dla mnie pomnożenie ich w celu uzyskania 8,018,009.
+
+(((„funkcje zapadni”))) Niektóre z tych funkcji matematycznych można łatwo odwrócić, jeśli znasz jakieś tajne informacje. W poprzednim przykładzie, jeśli powiem ci, że jednym z czynników pierwszych jest 2,003, możesz w trywialny sposób znaleźć drugi z prostym podziałem: 8 018 009 ÷ 2 003 = 4,003. Takie funkcje są często nazywane "funkcjami zapadni", ponieważ są bardzo trudne do odwrócenia, chyba że otrzymasz kawałek tajnych informacji, których można użyć jako skrótu do odwrócenia funkcji.
+
+(((„Kryptografia krzywej eliptycznej”))) Bardziej zaawansowana kategoria funkcji matematycznych przydatna w kryptografii opiera się na operacjach arytmetycznych na krzywej eliptycznej. W arytmetyce krzywej eliptycznej, modulowanie mnożenia liczba pierwsza jest proste, ale dzielenie (odwrotność) jest praktycznie niemożliwe. (((„problem z dyskretnym logarytmem”))) Nazywa się to „problemem z dyskretnym logarytmem” i obecnie nie ma znanych pułapek. _Kryptografia krzywej eliptycznej_ jest szeroko stosowana w nowoczesnych systemach komputerowych i jest podstawą użycia przez Ethereum (i inne kryptowaluty) kluczy prywatnych i podpisów cyfrowych.
+
+[NOTE]
+====
+Spójrz na następujące zasoby, jeśli chcesz przeczytać więcej o kryptografii i funkcjach matematycznych używanych we współczesnej kryptografii:
+
+* http://bit.ly/2DcwNhn[Cryptography]
+
+* http://bit.ly/2zeZV3c[Trapdoor function]
+
+* http://bit.ly/2ACJjnV[Prime factorization]
+
+* http://bit.ly/2Q7mZYI[Discrete logarithm]
+
+* http://bit.ly/2zfeKCP[Elliptic curve cryptography]
+====
+
+W Ethereum używamy kryptografii klucza publicznego (znanej również jako kryptografia asymetryczna), aby stworzyć parę kluczy publiczno-prywatnych, o której mówiliśmy w tym rozdziale. Są uważane za „parę”, ponieważ klucz publiczny pochodzi z klucza prywatnego. Razem reprezentują one konto Ethereum, zapewniając odpowiednio publicznie dostępny uchwyt konta (adres) i prywatną kontrolę nad dostępem do dowolnego eteru na koncie i nad wszelkim uwierzytelnianiem, którego potrzebuje konto podczas korzystania z inteligentnych umów. (((„podpisy cyfrowe”, „klucz prywatny i”))) Klucz prywatny kontroluje dostęp, ponieważ jest unikalną informacją potrzebną do utworzenia _ podpisów cyfrowych_, które są wymagane do podpisywania transakcji w celu wydania jakichkolwiek środków na koncie. Podpisy cyfrowe są również używane do uwierzytelniania właścicieli lub użytkowników umów, jak zobaczymy w <<smart_contracts_chapter>>.
+
+ [TIP]
+====
+(((„pary kluczy”)))W większości implementacji portfela klucze prywatne i publiczne są przechowywane dla wygody jako para kluczy. Klucz publiczny można jednak w prosty sposób obliczyć z klucza prywatnego, dlatego możliwe jest również przechowywanie tylko klucza prywatnego.
+====
+
+Podpis cyfrowy można utworzyć w celu podpisania dowolnej wiadomości. W przypadku transakcji Ethereum jako szczegóły używane są szczegóły samej transakcji. Matematyka kryptografii&#x2014;iw tym przypadku kryptografia krzywej eliptycznej&#x2014;umożliwia połączenie komunikatu (tj. Szczegółów transakcji) z kluczem prywatnym w celu utworzenia kodu, który można wytworzyć tylko przy znajomości prywatny klucz. Że
+kod nazywa się podpisem cyfrowym. Pamiętaj, że transakcja Ethereum to w zasadzie prośba o dostęp do określonego konta z określonym adresem Ethereum. Gdy transakcja jest wysyłana do sieci Ethereum w celu przeniesienia funduszy lub interakcji z inteligentnymi umowami, musi zostać wysłana z podpisem cyfrowym utworzonym za pomocą klucza prywatnego odpowiadającego danemu adresowi Ethereum. Matematyka krzywej eliptycznej oznacza, że ​​_ każdy może zweryfikować poprawność transakcji, sprawdzając, czy podpis cyfrowy odpowiada szczegółom transakcji _ i_ adres Ethereum, do którego żądany jest dostęp. Weryfikacja w ogóle nie obejmuje klucza prywatnego; to pozostaje prywatne. Jednak proces weryfikacji nie pozostawia wątpliwości, że transakcja mogła pochodzić wyłącznie od osoby, której klucz prywatny odpowiada kluczowi publicznemu znajdującemu się za adresem Ethereum. To jest „magia” kryptografii klucza publicznego.
+
+
+ [TIP]
+====
+Nie ma szyfrowania w ramach protokołu Ethereum&#x2014; wszystkie wiadomości wysyłane w ramach działania sieci Ethereum mogą (koniecznie) być odczytywane przez wszystkich. W związku z tym klucze prywatne są używane tylko do tworzenia podpisów cyfrowych do uwierzytelniania transakcji.(((range="endofrange", startref="ix_04keys-address-asciidoc2")))((((range="endofrange", startref="ix_04keys -adresy-asciidoc1")))
+====
+
+[[private_keys]]
+=== Klucze prywatne
+
+(((„klucze prywatne”, id=„ix_04keys-address-asciidoc3”, range=„startofrange”)))Klucz prywatny to po prostu liczba wybierana losowo. Własność i kontrola nad kluczem prywatnym jest źródłem kontroli użytkownika nad wszystkimi funduszami powiązanymi z odpowiednim adresem Ethereum, a także dostępem do umów, które autoryzują ten adres. Klucz prywatny służy do tworzenia podpisów wymaganych do wydania eteru poprzez potwierdzenie własności środków wykorzystanych w transakcji. (((„ostrzeżenia i przestrogi”, „ochrona klucza prywatnego”))) Klucz prywatny musi pozostać tajny przez cały czas, ponieważ ujawnienie go osobom trzecim jest równoznaczne z udzieleniem im kontroli nad eterem i umowami zabezpieczonymi tym kluczem prywatnym. Należy również wykonać kopię zapasową klucza prywatnego i zabezpieczyć go przed przypadkową utratą. Jeśli zostanie utracony, nie będzie można go odzyskać, a zabezpieczone przez niego środki zostaną utracone na zawsze.
+
+ [TIP]
+====
+Klucz prywatny Ethereum to tylko liczba. Jednym ze sposobów losowego wybierania kluczy prywatnych jest po prostu użycie monety, ołówka i papieru: podrzuć monetę 256 razy, a otrzymasz binarne cyfry losowego klucza prywatnego, którego możesz użyć w portfelu Ethereum (prawdopodobnie&#x2014; zobacz następna sekcja). Klucz publiczny i adres mogą być następnie generowane z klucza prywatnego.
+====
+
+[[generating_private_key]]
+==== Generowanie klucza prywatnego z losowej liczby
+
+(((„entropia”, „generowanie klucza prywatnego i”)))(((„klucze prywatne”, „generowanie z liczby losowej”))) (((„liczby losowe, generowanie klucza prywatnego z”)))Pierwszym a najważniejszym krokiem w generowaniu kluczy jest znalezienie bezpiecznego źródła entropii lub losowości. Utworzenie klucza prywatnego Ethereum zasadniczo polega na wybraniu liczby od 1 do 2 ^ 256 ^. Dokładna metoda zastosowana do wybrania tej liczby nie ma znaczenia, o ile nie jest przewidywalna ani deterministyczna. Oprogramowanie Ethereum wykorzystuje generator liczb losowych systemu operacyjnego do wygenerowania 256 losowych bitów. Zazwyczaj generator liczb losowych systemu operacyjnego jest inicjowany przez ludzkie źródło losowości, dlatego możesz zostać poproszony o poruszanie myszką przez kilka sekund lub naciskanie losowych klawiszy na klawiaturze. Alternatywą może być szum promieniowania kosmicznego w kanale mikrofonu komputera.
+
+Dokładniej, klucz prywatny może być dowolną niezerową liczbą do bardzo dużej liczby, nieco mniejszej niż 2^256^&#x2014; ogromna liczba 78-cyfrowa, około 1,158*10^77^. Dokładna liczba dzieli pierwsze 38 cyfr z 2^256^ i jest zdefiniowana jako kolejność krzywej eliptycznej zastosowanej w Ethereum (patrz <<elliptic_curve>>). Aby utworzyć klucz prywatny, losowo wybieramy liczbę 256-bitową i sprawdzamy, czy jest ona w prawidłowym zakresie. W kategoriach programowych zwykle osiąga się to przez podawanie jeszcze większego ciągu losowych bitów (zebranych z kryptograficznie bezpiecznego źródła losowości) do 256-bitowego algorytmu skrótu, takiego jak Keccak-256 lub SHA-256, z których oba wygodnie wytworzą 256-bitowa liczba. Jeśli wynik mieści się w prawidłowym zakresie, mamy odpowiedni klucz prywatny. W przeciwnym razie po prostu spróbujemy ponownie z inną losową liczbą.
+
+ [TIP]
+====
+2^256^&#x2014; rozmiar przestrzeni klucza prywatnego Ethereum&#x2014; jest niezmiernie dużą liczbą. Jest w przybliżeniu 10^77^ w systemie dziesiętnym; to znaczy liczba z 77 cyframi. Dla porównania szacuje się, że widoczny wszechświat zawiera 10^80^ atomów. Zatem istnieje prawie wystarczająca liczba kluczy prywatnych, aby dać każdemu atomowi we wszechświecie konto Ethereum. Jeśli wybierzesz klucz prywatny losowo, nie ma możliwego sposobu, aby ktokolwiek go odgadł lub sam wybrał.
+====
+
+Pamiętaj, że proces generowania klucza prywatnego odbywa się w trybie offline; nie wymaga żadnej komunikacji z siecią Ethereum ani żadnej komunikacji z kimkolwiek. Jako taki, aby wybrać liczbę, której nikt inny nigdy nie wybierze, musi być naprawdę losowy. Jeśli sam wybierzesz numer, szansa, że ​​ktoś go spróbuje (a następnie ucieknie z twoim eterem), jest zbyt duża. Używanie złego generatora liczb losowych (takiego jak pseudolosowa + funkcja + rand + w większości języków programowania) jest jeszcze gorsze, ponieważ jest jeszcze bardziej oczywiste i jeszcze łatwiejsze do odtworzenia. Podobnie jak w przypadku haseł do kont internetowych, klucz prywatny musi być niemożliwy do odczytania. Na szczęście nigdy nie musisz pamiętać swojego klucza prywatnego, więc możesz wybrać najlepsze możliwe rozwiązanie: wybrać prawdziwą przypadkowość.
+
+[WARNING]
+====
+Nie pisz własnego kodu, aby utworzyć liczbę losową, ani nie używaj „prostego” generatora liczb losowych oferowanego przez Twój język programowania. Ważne jest, aby używać kryptograficznie bezpiecznego generatora liczb pseudolosowych (takiego jak CSPRNG) z ziarnem ze źródła wystarczającej entropii. Zapoznaj się z dokumentacją wybranej biblioteki generatorów liczb losowych, aby upewnić się, że jest ona kryptograficznie bezpieczna. Prawidłowa implementacja biblioteki CSPRNG ma kluczowe znaczenie dla bezpieczeństwa kluczy.
+====
+
+Poniżej przedstawiono losowo wygenerowany klucz prywatny pokazany w formacie szesnastkowym (256 bitów pokazanych jako 64 cyfry szesnastkowe, każdy po 4 bity):(((range="endofrange", startref="ix_04keys-addresses-asciidoc3")))
+
+[[prv_key_example]]
+----
+f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+
+[[pubkey]]
+=== Klucze publiczne
+
+((((„kryptografia”, „klucze publiczne”, id="ix_04keys-addresses-asciidoc4", range="startofrange")))(((„kryptografia krzywej eliptycznej ”,"generowanie klucza publicznego ”, id="ix_04keys-addresses-asciidoc5", range="startofrange"))) (((„klucze publiczne”, seealso=„klucze i adresy”, id="ix_04keys-addresses-asciidoc6", range="startofrange"))) Publiczny klucz Ethereum jest punktem na krzywej eliptycznej, co oznacza, że ​​jest zbiorem współrzędnych _x_ i _y_, które spełniają równanie krzywej eliptycznej.
+
+Mówiąc prościej, klucz publiczny Ethereum to dwie liczby, połączone razem. Liczby te są generowane z klucza prywatnego na podstawie obliczeń, które mogą tylko iść w jedną stronę. Oznacza to, że obliczenie klucza publicznego jest banalne, jeśli masz klucz prywatny, ale nie możesz obliczyć klucza prywatnego na podstawie klucza publicznego.
+
+[WARNING]
+====
+Matematyka zaraz się wydarzy! Nie panikuj. Jeśli zaczniesz się gubić w dowolnym punkcie poniższych akapitów, możesz pominąć kilka następnych sekcji. Istnieje wiele narzędzi i bibliotek, które wykonają matematykę za Ciebie.
+====
+
+Klucz publiczny jest obliczany na podstawie klucza prywatnego przy użyciu mnożenia krzywej eliptycznej, co jest praktycznie nieodwracalne: _K_ = _k_ * _G_, gdzie _k_ jest kluczem prywatnym, _G_ jest punktem stałym o nazwie (((„punkt generatora”))) _generator point_, _K_ to wynikowy klucz publiczny, a * to specjalny operator „multiplikacji” krzywej eliptycznej. Zauważ, że mnożenie krzywej eliptycznej nie przypomina zwykłego mnożenia. Dzieli atrybuty funkcjonalne z normalnym mnożeniem, ale o to chodzi. Na przykład operacja odwrotna (która byłaby dzieleniem liczb normalnych), znana jako „znalezienie logarytmu dyskretnego”,&#x201d;&#x2014;tj. Obliczenie _k_, jeśli znasz __K __ &#x2014; jest tak trudne, jak wypróbowanie wszystkich możliwych wartości _k_ (poszukiwanie siłą brutalną, które prawdopodobnie zajmie więcej czasu niż pozwala na to wszechświat).
+
+Mówiąc prościej: arytmetyka na krzywej eliptycznej różni się od „zwykłej” arytmetyki liczb całkowitych. Punkt (_G_) można pomnożyć przez liczbę całkowitą (_k_), aby utworzyć kolejny punkt (_K_). Ale nie ma czegoś takiego jak _division_, więc nie można po prostu „podzielić” klucza publicznego _K_ przez punkt _G_, aby obliczyć klucz prywatny _k_. Jest to jednokierunkowa funkcja matematyczna opisana w <<pkc>>.
+
+[NOTE]
+====
+(((„funkcje jednokierunkowe”)))Mnożenie krzywej eliptycznej jest rodzajem funkcji, którą kryptografowie nazywają funkcją „jednokierunkową”: jest to łatwe do wykonania w jednym kierunku (zwielokrotnienie) i niemożliwe do wykonania w odwrotnym kierunku (podział). Właściciel klucza prywatnego może łatwo utworzyć klucz publiczny, a następnie udostępnić go światu, wiedząc, że nikt nie może cofnąć funkcji i obliczyć klucza prywatnego na podstawie klucza publicznego. Ta matematyczna sztuczka staje się podstawą niezapomnianych i bezpiecznych podpisów cyfrowych potwierdzających własność funduszy Ethereum i kontrolę kontraktów.
+====
+
+Zanim zademonstrujemy, jak wygenerować klucz publiczny z klucza prywatnego, przyjrzyjmy się kryptografii krzywej eliptycznej bardziej szczegółowo.
+
+
+[[elliptic_curve]]
+==== Wyjaśnienie kryptografii krzywej eliptycznej
+
+((((„Kryptografia krzywej eliptycznej”, „podstawy”, id="ix_04keys-addresses-asciidoc7", range="startofrange"))) Kryptografia krzywej eliptycznej (((„kryptografia krzywej eliptycznej” id="ix_04keys-addresses-asciidoc8", range="startofrange")))(((„klucze publiczne”, „eliptyczna kryptografia krzywej i" id="ix_04keys-addresses-asciidoc9", range="startofrange"))) jest rodzajem kryptografii asymetrycznego lub publicznego klucza opartą na dyskretnym logarytmie wyrażoną przez dodanie i pomnożenie punktów krzywej eliptycznej.
+
+<<ecc-curve>> jest przykładem krzywej eliptycznej, podobnej do tej stosowanej przez Ethereum.
+
+[NOTE]
+====
+(((„secp256k1 krzywa eliptyczna”, id="ix_04keys-addresses-asciidoc10", range="startofrange")))Ethereum używa dokładnie tej samej krzywej eliptycznej, zwanej + secp256k1 +, co Bitcoin. Umożliwia to ponowne wykorzystanie wielu bibliotek i narzędzi krzywych eliptycznych Bitcoin.
+====
+
+[[ecc-curve]]
+. Wizualizacja krzywej eliptycznej
+image::images/simple_elliptic_curve.png["ecc-curve"]
+
+Ethereum używa określonej krzywej eliptycznej i zestawu stałych matematycznych, jak zdefiniowano w standardzie o nazwie +secp256k1+, ustanowionym przez amerykański Narodowy Instytut Standardów i Technologii (NIST). Krzywa +secp256k1+ jest zdefiniowana przez następującą funkcję, która tworzy krzywą eliptyczną:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+<mrow>
+<mrow>
+<msup><mi>y</mi><mn>2</mn></msup>
+<mo>=</mo>
+<mrow>
+<mo>(</mo>
+<msup><mi>x</mi><mn>3</mn></msup>
+<mo>+</mo>
+<mn>7</mn>
+<mo>)</mo>
+</mrow>
+</mrow>
+<mspace width="3.33333pt"/>
+<mtext>over</mtext>
+<mspace width="3.33333pt"/>
+<mrow>
+<mo>(</mo>
+<msub><mi>&#x1d53d;</mi> <mi>p</mi> </msub>
+<mo>)</mo>
+</mrow>
+</mrow>
+</math>
+</div>
+++++
+
+or:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+<mrow>
+<msup><mi>y</mi> <mn>2</mn> </msup>
+<mspace width="3.33333pt"/>
+<mo form="prefix">mod</mo>
+<mspace width="0.277778em"/>
+<mi>p</mi>
+<mo>=</mo>
+<mrow>
+<mo>(</mo>
+<msup><mi>x</mi> <mn>3</mn> </msup>
+<mo>+</mo>
+<mn>7</mn>
+<mo>)</mo>
+</mrow>
+<mspace width="3.33333pt"/>
+<mo form="prefix">mod</mo>
+<mspace width="0.277778em"/>
+<mi>p</mi>
+</mrow>
+</math>
+</div>
+++++
+
+_Mod p_ (liczba pierwsza modulo _p_) wskazuje, że krzywa przebiega przez skończone pole pierwszego rzędu _p_, również zapisane jako matematyka lateksowa:[\( \mathbb{F}_p \)], gdzie _p_ = 2^256^ - 2^32^ - 2^9^ - 2^8^ - 2^7^ - 2^6^ - 2^4^ -1, co jest bardzo dużą liczbą pierwszą.
+
+Ponieważ ta krzywa jest zdefiniowana na skończonym polu pierwszego rzędu zamiast na liczbach rzeczywistych, wygląda jak wzór kropek rozproszonych w dwóch wymiarach, co utrudnia wizualizację. Jednak matematyka jest identyczna z krzywą eliptyczną względem liczb rzeczywistych. Na przykład <<ecc-over-F17-math>> pokazuje tę samą krzywą eliptyczną na znacznie mniejszym skończonym polu pierwszego rzędu 17, pokazując wzór kropek na siatce. Krzywą eliptyczną +secp256k1+ Ethereum można traktować jako znacznie bardziej złożony wzór kropek na niewyobrażalnie dużej siatce.
+
+[[ecc-over-F17-math]]
+[role="smallersixty"]
+Kryptografia krzywej eliptycznej: wizualizacja krzywej eliptycznej na F(p), przy p=17
+image::images/ec_over_small_prime_field.png["ecc-over-F17-math"]
+
+Na przykład poniżej znajduje się punkt _Q_ o współrzędnych (_x_,_y_), który jest punktem na krzywej +secp256k1+:
+
+[[coordinates_example]]
+----
+Q =
+(49790390825249384486033144355916864607616083520101638681403973749255924539515,
+59574132161899900045862086493921015780032175291755807399284007721050341297360)
+----
+
+<<example_1>> pokazuje, jak możesz to sprawdzić samodzielnie za pomocą Pythona. Zmienne +x+ i +y+ są współrzędnymi punktu _Q_, jak w poprzednim przykładzie. Zmienna +p+ jest pierwszym rzędem krzywej eliptycznej (liczba pierwsza używana we wszystkich operacjach modulo). Ostatni wiersz Pythona to równanie krzywej eliptycznej (operator +% + w Pythonie jest operatorem modulo). Jeśli +x+ i +y+ są rzeczywiście współrzędnymi punktu na krzywej eliptycznej, to spełniają one równanie, a wynik wynosi zero (+0L+ jest długą liczbą całkowitą o wartości zero). Spróbuj sam, wpisując ++**python**++ w wierszu poleceń i kopiując każdy wiersz (po znaku zachęty +>>>+) z listy (((range="endofrange", startref="ix_04keys-addresses-asciidoc10"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc9")))
+
+++++
+<div data-type="example" id="example_1">
+<h5>Użycie Pythona do potwierdzenia, że ​​ten punkt znajduje się na krzywej eliptycznej</h5>
+<pre data-type="programlisting">
+Python 3.4.0 (default, Mar 30 2014, 19:23:13)
+[GCC 4.2.1 Compatible Apple LLVM 5.1 (clang-503.0.38)] on darwin
+Aby uzyskać więcej informacji, wpisz „help”, „copyright”, „credits” lub „license”.
+>>><strong> p = 115792089237316195423570985008687907853269984665640564039457584007908834 \
+671663</strong>
+>>> <strong>x = 49790390825249384486033144355916864607616083520101638681403973749255924539515</strong>
+>>> <strong>y = 59574132161899900045862086493921015780032175291755807399284007721050341297360</strong>
+>>><strong> (x ** 3 + 7 - y**2) % p</strong>
+0L
+</pre>
+</div>
+++++
+
+[[EC_math]]
+==== Operacje arytmetyczne na krzywej eliptycznej
+
+(((„Kryptografia krzywej eliptycznej”,„operacje arytmetyczne”))) Wiele matematyki krzywej eliptycznej wygląda i działa bardzo podobnie do arytmetyki liczb całkowitych, której nauczyliśmy się w szkole. W szczególności możemy zdefiniować operator dodawania, który zamiast przeskakiwać wzdłuż linii liczbowej przeskakuje do innych punktów na krzywej. Gdy mamy już operator dodawania, możemy również zdefiniować mnożenie punktu i liczby całkowitej, co jest równoważne powtarzaniu dodawania.
+
+Dodanie krzywej eliptycznej jest zdefiniowane w taki sposób, że biorąc pod uwagę dwa punkty _P_~1~ i _P_~2~ na krzywej eliptycznej, istnieje trzeci punkt _P_ ~3~=_P_~1~+_P_~2~, również na krzywej eliptycznej.
+
+Geometrycznie ten trzeci punkt _P_~ 3~ jest obliczany przez narysowanie linii między _P_~1~ a _P_~2~. Ta linia przecina krzywą eliptyczną dokładnie w jednym dodatkowym miejscu (zadziwiające). Nazwij ten punkt _P_~3~'= (_x_, _y_). Następnie odbij w osi x, aby uzyskać _P_~3~ =(_x_,_– y_).
+
+Jeśli _P_~1~ i _P_~2~ są tym samym punktem, linia „między” _P_~1~ a _P_~2~ powinna rozciągać się, aby być styczną do krzywej w tym punkcie _P_~1~. Ta styczna przecina krzywą dokładnie w jednym nowym punkcie. Możesz użyć technik z rachunku różniczkowego, aby określić nachylenie linii stycznej. Co ciekawe, te techniki działają, chociaż ograniczamy nasze zainteresowanie do punktów na krzywej za pomocą dwóch współrzędnych całkowitych!
+
+W matematyce krzywej eliptycznej istnieje również punkt zwany „punktem w nieskończoności”, który z grubsza odpowiada dodatkowo roli liczby zero. Na komputerach jest czasami reprezentowany przez _x_ = _y_=  0 (co nie spełnia równania krzywej eliptycznej, ale jest to łatwy oddzielny przypadek, który można sprawdzić). Istnieje kilka specjalnych przypadków, które wyjaśniają potrzebę punktu w nieskończoności.
+
+W niektórych przypadkach (np. Jeśli _P_ ~1~ i _P_ ~2~ mają takie same wartości _x_, ale różne wartości _y_), linia będzie dokładnie pionowa, w którym to przypadku _P_ ~3~ = punkt w nieskończoności.
+
+Jeśli _P_~1~ jest punktem nieskończoności, to _P_~ 1~ + _P_ ~2~ = _P_ ~2~. Podobnie, jeśli _P_ ~2~ jest punktem nieskończoności, to _P_ ~1~ + _P_ ~2~ = _P_ ~1~. To pokazuje, jak punkt nieskończoności odgrywa rolę, jaką zero odgrywa w „normalnej” arytmetyce.
+
+Okazuje się, że pass: [+] jest asocjacyjny, co oznacza, że ​​(_A_ pass: [+] _B_) pass: [+] _C_ = _A_ pass: [+] (_B_ pass: [+] _C_). Oznacza to, że możemy napisać _A_ pass: [+] _B_ pass: [+] _C_ (bez nawiasów) bez dwuznaczności.
+
+Teraz, gdy zdefiniowaliśmy dodawanie, możemy zdefiniować mnożenie w standardowy sposób, który rozszerza dodawanie. W przypadku punktu _P_ na krzywej eliptycznej, jeśli _k_ jest liczbą całkowitą, to _k_ pass: [*] _P_ = _P_ pass: [+] _P_ pass: [+] _P_ pass: [+] ... pass: [+ ] _P_ (_k_ razy). Zauważ, że _k_ jest czasem (być może myląco) nazywany w tym przypadku „wykładnikiem”. (((range="endofrange", startref="ix_04keys-addresses-asciidoc8")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc7")))
+
+[[public_key_derivation]]
+==== Generowanie klucza publicznego
+
+(((„kryptografia krzywej eliptycznej”, „generowanie klucza publicznego za pomocą”)))(((„punkt generatora”))))(((„klucze publiczne ”,"generowanie”)))Począwszy od klucza prywatnego w formie losowo wygenerowanej liczby _k_, mnożymy ją przez z góry określony punkt na krzywej zwany _generator point_ _G_, aby utworzyć inny punkt gdzieś na krzywej, który jest odpowiednim kluczem publicznym _K_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+<mrow>
+<mi>K</mi>
+<mo>=</mo>
+<mi>k</mi>
+<mo>*</mo>
+<mi>G</mi>
+</mrow>
+</math>
+</div>
+++++
+
+(((„krzywa eliptyczna secp256k1”)))Punkt generatora jest określony jako część standardu +secp256k1+; jest taki sam dla wszystkich implementacji +secp256k1+, a wszystkie klucze pochodzące z tej krzywej używają tego samego punktu _G_. Ponieważ punkt generatora jest zawsze taki sam dla wszystkich użytkowników Ethereum, klucz prywatny _k_ pomnożony przez _G_ zawsze da ten sam klucz publiczny _K_. Zależność między _k_ i _K_ jest stała, ale można ją obliczyć tylko w jednym kierunku, od _k_ do _K_. Dlatego adres Ethereum (pochodzący z _K_) można udostępnić każdemu i nie ujawnia klucza prywatnego użytkownika (_k_).
+
+Jak opisano w poprzedniej sekcji, mnożenie _k_ * _G_ jest równoważne powtórzeniu dodawania, więc _G_ pass: [+] _G_ pass: [+] _G_ pass: [+] ... pass: [+] _G_, powtórzony _k_ razy. Podsumowując, aby utworzyć klucz publiczny _K_ z klucza prywatnego _k_, dodajemy do siebie punkt generatora _G_, _k_ razy.
+
+ [TIP]
+====
+Klucz prywatny można przekształcić w klucz publiczny, ale klucza publicznego nie można przekształcić z powrotem w klucz prywatny, ponieważ matematyka działa tylko w jeden sposób.
+====
+
+Zastosujmy te obliczenia, aby znaleźć klucz publiczny dla określonego klucza prywatnego, który pokazaliśmy ci w <<private_keys>>:
+
+
+Zastosujmy te obliczenia, aby znaleźć klucz publiczny dla określonego klucza prywatnego, który pokazaliśmy ci w <>:
+.Przykład przeliczenia klucza prywatnego na klucz publiczny
+----
+K = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315 * G
+----
+
+Biblioteka kryptograficzna może pomóc nam obliczyć _K_, używając mnożenia krzywej eliptycznej. Wynikowy klucz publiczny _K_ jest zdefiniowany jako punkt:
+
+----
+K = (x, y)
+----
+
+gdzie:
+
+----
+x = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b
+y = 83b5c38e5e2b0c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+(((„SECG (Grupa norm w zakresie efektywnej kryptografii)”))) (((„Grupa norm w dziedzinie efektywnej kryptografii (SECG)”))) W Ethereum możesz zobaczyć klucze publiczne reprezentowane jako serializacja 130 znaków szesnastkowych (65 bajtów ). Zostało to przyjęte ze standardowego formatu serializacji zaproponowanego przez konsorcjum branżowe Standards for Efficient Cryptography Group (SECG), udokumentowane w http://www.secg.org/sec1-v2.pdf[Standards for Efficient Cryptography (SEC1)]. Norma określa cztery możliwe przedrostki, których można użyć do identyfikacji punktów na krzywej eliptycznej, wymienionych w <<EC_prefix_table>>.
+
+[[EC_prefix_table]]
+.Serializowane prefiksy klucza publicznego WE
+[options="header"]
+|===
+| Prefiks | Znaczenie | Długość (prefiks liczenia bajtów)
+| +0x00+ | Punkt na nieskończoności | 1
+| +0x04+ | Punkt nieskompresowany | 65
+| +0x02+ | Skompresowany punkt w parzystym +y+ | 33
+| +0x03+ | Skompresowany punkt z nieparzystym +y+ | 33
+|===
+
+Ethereum używa tylko nieskompresowanych kluczy publicznych; dlatego jedynym odpowiednim prefiksem jest (szesnastkowy) +04+. Serializacja łączy współrzędne _x_ i _y_ klucza publicznego:
+
+[[concat_coordinates]]
+----
+04 + współrzędna x (32 bajty/64 hex) + współrzędna y (32 bajty/ 64 hex)
+----
+
+Dlatego klucz publiczny, który obliczyliśmy wcześniej, jest serializowany jako:
+
+[[serialized_pubkey]]
+----
+046e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e2b0 \
+c8529d7fa3f64d46daa1ece2d9ac14cab9477d042c84c32ccd0
+----
+
+[[EC_lib]]
+==== Biblioteki krzywych eliptycznych
+
+(((„Kryptografia krzywej eliptycznej”, „biblioteki”)))(((„Krzywa eliptyczna secp256k1”)))Istnieje kilka implementacji krzywej eliptycznej +secp256k1+, które są wykorzystywane w projektach związanych z kryptowalutą:
+
+(((„Biblioteka kryptograficzna OpenSSL”)))https://www.openssl.org/[OpenSSL]::  Biblioteka OpenSSL oferuje kompleksowy zestaw prymitywów kryptograficznych, w tym pełną implementację +secp256k1+. Na przykład, aby uzyskać klucz publiczny, można użyć funkcji +EC_POINT_mul+.
+
+(((„biblioteka kryptograficzna libsecp256k1”))))https://github.com/bitcoin-core/secp256k1[libsecp256k1]:: Bitcoin Core +ibsecp256k1  to implementacja w kodzie C +secp256k1+ krzywej eliptycznej i innych prymitywów kryptograficznych. Został napisany od podstaw, aby zastąpić OpenSSL w oprogramowaniu Bitcoin Core, i jest uważany za lepszy zarówno pod względem wydajności, jak i bezpieczeństwa. (((range="endofrange", startref="ix_04keys-addresses-asciidoc6")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc5")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc4")))
+
+[[hash_functions]]
+=== Kryptograficzne funkcje skrótu
+
+((((„kryptograficzne funkcje skrótu”, id="ix_04keys-addresses-asciidoc11", range="startofrange")))((((„kryptografia”, „funkcje hash”),  id="ix_04keys-addresses-asciidoc12", range="startofrange")))(((„funkcje skrótu”, id="ix_04keys-addresses-asciidoc13", range="startofrange")))Kryptograficzne funkcje skrótu są używane w Ethereum. W rzeczywistości funkcje skrótu są szeroko stosowane w prawie wszystkich systemach kryptograficznych&#x2014;a Fakt ten został przechwycony przez (((„Schneier, Bruce”)))) pass: [<span class="keep-together">kryptograf</span>] http://bit.ly/2Q79qZp[Bruce Schneier], który powiedział: „Bardziej niż algorytmy szyfrowania, jednokierunkowe funkcje skrótu są końmi roboczymi współczesnej kryptografii”.
+
+W tej sekcji omówimy funkcje skrótu, zbadamy ich podstawowe właściwości i zobaczymy, jak te właściwości czynią je tak przydatnymi w tak wielu obszarach współczesnej kryptografii. Zajmujemy się tutaj funkcjami skrótu, ponieważ są one częścią transformacji kluczy publicznych Ethereum w adresy. (((„cyfrowy odcisk palca”))) Można ich również używać do tworzenia „cyfrowych odcisków palców”, które pomagają w weryfikacji danych.
+
+(((„funkcje jednokierunkowe”)))Mówiąc prosto, http://bit.ly/2CR26gD[_hash function_] to &#x201c; dowolna funkcja, której można użyć do mapowania danych o względnym rozmiarze na dane bezwzględnego rozmiaru. &#x201d;(((„pre-image”))) Dane wejściowe funkcji haszującej nazywane są _pre-image_, _message_ lub po prostu _input data_. Dane wyjściowe nazywane są _hash_. http://bit.ly/2Jrn3jM[_Cryptographic hash functions_] a to specjalna podkategoria, która ma specyficzne właściwości przydatne do zabezpieczenia platform, takich jak Ethereum.
+
+Kryptograficzna funkcja skrótu to funkcja skrótu jednokierunkowa, która odwzorowuje dane o dowolnym rozmiarze na ciąg bitów o stałej wielkości. Charakter „jednokierunkowy” oznacza, że ​​odtworzenie danych wejściowych jest niewykonalne obliczeniowo, jeśli tylko znamy skrót wyjściowy. Jedynym sposobem na określenie możliwego wkładu jest przeszukanie z użyciem siły, sprawdzając u każdego kandydata pasujące wyniki; biorąc pod uwagę, że przestrzeń poszukiwań jest praktycznie nieskończona, łatwo jest zrozumieć praktyczną niemożność zadania. Nawet jeśli znajdziesz jakieś dane wejściowe, które tworzą pasujący skrót, może to nie być oryginalne dane wejściowe: funkcje skrótu są funkcjami „wiele do jednego”. (((„kolizja skrótu”))) Znalezienie dwóch zestawów danych wejściowych, które mają skrót do tego samego wyjścia, nazywane jest znalezieniem „kolizji skrótu”. Z grubsza mówiąc, im lepsza funkcja skrótu, tym rzadziej występują kolizje skrótu. Dla Ethereum są one praktycznie niemożliwe.
+
+(((„funkcje skrótu”, „główne właściwości”))) Przyjrzyjmy się bliżej głównym właściwościom funkcji skrótu kryptograficznego. Obejmują one:
+
+ Determinizm :: Dany komunikat wejściowy zawsze wytwarza ten sam wynik mieszania.
+
+Weryfikowalność :: Obliczanie skrótu komunikatu jest wydajne (złożoność liniowa).
+
+Brak korelacji :: Niewielka zmiana w komunikacie (np. Zmiana 1-bitowa) powinna zmienić wynik mieszania na tyle, że nie można go skorelować z skrótem oryginalnej wiadomości.
+
+Nieodwracalność :: Obliczenie wiadomości z jej skrótu jest niemożliwe, co jest równoznaczne z przeszukaniem wszystkich możliwych wiadomości za pomocą siły.
+
+Ochrona przed kolizją :: Obliczenie dwóch różnych komunikatów, które generują ten sam wynik mieszania, powinno być niemożliwe.
+
+Odporność na kolizje z hashami jest szczególnie ważna dla uniknięcia fałszowania podpisów cyfrowych w Ethereum.
+
+Kombinacja tych właściwości sprawia, że ​​kryptograficzne funkcje skrótu są przydatne w szerokim zakresie aplikacji bezpieczeństwa, w tym:
+
+* Pobieranie odcisków palców danych
+* Integralność wiadomości (wykrywanie błędów)
+* Dowód pracy
+* Uwierzytelnianie (mieszanie hasła i rozciąganie klucza)
+* Generatory liczb pseudolosowych
+* Zobowiązanie wiadomości (mechanizmy ujawnienia / zatwierdzenia)
+* Unikalne identyfikatory
+
+Wiele z nich znajdziemy w Ethereum, gdy przechodzimy przez różne warstwy systemu.
+
+[[keccak256]]
+==== Funkcja kryptograficzna Hash Ethereum: Keccak-256
+
+((((„funkcje skrótu”, „Keccak-256”)))(((„Funkcja skrótu Keccak-256”)))(((„Funkcja skrótu SHA-3”)))) Ethereum używa skrótu kryptograficznego _Keccak-256_  w wielu miejscach. Keccak-256 został zaprojektowany jako kandydat do konkursu funkcji kryptograficznych skrótów SHA-3 zorganizowanego w 2007 r. Przez (((„National Institute of Science and Technology (NIST)”))) (((„NIST (National Institute of Science and Science) Technologia) ”))) National Institute of Science and Technology. Keccak był zwycięskim algorytmem, który został znormalizowany jako (((„Federalny Standard Przetwarzania Informacji (FIPS)”))) (((„„ FIPS (Federalny Standard Przetwarzania Informacji)) ”))) (((„ FIPS-202 ”)) ) Federalny standard przetwarzania informacji (FIPS) 202 w 2015 r.
+
+Jednak w okresie, w którym opracowano Ethereum, standaryzacja NIST nie została jeszcze sfinalizowana. NIST dostosował niektóre parametry "Keccak"" po zakończeniu procesu normalizacji, rzekomo w celu poprawy jego wydajności. Miało to miejsce w tym samym czasie, gdy heroiczny demaskator (((„Snowden, Edward”))) Edward Snowden ujawnił dokumenty sugerujące, że Agencja Bezpieczeństwa Narodowego mogła mieć niewłaściwy wpływ na NIST, aby celowo osłabić (((„Dual_EC_DRBG”) )) Standard generatora liczb losowych Dual_EC_DRBG, skutecznie umieszczając tylne drzwi w standardowym generatorze liczb losowych. Rezultatem tych kontrowersji był sprzeciw wobec proponowanych zmian i znaczne opóźnienie w standaryzacji SHA-3. W tym czasie Fundacja Ethereum postanowiła zaimplementować oryginalny algorytm Keccak, jak zaproponowali jego wynalazcy, zamiast standardu SHA-3 zmodyfikowanego przez NIST.
+
+[WARNING]
+====
+Chociaż w dokumentach i kodzie Ethereum można zobaczyć „SHA-3”, wiele, jeśli nie wszystkie z nich, faktycznie odnoszą się do Keccak-256, a nie do sfinalizowanego standardu FIPS-202 SHA-3. Różnice w implementacji są niewielkie, związane z parametrami wypełniania, ale są znaczące, ponieważ Keccak-256 wytwarza różne wyniki mieszania z FIPS-202 SHA-3 dla tego samego wejścia.
+====
+
+[[which_hash]]
+==== Jakiej funkcji skrótu używam?
+
+((((„funkcje skrótu”, „wektor testowy do określenia”)))(((„wektor testowy, określenie funkcji skrótu za pomocą„))) Jak sprawdzić, czy używana biblioteka oprogramowania implementuje FIPS-202 SHA-3 lub Keccak-256, jeśli oba można nazwać „SHA-3”?
+
+Łatwym sposobem na sprawdzenie jest użycie wektora testowego, oczekiwanego wyniku dla danego wejścia. (((„pusty test wejścia”))) Najczęściej stosowanym testem dla funkcji skrótu jest _puste wejście_. Jeśli uruchomisz funkcję skrótu z pustym ciągiem wejściowym, powinieneś zobaczyć następujące wyniki:
+
+----
+Keccak256("") =
+c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+
+SHA3("") =
+a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a
+----
+
+
+Niezależnie od tego, jak nazywa się tę funkcję, możesz ją przetestować, aby sprawdzić, czy jest to oryginalny Keccak-256, czy ostateczny standard NIST FIPS-202 SHA-3, uruchamiając ten prosty test. Pamiętaj, że Ethereum używa Keccak-256, chociaż w kodzie często nazywa się SHA-3.
+
+[NOTE]
+====
+Ze względu na zamieszanie spowodowane różnicą między funkcją skrótu używaną w Ethereum (Keccak-256) a sfinalizowanym standardem (FIP-202 SHA-3), trwają próby zmiany nazwy wszystkich wystąpień + sha3 + we wszystkich kodach, kodach operacyjnych i biblioteki +keccak256+. Zobacz https://github.com/ethereum/EIPs/issues/59[ERC59], aby uzyskać szczegółowe informacje.
+====
+
+
+Następnie przyjrzyjmy się pierwszej aplikacji Keccak-256 w Ethereum, która ma generować adresy Ethereum z kluczy publicznych. (((range="endofrange", startref="ix_04keys-addresses-asciidoc13")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc12")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc11")))
+
+[[eth_address]]
+=== Adresy Ethereum
+
+((("adresy", id="ix_04keys-addresses-asciidoc14", range="startofrange")))((("kryptografia","adresy Ethereum i", id="ix_04keys-addresses-asciidoc15", range="startofrange")))Adresy Ethereum są unikatowymi identyfikatorami, które są uzyskiwane z kluczy publicznych lub kontrakt za pomocą jednokierunkowej funkcji skrótu Keccak-256.
+
+W poprzednich przykładach zaczynaliśmy od klucza prywatnego i używaliśmy mnożenia krzywej eliptycznej, aby uzyskać klucz publiczny:
+
+[role="pagebreak-before"]
+Klucz prywatny _k_:
+
+----
+k = f8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315
+----
+
+[[concat_pubkey]]
+Klucz publiczny _K_ (współrzędne _x_ i _y_ są połączone i pokazane jako szesnastkowe):
+
+----
+K = 6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b83b5c38e5e...
+----
+
+[NOTE]
+====
+Warto zauważyć, że klucz publiczny nie jest sformatowany z prefiksem (szesnastkowym) +04+ podczas obliczania adresu.
+====
+
+Używamy Keccak-256 do obliczenia _hash_ tego klucza publicznego:
+
+[[calculate_hash]]
+----
+Keccak256(K) = 2a5bc342ed616b5ba5732269001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Następnie przechowujemy tylko ostatnie 20 bajtów (najmniej znaczące bajty), czyli nasz adres Ethereum:
+
+[[keep_last_20]]
+----
+001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Najczęściej zobaczysz adresy Ethereum z prefiksem +0x+, który oznacza, że ​​są zakodowane w systemie szesnastkowym, tak jak poniżej:
+
+[[hex_prefix]]
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+[[eth_address_format]]
+==== Formaty adresów Ethereum
+
+(((„adresy”, „formaty”))) Adresy Ethereum są liczbami szesnastkowymi, identyfikatorami pochodzącymi z ostatnich 20 bajtów skrótu Keccak-256 klucza publicznego.
+
+(((„suma kontrolna”, „w formatach adresów Ethereum”))) W przeciwieństwie do adresów Bitcoin, które są zakodowane w interfejsie użytkownika wszystkich klientów w celu włączenia wbudowanej sumy kontrolnej w celu ochrony przed błędnie wpisanymi adresami, adresy Ethereum są prezentowane jako nieprzetworzone wartości szesnastkowe bez sumy kontrolnej.
+
+Uzasadnieniem tej decyzji było to, że adresy Ethereum zostaną ostatecznie ukryte za abstrakcjami (takimi jak usługi nazw) na wyższych warstwach systemu i że w razie potrzeby należy dodać sumy kontrolne na wyższych warstwach.
+
+W rzeczywistości te wyższe warstwy były opracowywane zbyt wolno, a ten wybór projektu doprowadził do wielu problemów we wczesnych dniach ekosystemu, w tym do utraty funduszy z powodu błędnie wpisanych adresów i błędów weryfikacji danych wejściowych. Ponadto, ponieważ usługi nazewnicze Ethereum były rozwijane wolniej niż początkowo oczekiwano, twórcy portfeli bardzo powoli przyjmowali alternatywne kodowania. Przyjrzymy się teraz kilku opcjom kodowania.
+
+[[ICAP]]
+==== Protokół adresu klienta Inter Exchange
+
+(((„adresy”, „kodowanie ICAP”, id="ix_04keys-addresses-asciidoc16", range="startofrange")))(((„ICAP (Inter-exchange Client Address Protocol)”, id="ix_04keys-addresses-asciidoc17", range="startofrange")))(("Inter-exchange Client Address Protocol (ICAP)", id="ix_04keys-addresses-asciidoc18", range="startofrange")))Klient wymiany klienta Address Protocol_ (ICAP) to kodowanie adresu Ethereum, które jest częściowo zgodne z (((„IBAN (międzynarodowy numer rachunku bankowego)”))) (((„międzynarodowy numer rachunku bankowego (IBAN)”))) Międzynarodowy numer rachunku bankowego (IBAN), oferując wszechstronne, sprawdzone i interoperacyjne kodowanie adresów Ethereum. Adresy ICAP mogą kodować adresy Ethereum lub nazwy zwyczajowe zarejestrowane w rejestrze nazw Ethereum. Możesz przeczytać więcej o ICAP na http://bit.ly/2JsZHKu[Ethereum Wiki].
+
+IBAN to międzynarodowy standard identyfikacji numerów kont bankowych, wykorzystywany głównie do przelewów bankowych. Jest powszechnie przyjęty w Europejskim Jednolitym Obszarze Płatności w Euro (SEPA) i poza nim. IBAN jest scentralizowaną i ściśle regulowaną usługą. ICAP to zdecentralizowaną, ale kompatybilną implementacją adresów Ethereum.
+
+IBAN składa się z ciągu do 34 znaków alfanumerycznych (bez rozróżniania wielkości liter), zawierającego kod kraju, sumę kontrolną i identyfikator konta bankowego (który jest specyficzny dla danego kraju).
+
+ICAP wykorzystuje tę samą strukturę, wprowadzając niestandardowy kod kraju, &#x201c;XE,&#x201d; oznacza „Ethereum”,&#x201d;, po którym następuje dwuznakowa suma kontrolna i trzy możliwe warianty identyfikatora konta:
+
+Direct :: Grubokońcowa (Big-endian) liczba całkowita base-36 składająca się z maksymalnie 30 znaków alfanumerycznych, reprezentujących 155 najmniej znaczących bitów adresu Ethereum. Ponieważ to kodowanie pasuje mniej niż pełne 160 bitów ogólnego adresu Ethereum, działa tylko dla adresów Ethereum, które zaczynają się od jednego lub więcej zerowych bajtów. Zaletą jest to, że jest kompatybilny z IBAN pod względem długości pola i sumy kontrolnej. Przykład: + XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD + (o długości 33 znaków).
+
+Basic:: Taki sam jak kodowanie bezpośrednie, z tą różnicą, że ma 31 znaków. Pozwala to na kodowanie dowolnego adresu Ethereum, ale czyni go niezgodnym z walidacją pola IBAN. Przykład: +XE18CHDJBPLTBCJ03FE9O2NS0BPOJVQCU2P+ (35 znaków).
+
+Indirect:: Koduje identyfikator, który przekształca się w adres Ethereum za pośrednictwem dostawcy rejestru nazw. Wykorzystuje 16 znaków alfanumerycznych, w tym identyfikator zbioru (np. ETH), usługę nazw (np. XREG) i 9-znakową czytelną dla człowieka nazwę (np. KITTYCATS). Przykład: +XEpass:[##]ETHXREGKITTYCATS+ (o długości 20 znaków), gdzie +##+ należy zastąpić dwoma obliczonymi znakami sumy kontrolnej.
+
+(((„EthereumJS helpeth”)))(((„narzędzie wiersza polecenia help”)))) Za pomocą narzędzia wiersza polecenia +helpeth+ można tworzyć adresy ICAP. Możesz uzyskać pomoc, instalując go z:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm install -g helpeth</strong>
+</pre>
+++++
+
+Jeśli nie masz npm, możesz najpierw zainstalować nodeJS, co możesz zrobić, postępując zgodnie z instrukcjami na https://nodeJS.org.
+
+Teraz, gdy mamy helpeth, spróbujmy utworzyć adres ICAP za pomocą naszego przykładowego klucza prywatnego (z prefiksem +0x+ i przekazany jako parametr do +helpeth+).
+
+++++
+<pre data-type="programlisting">
+$ <strong>helpeth keyDetails \
+ -p 0xf8f8a2f43c8376ccb0871305060d7b27b0554d2cc72bccf41b2705608452f315</strong>
+
+Address: 0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+ICAP: XE60 HAMI CDXS V5QX VJA7 TJW4 7Q9C HWKJ D
+Public key: 0x6e145ccef1033dea239875dd00dfb4fee6e3348b84985c92f103444683bae07b...
+</pre>
+++++
+
+Polecenie + helpeth + tworzy dla nas szesnastkowy adres Ethereum, a także adres ICAP. Adres ICAP dla naszego przykładowego klucza to:
+
+[[ICAP_example]]
+----
+XE60HAMICDXSV5QXVJA7TJW47Q9CHWKJD
+----
+
+Ponieważ nasz przykładowy adres Ethereum zaczyna się od zerowego bajtu, można go zakodować przy użyciu metody bezpośredniego kodowania ICAP, która jest poprawna w formacie IBAN. Możesz powiedzieć, ponieważ ma 33 znaki.
+
+Gdyby nasz adres nie zaczynał się od zera, byłby kodowany kodowaniem podstawowym, który miałby 35 znaków długości i byłby nieprawidłowy jako IBAN.
+
+ [TIP]
+====
+Szanse na dowolny adres Ethereum rozpoczynający się od bajtu zerowego wynoszą 1 na 256. Aby wygenerować taki, zajmie średnio 256 prób z 256 różnymi losowymi kluczami prywatnymi, zanim znajdziemy działający jako kompatybilny z kodowaniem IBAN „Direct” Adres ICAP.
+====
+
+Obecnie ICAP jest niestety obsługiwany tylko przez kilka portfeli. wallets.(((range="endofrange", startref="ix_04keys-addresses-asciidoc18")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc17")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc16")))
+
+[[EIP55]]
+==== Kodowanie szesnastkowe z sumą kontrolną wielkimi literami (EIP-55)
+
+((((„adresy”, „kodowanie szesnastkowe z sumą kontrolną kapitalikami(EIP-55)”, id=„ix_04keys-address-asciidoc19”, range=„startofrange”)))((((„suma kontrolna”, „EIP-55) i ", id ="ix_04keys-address-asciidoc20", range ="startofrange"))))(((„EIP-55 (Ethereum Improvement Improvement 55) ”,„suma kontrolna dla adresów”, id=„ix_04keys-address-asciidoc21", range="startofrange"))) Ze względu na powolne wdrażanie ICAP i usług nazewniczych, standard został zaproponowany przez https://github.com/Ethereum/EIPs/blob/master/EIPS/eip-55.md [ Propozycja ulepszenia Ethereum 55 (EIP-55)]. EIP-55 oferuje wstecznie kompatybilną sumę kontrolną dla adresów Ethereum poprzez modyfikację wielkich liter adresu szesnastkowego. Chodzi o to, że adresy Ethereum nie uwzględniają wielkości liter i wszystkie portfele powinny akceptować adresy Ethereum wyrażone wielkimi lub małymi literami, bez różnicy w interpretacji.
+
+Zmieniając wielkie litery znaków alfabetu w adresie, możemy przekazać sumę kontrolną, która może służyć do ochrony integralności adresu przed błędami w pisaniu lub czytaniu. Portfele, które nie obsługują sum kontrolnych EIP-55, po prostu ignorują fakt, że adres zawiera mieszane wielkie litery, ale te, które go obsługują, mogą je zweryfikować i wykryć błędy z dokładnością 99,986%.
+
+Kodowanie wielkimi literami jest subtelne i na początku możesz go nie zauważyć. Nasz przykładowy adres to:
+
+----
+0x001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+----
+
+Z sumą kontrolną EIP-55 o mieszanej kapitalizacji staje się:
+
+[[mixed_capitalization]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Czy dostrzegasz różnicę? Niektóre znaki alfabetyczne (A&#x2013;F) z alfabetu szesnastkowego są teraz dużymi literami, a inne są pisane małymi literami.
+
+EIP-55 jest dość prosty do wdrożenia. Bierzemy skrót Keccak-256 małego adresu szesnastkowego. Ten skrót działa jak cyfrowy odcisk palca adresu, dając nam wygodną sumę kontrolną. Każda niewielka zmiana danych wejściowych (adresu) powinna powodować dużą zmianę wynikowego skrótu hash (sumy kontrolnej), umożliwiając nam skuteczne wykrywanie błędów. Hash naszego adresu jest następnie kodowany wielką literą samego adresu. Podzielmy to, krok po kroku:
+
+1. Zmieszaj adres małymi literami bez prefiksu +0x+:
+
+[[hash_lower_case_address]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0f9") =
+23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9695d9a19d8f673ca991deae1
+----
+
+[start=2]
+1. Kapitalizuj każdy adresu alfabetu,  jeśli odpowiadająca mu cyfra szesnastkowa skrótu jest większa lub równa +0x8+. Łatwiej to pokazać, jeśli wyrównamy adres i skrót:
+
+[[capitalize_input]]
+----
+Address: 001d3f1ef827552ae1114027bd3ecf1f086ba0f9
+Hash : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+Nasz adres zawiera znak alfabetyczny +d+ na czwartej pozycji. Czwarty znak skrótu to +6+, czyli mniej niż +8+. Więc zostawiamy +d+ małą literą. Następny znak alfabetyczny w naszym adresie to +f+, na szóstej pozycji. Szósty znak skrótu szesnastkowego to +c+, który jest większy niż +8+. Dlatego używamy +F+ w adresie i tak dalej. Jak widać, używamy tylko pierwszych 20 bajtów (40 znaków szesnastkowych) skrótu jako sumy kontrolnej, ponieważ mamy tylko 20 bajtów (40 znaków szesnastkowych) w adresie, aby odpowiednio użyć wielkich liter.
+
+Sprawdź sam wynikły zmieszany adresu i sprawdź, czy możesz powiedzieć, które znaki są pisane wielkimi literami i które znaki odpowiadają w haszu adresu:
+
+[[capitalize_output]]
+----
+Adres: 001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+Hash : 23a69c1653e4ebbb619b0b2cb8a9bad49892a8b9...
+----
+
+[[EIP55_error]]
+===== Wykrywanie błędu w adresie zakodowanym w EIP-55
+
+(((„EIP-55 (Propozycja ulepszenia Ethereum 55)”, „wykrywanie błędu w zakodowanym adresie”))) Teraz spójrzmy, w jaki sposób adresy EIP-55 pomogą nam znaleźć błąd. Załóżmy, że wydrukowaliśmy adres Ethereum, który jest zakodowany w EIP-55:
+
+[[correct_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0F9
+----
+
+Zróbmy teraz podstawowy błąd w czytaniu tego adresu. Postać przed ostatnią jest wielką + F +. W tym przykładzie załóżmy, że źle odczytaliśmy to jako duże + E + i wpisujemy w naszym portfelu następujący (niepoprawny) adres:
+
+[[incorrect_address]]
+----
+0x001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+----
+
+Na szczęście nasz portfel jest zgodny z EIP-55! Dostrzega mieszane wielkie litery i próbuje zweryfikować adres. Konwertuje go na małe litery i oblicza skrót sumy kontrolnej:
+
+[[hash_demo]]
+----
+Keccak256("001d3f1ef827552ae1114027bd3ecf1f086ba0e9") =
+5429b5d9460122fb4b11af9cb88b7bb76d8928862e0a57d46dd18dd8e08a6927
+----
+
+Jak widać, mimo że adres zmienił się tylko o jeden znak (w rzeczywistości tylko o jeden bit, ponieważ +e+ i +f+ są jeden bit od siebie), skrót adresu zmienił się radykalnie. Jest to właściwość funkcji skrótu, która sprawia, że ​​są one tak przydatne w przypadku sum kontrolnych!
+
+Teraz wyrównajmy dwa i sprawdźmy wielkość liter:
+
+[[incorrect_capitalization]]
+----
+001d3F1ef827552Ae1114027BD3ECF1f086bA0E9
+5429b5d9460122fb4b11af9cb88b7bb76d892886...
+----
+
+Wszystko jest źle! Kilka znaków alfabetycznych jest niepoprawnie pisanych wielkimi literami. Pamiętaj, że wielkie litery to kodowanie sumy kontrolnej _correct_.
+
+Wielkie litery wpisanego adresu nie są zgodne z obliczoną właśnie sumą kontrolną, co oznacza, że ​​coś zmieniło się w adresie i został przekazany błąd: [<span class="keep-together">wprowadzono</span>] (((range="endofrange", startref="ix_04keys-addresses-asciidoc21")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc20")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc19"))).(((range="endofrange", startref="ix_04keys-addresses-asciidoc15")))(((range="endofrange", startref="ix_04keys-addresses-asciidoc14")))
+
+
+[[keys-addresses-conclusions]]
+=== Conclusions
+
+W tym rozdziale przedstawiliśmy krótką ankietę dotyczącą kryptografii klucza publicznego i skupiliśmy się na wykorzystaniu kluczy publicznych i prywatnych w Ethereum oraz wykorzystaniu narzędzi kryptograficznych, takich jak funkcje skrótu, do tworzenia i weryfikacji adresów Ethereum. Przyjrzeliśmy się również podpisom cyfrowym i sposobom, w jaki mogą wykazać własność klucza prywatnego bez ujawnienia tego klucza prywatnego. W <<wallets_chapter>> połączymy te pomysły razem i zobaczymy, jak portfele mogą służyć do zarządzania kolekcjami kluczy.((range="endofrange", startref="ix_04keys-addresses-asciidoc0")))

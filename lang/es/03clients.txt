@@ -1,0 +1,577 @@
+[[ethereum_clients_chapter]]
+== Clientes de Ethereum
+
+((("clientes, Ethereum", id="ix_03clients-asciidoc0", range="startofrange")))Un cliente de Ethereum es una aplicación de software que implementa la especificación de Ethereum y se comunica sobre la red de pares iguales con otros clientes de Ethereum. Diferentes clientes de Ethereum interoperan si cumplen la especificación de referencia y los protocolos de comunicación estandarizados. Si bien estos diferentes clientes están implementados por diferentes equipos y en diferentes lenguajes de programación , todos "hablan" el mismo protocolo y siguen las mismas reglas. Y como tal, todos pueden ser usados para operar e interactuar con la misma red de Ethereum.
+
+Ethereum es un proyecto de código abierto, y el código fuente para todos los principales clientes está disponible bajo licencias de código abierto (por ejemplo, LGPL v3.0), libres para ser descargados y usarse para cualquier propósito. Sin embargo, _código abierto_ significa mucho más que un uso gratuito. También significa que Ethereum es desarrollado por una comunidad abierta de voluntarios y puede ser modificado por cualquier persona. Más ojos significa un código más confiable.
+
+((("especificación del Yellow Paper")))Ethereum se define mediante una especificación formal llamada el "Yellow Paper" (véase <1>).
+
+((("Bitcoin","definición de Ethereum comparada con")))Esto contrasta, por ejemplo, con Bitcoin, que no está definido de manera formal. Allí donde la "especificación" de Bitcoin es la mera implementación de referencia de Bitcoin Core, la especificación de Ethereum, en cambio, está documentada en un paper que combina una descripción en inglés y una especificación matemática (formal). Esta especificación formal, además de varias propuestas de mejora de Ethereum, definen el comportamiento estándar de un pass:[<span class="keep-together">cliente</span>] de Ethereum. El "Yellow Paper" se actualiza periódicamente a medida que se realizan cambios importantes sobre pass:[<span class="keep-together">Ethereum</span>].
+
+Como resultado de una clara especificación formal para Ethereum, hay una serie de implementaciones de software desarrolladas de manera independiente, pero aún interoperables, de un cliente Ethereum. Ethereum tiene una gran diversidad de implementaciones que se ejecutan en la red, mucho mayor que cualquier otra cadena de bloques, lo que generalmente se considera algo bueno. De hecho, ha demostrado ser, por ejemplo, una excelente manera de defenderse contra los ataques a la red, porque la explotación de una estrategia de implementación particular de un cierto cliente, solo perturba a sus desarrolladores mientras solucionan esa vulnerabilidad, mientras que los demás clientes mantienen la operatividad de la red casi inalterada.
+
+=== Redes de Ethereum
+
+((("clientes, Ethereum","redes basadas en Ethereum y", id="ix_03clients-asciidoc1", range="startofrange")))((("redes (Ethereum)","clientes y", id="ix_03clients-asciidoc2", range="startofrange")))Existe una variedad de redes basadas en Ethereum que se ajustan en gran medida a la especificación formal definida en el "Yellow Paper" de Ethereum, pero que pueden o no interactuar entre sí.
+
+Entre estas redes basadas en Ethereum están el mismo Ethereum, Ethereum Classic, Ella, Expanse, Ubiq, Musicoin y muchas otras. Si bien en su mayoría son compatibles a nivel de protocolo, estas redes a menudo tienen características o atributos que requieren de los encargados del mantenimiento del software del cliente Ethereum el realizar pequeños cambios para que el cliente sea admitido en cada red. Debido a esto, no todas las versiones del software del cliente de Ethereum es ejecutable en todas las cadenas de bloques basadas en Ethereum.
+
+Actualmente, hay seis implementaciones principales del protocolo Ethereum, escritas en seis lenguajes de programación diferentes:
+
+* Parity, escrita en Rust
+* Geth, escrita en Go
+* +cpp-ethereum+, escrita en Cpass:[++]
+* +pyethereum+, escrita en Python
+* Mantis, escrita en Scala
+* Harmony, escrita en Java
+
+En esta sección, veremos los dos clientes más comunes, Parity y Geth. Mostraremos cómo configurar un nodo usando cada uno de estos clientes y exploraremos algunas de sus opciones de línea de comandos e interfaces de programación de aplicaciones (API).
+
+[[full_node_importance]]
+==== ¿Deberíamos Ejecutar un Nodo Completo?
+
+((("nodo completo","redes basadas en Ethereum y", id="ix_03clients-asciidoc3", range="startofrange")))((("redes (Ethereum)","nodos completos y", id="ix_03clients-asciidoc4", range="startofrange")))La salud, resiliencia y resistencia a la censura de las cadenas de bloques dependen de que tengan muchos nodos completos operados independientemente y dispersos geográficamente. Cada nodo completo puede ayudar a otros nodos nuevos a obtener los datos de los bloques para iniciar su operación, así como ofrecer al operador una verificación acreditada e independiente de todas las transacciones y contratos.
+
+Sin embargo, ejecutar un nodo completo genera un coste en recursos de hardware y ancho de banda. Un nodo completo debe descargar 80&#x2013;300 GB de datos (tomando como referencia a Enero de 2020, y según la configuración del cliente en particular) y almacenarlos en un disco duro local. Esta carga de datos aumenta con bastante rapidez todos los días a medida que se agregan nuevas transacciones y bloques. Discutimos este tema con mayor detalle en <<requirements> >.
+
+Un nodo completo ejecutándose en vivo en una red principal o _mainnet_,  no es necesario para el desarrollo de Ethereum. Podemos hacer casi todo lo que necesitemos hacer con un nodo en la _testnet_ (que nos conecta a una de las cadenas de bloques de prueba públicas que son más pequeñas), o con una cadena de bloques privada local como Ganache, o con un cliente Ethereum basado en la nube ofrecido por un proveedor de servicios como Infura .
+
+También tenemos la opción de ejecutar un cliente remoto, que no almacena una copia local de la cadena de bloques ni valida bloques y transacciones. Estos clientes ofrecen la funcionalidad de una cartera y pueden crear y transmitir transacciones. Tal como lo haría nuestro propio nodo completo, los clientes remotos se pueden usar para conectarse a redes existentes, tales como una cadena de bloques pública, o una red de prueba pública o bajo permiso (con prueba de autoridad) o una cadena de bloques local privada. En la práctica, es probable que utilicemos un cliente remoto como MetaMask, Emerald Wallet, pass:[<span class="keep-together">MyEtherWallet</span>] o MyCrypto como una forma conveniente de cambiar entre todas las diferentes opciones de nodo.
+
+((("clientes remotos","carteras comparadas con")))((("carteras","clientes remotos comparados con")))Los términos "cliente remoto" y "cartera", se usan indistintamente, aunque hay algunas diferencias. Por lo general, un cliente remoto ofrece una API (como la API web3.js) además de la capacidad de crear transacciones de de una cartera.
+
+((("cliente ligero")))No debe confundirse el concepto de una cartera remota en Ethereum con el de un _cliente ligero_ (que es análogo a un cliente de Verificación de Pagos Simplificados en Bitcoin). Los clientes ligeros validan los encabezados de los bloques y utilizan pruebas de Merkle para validar la inclusión de transacciones en la cadena de bloques y determinar sus efectos, lo que les otorga un nivel de seguridad similar al de un nodo completo. Por el contrario, los clientes remotos de Ethereum no validan los encabezados ni las transacciones de los bloques. Confían completamente en un cliente completo para que les dé acceso a la cadena de bloques y, por lo tanto, pierden importantes garantías de seguridad y anonimato. Podemos mitigar estos problemas utilizando un cliente completo que ejecutemos por nosotros mismos.
+
+[[full_node_adv_disadv]]
+==== Ventajas y Desventajas de un Nodo Completo
+
+((("nodo completo","ventajas/desventajas")))La elección de ejecutar un nodo completo ayuda al funcionamiento de las redes a las que el mismo se conecta, pero también conlleva algunos costes desde leves a moderados. Veamos algunas de las ventajas y desventajas.
+
+* Ventajas: *
+
+* Apoya la resiliencia y la resistencia a la censura de las redes basadas en Ethereum
+* Valida de manera autónoma todas las transacciones
+* Puede interactuar con cualquier contrato en la blockchain pública sin un intermediario
+* Puede desplegar contratos directamente en la blockchain pública sin un intermediario
+* Puede consultar (solo lectura) el estado de la cadena de bloques (cuentas, contratos, etc.) sin necesidad de conexión
+* Puede consultar la cadena de bloques sin que un tercero sepa de la información que el nodo está leyendo
+
+* Desventajas: *
+
+* Requiere recursos significativos y crecientes de hardware y ancho de banda
+* Puede requerir varios días para sincronizarse completamente cuando se inicia por primera vez
+* Debe recibir mantenimiento, actualizarse y permanecer en línea para conservar la sincronización(((range="endofrange", startref="ix_03clients-asciidoc4")))(((range="endofrange", startref="ix_03clients-asciidoc3")))
+
+[[pub_test_adv_disadv]]
+==== Ventajas y Desventajas de Redes de Prueba Públicas (Testnets)
+
+((("redes (Ethereum)","testnets públicas ventajas/desventajas")))((("testnets públicas")))((("testnet","pública")))Ya sea que elijamos o no ejecutar un nodo completo, probablemente desearemos ejecutar un nodo de testnet público. Veamos algunas de las ventajas y desventajas de usar una red de prueba pública.
+
+* Ventajas: *
+
+* Un nodo de pruebas necesita sincronizar y almacenar muchos menos datos&#x2014;alrededor de 45 GB dependiendo de la red.
+* Un nodo de pruebas puede sincronizarse completamente en unas pocas horas.
+* El despliegue de contratos o la realización de transacciones requiere de éter de prueba, que no tiene valor y se puede adquirir de forma gratuita en varios "grifos" (faucets).
+* Las redes de prueba o testnets son cadenas de bloques públicas, con muchos otros usuarios y contratos, que se ejecutan "en vivo".
+
+* Desventajas: *
+
+* No podemos usar dinero "real" en una red de pruebas; ésta se ejecuta con éter de prueba. En consecuencia, no podemos probar la seguridad contra adversarios reales, ya que no hay nada en juego.
+* Hay algunos aspectos de una cadena de bloques pública que no podemos probar de manera realista en una red de pruebas. Por ejemplo, las comisiones de las transacciones, que aunque son necesarias para enviar transacciones, no se consideran en una red de prueba, ya que el gas es gratuito. Además, las redes de prueba no experimentan la congestión en la red, que a veces sucede en la red pública principal.
+
+[[localtest_adv_dis]]
+==== Ventajas y Desventajas de Cadenas de Bloques Simuladas Localmente
+
+((("Ganache","ventajes/desventajas")))((("cadena de bloques simulada localmente")))((("redes (Ethereum)","simulación local de cadena de bloques ventajas/desventajas")))((("cadena de bloques privada")))((("cadena de bloques privada de instancia única")))Para muchos propósitos de prueba, la mejor opción es lanzar una cadena de bloques privada de instancia única. Ganache (anteriormente llamado +testrpc+) es uno de los simuladores de cadenas de bloques locales más populares con el que podemos interactuar, sin necesidad de ningún otro participante. Comparte muchas de las ventajas y desventajas de una red de pruebas pública, pero también tiene algunas diferencias.
+
+* Ventajas: *
+
+* Sin sincronización y casi sin datos que almacenar en disco;  uno mismo genera el primer bloque
+* No es necesario obtener éter de prueba; uno mismo puede "premiarse" con recompensas de minería que podemos usar para realizar pruebas
+* No hay otros usuarios, solo uno mismo
+* No hay otros contratos, solo los que uno mismo despliega después de lanzar la aplicación
+
+* Desventajas: *
+
+* La ausencia de otros usuarios significa que no se observa el mismo comportamiento que en una cadena de bloques pública. No hay competencia por el espacio de una transacción o por el secuenciado de pass:[<span class="keep-together">transacciones</span>].
+* No hay otro minero que no sea uno mismo, lo que significa que la minería es más predecible; por lo tanto, no podemos probar algunos escenarios que ocurren en una cadena de bloques pública.
+* La ausencia de otros contratos, significa que debemos desplegar nosotros mismos todo cuanto deseemos probar, incluidas las dependencias y las bibliotecas de contratos.
+* No es posible recrear algunos de los contratos públicos y sus direcciones para probar algunos escenarios (por ejemplo, el contrato de "The DAO").(((range="endofrange", startref="ix_03clients-asciidoc2")))(((range="endofrange", startref="ix_03clients-asciidoc1")))
+
+
+[[running_client]]
+=== Ejecutando un Cliente Ethereum
+
+((("clientes, Ethereum","ejecución", id="ix_03clients-asciidoc5", range="startofrange")))Si contamos con el tiempo y los recursos, debemos intentar ejecutar un nodo completo, aunque solo sea para aprender más sobre el proceso. En esta sección cubrimos cómo descargar, compilar y ejecutar los clientes de Ethereum Parity y Geth. Esto requiere cierta familiaridad con el uso de la interfaz de la línea de comandos en nuestro sistema operativo. Vale la pena instalar estos clientes, ya sea que elijamos ejecutarlos como nodos completos, como nodos de testnet o como clientes en una cadena de bloques privada local.
+
+[[requirements]]
+==== Requisitos de Hardware para un Nodo Completo
+
+((("clientes, Ethereum","requisitos de hardware para un nodo completo")))((("nodo completo","requisitos de hardware")))Antes de comenzar, debemos asegurarnos de tener un equipo con recursos suficientes para ejecutar un nodo completo de Ethereum. Necesitaremos de al menos 300 GB de espacio en el disco duro para almacenar una copia completa de la cadena de bloques de Ethereum. Si también deseamos ejecutar un nodo completo en la red de pruebas de Ethereum, necesitaremos de al menos 45 GB adicionales. La descarga de 345 GB de datos de los bloques puede llevar mucho tiempo, por lo que se recomienda trabajar con una conexión rápida a Internet.
+
+La sincronización de la cadena de bloques de Ethereum es muy intensiva en la dinámica de data de Entrada/Salida (I/O). Es mejor tener una unidad de disco duro de estado sólido (SSD). Si tenemos una unidad de disco duro mecánico (HDD), necesitaremos de al menos 8 GB de RAM para usarla como caché. De lo contrario, podríamos descubrir que nuestro sistema es demasiado lento para mantenerse al día y lograr sincronizarse por completo.
+
+*Requerimientos mínimos:*
+
+* CPU con más de 2 núcleos
+* Al menos 300 GB de espacio de almacenamiento libre en disco duro
+* 4 GB de RAM mínimo con un disco duro SSD, y 8 GB+ si se dispone de un disco duro HDD
+* Servicio de internet con capacidad de descarga de al menos 8 MBit/seg
+
+Estos son los requisitos mínimos para sincronizar una copia completa (aunque podada) de una cadena de bloques basada en Ethereum.
+
+Al momento de escribir este libro, la base del código ofrecida por Parity resulta en un requerimiento más liviano de recursos, por lo que si estamos ejecutándolo con hardware limitado, probablemente veremos mejores resultados usando Parity.
+
+Si deseamos lograr la sincronización en un tiempo razonable y almacenar todas las herramientas de desarrollo, bibliotecas, clientes y las cadenas de bloques según lo discutido en este libro, necesitaremos una computadora más capaz.
+
+* Especificaciones recomendadas: *
+
+* CPU de alta eficiencia, con más de 4 núcleos
+* Más de 16 GB RAM
+* Disco duro de estado sólido o SSD, de alta velocidad, con al menos 500 GB de espacio libre
+*  Servicio de internet con velocidad de descarga de más de 25 MBit/seg
+
+Es difícil predecir cuan rápido aumentará el tamaño de una cadena de bloques y cuándo se necesitará más espacio en disco, por lo que se recomienda verificar el último tamaño de la cadena de bloques antes de comenzar a sincronizar.
+
+[NOTE]
+====
+Los requisitos de tamaño de disco enumerados aquí suponen que ejecutaremos un nodo con la configuración predeterminada, donde la cadena de bloques es "podada" de los datos de estado más antiguos. Si, por el contrario, deseamos ejecutar un nodo "con archivo" completo donde todo el estado sea almacenado en disco, probablemente necesitaremos más de 1 TB de espacio en disco.
+====
+
+Estos enlaces proporcionan estimaciones actualizadas del tamaño de la cadena de bloques:
+
+* https://bitinfocharts.com/ethereum/[Ethereum]
+
+* https://bitinfocharts.com/ethereum%20classic/[Ethereum Classic]
+
+[[sw_reqs]]
+==== Requisitos de Software para Compilar y Ejecutar un Cliente (Nodo)
+
+((("clientes, Ethereum","requerimientos de software para compilar/ejecutar", id="ix_03clients-asciidoc6", range="startofrange")))Esta sección cubre los clientes Parity y Geth. También supone que estamos utilizando un entorno de línea de comandos similar a Unix. Los ejemplos muestran los comandos y la salida tal como aparecen en un sistema operativo Ubuntu GNU/Linux que ejecuta bash shell (entorno de ejecución de línea de comandos).
+
+Por lo general, cada cadena de bloques tendrá su propia versión de Geth, mientras que Parity brinda soporte para múltiples cadenas de bloques basadas en Ethereum (Ethereum, Ethereum Classic, pass:[<span class="keep-together">Ellaism</span>], Expanse, Musicoin) con una misma descarga del cliente.
+
+[TIP]
+=====
+((("símbolo $")))((("interfaz de línea de comandos")))((("comandos en shell")))((("aplicaciones de cónsola")))En muchos de los ejemplos de este capítulo , utilizaremos la interfaz de la línea de comandos del sistema operativo (también conocida como "shell"), a la que se accede a través de una aplicación de "cósola". La interfaz shell mostrará un mensaje; si escribimos un comando, el shell responde con algo de texto y una nueva solicitud para su próximo comando. La solicitud puede verse diferente en cada sistema, pero en los siguientes ejemplos, se denotará con el símbolo +$+. En los siguientes ejemplos, cuando cierto texto sea descrito después de un símbolo +$+, ignoremos el símbolo +$+ y en su lugar escribamos el comando inmediatamente después (en negrita), para luego presionar "Enter", con lo cual ejecutaremos el comando descrito por dicho texto. En los ejemplos siguientes, las líneas debajo de cada comando son las respuestas del sistema operativo a ese comando. Cuando veamos el siguiente prefijo +$+, sabremos que es un comando nuevo y que deberemos repetir el proceso.
+=====
+
+Antes de comenzar, es posible que debamos instalar algún software. Si nunca se ha realizado ningún desarrollo de software en la computadora que estamos utilizando actualmente, probablemente necesitaremos instalar algunas herramientas básicas. Para los ejemplos que siguen, será necesario instalar +git+, que es el sistema de administración del códigos fuente; +golang+, que es el lenguaje de programación Go junto con sus bibliotecas estándar; y Rust, un lenguaje de programación de sistemas.
+
+((("git")))Git se puede instalar siguiendo las instrucciones en https://git-scm.com[].
+
+((("Go", seealso="Geth (Go-Ethereum)")))Go se puede instalar siguiendo las instrucciones en https://golang.org[], o https://github.com/golang/go/wiki/Ubuntu[] si usamos Ubuntu.
+
+[NOTE]
+=====
+((("Geth (Go-Ethereum)")))Los requisitos de Geth varían, pero si usamos Go versión 1.10 o superior, deberíamos poder compilar cualquier versión de Geth que deseemos. Por supuesto, siempre debemos consultar la documentación de la versión de Geth que hayamos elegido.
+
+La versión de +golang+ que esté instalada en nuestro sistema operativo o que esté disponible desde el administrador de paquetes de nuestro sistema puede ser significativamente anterior a 1.10. Si es así, es necesario eliminarla e instalar la última versión, a partir del siguiente enlace: https://golang.org/[].
+=====
+
+((("Rust")))Rust puede instalarse siguiendo las instrucciones en https://www.rustup.rs/[].
+
+[NOTE]
+=====
+Parity requiere la instalación de Rust versión 1.27 o superior.
+=====
+
+((("Parity","bibliotecas para")))Parity también requiere algunas bibliotecas de software, como OpenSSL y +libudev+. Para instalarlos en un sistema compatible con Ubuntu o Debian GNU/Linux, debe usarse el siguiente pass:[<span class="keep-together">comando</span>]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>sudo apt-get install openssl libssl-dev libudev-dev cmake clang</strong>
+</pre>
+++++
+
+Para otros sistemas operativos, debe usarse el administrador de paquetes del sistema operativo en cuestión o seguir las https://github.com/paritytech/parity/wiki/Setup[instrucciones Wiki] para instalar las bibliotecas necesarias.
+
+Ahora que tenemos +git+, +golang+, Rust y las bibliotecas necesarias instaladas, ¡manos a la obra!
+
+[[parity]]
+==== Parity
+
+((("clientes, Ethereum","Parity y")))((("Parity","fundamentos")))Parity es una implementación de un cliente de nodo completo para Ethereum y un navegador DApp. Fue escrito &#x201c;desde cero&#x201d; en Rust, un lenguaje de programación de sistemas, con el objetivo de construir un cliente de Ethereum modular, seguro y escalable. Parity está desarrollado por Parity Tech, una compañía del Reino Unido, y se publica bajo la licencia de software libre GPLv3.
+
+[NOTE]
+=====
+Declaración: Uno de los autores de este libro, el Dr. Gavin Wood, es el fundador de Parity Tech y escribió gran parte del cliente de Parity. Parity representa aproximadamente el 25% de la base de clientes de Ethereum actualmente instalada.
+=====
+
+Para instalar Parity, podemos usar el administrador de paquetes de Rust, +cargo+, o descargar el código fuente de GitHub. El administrador de paquetes también descarga el código fuente, por lo que no hay mucha diferencia entre las dos opciones. En la siguiente sección, enseñaremos cómo descargar y compilar Parity por nosotros mismos.
+
+[[install_parity]]
+===== Instalando Parity
+
+((("Parity","instalando")))La https://wiki.parity.io/Setup[Parity Wiki] ofrece instrucciones para instalar Parity en diferentes entornos y contenedores. Aquí mostraremos cómo instalar Parity desde su fuente. Esto supone que ya hemos instalado Rust, usando +rustup+ (véase <<sw_reqs>>).
+
+Primero, hay que obtener el código fuente de GitHub:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone https://github.com/paritytech/parity</strong>
+</pre>
+++++
+
+Luego nos dirigimos al directorio _parity_ y usamos +cargo+ para compilar el archivo el ejecutable:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd parity</strong>
+$ <strong>cargo install --path .</strong>
+</pre>
+++++
+
+Si todo va bien, deberíamos ver algo como:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cargo install --path .</strong>
+Installing parity-ethereum v2.7.0 (/root/parity)
+Updating crates.io index
+Updating git repository `https://github.com/paritytech/rust-ctrlc.git`
+Updating git repository `https://github.com/paritytech/app-dirs-rs`   Updating git repository 
+
+ [...]
+
+Compiling parity-ethereum v2.7.0 (/root/parity)
+Finished release [optimized] target(s) in 10m 16s
+Installing /root/.cargo/bin/parity
+Installed package `parity-ethereum v2.7.0 (/root/parity)` (executable `parity`)
+$
+</pre>
+++++
+
+Ahora probamos ejecutar +parity+ para ver si quedó instalado, invocando la opción +--version+:
+
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --version</strong>
+Parity Ethereum Client.
+  version Parity-Ethereum/v2.7.0-unstable-b69a33b3a-20200124/x86_64-unknown-linux-gnu/rustc1.40.0
+Copyright 2015-2020 Parity Technologies (UK) Ltd.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+By Wood/Paronyan/Kotewicz/Drwięga/Volf/Greeff
+   Habermeier/Czaban/Gotchac/Redman/Nikolsky
+   Schoedon/Tang/Adolfsson/Silva/Palm/Hirsz et al.
+$
+</pre>
+++++
+
+¡Excelente! Ahora que Parity está instalado, podemos sincronizarnos con la cadena de bloques y comenzar con algunas opciones básicas de la línea de comandos.
+
+[[go_ethereum_geth]]
+==== Go-Ethereum (Geth)
+
+((("clientes, Ethereum","Geth y", id="ix_03clients-asciidoc7", range="startofrange")))((("Geth (Go-Ethereum)","fundamentos", id="ix_03clients-asciidoc8", range="startofrange")))Geth es la implementación en el lenguaje Go desarrollada activamente por la Fundación Ethereum, por lo que se considera la implementación "oficial" del cliente de Ethereum. Por lo general, cada cadena de bloques basada en Ethereum tendrá su propia implementación en Geth. Si ejecutamos Geth, deberemos asegurarnos de obtener la versión correcta para la cadena de bloques en uso, utilizando uno de los siguientes enlaces de repositorio:
+
+
+* https://github.com/ethereum/go-ethereum[Ethereum] (o https://geth.ethereum.org/)
+
+* https://github.com/etclabscore/go-ethereum[Ethereum Classic]
+
+* https://github.com/ellaism/go-ellaism[Ellaism]
+
+* https://github.com/expanse-org/go-expanse[Expanse]
+
+* https://github.com/Musicoin/go-musicoin[Musicoin]
+
+* https://github.com/ubiq/go-ubiq[Ubiq]
+
+[NOTE]
+=====
+También podemos omitir estas instrucciones e instalar un binario pre-compilado para la plataforma de nuestra elección. Las versiones pre-compiladas son mucho más fáciles de instalar y se pueden encontrar en la sección de "lanzamientos" (releases) de cualquiera de los repositorios enumerados aquí. Sin embargo, podemos obtener más información descargando y compilando el software por nosotros mismos.
+=====
+
+[[cloning_repo]]
+===== Clonando el repositorio
+
+((("Geth (Go-Ethereum)","clonando el repositorio Git para")))El primer paso es clonar el repositorio de Git, para obtener una copia del código fuente.
+
+Para hacer un clon local del repositorio elegido, usamos el comando +git+ de la siguiente manera, en nuestro directorio de inicio o en cualquier directorio que usemos para el desarrollo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>git clone &lt;enlace del repositorio&gt;</strong>
+</pre>
+++++
+
+Deberíamos ver un informe de progreso a medida que el repositorio se copia en nuestro sistema local:
+
+[[cloning_status]]
+----
+Cloning into 'go-ethereum'...
+remote: Enumerating objects: 86915, done.
+remote: Total 86915 (delta 0), reused 0 (delta 0), pack-reused 86915
+Receiving objects: 100% (86915/86915), 134.73 MiB | 29.30 MiB/s, done.
+Resolving deltas: 100% (57590/57590), done.
+----
+
+¡Excelente! Ahora que tenemos una copia local de Geth, podemos compilar un ejecutable para nuestra plataforma.
+
+[[build_geth_src]]
+===== Instalando Geth desde el código fuente
+
+((("Geth (Go-Ethereum)","compilando a partir del código fuente")))Para compilar Geth, nos dirigimos al directorio donde se descargó el código fuente y usamos el comando +make+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>cd go-ethereum</strong>
+$ <strong>make geth</strong>
+</pre>
+++++
+
+Si todo va bien, veremos el compilador Go construyendo cada componente hasta que produzca el ejecutable +geth+:
+
+[[making_geth_status]]
+----
+build/env.sh go run build/ci.go install ./cmd/geth
+>>> /usr/local/go/bin/go install -ldflags -X main.gitCommit=58a1e13e6dd7f52a1d...
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto/sha3
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/common
+[...]
+github.com/ethereum/go-ethereum/cmd/utils
+github.com/ethereum/go-ethereum/cmd/geth
+Done building.
+Run "build/bin/geth" to launch geth.
+$
+----
+
+Asegurémonos de que +geth+ funcione sin comenzar a ejecutarlo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>./build/bin/geth version</strong>
+
+Geth
+Version: 1.9.11-unstable
+Git Commit: 0b284f6c6cfc6df452ca23f9454ee16a6330cb8e
+Git Commit Date: 20200123
+Architecture: amd64
+Protocol Versions: [64 63]
+Go Version: go1.13.4
+Operating System: linux
+[...]
+</pre>
+++++
+
+El comando +geth version+ puede mostrarnos información ligeramente diferente, pero deberíamos ver un informe de versión muy similar al que se ve aquí.
+
+Las siguientes secciones explican el desafío de la sincronización inicial de la cadena de bloques de Ethereum(((range="endofrange", startref="ix_03clients-asciidoc6"))).(((range="endofrange", startref="ix_03clients-asciidoc5")))
+
+
+[[first_sync]]
+=== La Primera Sincronización de Cadenas de Bloques Basadas en Ethereum
+
+((("cadena de bloques","primera sincronización con la", id="ix_03clients-asciidoc9", range="startofrange")))((("clientes, Ethereum","primera sincronización con cadenas de bloques basadas en Ethereum", id="ix_03clients-asciidoc10", range="startofrange")))((("primera sincronización","de cadenas de bloques basadas en Ethereum", id="ix_03clients-asciidoc11", range="startofrange")))Tradicionalmente, cuando se sincroniza una cadena de bloques en Ethereum, nuestro cliente descargará y validará cada bloque y cada transacción desde su mismísimo origen&#x2014;es decir, desde el bloque génesis.
+
+Si bien es posible sincronizar completamente la cadena de bloques de esta manera, este tipo de sincronización tomará mucho tiempo y tiene altos requisitos de recursos (necesitará mucha más RAM y, de hecho, tomará mucho tiempo si no disponemos de un almacenamiento rápido).
+
+Muchas cadenas de bloques basadas en Ethereum fueron víctimas de ataques de denegación de servicio a fines de 2016. Las cadenas de bloques afectadas tenderán a sincronizarse lentamente cuando se realice una sincronización completa.
+
+Por ejemplo, en Ethereum, un nuevo cliente avanzará rápidamente hasta llegar al bloque 2.283.397. Este bloque se minó el 18 de septiembre de 2016 y marca el comienzo de los ataques DoS. Desde este bloque hasta el bloque 2,700,031 (minado el 26 de noviembre de 2016), la validación de las transacciones se vuelve extremadamente lenta, intensiva en memoria y en data de Entrada/Salida (o I/O). Esto da como resultado tiempos de validación superiores a 1 minuto por bloque. Ethereum implementó una serie de actualizaciones, utilizando bifurcaciones fuertes o "hard forks", para abordar las vulnerabilidades subyacentes que se explotaron en los ataques DoS. Estas actualizaciones también limpiaron la cadena de bloques al eliminar unas 20 millones de cuentas vacías creadas por transacciones tipo spam.
+
+Si intentamos sincronizar con una validación completa, nuestro cliente se ralentizará y puede tardar varios días, o tal vez incluso más, para validar los bloques afectados por los ataques DoS.
+
+((("sincronización rápida")))Afortunadamente, la mayoría de los clientes de Ethereum por defecto ahora realizan una sincronización "rápida" que omite la validación completa de las transacciones hasta que se hayan sincronizado todos los bloques, para luego reanudar la validación completa.
+
+Geth realiza una sincronización rápida por defecto para Ethereum. Es posible que debamos consultar las instrucciones específicas para otra cadena de Ethereum elegida.
+
+Parity también hace una sincronización rápida por defecto.
+
+[NOTE]
+=====
+Geth solo puede realizar una sincronización rápida cuando comienza con una base de datos vacía para su cadena de bloques. Si ya hemos comenzado a sincronizar sin el modo rápido, Geth no puede cambiar al modo "rápido". Es más rápido eliminar el directorio de datos de la cadena de bloques y comenzar a sincronizar en modo rápido desde el principio que continuar sincronizando con validación completa. ¡Téngase cuidado de no eliminar ninguna cartera cuando sean eliminados los datos de la cadena!
+=====
+
+==== Ejecutar Geth o Parity
+
+((("primera sincronización","Geth o Parity para la")))((("Geth (Go-Ethereum)","para la primera sincronización")))((("Parity","para la primera sincronización")))Ahora que comprendemos los desafíos de la "primera sincronización", estamos listos para iniciar un cliente de Ethereum y sincronizar la cadena de bloques. Tanto para Geth como para Parity, podemos usar la opción +--help+ para ver todos los parámetros de configuración. La configuración predeterminada suele ser sensata y adecuada para la mayoría de los usos. Elijase cómo configurar los parámetros opcionales para satisfacer cada necesidad específica, luego iniciamos Geth o Parity para sincronizar con la cadena. Y ahora, a esperar...
+
+[TIP]
+====
+Sincronizar con la cadena de bloques de Ethereum llevará entre medio día en un sistema muy rápido con mucha RAM, a varios días en un sistema más lento.
+====
+
+[[json_rpc]]
+==== La Interfaz JSON-RPC
+
+((("clientes, Ethereum","y API JSON-RPC", id="ix_03clients-asciidoc12", range="startofrange")))((("primera sincronización","y API JSON-RPC", id="ix_03clients-asciidoc13", range="startofrange")))((("API JSON-RPC", id="ix_03clients-asciidoc14", range="startofrange")))Los clientes de Ethereum ofrecen una interfaz de programación de aplicaciones y un conjunto de comandos de invocación remota a procedimientos (del inglés "Remote Procedure Calls" o RPC) que están codificados como "Objetos de Notación de JavaScript" (del inglés "JavaScript Objects Notation" o JSON). Veremos esto referido como _JSON-RPC API_. Esencialmente, la API JSON-RPC es una interfaz que nos permite escribir programas que usan un cliente Ethereum como su compuerta o _gateway_ hacia una red y cadena de bloques de Ethereum.
+
+Por lo general, la interfaz RPC se ofrece como un servicio HTTP en el puerto 8545. Por razones de seguridad, está restringido, de manera predeterminada, a aceptar solo conexiones de localhost (la dirección IP de nuestra propia computadora, que es 127.0.0.1).
+
+Para acceder a la API JSON-RPC, podemos usar una biblioteca especializada (escrita en varios lenguajes de programación para calzar con el de nuestra elección) que proporciona funciones de invocación "stub" (o funciones con instrucciones pre-empaquetadas), correspondientes a cada comando RPC disponible, o podemos construir manualmente nuestras solicitudes HTTP y enviar/recibir solicitudes codificadas en formato JSON. Incluso podemos usar un cliente HTTP genérico de la línea de comandos, tal como +curl+, para invocar a la interfaz RPC. Probemos eso. Primero, asegurémonos de tener Geth en funcionamiento, configurado con la opción --rpc para permitir el acceso HTTP a la interfaz RPC; luego pasamos a una nueva ventana de consola (por ejemplo, con Ctrl-Shift-N o Ctrl-Shift-T desde una ventana de consola existente) como se muestra aquí:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+</pre>
+++++
+
+En este ejemplo, hemos usado +curl+ para hacer una conexión HTTP a la dirección _http://localhost:8545_. Dado que ya estamos ejecutando +geth+, estará disponible la API JSON-RPC como un servicio HTTP en el puerto 8545. Instruimos a +curl+ para que use el comando HTTP +POST+ e identifique el contenido (Content-Type) como datos del tipo +application/json+. Finalmente, pasamos una solicitud codificada por JSON como el componente +data+ de nuestra solicitud HTTP. La mayor parte de nuestra línea de comandos solo está configurando +curl+ para hacer la conexión HTTP correctamente. La parte interesante es el comando JSON-RPC real que emitimos:
+
+[[JSON_RPC_command]]
+----
+{"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}
+----
+
+La solicitud JSON-RPC está formateada de acuerdo con la especificación: https://www.jsonrpc.org/specification[JSON-RPC 2.0 specification]. Cada solicitud contiene cuatro elementos:
+
+++jsonrpc++:: Para indicar la versión del protocolo JSON-RPC. Ésta versión DEBE ser exactamente ++"2.0"++.
+
+++method++:: Es el nombre del método a invocar.
+
+++params++:: Es un valor estructurado que contiene los valores de los parámetros que se utilizarán durante la invocación del método. Este miembro PUEDE ser omitido.
+
+++id++:: Es un identificador establecido por el cliente que DEBE contener o bien un valor tipo cadenas o +String+, o un valor tipo numérico o +Number+ o un valor +NULL+; si está incluido. El servidor DEBE responder con el mismo valor en el objeto de respuesta si está incluido. Este elemento se usa para correlacionar el contexto entre los dos objetos.
+
+[TIP]
+====
+((("empaquetado por lotes")))El parámetro +id+ se usa principalmente cuando realizamos múltiples solicitudes en una sola llamada JSON-RPC, una práctica llamada "empaquetado por lotes" o _batching_. El procesamiento por lotes se utiliza para evitar la sobrecarga de una nueva conexión HTTP y TCP para cada solicitud. En el contexto de Ethereum, por ejemplo, usaríamos el procesamiento por lotes si quisiéramos recuperar miles de transacciones a través de una sola conexión HTTP. Al agrupar por lotes, establecemos un valor +id+ diferente para cada solicitud y luego lo comparamos con el +id+ en cada respuesta del servidor JSON-RPC. La forma más fácil de implementar esto es mantener un contador e incrementar el valor de cada solicitud.
+====
+
+
+La respuesta que recibimos es:
+
+----
+{"jsonrpc":"2.0","id":1,
+"result":"Geth/v1.9.11-unstable-0b284f6c-20200123/linux-amd64/go1.13.4"}
+----
+
+Esto nos dice que la API JSON-RPC está siendo servida por la versión del cliente Geth 1.13.4
+
+Vamos a probar algo un poco más interesante. En el siguiente ejemplo, le pediremos a la API JSON-RPC el precio actual del gas en unidades wei:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl -X POST -H "Content-Type: application/json" --data \
+  '{"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":4213}' \
+  http://localhost:8545</strong>
+
+{"jsonrpc":"2.0","id":4213,"result":"0x430e23400"}
+</pre>
+++++
+
+La respuesta, +0x430e23400+, nos dice que el precio actual del gas es de 18 gwei (donde un gigawei son mil millones de weis). Dado que, como personas normales, no pensamos en hexadecimal, podemos convertir la respuesta a valores decimales en la línea de comandos, con un poco de "mágia bash":
+
+++++
+<pre data-type="programlisting">
+$ <strong>echo $((0x430e23400))</strong>
+
+18000000000
+</pre>
+++++
+
+La API JSON-RPC completa se puede investigar en el enlace: https://github.com/ethereum/wiki/wiki/JSON-RPC[Ethereum wiki].
+
+[[parity_compatibility_mode]]
+===== Modo de compatibilidad con Geth para Parity
+
+Parity tiene un "modo de compatibilidad con Geth especial,&#x201d; donde ofrece una API JSON-RPC que es idéntica a la que ofrece Geth. Para ejecutar Parity en este modo, usamos el "conmutador" +--geth+(((range="endofrange", startref="ix_03clients-asciidoc14")))(((range="endofrange", startref="ix_03clients-asciidoc13")))(((range="endofrange", startref="ix_03clients-asciidoc12"))):(((range="endofrange", startref="ix_03clients-asciidoc11")))(((range="endofrange", startref="ix_03clients-asciidoc10")))(((range="endofrange", startref="ix_03clients-asciidoc9")))
+
+++++
+<pre data-type="programlisting">
+$ <strong>parity --geth</strong>
+</pre>
+++++
+
+[[lw_eth_clients]]
+=== Clientes Ethereum Remotos
+
+((("clientes, Ethereum","remote", id="ix_03clients-asciidoc15", range="startofrange")))((("clientes remotos", id="ix_03clients-asciidoc16", range="startofrange")))Los clientes remotos ofrecen un subconjunto de las funcionalidades de un cliente completo. No almacenan la cadena de bloques de Ethereum completa, por lo que son más rápidos de configurar y requieren mucho menos almacenamiento de datos.
+
+[role="pagebreak-before"]
+Por lo general, estos clientes suelen proporcionar la capacidad de realizar una o más de las siguientes acciones:
+
+* Gestionar claves privadas y direcciones de Ethereum en una cartera.
+* Crear, firmar y difundir transacciones.
+* Interactuar con contratos inteligentes, utilizando la carga útil de datos (payload). 
+* Navegar e interactuar con DApps.
+* Ofrecer links a servicios externos como exploradores de bloques.
+* Convertir unidades de éter y consultar tipos de cambio de fuentes externas.
+* Inyectar una instancia web3 en el navegador como un objeto JavaScript.
+* Utilizar una instancia web3 provista/inyectada en el navegador por otro cliente.
+* Acceder a servicios RPC en un nodo de Ethereum remoto o local.
+
+Algunos clientes remotos, por ejemplo carteras para móviles (smartphones), sólo ofrecen una funcionalidad básica de cartera. Otros clientes remotos son navegadores de DApps en toda regla. Por lo general, los clientes remotos ofrecen algunas de las funcionalidades de un nodo completo sin sincronizar una copia local de la cadena de bloques de Ethereum haciendo uso de una conexión a un nodo completo ejecutado en otro lugar, por ejemplo por nosotros mismos localmente en nuestra máquina o en un servidor web o en los servidores de un tercero.
+
+Veamos algunos de los clientes remotos más populares y las funciones que ofrecen.
+
+[[mobile_wallets]]
+==== Carteras para Móviles (Smartphones)
+
+((("carteras para móviles (smartphones)")))((("clientes remotos","carteras para móviles")))((("carteras","móviles")))Todas las carteras para teléfonos móviles son clientes remotos, ya que un móvil no tiene recursos adecuados para ejecutar un nodo completo. Los clientes ligeros están en desarrollo y no tienen un uso generalizado en Ethereum. En el caso de Parity, el cliente ligero está considerado como "experimental" y se puede usar ejecutando +parity+ con la opción +--light+.
+
+Algunas de las carteras móviles más populares son las siguientes (las enumeramos simplemente como ejemplos; esto no es una recomendación o una indicación de la seguridad o funcionalidad de estas carteras):
+
+https://jaxx.io[Jaxx]:: ((("Jaxx","versión para móviles")))((("carteras","Jaxx")))es una cartera móvil multi-divisas basada en semillas mnemónicas BIP-39, con soporte para Bitcoin, Litecoin, Ethereum, Ethereum Classic, ZCash, una variedad de tokens ERC20 y muchas otras monedas. Jaxx está disponible en Android e iOS, como extensión para el navegador  y como cartera de escritorio para varios sistemas operativos.
+
+https://status.im[Status]:: ((("Status (cartera para móviles)")))Es una cartera para móviles y un navegador DApp, con soporte para una variedad de tokens y DApps populares. Disponible para iOS y Android.
+
+https://trustwalletapp.com/[Trust Wallet]:: ((("Trust Wallet")))((("carteras","Trust")))Es una cartera para móviles que sirve para múltiples monedas y que admite Ethereum y Ethereum Classic, así como tokens ERC20 y ERC223. Trust Wallet está disponible para iOS y Android.
+
+https://www.cipherbrowser.com[Cipher Browser]:: ((("Cipher Browser")))Es una cartera y un navegador DApp para móviles con todas las funciones de Ethereum que permite la integración con las aplicaciones y tokens de Ethereum. Disponible para iOS y Android.
+
+[[browser_wallets]]
+==== Carteras para el Navegador
+
+((("carteras para el navegador")))((("clientes remotos","carteras para el navegador")))((("carteras","carteras para el navegador")))Una variedad de  carteras y navegadores de DApps están disponibles como extensiones o complementos para navegadores web como Chrome y Firefox. Éstas corresponden a clientes remotos que se ejecutan en nuestro navegador. 
+
+Algunas de las más populares son Metamask, Jaxx, MyEtherWallet, y MyCrypto.
+
+[[MetaMask]]
+===== MetaMask
+
+https://metamask.io/[MetaMask], ((("MetaMask","como cartera para el navegador")))Introducida en el <<intro_chapter>>, Metamask es una cartera versátil basada en el navegador, un cliente RPC, y un explorador básico de contratos. Está disponible para Chrome, Firefox, Opera, y Brave.
+
+A diferencia de otras carteras de navegador, Metamask inyecta una instancia de web3 en el contexto JavaScript del navegador, actuando como un cliente RPC que conecta con una variedad de cadenas de bloques de Ethereum (red principal, red de pruebas Ropsten, Kovan, nodo RPC local, etc). La capacidad de inyectar una instancia de web3 y actuar como compuerta para servicios RPC externos hace de Metamask una herramienta muy potente tanto para desarrolladores como para usuarios. Puede ser combinada por ejemplo con MyEtherWallet o MyCrypto actuando como proveedor de web3 y compuerta RPC para estas herramientas
+
+[[Jaxx]]
+===== Jaxx
+
+https://jaxx.io[Jaxx], ((("Jaxx","versión de PC de escritorio")))((("carteras","Jaxx")))Esta cartera, introducida en la anterior sección como cartera para móviles, también está disponible como extensión para Chrome y Firefox, y como cartera para PC de escritorio.
+
+[[MEW]]
+===== MyEtherWallet (MEW)
+
+https://www.myetherwallet.com/[MyEtherWallet] ((("MyEtherWallet (MEW)")))((("carteras","MyEtherWallet")))es un cliente remoto JavaScript basado en el navegador que ofrece:
+
+* Conexión a carteras de hardware populares como Trezor y Ledger. 
+* Una interfaz web3 que puede conectarse a una instancia de web3 inyectada por otro cliente (por ejemplo Metamask)
+* Un cliente RPC que puede conectarse a un nodo completo de Ethereum
+* Una interfaz básica que puede interactuar con contratos inteligentes, dada una dirección de un contrato y la interfaz binaria de aplicación (ABI) 
+* Un aplicación móvil, MEWConnect, que nos permite usar un dispositivo compatible Android o IOS para almacenar fondos, de manera similar a una cartera de hardware.
+* Una cartera de software ejecutada en JavaScript
+
+[WARNING]
+====
+Debemos ser extremadamente cautos cuando accedamos a MyEtherWallet u otras carteras JavaScript basadas en el navegador, ya que son objetivos frecuentes de ataques de phishing (suplantación de identidad). Hay que utilizar siempre un marcador y no un motor de búsqueda para acceder a la URL correcta en nuestra web. 
+====
+
+[[MyCrypto]]
+===== MyCrypto
+
+((("MyCrypto (cartera)")))((("carteras","MyCrypto")))A comienzos del año 2018, el ((("MyEtherWallet (MEW)")))((("carteras","MyEtherWallet")))proyecto MyEtherWallet se dividió en dos implementaciones competidoras, guiadas por dos equipos de desarrollo independientes, es decir, una "bifurcación", (o "fork") como se le llama en el ámbito del desarrollo de código abierto. Los dos proyectos se llaman MyEtherWallet (la marca original) y https://mycrypto.com/[MyCrypto]. MyCrypto ofrece una funcionalidad casi idéntica a MyEtherWallet, pero en lugar de usar MEWConnect, ofrece una conexión a la aplicación móvil Parity Signer. Al igual que MEWConnect, Parity Signer almacena llaves en el teléfono e interactúa con MyCrypto de manera similar a una billetera de hardware.
+
+[[Mist]]
+===== Mist (Obsoleta)
+
+https://github.com/ethereum/mist[Mist] ((("Mist (cartera basada en el navegador)")))((("carteras","Mist")))fue el primer navegador habilitado para Ethereum, creado por la Fundación Ethereum. Contenía una cartera basada en navegador que fue la primera implementación del estándar de token ERC20 (Fabian Vogelsteller, autor de ERC20, también fue el desarrollador principal de Mist). Mist también fue la primera cartera en introducir la suma de comprobación (checksum) "camelCase" (EIP-55). A partir de marzo de 2019, Mist fue retirada y ya no debería usarse.
+
+=== Conclusiones
+
+En este capítulo exploramos los clientes de Ethereum. Descargamos, instalamos y sincronizamos un cliente; nos convertimos en participantes de la red Ethereum y contribuimos a la salud y la estabilidad del sistema al replicar la cadena de bloques en nuestra propia computadora.(((range="endofrange", startref="ix_03clients-asciidoc0")))

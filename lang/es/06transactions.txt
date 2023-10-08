@@ -1,0 +1,795 @@
+[[tx_chapter]]
+== Transacciones
+
+((("transactions", id="ix_06transactions-asciidoc0", range="startofrange")))Las transacciones son mensajes firmados que son originados por una cuenta manejada externamente, y son transmitidos por la red Ethereum y registrados en la cadena de bloques de Ethereum. Esta definición básica esconde muchos detalles sorprendentes y fascinantes. Otra forma de ver a las transacciones es que son las únicas cosas que pueden desencadenar un cambio de estado del mundo o hacer que un contrato se ejecute en la máquina virtual de Ethereum (o EVM). Ethereum es una máquina de estado global de instancia única, y las transacciones son aquello que hace que esa máquina de estado "funcione", al provocar el cambio de su estado. Los contratos no se ejecutan por sí solos. Ethereum no se ejecuta de forma autónoma. Todo comienza con una transacción.
+
+En este capítulo analizaremos las transacciones, mostraremos cómo funcionan y examinaremos sus detalles. Tenga en cuenta que gran parte de este capítulo está dirigido a aquellos que están interesados en administrar sus propias transacciones en un nivel bajo, quizás porque están escribiendo una aplicación de billetera; en general no tenemos que preocuparse por esto si nos es suficiente con el uso de las aplicaciones de billetera existentes, ¡aunque podríamos encontrar interesantes los detalles!
+
+[[tx_struct]]
+=== La Estructura de una Transacción
+
+((("transacciones","estructura básica")))Primero echemos un vistazo a la estructura básica de una transacción, conforme la misma se serializa y se transmite en la red Ethereum. Cada cliente y aplicación que recibe una transacción serializada la almacenará en la memoria usando su propia estructura de datos interna, tal vez adornada con metadatos que no existen en la propia transacción serializada en la red. La serialización de red es la única forma estándar que puede adquirir una transacción.
+
+Una transacción es un mensaje binario serializado que contiene los siguientes datos:
+
+Nonce:: Es un número de secuencia, emitido por la cuenta originadora que es manejada externamente (o la "EOA", de sus siglas en inglés), y es utilizado para evitar la repetición de un mismo mensaje
+
+Precio del Gas:: El precio de las unidades de combustible o "gas" (expresado en weis) que la cuenta originadora está dispuesta a pagar
+
+Límite de Gas: Es la cantidad máxima de combustible o gas que la cuenta originadora está dispuesta a comprar para costear esta transacción
+
+Destinatario:: Es la dirección Ethereum a la que se destina la transacción
+
+Valor:: Es la cantidad de éter que se ordena enviar al destinatario
+
+Data:: Es la carga útil de datos binarios de longitud variable
+
+v,r,s:: Son los tres componentes de una firma digital ECDSA de la cuenta EOA de origen
+
+((("Prefijos de Longitud Recursiva (o RLP)")))((("RLP (Recursive Length Prefix)")))La estructura del mensaje de una transacción se serializa utilizando el esquema de codificación de Prefijos de Longitud Recursiva (del inglés "Recursive Length Prefix" o RLP), que se creó específicamente para serializaciones simples de datos y con correspondencias de entradas/salidas únicas de bytes (o serialización de tipo byte-perfect) en Ethereum. Todos los números en Ethereum están codificados como enteros y se ordenan en memoria según el estándar "big-endian", con trozos de memoria cuyas longitudes son múltiplos de 8 bits.
+
+Es de destacar que las etiquetas de campo (+destinatario+, +limite de gas+, etc.) se muestran aquí sólo para mayor claridad, pero no forman parte de los datos serializados de la transacción, que contienen los valores de campo codificados con RLP. En general, RLP no contiene delimitadores de campo ni etiquetas. El prefijo de longitud de RLP se utiliza para identificar la longitud de cada campo. Todo lo que supere la longitud definida pertenece al siguiente campo de la estructura.
+
+Si bien esta es la verdadera estructura de la transacción transmitida, la mayoría de las representaciones internas y de las visualizaciones para las interfaces de usuario, embellecen esta estructura con información adicional, derivada de la transacción misma o de la cadena de bloques.
+
+Por ejemplo, puede notarse que no hay data &#x201c;desde&#x201d; para la dirección que identifica a la EOA originadora. Esto se debe a que la llave pública de la EOA se puede derivar de los componentes +v,r,s+ de la firma ECDSA. La dirección, a su vez, puede derivarse de la llave pública. Cuando veamos una transacción que muestra un campo &#x201c;desde&#x201d;, es porque el software que hemos utilizado para visualizar dicha transacción, lo agregó. Otros metadatos que el software del cliente agrega con frecuencia a la transacción incluyen el número de bloque (una vez que se mina y se incluye en la cadena de bloques) y un ID de transacción (o valor hash calculado). Nuevamente, estos datos se derivan de la transacción y no forman parte del mensaje de la transacción en sí.
+
+[[tx_nonce]]
+=== El Nonce de la Transacción
+
+((("nonces", id="ix_06transactions-asciidoc1", range="startofrange")))((("transacciones","nonces", id="ix_06transactions-asciidoc2", range="startofrange")))El nonce es uno de los componentes más importantes y menos comprendidos de una transacción. Su definición que yace en el "Documento Amarillo" de Ethereum (véase <<references>>) dice así:
+
+____
++nonce+: Es un valor escalar igual al número de transacciones enviadas desde esta dirección o, en el caso de cuentas con data de código asociado, es el número de creaciones de contratos realizadas por esta cuenta.
+____
+
+Estrictamente hablando, el nonce es un atributo de la dirección originadora de la transacción; es decir, solo tiene significado en el contexto de la dirección que realiza el envío. Sin embargo, el nonce no se almacena explícitamente como parte del estado de una cuenta en la cadena de bloques. En su lugar, se calcula de forma dinámica, contando el número de transacciones confirmadas que se han originado desde una dirección.
+
+Hay dos escenarios en los que la existencia de un nonce para el recuento de transacciones generadas es importante: la característica de "utilizabilidad" de las transacciones que se incluyen en el orden correcto de creación y la característica vital de la protección contra la duplicación de transacciones. Veamos un escenario de ejemplo para cada uno de estos:
+
+1. Imaginemos que deseamos realizar dos transacciones. Tenemos que hacer un pago importante de 6 éter y también otro pago de 8 éter. Primero firmamos y transmitimos la transacción de 6-éter, porque es la más importante, y luego firmamos y transmitimos la segunda transacción 8-éter. Lamentablemente, hemos pasado por alto el hecho de que nuestra cuenta contiene solo 10 éter, por lo que la red no puede aceptar ambas transacciones: una de ellas fallará. Debido a que enviamos primero la de 6-éter que era la más importante, es comprensible que se espere que esta pase y la de 8-éter sea rechazada. Sin embargo, en un sistema descentralizado como Ethereum, los nodos pueden recibir las transacciones en cualquier orden; no hay garantía de que a un nodo en particular se le propague una transacción antes que a la otra. Como tal, es casi seguro que algunos nodos reciban primero la transacción de 6-éter y otros reciban primero la transacción de 8-éter. Sin el nonce, sería un asunto aleatorio el definir cuál transacción será aceptada y cuál rechazada. Sin embargo, con el nonce incluido, la primera transacción que se envió tendrá un nonce de, digamos, 3, mientras que la transacción de 8-éter tendrá el siguiente valor nonce (es decir, 4). Entonces, esa transacción será ignorada hasta que las transacciones con nonces de 0 a 3 hayan sido procesadas, incluso si ésta (de nonce 4) se recibiera primero. ¡Uf!
+
+
+2. Ahora imagínese que tenemos una cuenta con 100 éter. ¡Fantástico! Encuentra a alguien en línea que acepta el pago en ether por un widget de mcguffin que realmente desea comprar. Les envías 2 ether y te envían el widget mcguffin. Encantador. Para realizar ese pago de 2-éter, firmamos una transacción enviando 2 ether desde nuestra cuenta a la cuenta del vendedor, y luego lo transmitimos a la red Ethereum para ser verificado e incluido en la cadena de bloques. Ahora, sin un valor nonce en la transacción, una segunda transacción que envíe 2 éter a la misma dirección por segunda vez se verá exactamente igual que la primera transacción. Esto significa que cualquiera que vea su transacción en la red Ethereum (lo que significa que todos, incluido el destinatario o sus enemigos) puede "reproducir" la transacción una y otra vez hasta que todo su éter se haya ido simplemente copiando y pegando su transacción original y reenviándola a la red. Sin embargo, con el valor nonce incluido en los datos de la transacción, _ cada transacción es única_, incluso cuando se envía la misma cantidad de ether a la misma dirección de destinatario varias veces. Por lo tanto, al tener el nonce incremental como parte de la transacción, simplemente no es posible que nadie "duplique" un pago que haya realizado.
+
+En resumen, es importante tener en cuenta que el uso del nonce es realmente vital para un protocolo _ basado en cuentas_, a diferencia del mecanismo de &#x201c;Salidas de Transacciones Sin-Gastar&#x201d; (o del inglés, las "UTXO") del protocolo Bitcoin.
+
+[[tracking_nonce]]
+==== Seguimiento de los Nonces
+
+((("nonces","haciéndoles seguimiento")))En términos prácticos, el nonce es un recuento actualizado del número de transacciones _confirmadas_ (es decir, asentadas en la cadena de bloques) que se han originado desde una cierta cuenta. Para averiguar cuál es el valor nonce, podemos interrogar a la cadena de bloques, por ejemplo, a través de la interfaz web3. Digamos que abrimos una consola JavaScript en Geth (o cualquier otra interfaz web3 preferida) en la testnet de Ropsten, luego escribimos:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f")</strong>
+40
+</pre>
+++++
+
+[TIP]
+====
+El nonce es un contador de base cero, lo que significa que la primera transacción tiene un nonce igual a 0. En este ejemplo, tenemos un recuento de transacciones igual a 40, lo que significa que se han visto los nonces del 0 al 39. El nonce de la próxima transacción deberá ser 40.
+====
+
+Nuestra billetera realizará un seguimiento de los nonces para cada dirección que esta administra. Es bastante simple hacer eso, siempre que solo esté originando transacciones desde un solo punto. Supongamos que estamos escribiendo nuestro propio software de billetera o alguna otra aplicación que origina transacciones. ¿Cómo rastreamos los nonces?
+
+Cuando creamos una nueva transacción, asignamos el valor siguiente de nonce en la secuencia. Pero hasta que no se confirme esta transacción, ella no contará para el +getTransactionCount+ total.
+
+[[get_tx_count_bug]]
+[WARNING]
+====
+Téngase cuidado al utilizar la función +getTransactionCount+ para contar las transacciones pendientes, ya que podrían tenerse algunos problemas si enviamos algunas transacciones seguidas.
+====
+
+Veamos un ejemplo:
+
+++++
+<pre data-type="programlisting">
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+40
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+&gt; <strong>web3.eth.sendTransaction({from: web3.eth.accounts[0], to: \
+"0xB0920c523d582040f2BCB1bD7FB1c7C1ECEbdB34", value: web3.utils.toWei(0.01, "ether")});</strong>
+&gt; <strong>web3.eth.getTransactionCount("0x9e713963a92c02317a681b9bb3065a8249de124f", \
+"pending")</strong>
+41
+</pre>
+++++
+[TIP]
+====
+Si intentamos recrear estos ejemplos de código en la consola javascript de Geth, deberemos usar web3.toWei() en lugar de web3.utils.toWei(). Esto se debe a que Geth usa una versión anterior de la biblioteca web3.
+====
+
+Como puede verse, la primera transacción que enviamos aumentó el recuento de transacciones a 41, mostrando la transacción pendiente. Pero cuando enviamos tres transacciones más en rápida sucesión, la invocación a la función +getTransactionCount+ no las contó. Solo contó una, aunque podría esperar que haya tres pendientes en la mempool. Si esperamos unos segundos para permitir que se establezcan las comunicaciones con la red, la invocación a +getTransactionCount+ devolverá el número de conteo esperado. Pero mientras tanto, aunque hay más de una transacción pendiente, es posible que eso no nos ayude.
+
+Cuando se desarrollan aplicaciones que construyen transacciones, no se puede confiar en pass:[<span class="keep-together"><code>getTransactionCount</code></span>] para transacciones pendientes. Solo cuando los recuentos "pendientes" y "confirmados" son iguales (es decir, cuando se confirman todas las transacciones pendientes) se puede confiar en el resultado de +getTransactionCount+ para iniciar nuestro contador de nonces. A partir de entonces, es posible realizar un seguimiento del nonce internamente en nuestra aplicación, hasta que se confirma cada transacción.
+
+((("Parity","conteo de nonce")))La interfaz JSON RPC de Parity ofrece la función +parity_nextNonce+, que devuelve el siguiente nonce que debe usarse en una transacción. La función +parity_nextNonce+ cuenta los nonces correctamente, incluso si construimos varias transacciones similares en rápida sucesión, sin confirmarlas:
+
+++++
+<pre data-type="programlisting">
+$ <strong>curl --data '{"method":"parity_nextNonce", \
+  "params":["0x9e713963a92c02317a681b9bb3065a8249de124f"],\
+  "id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST \
+  localhost:8545</strong>
+
+{"jsonrpc":"2.0","result":"0x32","id":1}
+</pre>
+++++
+
+[[parity_curl]]
+[TIP]
+====
+Parity tiene una consola web para acceder a la interfaz JSON RPC, pero aquí estamos usando un cliente HTTP a nivel de línea de comandos para accederla.
+====
+
+[[gaps_nonce]]
+==== Brechas en los Nonces, Nonces Duplicados y Confirmación
+
+((("nonces","brechas en su secuencia")))Es importante realizar un seguimiento de los nonces si vamos a crear transacciones mediante algoritmos de programación, especialmente si lo estamos haciendo desde múltiples procesos independientes de manera pase:[<span class="keep-together">simultánea</span>].
+
+La red Ethereum procesa las transacciones de forma secuencial, según el nonce. Eso significa que si se transmite una transacción con un nonce de valor 0 y luego se transmite una transacción con un valor nonce de 2, la segunda transacción no se incluirá en ningún bloque. Se almacenará en la mempool (tanque de memoria), mientras que la red Ethereum espera a que aparezca el nonce faltante. Todos los nodos asumirán que el nonce faltante simplemente se ha retrasado y que la transacción con el nonce de valor 2 se recibió fuera de secuencia.
+
+Si luego transmitimos una transacción con el nonce de valor 1 faltante, ambas transacciones (con los nonces 1 y 2) serán procesadas e incluidas (si ello es válido, por supuesto). Una vez que se llena el vacío, la red puede minar la transacción fuera de secuencia que tenía en la mempool.
+
+Lo que esto significa es que si creamos varias transacciones en secuencia y una de ellas no se incluye oficialmente en ningún bloque, todas las transacciones subsiguientes quedarán "atascadas", esperando la transacción con el nonce faltante. Una transacción puede crear una "brecha" inadvertida en la secuencia del nonce, porque no es válida o no tuvo suficiente gas. Para que las cosas vuelvan a moverse, se debe transmitir una transacción válida con el nonce faltante. Debemos tener igualmente en cuenta que una vez que la red convalida una transacción con el nonce "faltante", todas las transacciones difundidas con nonces posteriores se volverán válidas de forma incremental; ¡No es posible "retirar" una transacción!
+
+((("nonces","confirmación")))((("nonces","duplicados")))Si, por otro lado, duplicamos accidentalmente un nonce, por ejemplo al transmitir dos transacciones con el mismo nonce pero diferentes destinatarios o valores, entonces una de ellas será confirmada y la otra será rechazada. Cuál de ellas se confirmará, estará determinado por la secuencia en la que lleguen al primer nodo de validación que las reciba&#x2014; es decir, será bastante aleatorio.
+
+Como puede verse, es necesario realizar un seguimiento de los nonces, y si nuestra aplicación no gestiona ese proceso correctamente, se encontrará con problemas. Desafortunadamente, las cosas se ponen aún más difíciles si intentamos hacer esto simultáneamente, como veremos en la siguiente sección.
+
+[[concurrency]]
+==== Simultaneidad, Originación de Transacciones y Nonces
+
+((("simultaneidad, y los nonces")))((("nonces","simultaneidad")))((("nonces","originación de transacciones")))La concurrencia es un aspecto complejo de la informática, y surge inesperadamente a veces, especialmente en sistemas descentralizados y distribuidos en tiempo real como pass:[<span class="keep-together">Ethereum</span>].
+
+En términos simples, la simultaneidad es cuando tenemos cómputos simultáneos por varios sistemas independientes. Estos pueden estar en el mismo programa (como por ejemplo, en multiprocesos), en la misma CPU (como por ejemplo, en multiprocesamientos) o en diferentes computadoras (como por ejemplo, en pass:[<span class="keep-together">sistemas</span>] distribuidos). Ethereum, por definición, es un sistema que permite la concurrencia de operaciones (nodos, clientes, DApps) pero impone un estado único a través del consenso.
+
+Ahora, imaginemos que tenemos varias aplicaciones de billeteras independientes que generan transacciones desde la misma dirección o direcciones. Un ejemplo de tal situación sería una casa de cambios que procesa retiros de una billetera activa de la entidad (una billetera cuyas llaves se almacenan en línea, en contraste con una billetera fría donde las llaves nunca están en línea). Idealmente, vamos a querer tener más de una computadora procesando retiros, para que el proceso no se convierta en un cuello de botella o en un solo punto de falla. Sin embargo, esto se vuelve problemático rápidamente, ya que tener más de una computadora produciendo retiros resultará en algunos problemas de concurrencia espinosos, entre los que se encuentra la selección de nonces. ¿Cómo se coordinan varias computadoras que generan, firman y transmiten transacciones desde la misma cuenta de billetera activa?
+
+Podríamos usar una sola computadora para que asigne los nonces, por orden de llegada, a las computadoras que firman transacciones. Sin embargo, esta computadora pasa a ser ahora un único punto de falla. Peor aún, si se asignan varios nonces y uno de ellos nunca se usa (debido a una falla en la computadora que procesa la transacción con ese nonce), todas las transacciones posteriores se atascan.
+
+Otro enfoque sería generar las transacciones, pero no asignarles un nonce (y por lo tanto dejarlas sin firmar&#x2014; recordemos que el nonce es una parte integral de los datos de la transacción y, por lo tanto, debe incluirse a la hora de producir la firma digital que autentica la transacción). Luego, podríamos ponerlas en una cola en un solo nodo que las firma y que también realice un seguimiento de los nonces. Una vez más, sin embargo, esto sería un punto de estrangulamiento en el proceso: la firma y el seguimiento de nonces es la parte de nuestra logística que probablemente se congestione bajo altas demandas, mientras que la generación de la transacciones sin firmar sería la parte que realmente no se necesita paralelizar. Tendríamos algo de simultaneidad, pero no la tendríamos en una parte crítica del proceso.
+
+Al final del día, estos problemas de concurrencias, además de la dificultad de rastrear los saldos de las cuentas y las confirmaciones de las transacciones en procesos independientes, obligar a la mayoría de las implementaciones a evitar la concurrencia y crear cuellos de botella, como un solo proceso que maneja todas las transacciones de retiro en una casa de cambios, o la configuración de múltiples billeteras activas que puedan funcionar de manera completamente independiente para retiros y que solo necesiten ser reequilibradas intermitentemente.(((range="endofrange", startref="ix_06transactions-asciidoc2")))(((range="endofrange", startref="ix_06transactions-asciidoc1")))
+
+[[tx_gas]]
+=== Gas (Combustible) de una Transacción
+
+((("gas","y las transacciones", id="ix_06transactions-asciidoc3", range="startofrange")))((("transacciones","gas", id="ix_06transactions-asciidoc4", range="startofrange")))Hablamos un poco sobre el gas en capítulos anteriores, y lo discutimos con más detalle en <<gas>>. Sin embargo, ahora cubriremos algunos conceptos básicos sobre la función de los componentes +gasPrice+ (precio del gas) y +gasLimit+ (límite de gas) de una transacción.
+
+El gas es el combustible de Ethereum. Las unidades de gas no son éter&#x2014;se trata de una moneda virtual separada con su propio tipo de cambio frente al éter. Ethereum usa gas para controlar la cantidad de recursos que puede usar una transacción, ya que se procesará en miles de computadoras en todo el mundo. El modelo de cómputo abierto (tipo Turing-completo) requiere algún tipo de medición para evitar ataques de denegación de servicio o transacciones inadvertidamente devoradoras de recursos.
+
+El gas se separa del éter para proteger el sistema de la volatilidad que pueda surgir junto con los cambios rápidos en el valor del éter, y también como una forma de gestionar las relaciones importantes y sensibles entre los costos de los diversos recursos que paga el gas. (a saber, cómputo, memoria y almacenamiento).
+
+((("el campo gasPrice")))El campo +gasPrice+ en una transacción permite al originador de la transacción establecer el precio que está dispuesto a pagar a cambio de las unidades de gas. El precio se mide en wei por unidad de gas. Por ejemplo, en la transacción de muestra en <<intro_chapter>> nuestra billetera establece el +gasPrice+ en 3 Gwei (3 giga-wei o 3 mil millones de weis).
+
+[TIP]
+====
+El popular sitio web https://ethgasstation.info/[ETH Gas Station] proporciona información sobre los precios actuales de la unidad de gas y otras métricas del gas relevantes para la red principal de Ethereum.
+====
+
+Las billeteras pueden ajustar el valor de +gasPrice+ en las transacciones que originan para lograr una confirmación más rápida de sus transacciones. Cuanto mayor sea el valor del campo +gasPrice+, más rápido es probable que se confirme nuestra transacción. Por el contrario, las transacciones de menor prioridad pueden tener un precio reducido, lo que resulta en una confirmación más lenta. El valor mínimo en el que se puede establecer +gasPrice+ es cero, lo que significa una transacción sin cargos. Durante períodos de baja demanda de espacio en un bloque, estas transacciones podrían muy bien quedar minadas.
+
+[NOTE]
+====
+El valor mínimo aceptable del parámetro +gasPrice+ es cero. Esto significa que las billeteras pueden generar transacciones completamente gratuitas. Dependiendo de la capacidad de la red, es posible que estas transacciones nunca se confirmen, pero no hay nada en el protocolo que prohíba las transacciones gratuitas. Puede encontrar varios ejemplos de tales transacciones incluidas con éxito en la cadena de bloques Ethereum.
+====
+
+[[gas_price_suggestion]]
+La interfaz web3 ofrece una sugerencia para el valor de +gasPrice+, calculando un precio medio entre varios bloques (podemos usar la consola de truffle o cualquier consola web3 de JavaScript para hacer eso):
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(console.log)</strong>
+> null BigNumber { s: 1, e: 10, c: [ 10000000000 ] }
+</pre>
+++++
+
+[[calc_gas_price]]
+((("el campo gasLimit")))El segundo campo importante relacionado con el gas es +gasLimit+. En términos simples, +gasLimit+ da el número máximo de unidades de gas que el originador de la transacción está dispuesto a comprar para completar la transacción. Para pagos simples, es decir, transacciones que sólo transfieren éter de una EOA a otra EOA, la cantidad de gas necesaria se fija en 21.000 unidades de gas. Para calcular cuánto éter costará, multiplíquese 21.000 por el valor de +gasPrice+ que está dispuesto a pagar. Por ejemplo:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getGasPrice(function(err, res) {console.log(res*21000)} )</strong>
+> 210000000000000
+</pre>
+++++
+
+Si la dirección de destino de nuestra transacción es un contrato, entonces la cantidad de gas necesaria se puede estimar, pero no se puede determinar con precisión. Eso es porque un contrato puede evaluar diferentes condiciones que conducen a diferentes rutas de ejecución, con diferentes costos totales de gas. El contrato puede ejecutar solo un cómputo simple o un cómputo complejo, dependiendo de las condiciones que están fuera de su control y no se pueden predecir. Para demostrar esto, veamos un ejemplo: podemos escribir un contrato inteligente que incrementa un contador cada vez que se llama y ejecuta un bucle en particular un número de veces igual al recuento de llamadas. Tal vez en la convocatoria número 100 se otorgue un premio especial, como una lotería, pero necesita hacer un cálculo adicional para calcular el premio. Si invocamos al contrato 99 veces, sucederá una cosa, pero en la invocación número 100 sucederá algo muy diferente. La cantidad de gas por la que pagaríamos depende de cuántas otras transacciones hayan invocado a esa función antes de que nuestra transacción se incluya en un bloque. Quizás nuestra estimación se base en ser la transacción número 99, pero justo antes de que se confirme nuestra transacción, alguien más invoca al contrato por 99ª vez. Ahora la nuestra es la transacción número 100 en invocarle, y el esfuerzo de cómputo (y el costo de la unidad de gas) será mucho mayor.
+
+Para tomar prestada una analogía común utilizada en Ethereum, podemos pensar en el +gasLimit+ como la capacidad del tanque de combustible de un automóvil (el automóvil es la transacción en esta analogía). Llenaremos el tanque con tanta gasolina como creemos que se necesitará para el viaje (el cálculo necesario para validar una transacción). Podemos estimar la cantidad hasta cierto punto, pero puede haber cambios inesperados en nuestro viaje, como un desvío (una ruta de ejecución más compleja), que aumentará el consumo de combustible.
+
+Sin embargo, la analogía con un tanque de combustible es algo engañosa. En realidad, es más como una cuenta de crédito para una compañía de gasolineras, donde se paga después de que se completa el viaje, según la cantidad de gasolina que realmente se utilizó. Cuando se transmite una transacción, uno de los primeros pasos de validación es verificar que la cuenta desde la que ésta se origina tenga suficiente éter para pagar el valor de +gasPrice * gasLimit+. Pero la cantidad no se deduce realmente de nuestra cuenta, hasta que la transacción no termine de ejecutarse. Solo se nos factura el gas realmente consumido por nuestra transacción, pero debemos tener saldo suficiente para el monto máximo que estaríamos dispuestos a pagar antes de enviar nuestra transacción.(((range="endofrange", startref="ix_06transactions-asciidoc4")))(((range="endofrange", startref="ix_06transactions-asciidoc3")))
+
+[[tx_recipient]]
+=== Destinatario de la Transacción
+
+((("transacciones","destinatario")))El destinatario de una transacción es especificado en el campo +to+. Este contiene una dirección de Ethereum de 20 bytes. La dirección puede ser una EOA o la dirección de un contrato.
+
+Ethereum no realiza más validaciones de este campo. Cualquier valor de 20 bytes se considera válido. Si el valor de 20 bytes corresponde a una dirección sin una llave privada correspondiente, o sin un contrato correspondiente, la transacción sigue siendo válida. Ethereum no tiene forma de saber si una dirección se derivó correctamente de una llave pública (y por lo tanto de una llave privada) existente.
+
+[WARNING]
+====
+El protocolo Ethereum no valida las direcciones de los destinatarios en las transacciones. Podemos destinar una transacción a una dirección que no tenga una llave privada o contrato correspondiente, "quemando" el éter, haciéndolo inutilizable para siempre. La validación debe realizarse a nivel de interfaz de usuario.
+====
+
+((("quema de éter")))Enviar una transacción a la dirección incorrecta probablemente _quemará_ el éter enviado, haciéndolo inaccesible para siempre (inutilizable), ya que la mayoría de las direcciones no tienen una llave privada conocida y, por lo tanto, no se puede generar una firma para gastarlo. Se asume que la validación de las direcciones ocurre a nivel de la interfaz de usuario (véase <<EIP55>>). De hecho, hay una serie de razones válidas para quemar éter&#x2014;por ejemplo, como un desincentivo a las trampas en los canales de pago y en otros contratos inteligentes&#x2014;y dado que la cantidad de éter es finita, la quema de éter distribuye efectivamente el valor quemado a todos los titulares de éter (en proporción a la cantidad de éter que poseen).
+
+[[tx_value_data]]
+=== Valor y Data de una Transacción
+
+((("transacciones","campos de valor y data", id="ix_06transactions-asciidoc5", range="startofrange")))La "carga útil" o "payload" principal de una transacción está contenida en ((("campo de data", id="ix_06transactions-asciidoc6", range="startofrange")))((("campo de valor", id="ix_06transactions-asciidoc7", range="startofrange")))dos campos: +value+ (o valor) y +data+. Las transacciones pueden tener tanto valor como data, o pueden tener solo valor, solo datos o ni valor ni datos. Las cuatro combinaciones son válidas.
+
+((("invocación")))((("pago")))Una transacción que únicamente especifica el campo "valor" es un _pago_. Una transacción con solo data, es una _invocación_. Una transacción con valor y data es tanto un pago como una invocación. Una transacción sin valor ni data&#x2014;bueno, ¡probablemente solo sea una pérdida de gas! Pero aún es posible.
+
+Probemos todas estas combinaciones. Primero, configuraremos las direcciones de origen y destino de nuestra billetera, solo para que la demostración sea más fácil de leer:
+
+[source,javascript]
+----
+src = web3.eth.accounts[0];
+dst = web3.eth.accounts[1];
+----
+
+Nuestra primera transacción contiene solo un valor (será un pago) y ninguna carga útil o "payload" de data:
+
+[[tx_value_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: ""});
+----
+
+Nuestra billetera muestra una pantalla de confirmación que indica el valor a enviar, como se muestra en la <<parity_txdemo_value_nodata>>.
+
+[[parity_txdemo_value_nodata]]
+.Billetera de Parity mostrando una transacción con valor, pero sin data
+image::images/parity_txdemo_value_nodata.png["Billetera de Parity mostrando una transacción con valor, pero sin data"]
+
+
+El siguiente ejemplo especifica tanto un valor como una carga útil de data:
+
+[[tx_value_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, \
+  value: web3.utils.toWei(0.01, "ether"), data: "0x1234"});
+----
+
+Nuestra billetera muestra una pantalla de confirmación que indica el valor a enviar, así como la carga útil de data, como se muestra en la <<parity_txdemo_value_data>>.
+
+[[parity_txdemo_value_data]]
+.Billetera de Parity mostrando una transacción con valor y data
+image::images/parity_txdemo_value_data.png["Billetera de Parity mostrando una transacción con valor y data"]
+
+La siguiente transacción incluye una carga útil de data pero especifica un valor igual a cero:
+
+[[tx_novalue_data_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: "0x1234"});
+----
+
+Nuestra billetera muestra una pantalla de confirmación que indica un valor cero y una carga útil de data, como se muestra en la <<parity_txdemo_novalue_data>>.
+
+[[parity_txdemo_novalue_data]]
+.Billetera de Parity mostrando una transacción sin valor, y solo con data
+image::images/parity_txdemo_novalue_data.png["Billetera de Parity mostrando una transacción sin valor, y solo con data"]
+
+[role="pagebreak-before"]
+Finalmente, la última transacción no incluye ni un valor para enviar ni una carga útil de data:
+
+[[tx_novalue_nodata_src]]
+[source,javascript]
+----
+web3.eth.sendTransaction({from: src, to: dst, value: 0, data: ""}));
+----
+
+Nuestra billetera muestra una pantalla de confirmación que indica un pago por valor cero, como se muestra en la <<parity_txdemo_novalue_nodata>>.
+
+[[parity_txdemo_novalue_nodata]]
+.Billetera de Parity mostrando una transacción sin valor y sin data
+image::images/parity_txdemo_novalue_nodata.png["Billetera de Parity mostrando una transacción sin valor y sin data"]
+
+[[value_EOA_contracts]]
+==== Transmitiendo Valor a una EOA y a Contratos
+
+((("EOA (Externally Owned Account)","enviando valor a una EOA")))((("contratos inteligentes","enviando valor a contratos")))((("transacciones","enviando valor a EOAs y contratos")))Cuando ensamblamos una transacción en Ethereum que contiene un valor, el acto equivale a preparar un _pago_. Tales transacciones se comportan de manera diferente dependiendo de si la dirección de destino es o no un contrato.
+
+Para las direcciones EOA, o más bien para cualquier dirección que no esté marcada como un contrato en la cadena de bloques, Ethereum registrará un cambio de estado, agregando el valor que enviamos al saldo a favor de la dirección. Si la dirección no se había visto antes, esta se agregará a la representación interna del estado global que administra la aplicación del cliente en cuestión, inicializando el estado para esta dirección específica, con el valor de nuestro pago.
+
+Si la dirección de destino (+to+) es un contrato, entonces la máquina virtual de Ethereum (la EVM) ejecutará el contrato e intentará invocar a la función especificada en la carga útil (payload) de la data de nuestra transacción. Si no hay data en nuestra transacción, la EVM invocará a una tal función _fallback_ y, si esa función es pagadera (es decir está etiquetada para recibir pagos), será ejecutada para determinar qué hacer a continuación. Si no hay ningún código en la función "fallback", entonces el efecto de la transacción será aumentar el saldo a favor del contrato, exactamente como si se tratase de un pago a una billetera cualquiera. Si no hay una función "fallback", o si esta fallback existe pero no está etiquetada para recibir pagos (no es pagadera), la transacción se revertirá.
+
+Un contrato puede rechazar pagos entrantes arrojando una excepción inmediatamente tras la invocación de una función, o según lo determinen las condiciones del código de una función. Si la función finaliza correctamente (es decir, sin excepciones), el estado del contrato se actualizará reflejando un aumento en el saldo a favor en éter, para el contrato.(((range="endofrange", startref="ix_06transactions-asciidoc7")))(((range="endofrange", startref="ix_06transactions-asciidoc6")))
+
+[[data_EOA]]
+==== Transmitiendo una Carga Útil de Data (Payload) a una EOA o un Contrato
+
+((("carga útil de data, transmitida a EOAs y contratos", id="ix_06transactions-asciidoc8", range="startofrange")))((("EOA (Externally Owned Account)","transmitiendo carga útil de data", id="ix_06transactions-asciidoc9", range="startofrange")))((("contratos inteligentes","transmitiendo carga útil de data a contratos", id="ix_06transactions-asciidoc10", range="startofrange")))((("transacciones","transmitiendo carga útil de data a EOAs y contratos", id="ix_06transactions-asciidoc11", range="startofrange")))Cuando nuestra transacción contiene datos, lo más probable es que esté dirigida a la dirección de un contrato. Eso no significa que no se pueda enviar una carga útil de datos a una EOA&#x2014;esto es completamente válido en el protocolo de Ethereum. Sin embargo, en este caso, la interpretación de la data, depende de la billetera que se utiliza para llegar a la EOA. Esta data es ignorada por el protocolo de Ethereum. La mayoría de las billeteras también ignoran cualquier data recibida en una transacción a una EOA que estas controlan. En el futuro, es posible que surjan estándares que permitan a las billeteras interpretar la data de la forma en que lo hacen los contratos, lo que permitirá que las transacciones invoquen funciones que se ejecutan dentro de las billeteras de los usuarios. La diferencia fundamental es que cualquier interpretación de la carga útil de data por parte de una EOA no está sujeta a las reglas de consenso de Ethereum, a diferencia de la pass:[<span class="keep-together">ejecución</span>] de un contrato.
+
+Por ahora, vamos a suponer que nuestra transacción esta despachando data a la dirección de un contrato. ((("invocación de un contrato")))((("invocación")))En ese caso, la data será interpretada por la EVM como una _invocación del contrato_. ((("invocación de una función")))La mayoría de los contratos utilizan esta data más específicamente como la acción de _invocar una función_, especificando el nombre de la función y suministrando cualquier argumento codificado a la función.
+
+La carga útil de data enviada a un contrato compatible con el estándar ABI (y podemos asumir que todos los contratos lo son) es una codificación serializada en formato hexadecimal de:
+
+Un "function selector":: Los primeros 4 bytes del valor hash Keccak-256, del prototipo de la función. Esto le permite al contrato identificar de manera unívoca cual de sus funciones deseamos invocar.
+
+Los argumentos de la función:: Los argumentos de la función, codificados de acuerdo con las reglas para los distintos tipos de variable elementales definidas en la especificación ABI.
+
+En el <<solidity_faucet_example>>, definimos una función para retiros:
+
+[[withdraw_function_src]]
+[source,solidity]
+----
+function withdraw(uint withdraw_amount) public {
+----
+
+((("prototipo de una función")))El _prototipo_ de una función se define como la cadena que contiene el nombre de la función, seguido de la data de los tipos de variables de cada uno de sus argumentos, encerrados entre paréntesis y separados por comas. El nombre de la función en este caso, será +withdraw+ y tomará un solo argumento que será del tipo +uint+ (el cual es un equivalente para +uint256+), de manera que el prototipo de +withdraw+ podría ser:
+
+[source,solidity]
+----
+withdraw(uint256)
+----
+
+Calculemos el valor hash Keccak-256 de esta cadena:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.utils.sha3("withdraw(uint256)");</strong>
+'0x2e1a7d4d13322e7b96f9a57413e1525c250fb7a9021cf91d1540d5b69f16a49f'
+</pre>
+++++
+
+Los primeros 4 bytes del hash son +0x2e1a7d4d+. Ese será nuestro valor para el "function selector", que le dirá al contrato a cual función queremos invocar.
+
+A continuación, calcularemos un valor para ser suministrado como argumento para +withdraw_amount+. Queremos retirar 0,01 éter. Codifiquemos esto en un entero de 256 bits sin signo bajo el formato de serialización hexadecimal big-endian, denominado en weis:
+
+++++
+<pre data-type="programlisting">
+> <strong>withdraw_amount = web3.utils.toWei(0.01, "ether");</strong>
+'10000000000000000'
+> <strong>withdraw_amount_hex = web3.utils.toHex(withdraw_amount);</strong>
+'0x2386f26fc10000'
+</pre>
+++++
+
+Ahora, agregamos la cadena con el selector de funciones (el "function selector") a la cantidad calculada (a la que le aplicamos un relleno de ceros para completar 32 bytes):
+
+----
+2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000
+----
+
+Esa viene a ser la carga útil de data para nuestra transacción, invocando a la función +withdraw+ y solicitando 0.01 éter como +withdraw_amount+(((range="endofrange", startref="ix_06transactions-asciidoc11")))(((range="endofrange", startref="ix_06transactions-asciidoc10")))(((range="endofrange", startref="ix_06transactions-asciidoc9")))(((range="endofrange", startref="ix_06transactions-asciidoc8"))).(((range="endofrange", startref="ix_06transactions-asciidoc5")))
+
+[[contract_reg]]
+=== Transacción Especial: Creación de un Contrato
+
+((("transacción de creación de contratos", id="ix_06transactions-asciidoc12", range="startofrange")))((("transacciones","creación de contratos", id="ix_06transactions-asciidoc13", range="startofrange")))Un caso especial que debemos mencionar es el de una transacción que _crea un nuevo contrato_ en la cadena de bloques, desplegándolo para su uso futuro. ((("la dirección cero","creación de contratos")))Las transacciones de creación de contrato se envían a una dirección de destino especial llamada _dirección cero_; el campo +to+ en una transacción de registro de contrato contiene la dirección +0x0+. Esta dirección no representa ni a una EOA (no hay un par de llaves público-privadas que le correspondan) ni a un contrato. Esta dirección nunca podrá gastar éter ni podrá iniciar una transacción. Solo se utiliza como destino, con el significado especial de "favor crear este contrato".
+
+Si bien la dirección cero está destinada solo a la creación de contratos, a veces recibe pagos de varias direcciones. ((("quema de éter")))Hay dos explicaciones para esto: o bien fue por accidente, resultando en una pérdida de éter, o se trata de una _quema de éter_ intencional (destruyendo deliberadamente el éter enviándolo a una dirección desde la cual nunca se puede gastar). Sin embargo, si desea realizar una quema de éter intencional, debemos dejar clara nuestra intención a la red y utilizar la dirección especialmente designada a la quema de éter en su lugar:
+
+[[burn_address]]
+----
+0x000000000000000000000000000000000000dEaD
+----
+
+[WARNING]
+====
+Cualquier éter enviado a esta dirección designada para la quema, será inutilizable y se perderá para siempre.
+====
+
+Una transacción de creación de contrato solo necesita contener una carga útil de data que contenga el código compilado en formato binario que creará el contrato. El único efecto de esta transacción es la creación del contrato. Puede incluirse una cantidad de éter en el campo +value+ si se desea establecer el nuevo contrato con un saldo inicial, pero eso es completamente opcional. Si envía un valor (éter) a la dirección de creación del contrato sin una carga útil de datos (es decir, sin contrato), el efecto es el mismo que enviar los fondos a una dirección para la quema&#x2014;no habrá contrato alguno al cual acreditar el saldo, por lo que los éter se perderán.
+
+Como ejemplo, podemos crear el contrato _Faucet.sol_ usado en el <<intro_chapter>> creando manualmente una transacción destinada a la dirección cero con el contrato ubicado en la carga útil de la data. El contrato debe compilarse en una representación de código binario. Esto se puede hacer con el compilador de Solidity:
+
+++++
+<pre data-type="programlisting" class="pagebreak-before">
+$ <strong>solc --bin Faucet.sol</strong>
+
+Binary:
+6060604052341561000f57600080fd5b60e58061001d6000396000f30060606040526004361060...
+</pre>
+++++
+
+La misma información también se puede obtener del compilador en línea "Remix".
+
+Ahora podemos crear la transacción:
+
+++++
+<pre data-type="programlisting">
+> <strong>src = web3.eth.accounts[0];</strong>
+> <strong>faucet_code = \
+  "0x6060604052341561000f57600080fd5b60e58061001d6000396000f300606...f0029";</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: 0, data: faucet_code, \
+  gas: 113558, gasPrice: 200000000000});</strong>
+
+"0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b"
+</pre>
+++++
+
+Es una buena práctica especificar siempre un parámetro para +to+, incluso en el caso de la creación de un contrato con la dirección cero, porque el costo de enviar accidentalmente el éter a la dirección +0x0+ y perderlo para siempre es demasiado alto. También debe especificar el +gasPrice+ y el +gasLimit+.
+
+Una vez que se confirma el contrato en la red, podemos verlo en el explorador de bloques de Etherscan, como se muestra en la <<publish_contract_from_web3>>.
+
+[[publish_contract_from_web3]]
+.Etherscan mostrando el contrato exitosamente confirmado
+image::images/contract_published.png["Etherscan mostrando el contrato exitosamente confirmado"]
+
+Podemos observar el recibo de la transacción para obtener información sobre el contrato:
+
+++++
+<pre data-type="programlisting">
+> <strong>web3.eth.getTransactionReceipt( \
+  "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b");</strong>
+
+{
+  blockHash: "0x6fa7d8bf982490de6246875deb2c21e5f3665b4422089c060138fc3907a95bb2",
+  blockNumber: 3105256,
+  contractAddress: "0xb226270965b43373e98ffc6e2c7693c17e2cf40b",
+  cumulativeGasUsed: 113558,
+  from: "0x2a966a87db5913c1b22a59b0d8a11cc51c167a89",
+  gasUsed: 113558,
+  logs: [],
+  logsBloom: \
+    "0x00000000000000000000000000000000000000000000000000...00000",
+  status: "0x1",
+  to: null,
+  transactionHash: \
+    "0x7bcc327ae5d369f75b98c0d59037eec41d44dfae75447fd753d9f2db9439124b",
+  transactionIndex: 0
+}
+</pre>
+++++
+
+Esto incluye la dirección del contrato, la cual podemos utilizar para enviar y recibir fondos del contrato como se muestra en la sección anterior:
+
+++++
+<pre data-type="programlisting">
+> <strong>contract_address = "0xb226270965b43373e98ffc6e2c7693c17e2cf40b"</strong>
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, \
+  value: web3.utils.toWei(0.1, "ether"), data: ""});</strong>
+
+"0x6ebf2e1fe95cc9c1fe2e1a0dc45678ccd127d374fdf145c5c8e6cd4ea2e6ca9f"
+
+> <strong>web3.eth.sendTransaction({from: src, to: contract_address, value: 0, data: \
+  "0x2e1a7d4d000000000000000000000000000000000000000000000000002386f26fc10000"});</strong>
+
+"0x59836029e7ce43e92daf84313816ca31420a76a9a571b69e31ec4bf4b37cd16e"
+</pre>
+++++
+
+Después de un tiempo, ambas transacciones son visibles en Etherscan, como se muestra en la <<publish_contract_transactions>>.(((range = &quot;endofrange&quot;, startref = &quot;ix_06transactions-asciidoc13&quot;))) (((range = &quot;endofrange&quot;, startref = &quot;ix_06transactions-asciidoc12&quot;)))
+
+[[publish_contract_transactions]]
+.Etherscan mostrando las transacciones en las que se envían y se reciben fondos
+image::images/published_contract_transactions.png["Etherscan mostrando las transacciones en las que se envían y se reciben fondos"]
+
+
+[[digital_sign]]
+=== Firmas Digitales
+
+((("firmas digitales", id="ix_06transactions-asciidoc14", range="startofrange")))((("transacciones","firmas digitales y transacciones", id="ix_06transactions-asciidoc15", range="startofrange")))Hasta ahora, no hemos profundizado en ningún detalle sobre las firmas digitales. En esta sección, analizamos cómo funcionan las firmas digitales y cómo se pueden utilizar para presentar una prueba de titularidad de una llave privada sin tener que revelar dicha llave privada.
+
+[[ecdsa]]
+==== El Algoritmo de Firma Digital de Curva Elíptica
+
+(((&quot;firmas digitales&quot;, &quot;ECDSA y&quot;))) (((&quot;Algoritmo de firma digital de curva elíptica (ECDSA)&quot;, &quot;acerca de&quot;))) El algoritmo de firma digital utilizado por Ethereum es el _Algoritmo de Firma Digital de Curva Elíptica_ (de sus siglas en inglés, ECDSA). Se basa en pares de llaves públicas y privadas de curva elíptica, como se describe en la sección <<elliptic_curve>>.
+
+Una firma digital tiene tres propósitos en Ethereum (consulte la siguiente barra lateral). Primero, la firma prueba que el propietario de la llave privada, que es por implicación el propietario de una cuenta de Ethereum, ha _autorizado_ el gasto de éter o la ejecución de un contrato. ((("el no repudio")))En segundo lugar, garantiza el _no repudio_: la prueba de la autorización es innegable. En tercer lugar, la firma prueba que los datos de la transacción no han sido ni _no pueden ser modificados_ por nadie después de que se haya firmado la transacción.
+
+[[digital_signature_definition]]
+.Definición Según la Wikipedia de una Firma Digital
+****
+((("firmas digitales","definición según la Wikipedia")))Una _ firma digital_ es un esquema matemático para presentar la autenticidad de mensajes o documentos digitales. Una firma digital válida le da al destinatario una razón para creer que el mensaje fue creado por un remitente conocido (autenticación), que el remitente no puede negar haber enviado el mensaje (no repudio) y que el mensaje no fue alterado en su tránsito (integridad) .
+
+_Fuente: https://en.wikipedia.org/wiki/Digital_signature_
+****
+
+[[digital_sign_work]]
+==== Cómo Funcionan las Firmas Digitales
+
+((("firmas digitales","mecanismo de operación")))Una firma digital es un esquema matemático que consta de dos partes. La primera parte es un algoritmo para crear una firma, utilizando una llave privada (la llave de la firma), a partir de un mensaje (que en nuestro caso es la transacción en sí). La segunda parte es un algoritmo que permite a cualquier persona verificar la firma utilizando tan solo el mensaje y una llave pública.
+
+[[digital_sign_create]]
+===== Creando una Firma Digital
+
+((("firmas digitales","su creación")))((("Algoritmo de Firma Digital de Curva Elíptica (ECDSA)","creación de la firma")))En la implementación de Ethereum de una ECDSA, el "mensaje" que se firma es la transacción , o más exactamente, el hash Keccak-256 de los datos codificados con la serialización RLP de la transacción. La llave de la firma es la llave privada de una EOA. El resultado es la firma:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <msub><mi>F</mi> <mrow><mi>s</mi><mi>i</mi><mi>g</mi></mrow> </msub>
+    <mrow>
+      <mo>(</mo>
+      <msub><mi>F</mi> <mrow><mi>k</mi><mi>e</mi><mi>c</mi><mi>c</mi><mi>a</mi><mi>k</mi><mn>256</mn></mrow> </msub>
+      <mrow>
+        <mo>(</mo>
+        <mi>m</mi>
+        <mo>)</mo>
+      </mrow>
+      <mo>,</mo>
+      <mi>k</mi>
+      <mo>)</mo>
+    </mrow>
+  </mrow>
+</math>
+</div>
+++++
+
+dónde:
+
+* _k_ es la llave privada de la firma.
+* _m_ es el mensaje, la transacción codificada con la serialización RLP.
+* _F_~_keccak256_~ es la función hash Keccak-256.
+* _F_~_sig_~ es el algoritmo de la firma.
+* _Sig_ es la firma resultante.
+
+[[sign_function]]
+La función _F_~_sig_~ produce una firma __Sig__ que se compone de dos valores, comúnmente denominados _r_ y _s_:
+
+++++
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <mrow>
+    <mrow>
+      <mi>S</mi>
+      <mi>i</mi>
+      <mi>g</mi>
+    </mrow>
+    <mo>=</mo>
+    <mo>(</mo>
+    <mi>r</mi>
+    <mo>,</mo>
+    <mi>s</mi>
+    <mo>)</mo>
+  </mrow>
+</math>
+</div>
+++++
+
+[[verify_sign]]
+==== Verificando la Firma
+
+((("firmas digitales","verificación")))Para verificar una firma, se debe tener la firma (a _r_ y a _s_), la transacción serializada, y la llave pública que corresponde a la llave privada utilizada para crear la firma. Básicamente, la verificación de una firma significa que "solo el propietario de la llave privada que generó esta llave pública podría haber producido esta firma en esta transacción".
+
+El algoritmo de verificación de la firma toma el mensaje (es decir, el valor hash de la transacción para nuestro caso), la llave pública del firmante y la firma (valores _r_ y _s_), y devuelve +verdadero+ si la firma es válida para este mensaje y esta llave pública específicamente.
+
+[[ecdsa_math]]
+==== Matemáticas del Algoritmo ECDSA
+
+((("firmas digitales","matemáticas ECDSA", id="ix_06transactions-asciidoc16", range="startofrange")))((("Algoritmo de Firma Digital de Curva Elíptica (ECDSA)","sus matemáticas", id="ix_06transactions-asciidoc17", range="startofrange")))Como se mencionó anteriormente, las firmas se crean mediante una función matemática _F_~_sig_~ que produce una firma compuesta de dos valores, _r_ y _s_. En esta sección nos enfocamos en la función _F_~_sig_~ con más detalle.
+
+((("llave privada efímera")))El algoritmo de firma primero genera una llave privada _efímera_ (temporal) de una manera criptográficamente segura. Esta llave temporal se utiliza en el cálculo de los valores _r_ y _s_ para garantizar que los atacantes que observan transacciones firmadas en la red Ethereum no puedan calcular la llave privada real del remitente.
+
+Como sabemos por lo visto en <<pubkey>>, la llave privada efímera se usa para derivar la llave pública correspondiente (efímera), por lo que tenemos:
+
+* Un número aleatorio criptográficamente seguro _q_, que se utiliza como llave privada efímera
+* La llave pública efímera correspondiente _Q_, generada a partir de _q_ y el punto generador de curva elíptica _G_
+
+El valor _r_ de la firma digital es entonces la coordenada _x_ de la llave pública efímera _Q_.
+
+A partir de ahí, el algoritmo calcula el valor _s_ de la firma, de modo que:
+
+++++
+<ul class="simplelist">
+<li><em>s</em> &#8801; <em>q</em><sup>-1</sup> (<em>Keccak256</em>(<em>m</em>) + <em>r</em> * <em>k</em>)  &nbsp;  &nbsp; (<em>mod p</em>)</li>
+</ul>
+++++
+
+dónde:
+
+* _q_ es la llave privada efímera.
+* _r_ es la coordenada _x_ de la llave pública efímera.
+* _k_ es la llave privada de la firma (la llave del titular de la EOA).
+* _m_ es la data de la transacción.
+* _p_ es el orden primo de la curva elíptica.
+
+La verificación es el procedimiento inverso de la función de generación de firmas, utilizando los valores _r_ y _s_ y la llave pública del remitente para calcular un valor _Q_, que es un punto en la curva elíptica (la llave pública efímera utilizada en la creación de firmas). Los pasos son los siguientes:
+
+1. Verificar que todas los argumentos estén formados correctamente
+2. Calcular _w_ = __s__^-1^_mod p_
+3. Calcular _u~1~_ = __Keccak256__(__m__) * _w_ _mod p_
+4. Calcular _u~2~_ = _r_ * _w_ _mod p_
+5. Finalmente, calcúlese el punto en la curva elíptica _Q_ &#8801; _u~1~_ * _G_ + _u~2~_ * _K_  {nbsp} {nbsp} (_mod p_)
+
+dónde:
+
+* _r_ y _s_ son los valores de la firma.
+* _K_ es la llave pública del firmante (el titular de la EOA).
+* _m_ es la data de la transacción que se firmó.
+* _G_ es el punto generador de curva elíptica.
+* _p_ es el orden primo de la curva elíptica.
+
+Si la coordenada _x_ del punto calculado _Q_ es igual a _r_, entonces el verificador puede concluir que la firma es válida.
+
+Tenga en cuenta que al verificar la firma, la llave privada no se conoce ni se revela.
+
+[TIP]
+====
+El algoritmo ECDSA es necesariamente una pieza matemática bastante complicada; una explicación completa está más allá del alcance de este libro. Una serie de excelentes guías en línea lo guiarán paso a paso: búsquese "ECDSA explained" o pruebe este enlace: http://bit.ly/2r0HhGB[].(((range="endofrange", startref="ix_06transactions-asciidoc17")))(((range="endofrange", startref="ix_06transactions-asciidoc16")))
+====
+
+[[tx_sign]]
+==== Firma de Transacciones en la Práctica
+
+((("firmas digitales","firmar en la práctica")))((("Algoritmo de Firma Digital de Curva Elíptica (ECDSA)","firma de transacciones en la práctica")))((("transacciones","firmar en la práctica")))Para producir una transacción válida, el originador debe firmar digitalmente el mensaje, utilizando el Algoritmo de Firma Digital de Curva Elíptica. Cuando decimos "firmar la transacción", en realidad nos referimos a "firmar el valor hash Keccak-256 de los datos sin firmar de la transacción serializada con el estándar RLP". La firma se aplica al hash de los datos de la transacción, no a la transacción en sí.
+
+Para firmar una transacción en Ethereum, el originador debe:
+
+1. Crear una estructura de datos para la transacción, que contenga nueve campos: +nonce+, +gasPrice+, +gasLimit+, +to+, +value+, +data+, +chainID+, +0+, +0+.
+2. Producir un mensaje codificado y serializado bajo el estándar RLP a partir de la estructura de datos de la transacción.
+3. Calcular el valor hash Keccak-256 de este mensaje serializado.
+4. Calcular la firma según el algoritmo ECDSA, firmando el hash anterior con la llave privada de la EOA de origen.
+5. Anexar los valores +v+, +r+ y +s+ calculados como firma ECDSA, a la transacción.
+
+La variable especial de la firma que hemos llamado +v+ indica dos cosas: el identificador (ID) de la cadena de bloques y el identificador de recuperación para ayudar a la función +ECDSArecover+ a verificar la firma. Este valor se calcula o bien como 27 o como 28, o igual al valor ID de la cadena de bloques duplicado, más 35 o 36. Para obtener más información sobre el ID de la cadena de bloques, consúltese <<raw_tx_eip155>>. El identificador de recuperación (27 o 28 en las firmas de "estilo antiguo", o 35 / 36 en las transacciones completas al estilo Dragón Espurio&#x2013;) se utiliza para indicar la paridad de la coordenada +y+ de la llave pública (véase <<sign_prefix>> para más detalles).
+
+
+[NOTE]
+====
+((("Dragón Espurio")))En el bloque #2.675.000, Ethereum implementó la bifurcación dura "Spurious Dragon" (Dragón Espurio), que entre otros cambios, introdujo un nuevo esquema de firma que incluyó una protección contra la reproducción de transacciones (evitando que las transacciones destinadas a una red pudieran reproducirse en otras). Este nuevo esquema de firma se especifica en el EIP-155. Este cambio afecta la forma de la transacción y su firma, por lo que se debe prestar atención a la primera de las tres variables de la firma (es decir, a +v+), que toma una de dos formas e indica los campos de datos incluidos en el mensaje de la transacción cuyo valor hash se está calculando.
+====
+
+
+[[raw_tx]]
+==== Creación y Firma de Transacciones Crudas
+
+((("EthereumJS")))((("transacciones","transacciones crudas creación/firmado")))En esta sección crearemos una transacción "cruda" o sin procesar y la firmaremos, usando la biblioteca +ethereumjs-tx+, que puede ser instalada con npm. Esto daría a mostrar las funciones que normalmente se usan dentro de una billetera o en una aplicación que firma transacciones en nombre de un usuario. El código fuente para este ejemplo está en el archivo __raw_tx_demo.js__ en el Repositorio http://bit.ly/2yI2GL3[GitHub] del libro:
+
+[[raw_tx_demo_source]]
+[source,javascript]
+----
+include::code/web3js/raw_tx/raw_tx_demo.js[]
+----
+
+[[raw_tx_demo_run]]
+La ejecución del código de este ejemplo produce los siguientes resultados:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node raw_tx_demo.js</strong>
+RLP-Encoded Tx: 0xe6808609184e72a0008303000094b0920c523d582040f2bcb1bd7fb1c7c1...
+Tx Hash: 0xaa7f03f9f4e52fcf69f836a6d2bbc7706580adce0a068ff6525ba337218e6992
+Signed Raw Transaction: 0xf866808609184e72a0008303000094b0920c523d582040f2bcb1...
+</pre>
+++++
+
+[[raw_tx_eip155]]
+==== Creación de Transacciones Crudas con EIP-155
+
+((("identificador de la cadena")))((("EIP-155 estándar de Protección contra Ataques de Reproducción Simple")))((("transacciones","creación de transacciones crudas con EIP-155")))El estándar EIP-155 de "Protección contra Ataques de Reproducción Simple" especifica una codificación de transacciones protegida contra ataques de reproducción, que incluye un _identificador de la cadena_ dentro de los datos de la transacción, antes de firmar. Esto asegura que las transacciones creadas para una cadena de bloques (por ejemplo, la red principal de Ethereum) no sean válidas en otra cadena de bloques (por ejemplo, Ethereum Classic o la red de prueba de Ropsten). Por lo tanto, las transacciones difundidas en una red no se pueden _reproducir_ en otra, de ahí el nombre del estándar.
+
+El estándar EIP-155 agrega tres campos a los seis campos principales de la estructura de datos de la transacción, a saber, el identificador de la cadena de bloques, +0+ y +0+. Estos tres campos se agregan a los datos de la transacción _antes de que se codifiquen y sea calculado su valor hash_. Por lo tanto, cambian el hash de la transacción, al que luego se le aplica la firma. Al incluir el identificador de la cadena en los datos que se firman, la firma de la transacción evita cualquier cambio, ya que la firma se invalida si se modifica el identificador de cadena. Por lo tanto, EIP-155 hace que sea imposible que una transacción se reproduzca en otra cadena, porque la validez de la firma depende del identificador de la cadena.
+
+
+El campo identificador de la cadena de bloques toma un valor de acuerdo con la red a la que está destinada la transacción, como se describe en la <<chain_id_table>>.
+
+[[chain_id_table]]
+.Identificadores de cadenas
+[options="header"]
+|======
+| Chain | Chain ID
+| Ethereum mainnet | 1
+| Morden (obsoleto), Expanse | 2
+| Ropsten | 3
+| Rinkeby | 4
+| Rootstock mainnet | 30
+| Rootstock testnet | 31
+| Kovan | 42
+| Ethereum Classic mainnet | 61
+| Ethereum Classic testnet | 62
+| Geth private testnets | 1337
+|======
+
+La estructura de transacción resultante está codificada y serializada bajo el estándar RLP, con su valor hash firmado. El algoritmo de firma se modifica ligeramente para codificar el identificador de la cadena en el prefijo +v+ también.
+
+Para mayores detalles, véase el enlace: http://bit.ly/2CQUgne[the EIP-155 specification].(((range="endofrange", startref="ix_06transactions-asciidoc15")))(((range="endofrange", startref="ix_06transactions-asciidoc14")))
+
+[[sign_prefix]]
+=== El valor del Prefijo de la Firma (v) y la Recuperación de la Llave Pública
+
+((("firmas digitales","el valor del prefijo (v) de la firma y la recuperación de la llave pública")))((("recuperación de la llave pública")))((("transacciones","el valor del prefijo (v) de la firma y la recuperación de la llave pública")))Como se mencionó en la sección <<tx_struct>>, el mensaje de la transacción no incluye un campo para identificar la dirección "desde". Esto se debe a que la llave pública del originador se puede calcular directamente a partir de la firma ECDSA. Una vez que tengamos la llave pública, podremos calcular la dirección fácilmente. El proceso de recuperación de la llave pública del firmante se denomina _recuperación de llave pública_.
+
+Dados los valores +r+ y +s+ que se calcularon en <<ecdsa_math>>, podemos calcular dos posibles llaves públicas.
+
+Primero, calculamos dos puntos de la curva elíptica, _R_ y __R__^__'__^, a partir del valor +r+ de coordenada _x_ que está en la firma. Hay dos puntos porque la curva elíptica es simétrica a lo largo del eje x, de modo que para cualquier valor +x+ hay dos valores posibles que se ajustan a la curva elíptica, uno a cada lado del eje x.
+
+De +r+ también calculamos el valor __r__^-1^, el cual es la inversa multiplicativa de +r+.
+
+Finalmente, calculamos _z_, que corresponde a los _n_ bits más bajos del valor hash del mensaje, donde _n_ es el orden de la curva elíptica.
+
+Las dos posibles llaves públicas son entonces:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>1</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+y:
+
+++++
+<ul class="simplelist">
+<li><em>K</em><sub>2</sub> = <em>r</em><sup>&#x2013;1</sup> (<em>sR</em><sup>'</sup> &#x2013; <em>zG</em>)</li>
+</ul>
+++++
+
+dónde:
+
+* __K__~1~ and __K__~2~ son las dos posibilidades para la llave pública del firmante. 
+* __r__^-1^ es el inverso multiplicativo del valor +r+ de la firma.
+* _s_ es el valor +s+ de la firma.
+* __R__ and __R__^'^ son las dos posibilidades para la llave pública efímera _Q_.
+* _z_ corresponde a los __n__-más-bajos-bits del hash del mensaje.
+* _G_ es el punto generador de curva elíptica.
+
+Para hacer las cosas más eficientes, la firma de la transacción incluye un valor de prefijo +v+, que nos dice cuál de los dos posibles valores _R_ es la llave pública efímera. Si +v+ es número par, entonces _R_ es el valor correcto. Si +v+ es número impar, entonces el valor correcto es __R__^'^. De esa manera, necesitamos calcular solo un valor para _R_ y solo un valor para _K_.
+
+[[offline_sign]]
+=== Separando Procesos de Firma y Transmisión (Firma sin Conexión)
+
+((("firmas digitales","separando procesos de firma y transmisión", id="ix_06transactions-asciidoc18", range="startofrange")))((("firma sin conexión", id="ix_06transactions-asciidoc19", range="startofrange")))((("transacciones","separando procesos de firma y transmisión", id="ix_06transactions-asciidoc20", range="startofrange")))Una vez que se firma una transacción, está lista para ser transmitida a la red Ethereum. Los tres pasos para crear, firmar y transmitir una transacción normalmente ocurren como una sola operación, por ejemplo, al utilizar +web3.eth.sendTransaction+. Sin embargo, como se vio en <<raw_tx>>, se puede crear y firmar la transacción en dos pasos separados. Una vez que tengamos una transacción firmada, ésta puede transmitirse usando +web3.eth.sendSignedTransaction+, que toma una transacción firmada y codificada en formato hexadecimal y la transmite en la red Ethereum.
+
+¿Por qué querríamos separar los procedimientos de firma y de transmisión para nuestras transacciones? La razón más común es la seguridad. La computadora que firma una transacción debe tener llaves privadas desbloqueadas cargadas en la memoria. La computadora que realiza la transmisión debe estar conectada a Internet (y ejecutar un cliente Ethereum). Si estas dos funciones están en una misma computadora, entonces tendremos llaves privadas en un sistema en línea, lo cual es bastante peligroso. Separar las funciones de firmar y de transmitir y realizarlas en diferentes máquinas (en un dispositivo fuera de línea y otro en línea, respectivamente) se denomina _firma sin conexión_ y es una práctica de seguridad común.
+
+La <<offline_signing>> muestra el proceso:
+
+1. Créese una transacción sin firmar en la computadora en línea donde se pueda recuperar el estado actual de la cuenta, especialmente el nonce actual y los fondos disponibles.
+2. Transfiera la data de la transacción sin firmar a un dispositivo fuera de línea "en burbuja", para la firma de transacciones, por ejemplo, a través de un código QR o una unidad flash USB.
+3. Transmita la transacción firmada (de regreso) a un dispositivo en línea para su transmisión hacia la cadena de bloques de Ethereum, por ejemplo, mediante un código QR o una unidad flash USB.
+
+[[offline_signing]]
+.Firma sin conexión de transacciones en Ethereum
+image::images/offline_signing.png["Firma sin conexión de transacciones en Ethereum"]
+
+Dependiendo del nivel de seguridad que necesitemos, la computadora para las "firmas sin conexión" puede tener diversos grados de separación de la computadora en línea, que van desde una sub-red aislada y con cortafuegos (es decir, en línea pero segregada) hasta un sistema completamente fuera de línea conocido como sistema _en burbuja_. ((("sistemas en burbuja")))En un sistema aislado en burbuja, no hay conectividad de red en absoluto&#x2014;la computadora estará separada del entorno en línea por un espacio de "aire". Para firmar transacciones, la data se transfiere hacia y desde la computadora en burbuja, utilizando medios de almacenamiento de datos o (mejor aún) una cámara web y códigos QR. Por supuesto, esto significa que deben transferirse manualmente todas las transacciones que se deseen firmar, resultando en un mecanismo que no es escalable.
+
+Si bien no muchos entornos pueden utilizar un sistema completamente aislado en una burbuja, incluso un pequeño grado de aislamiento tiene importantes beneficios de seguridad. Por ejemplo, una sub-red aislada con un cortafuegos que solo permite un protocolo de mensajes en cola, puede ofrecer una superficie de ataque mucho más reducida y una seguridad mucho mayor que producir firmas con un sistema en línea. ((("ZeroMQ (0MQ)")))Muchas empresas utilizan un protocolo como el denominado "ZeroMQ" (o también "0MQ"), para este propósito. Con una configuración como esta, las transacciones se serializan y se ponen en cola para la firma. El protocolo de colas transmite los mensajes serializados al equipo que producirá las firmas, de manera similar a un socket-TCP. La computadora que firma, lee las transacciones serializadas de la cola (minuciosamente), aplica la firma con la llave apropiada y luego las coloca en otra cola de salida. La cola de salida transmite las transacciones firmadas a una computadora con un cliente de Ethereum que las va retirando de la cola y las difunde a la red.(((range="endofrange", startref="ix_06transactions-asciidoc20")))(((range="endofrange", startref="ix_06transactions-asciidoc19")))(((range="endofrange", startref="ix_06transactions-asciidoc18")))
+
+[[tx_propagation]]
+=== Propagación de Transacciones
+
+((("enrutamiento por inundación")))((("nodo","propagación de transacciones")))((("propagación de transacciones")))((("transacciones","propagación de")))El La red Ethereum utiliza un protocolo de "enrutamiento por inundación". Cada cliente de Ethereum actúa como un _nodo_ en una red de pares iguales o _peer-to-peer (P2P)_, que (idealmente) forma una red altamente _mallada_. Ningún nodo de red es especial: todos actúan como iguales. Usaremos el término "nodo" para referirnos a un cliente de Ethereum que está conectado y participa en la red P2P.
+
+La propagación de transacciones comienza cuando el nodo de Ethereum originador, crea (o recibe desde un computador fuera de línea) una transacción firmada. La transacción se valida y luego se transmite a todos los demás nodos de Ethereum que están _directamente_ conectados al nodo originador. ((("nodos vecinos")))En promedio, cada nodo de Ethereum mantiene conexiones con al menos otros 13 nodos, llamados sus _vecinos_. Cada nodo vecino validará la transacción tan pronto como la recibe. Si aceptan que es válida, almacenan una copia y la propagan a todos sus vecinos (excepto a aquél de donde provino). Como resultado, la transacción se propaga hacia afuera desde el nodo originador, en forma de _inundación_ a través de la red, hasta que todos los nodos de la red tienen una copia de la transacción. Los nodos podrían filtrar algunos mensajes que se propagan, pero el procedimiento predeterminado es propagar todos los mensajes de transacciones válidas que reciben.
+
+En solo unos segundos, una transacción de Ethereum se propaga a todos los nodos de Ethereum en todo el mundo. Desde la perspectiva de cada nodo, no es posible discernir el origen de la transacción. El vecino que lo envió al nodo actual, podría haber sido el originador de la transacción o podría haberla recibido de uno de sus vecinos. Para poder rastrear los orígenes de las transacciones o interferir con su propagación, un atacante tendría que controlar un porcentaje significativo de todos los nodos de la red. Esto es parte del diseño de seguridad y privacidad de las redes P2P, especialmente cuando se aplica a las redes de las cadenas de bloques.
+
+[[chain_record]]
+=== Registro en la Cadena de Bloques
+
+((("cadena de bloques","registro de transacciones en")))((("mineros")))((("granjas de minería")))((("transacciones","registro en la cadena de bloques")))Si bien todos los nodos de Ethereum son pares iguales, algunos de ellos son operados por _mineros_ y están alimentando con transacciones y bloques a _granjas de minería_, que son redes de computadoras con unidades de procesamiento de gráficos (GPU) de alto rendimiento. Las computadoras de minería agregan transacciones a un bloque candidato e intentan encontrar una _prueba de trabajo_ que haga válido el bloque candidato. Discutiremos esto con más detalle en el <<consensus>>.
+
+Sin entrar en demasiados detalles, las transacciones válidas eventualmente se incluirán en un bloque de transacciones y, por lo tanto, se registrarán en la cadena de bloques de Ethereum. Una vez confirmadas en un bloque, las transacciones también modifican el estado de instancia única de Ethereum, ya sea modificando el saldo de una cuenta (en el caso de un pago simple) o invocando contratos que cambian su estado interno. Estos cambios se registran junto con la transacción, en forma de un _recibo_ de transacción, que también puede incluir _eventos_. Examinaremos todo esto con mucho más detalle en el <<evm_chapter>>.
+
+Una transacción que ha completado su viaje desde la creación mediante la firma por parte de una EOA, la propagación y finalmente la confirmación, ha cambiado el estado de instancia única y ha dejado una marca indeleble en la cadena de bloques.
+
+=== Transacciones de Firmas Múltiples (Multifirmas)
+
+((("transacciones de firmas múltiples (multifirma)")))((("transacciones","firmas múltiples")))Si el lector está familiarizado con las capacidades de códigos de script de Bitcoin, sabrá que es posible crear una cuenta del tipo de multifirma para Bitcoin que solo puede gastar fondos cuando varias partes firman una transacción (por ejemplo, 2 de 2 o 3 de 4 firmas). Las transacciones básicas que envían valor desde una EOA en Ethereum, no tienen disposiciones para firmas múltiples; sin embargo, las restricciones de firma arbitrarias se pueden aplicar mediante contratos inteligentes con cualquier condición que se nos ocurra, para manejar la transferencia de éter y tokens por igual.
+
+Para aprovechar esta capacidad, los éter deben transferirse a un "contrato de billetera" que estará programado con las reglas para el gasto deseadas, como requisitos de firma múltiple o límites de gasto (o combinaciones de las dos). El contrato de billetera luego envía los fondos cuando lo solicita una EOA autorizada una vez que se han cumplido las condiciones de gasto. Por ejemplo, para proteger nuestros éter bajo una condición de firma múltiple, transferimos el éter a un contrato de firma múltiple. Siempre que deseemos enviar fondos a otra cuenta, todos los usuarios requeridos deberán enviar transacciones al contrato utilizando una aplicación de billetera normal, autorizando efectivamente al contrato para ejecutar la pass:[<span class="keep-together">transacción</span>] final.
+
+Estos contratos también pueden diseñarse para requerir varias firmas antes de ejecutar el código local o para activar otros contratos. La seguridad del esquema está determinada en última instancia por el código del contrato de multifirmas.
+
+La capacidad de implementar transacciones de múltiples firmas como un contrato inteligente demuestra la flexibilidad de Ethereum. Sin embargo, es un arma de doble filo, ya que la flexibilidad adicional puede generar errores que socaven la seguridad de los esquemas de múltiples firmas. De hecho, hay una serie de propuestas para crear un comando de firma múltiple en la EVM, que elimine la necesidad de contratos inteligentes, al menos para los esquemas simples de firma múltiple tipo "M-de-N". Esto sería equivalente al sistema de múltiples firmas de Bitcoin, que es parte de las reglas de consenso básicas y ha demostrado ser robusto y seguro.
+
+=== Conclusiones
+
+Las transacciones son el punto de partida de cada actividad en el sistema de Ethereum. Las transacciones son las "entradas" que hacen que la máquina virtual de Ethereum evalúe los contratos, actualice los saldos y, en general, modifique el estado global de la cadena de bloques de Ethereum. A continuación, trabajaremos con contratos inteligentes con mucho más detalle y aprenderemos a programar en el lenguaje orientado a contratos de Solidity.(((range="endofrange", startref="ix_06transactions-asciidoc0")))

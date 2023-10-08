@@ -1,0 +1,685 @@
+[[evm_chapter]]
+== La Máquina Virtual de Ethereum
+
+((("EVM (Ethereum Virtual Machine)", id="ix_13evm-asciidoc0", range="startofrange")))En el corazón del protocolo y operación Ethereum se encuentra la Máquina Virtual Ethereum, o EVM (del inglés: "Ethereum Virtual Machine") para abreviar. Como se puede adivinar por el nombre, se trata una máquina de cómputos, no muy diferente a las máquinas virtuales de ".NET Framework" de Microsoft, o de los intérpretes de otros lenguajes de programación compilados por código binarios, como Java. En este capítulo, analizamos en detalle a la EVM, incluido su conjunto de instrucciones, estructura y funcionamiento, dentro del contexto de las actualizaciones del estado global de Ethereum.
+
+[[evm_description]]
+=== ¿Qué es la EVM?
+((("EVM (Ethereum Virtual Machine)","acerca de")))La EVM es la parte de Ethereum que maneja la implementación y ejecución de los contratos inteligentes. Las transacciones de transferencia de valor simples, de una EOA a otra, no necesitan involucrarla, prácticamente hablando, pero todo lo demás involucrará una actualización del estado global, calculado por la EVM. En un nivel alto, la EVM que se ejecuta en la cadena de bloques de Ethereum se puede considerar como una computadora descentralizada global que contiene millones de objetos ejecutables, cada uno con su propio almacén de datos permanente.
+
+((("completitud de Turing","y la EVM")))La EVM es una máquina de estado cuasi-Turing-completa; decimos "cuasi" porque todos los procesos de ejecución están limitados a un número finito de pasos computacionales debido a la cantidad de gas o combustible disponible para cualquier ejecución de contrato inteligente dado. Como tal, el problema de la parada de ejecución está "resuelto" (todas las ejecuciones del programa se detendrán) y se evita la situación en la que un procedimiento podría (accidental o maliciosamente) ejecutarse para siempre, deteniendo así la plataforma Ethereum en su totalidad.
+
+La EVM tiene una arquitectura basada en la pila, en la que se almacenan todos los valores en memoria en dicha pila. Funciona con un tamaño de palabra de 256 bits (principalmente para facilitar el hash nativo y las operaciones de curva elíptica) y tiene varios componentes de datos direccionables:
+
+[role="pagebreak-before"]
+* Un _código de programa ROM_ inmutable, cargado con el código binario del contrato inteligente a ejecutar
+* Una _memoria_ volátil, con cada ubicación inicializada explícitamente a cero
+* Un _almacenamiento_ permanente que es parte del estado global de Ethereum, también inicializado en cero
+
+También hay un conjunto de datos y variables de entorno que están disponibles durante la ejecución. Los analizaremos con más detalle más adelante en este capítulo.
+
+La <<evm_architecture>> muestra la arquitectura de la EVM y su contexto de ejecución.
+
+[[evm_architecture]]
+.La arquitectura y el Contexto de Ejecución de la Máquina Virtual de Ethereum (EVM)
+image::images/evm-architecture.png["La arquitectura y el Contexto de Ejecución de la Máquina Virtual de Ethereum (EVM)"]
+
+[[evm_comparison]]
+==== Comparación con la Tecnología Existente
+
+((("EVM (Ethereum Virtual Machine)","comparación con la tecnología existente")))El término "máquina virtual" se aplica a menudo a la virtualización de una computadora real, generalmente mediante un "hipervisor" como puede serlo VirtualBox o QEMU, o de una instancia completa del sistema operativo, como el KVM de Linux. Estos deben proporcionar una abstracción del software, respectivamente, del hardware real y de las llamadas al sistema y otras funciones del núcleo o kernel.
+
+Pero la EVM opera en un dominio mucho más limitado: es solo una máquina de cómputos y, como tal, proporciona una abstracción de únicamente cómputos y almacenamiento, similar a la especificación de la Java Virtual Machine (JVM), por ejemplo. Desde un punto de vista de alto nivel, la JVM está diseñada para proporcionar un entorno de ejecución que es independiente del sistema operativo o hardware del host subyacente, lo que permite la compatibilidad en una amplia variedad de sistemas. Los lenguajes de programación de alto nivel como Java o Scala (que usan la JVM) o C# (que usa .NET) se compilan según el conjunto de instrucciones de código binario de su respectiva máquina virtual. De la misma manera, la EVM ejecuta su propio conjunto de instrucciones de código binario (descrito en la siguiente sección), en el que se compilan los lenguajes de programación de contratos inteligentes de nivel superior como LLL, Serpent, Mutan o Solidity.
+
+La EVM, por lo tanto, no tiene la capacidad de planificar su ejecución, pues el orden de ejecución se instruye externamente a ella; los clientes de Ethereum pasan revista a las transacciones ya confirmadas en los bloques de la cadena para determinar e instruir qué contratos inteligentes debe ejecutar la EVM y en qué orden. En este sentido, la computadora global de Ethereum es de una sola secuencia de procesos, tal como lo es JavaScript. La EVM no tiene ningún manejo de "interfaz de sistema" alguna, ni tampoco &#x201c;soporte de hardware&#x201d;&#x2014;no hay ninguna máquina física con la cual interactuar. La computadora del global de Ethereum es completamente virtual.
+
+[[evm_bytecode_overview]]
+==== El Conjunto de Instrucciones de la EVM (Códigos Operacionales de Nivel Binario)
+
+((("operaciones binarias", id="ix_13evm-asciidoc1", range="startofrange")))((("EVM (Ethereum Virtual Machine)","conjunto de instrucciones (operaciones binarias)", id="ix_13evm-asciidoc2", range="startofrange")))((("código binario de la EVM","conjunto de instrucciones", id="ix_13evm-asciidoc3", range="startofrange")))El conjunto de instrucciones de la EVM ofrece la mayoría de las operaciones que podríamos esperar de una máquina como esta, incluyendo:
+
+* Operaciones lógico-aritméticas a nivel binario
+* Capacidades de consulta al contexto de ejecución
+* Acceso a la pila, a la memoria y al almacenamiento
+* Controles sobre la secuencia de pasos de una ejecución
+* Operaciones de registro, de llamadas y otros similares
+
+Además de las operaciones típicas de código binario que podríamos esperar, la EVM también tiene acceso a la información de las cuentas (por ejemplo, dirección y saldo) e información de los bloques (por ejemplo, el número de bloque y precio actual del combustible o gas).
+
+Comencemos nuestra exploración de la EVM con más detalle observando los códigos de operación disponibles y lo que ellos hacen. Como era de esperar, todos los operandos se toman de la pila y los resultados (cuando correspondes) se suelen ubicar
+de regreso, en la parte superior de la pila.
+
+[NOTE]
+====
+Podemos encontrar una lista completa de los códigos de operación y su correspondiente costo en gas en el <<evm_opcodes>>.
+====
+
+Los códigos de operación disponibles se pueden dividir en las siguientes categorías:
+
+[[arithmetic_opcodes]]
+Operaciones aritméticas:: Instrucciones aritméticas a nivel de códigos operacionales:
++
+----
+ADD        //Suma los dos elementos más superiores de la pila
+MUL        //Multiplica los dos elementos más superiores de la pila
+SUB        //Substrae del elemento más alto en la pila el valor del segundo elemento más alto en la pila
+DIV        //División entera
+SDIV       //División entera afectada por signo
+MOD        //Operación módulo (residuo)
+SMOD       //Operación módulo afectada por signo
+ADDMOD     //Suma de dos números en aritmética modular, módulo según tercer elemento de la pila, para números con y sin signo
+MULMOD     //Multiplicación de dos números en aritmética modular, módulo según tercer elemento de la pila, para números con y sin signo
+EXP        //Operación exponencial
+SIGNEXTEND //Extiende la longitud de un entero con signo como complemento binario
+SHA3       //Calcula el valor de la función hash Keccak-256 tomando como argumento un bloque de memoria
+----
++
+Tómese en cuenta que toda la aritmética es llevada a cabo con aritmética modular, con el modulo 2^256^ (a no ser que se indique otra cosa), y que el cero elevado a la cero, 0^0^, se asume con valor igual a 1.
+
+
+[[stack_opcodes]]
+Operaciones de la pila:: Instrucciones de gestión de elementos de la pila, memoria y almacenamiento:
++
+----
+POP     //Elimina el elemento más alto de la pila
+MLOAD   //Carga una palabra proveniente de la memoria
+MSTORE  //Guarda una palabra en la memoria
+MSTORE8 //Almacena un byte en la memoria
+SLOAD   //Carga una palabra proveniente del almacenamiento
+SSTORE  //Guarda una palabra en el almacenamiento
+MSIZE   //Consulta el tamaño de la memoria activa en bytes
+PUSHx   //Coloca un elemento de x bytes en la pila, donde x puede ser cualquier entero desde
+        // 1 a 32 (es decir, la palabra completa) inclusive
+DUPx    //Duplica el x-avo elemento de la pila, donde x puede ser cualquier entero desde el
+        // 1 hasta el 16 inclusive
+SWAPx   //Intercambia el primero y el (x+1)-avo elementos de la pila, donde x puede ser cualquier
+        // entero desde el 1 hasta el 16 inclusive
+----
+
+
+[[flow_opcodes]]
+Operadores de Secuencia de Procesos:: Instrucciones para el control de secuencias:
++
+----
+STOP      //Detiene la ejecución
+JUMP      //Reasigna el valor del puntero de instrucciones a cualquier otro valor
+JUMPI     //Alteración condicional del valor del puntero de instrucciones
+PC        //Consulta el valor del puntero de instrucciones (program counter) (es decir, el valor que tenía el puntero
+          //antes del incremento que corresponde a esta instrucción)
+JUMPDEST  //Marca un destino válido para las instrucciones "JUMP"
+----
+
+[[system_opcodes]]
+Operaciones del sistema:: Códigos operacionales para el sistema que ejecuta el programa:
++
+----
+LOGx          //Anexa un historial de a registros con x "temas" (o elementos de la pila), donde x es cualquier entero
+              //desde 0 hasta 4 inclusive
+CREATE        //Crea una nueva cuenta con cierto código asociado a ella (un contrato)
+CALL          //Es un mensaje de invocación hacia otra cuenta, es decir, que ejecuta el código de
+              //otra cuenta
+CALLCODE      //Mensaje de invocación hacia la cuenta actual pero con el código de otra cuenta
+              //otra cuenta
+RETURN        //Detiene la ejecución y recupera la data de salida generada
+DELEGATECALL  //Mensdaje de invocación hacia la cuenta actual con el código
+              //de una cuenta alternativa, pero donde persisten el valor actual para
+              //"sender" y "value"
+STATICCALL    //Mensaje de invocación "estático" (sin cambios de estado) hacia otra cuenta
+REVERT        //Detiene la ejecución, revierte los cambios de estado pero devuelve la
+              //data y el gas sobrante
+INVALID       //La instrucción inválida por defecto
+SELFDESTRUCT  //Detiene la ejecución y registra la cuenta para ser borrada
+----
+
+[[logic_opcodes]]
+Operaciones lógicas:: Códigos operacionales para comparaciones y lógica de nivel binario:
++
+----
+LT     //Comparador "menor-que"
+GT     //Comparador "mayor-que"
+SLT    //Comparador "menor-que" afectado por signo
+SGT    //Comparador "mayor-que" afectado por signo
+EQ     //Comparador de igualdad
+ISZERO //Un operador NOT simple
+AND    //Operador AND a nivel binario
+OR     //Operador OR a nivel binario
+XOR    //Operador XOR a nivel binario
+NOT    //Operador NOT a nivel binario
+BYTE   //Selecciona un solo byte de una palabra de ancho de 256-bit completa
+----
+
+[[environment_opcodes]]
+Operadores de entorno:: Códigos operacionales que se manejan con la información operativa del entorno:
++
+----
+GAS            //Recupera la cantidad disponible de gas (después de reducir la cantidad
+               //por la ejecución de esta instrucción)
+ADDRESS        //Recupera la dirección de la cuenta actualmente en ejecución
+BALANCE        //Recupera el saldo en cuenta de cualquier cuenta dada
+ORIGIN         //Recupera la dirección de la EOA que ha iniciado la actual ejecución
+               //de la EVM
+CALLER         //Recupera la dirección del invocador inmediatamente responsable
+               //de esta ejecución
+CALLVALUE      //Recupera la cantidad de éter depositado por el invocador responsable
+               //de esta ejecución
+CALLDATALOAD   //Recupera la data de ingreso enviada por el invocador responsable de
+               //esta ejecución
+CALLDATASIZE   //Recupera el tamaño de la data de ingreso
+CALLDATACOPY   //Copia la data de ingreso a la memoria
+CODESIZE       //Recupera el tamaño del código que se ejecuta en el entorno actual
+CODECOPY       //Copia el código que se ejecuta en el entorno actual a la
+               //memoria
+GASPRICE       //Recupera el precio del gas especificado por el originador de la
+               //transacción
+EXTCODESIZE    //Recupera el tamaño del código de cualquier cuenta
+EXTCODECOPY    //Copia el código de cualquier cuenta a la memoria
+RETURNDATASIZE //Recupera el tamaño de la data de salida resultante de la invocación previa
+               //en el entorno actual
+RETURNDATACOPY //Copia la data de salida resultante de la ultima consulta a la memoria
+----
+
+[[block_opcodes]]
+Operaciones respecto a bloques de la cadena:: Códigos operacionales para el acceso a la información del bloque actual:(((range="endofrange", startref="ix_13evm-asciidoc3")))(((range="endofrange", startref="ix_13evm-asciidoc2")))(((range="endofrange", startref="ix_13evm-asciidoc1")))
++
+----
+BLOCKHASH  //Recupera el valor hash de uno de los 256 bloques más recientemente
+           //completados
+COINBASE   //Recupera la dirección del beneficiario de la recompensa del bloque
+TIMESTAMP  //Recupera el sello de tiempo del bloque
+NUMBER     //Recupera el número del bloque
+DIFFICULTY //Recupera la dificultad del bloque
+GASLIMIT   //Recupera el limite de gas del bloque
+----
+
+[[evm_state_descriptions]]
+==== Estado de Ethereum
+
+((("EVM (Ethereum Virtual Machine)","actualización del estado global de Ethereum")))El trabajo de la EVM es actualizar el estado global de Ethereum, computando las transiciones de estado válidas como resultado de la ejecución del código de los contratos inteligentes, según lo definido por el protocolo de Ethereum. Este aspecto lleva a la descripción de Ethereum como una _máquina de estado basada en transacciones_, que refleja el hecho de que los actores externos (es decir, los titulares de cuentas y los mineros) inician las transiciones de estado creando, aceptando y ordenando transacciones. Es útil en este punto considerar qué constituye el "estado" de Ethereum.
+
+((("estado global")))A un nivel superior, tenemos el _estado global_ de Ethereum. El estado global es un mapeo que va desde direcciones de Ethereum (valores de 160-bits de extensión) hacia las ((("cuenta","y estado global")))_cuentas_. ((("saldo, y estado global")))((("nonces","y estado global")))A un nivel inferior, cada dirección de Ethereum representa una cuenta que compone un _saldo_ en éter (almacenado como el número de weis que son propiedad de la cuenta), un _nonce_ (que representa el número de transacciones enviadas con éxito desde esta cuenta si es una EOA, o el número de contratos creados por ella si es una cuenta de contrato), el _almacenamiento_ de la cuenta (que es un almacén permanente de data, solo utilizado por contratos inteligentes) y el _código de programa_ de la cuenta (nuevamente, solo si la cuenta es una cuenta de contrato inteligente). Una EOA siempre carecerá de código y poseerá un almacenamiento vacío.
+
+////
+TODO: un diagrama básico que muestre la estructura del mapeo de estados globales y la estructura de las cuentas
+////
+
+Cuando una transacción da como resultado la ejecución de un código de contrato inteligente, se crea una instancia de la EVM con toda la información requerida en relación con el bloque actual que se está creando y la transacción específica que se está procesando. En particular, la ROM del código de programa de la EVM se carga con el código de la cuenta del contrato que se invoca, el contador del programa se establece en cero, el almacenamiento se carga desde el almacenamiento de la cuenta del contrato, la memoria se establece en ceros y finalmente, todo el bloque y las variables de entorno se establecen. Una variable clave es el suministro de gas para esta ejecución, que se establece en la cantidad de gas pagado por el remitente al inicio de la transacción (véase <<gas>> para más detalles). A medida que avanza la ejecución del código, el suministro de gas se reduce de acuerdo con el costo en gas de las operaciones ejecutadas. Si en algún momento el suministro de gas se reduce a cero, encontraremos una excepción de "Sin gas" (del inglés "Out-Of-Gas" o "OOG"); la ejecución se detiene inmediatamente y la transacción se abandona. En caso de esta excepción, no se aplican cambios al estado global de Ethereum, excepto por el incremento del nonce del remitente y la reducción de su saldo en éter para pagar al beneficiario del bloque los recursos utilizados para ejecutar el código hasta el punto de la parada. En este punto, podemos pensar en la EVM ejecutándose en una copia de espacio aislado del estado global de Ethereum, y esta versión de espacio aislado se descarta por completo si la ejecución no se puede completar por cualquier motivo. Sin embargo, si la ejecución se completa correctamente, el estado global real se actualiza para que coincida con la versión del espacio aislado, incluidos los cambios en los datos de almacenamiento del contrato invocado, los nuevos contratos creados y las transferencias de saldo de éter que se iniciaron.
+
+Téngase en cuenta que debido a que un contrato inteligente puede iniciar transacciones de manera efectiva, la ejecución del código es un proceso recursivo. Un contrato puede invocar a otros contratos, y cada invocación da como resultado una nueva instanciación de otra EVM alrededor del nuevo objetivo invocado. Cada instanciación tiene su propio estado global de espacio aislado inicializado desde el espacio aislado de la EVM en el nivel superior. A cada instanciación también se le da una cantidad específica de gas para su suministro de gas (sin exceder la cantidad de gas que queda en el nivel precedente, por supuesto), por lo que puede detenerse con una excepción debido a que se le ha dado muy poco gas para completar su ejecución. Nuevamente, en tales casos, el estado global del espacio de "caja de arena" se descarta y la ejecución regresa a la EVM del nivel previo superior.
+
+[[compiling_solidity_to_evm]]
+==== Compilando con Solidity a Código Binario de la EVM
+
+[[solc_help]]
+((("EVM (Ethereum Virtual Machine)","compilando Solidity en código binario para la EVM", id="ix_13evm-asciidoc4", range="startofrange")))((("código binario de la EVM","compilando el archivo fuente en", id="ix_13evm-asciidoc5", range="startofrange")))((("Solidity","compilando el archivo fuente en código binario de la EVM", id="ix_13evm-asciidoc6", range="startofrange")))La compilación de un archivo fuente de Solidity a código binario legible por la EVM se puede lograr mediante varios métodos. En el <<intro_chapter>> utilizamos el compilador en línea de Remix. En este capítulo, usaremos el ejecutable +solc+, en la línea de comandos. Para obtener una lista de opciones, ejecutamos el siguiente pass:[<span class="keep-together">comando</span>]:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc --help</strong>
+</pre>
+++++
+
+[[solc_opcodes_option]]
+La generación de la cadena de código operacional puro o sin procesar a partir de un archivo fuente de Solidity se logra fácilmente con la opción de la línea de comandos +--opcodes+. Esta cadena de código operacional omite cierta información (la opción +--asm+ produce la información completa), pero es suficiente para esta discusión. Por ejemplo, compilar el archivo de Solidity de ejemplo, _Example.sol_, y enviar la salida del código operacional a un directorio llamado _BytecodeDir_ se logra con el siguiente comando:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --opcodes Example.sol</strong>
+</pre>
+++++
+
+o:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --asm Example.sol</strong>
+</pre>
+++++
+
+[[solc_bin_option]]
+El siguiente comando producirá el código binario para nuestro programa de ejemplo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>solc -o BytecodeDir --bin Example.sol</strong>
+</pre>
+++++
+
+Los archivos de código operacional resultantes que han sido generados, dependerán de los contratos específicos contenidos en el archivo fuente de Solidity. Nuestro archivo de Solidity simple _Example.sol_ tiene solo un contrato, llamado +example+:
+
+[[simple_solidity_example]]
+[source,solidity]
+----
+pragma solidity ^0.4.19;
+
+contract example {
+
+  address contractOwner;
+
+  function example() {
+    contractOwner = msg.sender;
+  }
+}
+----
+
+Como puede verse, todo lo que hace este contrato es mantener una variable de estado persistente, que se establece como la dirección de la última cuenta que ejecutó este contrato.
+
+Si buscamos en el directorio _BytecodeDir_, veremos el archivo de código operacional _example.opcode_, que contiene las instrucciones de código operacional de la EVM del contrato +example+. Al abrir el archivo _example.opcode_ en un editor de texto se mostrará lo siguiente:
+
+[[opcode_output]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE ISZERO PUSH1 0xE JUMPI PUSH1 0x0 DUP1
+REVERT JUMPDEST CALLER PUSH1 0x0 DUP1 PUSH2 0x100 EXP DUP2 SLOAD DUP2 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF MUL NOT AND SWAP1 DUP4 PUSH20
+0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF AND MUL OR SWAP1 SSTORE POP PUSH1
+0x35 DUP1 PUSH1 0x5B PUSH1 0x0 CODECOPY PUSH1 0x0 RETURN STOP PUSH1 0x60 PUSH1
+0x40 MSTORE PUSH1 0x0 DUP1 REVERT STOP LOG1 PUSH6 0x627A7A723058 KECCAK256 JUMP
+0xb9 SWAP14 0xcb 0x1e 0xdd RETURNDATACOPY 0xec 0xe0 0x1f 0x27 0xc9 PUSH5
+0x9C5ABCC14A NUMBER 0x5e INVALID EXTCODESIZE 0xdb 0xcf EXTCODESIZE 0x27
+EXTCODESIZE 0xe2 0xb8 SWAP10 0xed 0x
+----
+
+Compilando el ejemplo con la opción +--asm+ produce un archivo llamado _example.evm_ en nuestro directorio _BytecodeDir_. Este archivo contendrá una descripción de nivel ligeramente superior de las instrucciones de código binario de la EVM, junto con algunas anotaciones útiles:
+
+[[asm_output]]
+[source,solidity]
+----
+/* "Example.sol":26:132  contract example {... */
+  mstore(0x40, 0x60)
+    /* "Example.sol":74:130  function example() {... */
+  jumpi(tag_1, iszero(callvalue))
+  0x0
+  dup1
+  revert
+tag_1:
+    /* "Example.sol":115:125  msg.sender */
+  caller
+    /* "Example.sol":99:112  contractOwner */
+  0x0
+  dup1
+    /* "Example.sol":99:125  contractOwner = msg.sender */
+  0x100
+  exp
+  dup2
+  sload
+  dup2
+  0xffffffffffffffffffffffffffffffffffffffff
+  mul
+  not
+  and
+  swap1
+  dup4
+  0xffffffffffffffffffffffffffffffffffffffff
+  and
+  mul
+  or
+  swap1
+  sstore
+  pop
+    /* "Example.sol":26:132  contract example {... */
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x0
+  codecopy
+  0x0
+  return
+stop
+
+sub_0: assembly {
+        /* "Example.sol":26:132  contract example {... */
+      mstore(0x40, 0x60)
+      0x0
+      dup1
+      revert
+
+    auxdata: 0xa165627a7a7230582056b99dcb1edd3eece01f27c9649c5abcc14a435efe3b...
+}
+----
+
+La opción +--bin-runtime+ produce el código binario de formato hexadecimal a nivel de máquina:
+
+[[bin_output]]
+----
+60606040523415600e57600080fd5b336000806101000a81548173
+ffffffffffffffffffffffffffffffffffffffff
+021916908373
+ffffffffffffffffffffffffffffffffffffffff
+160217905550603580605b6000396000f3006060604052600080fd00a165627a7a7230582056b...
+----
+
+Es posible investigar lo que está sucediendo aquí en detalle utilizando la lista de códigos operacionales que se proporciona en <<evm_bytecode_overview>>. Sin embargo, es una gran tarea, así que comencemos por examinar las primeras cuatro instrucciones:
+
+[[opcode_analysis_1]]
+----
+PUSH1 0x60 PUSH1 0x40 MSTORE CALLVALUE
+----
+
+Aquí tenemos +PUSH1+ seguido de un byte sin formato de valor +0x60+. Esta instrucción a nivel de la EVM, instruye que se tome el byte único que le sigue al código operacional en la secuencia de códigos del programa (como un valor literal) y que lo empuje a la pila. Es posible insertar valores de tamaños de hasta 32 bytes en la pila, como en:
+
+----
+PUSH32 0x436f6e67726174756c6174696f6e732120536f6f6e20746f206d617374657221
+----
+
+La segunda instrucción de código operacional, +PUSH1+ de _example.opcode_ almacena +0x40+ en la parte superior de la pila (empujando al elemento +0x60+ ya presente allí, un espacio hacia abajo).
+
+La siguiente instrucción es +MSTORE+, que es una operación de almacenamiento en memoria que guarda cierto valor en la memoria de la EVM. Toma dos argumentos y, como la mayoría de las operaciones de la EVM, los obtiene de la pila. Por cada argumento tomado, el resto de la pila se pass:[&#x201c;brinca&#x201d;;] es decir, el valor superior de la pila se quita y todos los demás valores de la pila se desplazan una posición hacia arriba. El primer argumento de +MSTORE+ es la dirección de la palabra en memoria donde se colocará el valor a guardar. Para este programa, tenemos +0x40+ en la parte superior de la pila, de modo que se elimina de la pila y se utiliza como dirección de memoria. El segundo argumento es el valor que se guardará, que es +0x60+ en nuestro caso. Después de que se ejecuta la operación +MSTORE+, nuestra pila está vacía nuevamente, pero tenemos el valor +0x60+ (que es el número +96+ en decimal) en la ubicación de memoria +0x40+.
+
+El siguiente código operacional es +CALLVALUE+, que es un código operacional de entorno, que coloca en la parte superior de la pila la cantidad de éter (medido en weis) enviado con el mensaje de invocación que inició esta ejecución.
+
+Podríamos continuar avanzando paso a paso por el código binario de este programa, de esta manera hasta que tengamos una comprensión completa de los cambios de estado de bajo nivel que este código afecta, pero no nos ayudaría en esta etapa. Volveremos a esto más adelante en el capítulo.(((range="endofrange", startref="ix_13evm-asciidoc6")))(((range="endofrange", startref="ix_13evm-asciidoc5")))(((range="endofrange", startref="ix_13evm-asciidoc4")))
+
+[[contract_deployment_code]]
+==== Código del Despliegue de un Contrato
+
+((("EVM (Ethereum Virtual Machine)","código del despliegue de un contrato", id="ix_13evm-asciidoc7", range="startofrange")))((("código binario de la EVM","código del despliegue de un contrato", id="ix_13evm-asciidoc8", range="startofrange")))Existe una diferencia importante pero sutil entre el código utilizado para crear e implementar un nuevo contrato inteligente en la plataforma de Ethereum y el código del contrato en sí. Para poder crear un nuevo contrato, se necesita una transacción especial que tenga en su campo +to+ el valor de la dirección especial +0x0+ y que tenga cargado en su campo +data+ el _código de inicio del contrato_. Cuando se procesa dicha transacción de creación de contrato, el código para la nueva cuenta del contrato _no_ va a ser el código que yace en el campo +data+ de la transacción. En su lugar, se crea una nueva instancia de la EVM con el código que se tiene en el campo +data+ de la transacción, cargada en su ROM de código de programa, y luego la salida de la ejecución de ese código de despliegue, se toma como el código que será asociado con la nueva cuenta del contrato. Esto es para que los nuevos contratos se puedan inicializar mediante una programación que utilice el estado global de Ethereum, en el momento del despliegue, estableciendo valores en el almacenamiento del contrato e incluso enviando éter o creando nuevos contratos adicionales.
+
+Al compilar un contrato fuera de línea, por ejemplo, usando +solc+ en la línea de comandos, se puede obtener el _código binario del despliegue_ o el _código binario de ejecución_.
+
+((("código binario del despliegue")))El código binario del despliegue se utiliza para cada aspecto de la inicialización de una nueva cuenta de contrato, incluido el código binario que realmente terminará ejecutándose cuando las transacciones invoquen a este nuevo contrato (es decir, el código binario de ejecución) y el código necesario para inicializar todo cuanto está basado en la función constructora del contrato.
+
+((("código binario de ejecución")))El código binario de ejecución, por otra parte, es exactamente el código binario que termina siendo ejecutado cuando el nuevo contrato es invocado, y nada más; este no incluye el código binario necesario para inicializar el contrato durante el despliegue.
+
+Tomemos el sencillo contrato _Faucet.sol_ que creamos anteriormente como ejemplo:
+
+[[faucet_example]]
+[source,solidity]
+----
+// La versión del compilador de Solidity para el que se escribió este programa
+pragma solidity ^0.4.19;
+
+// Nuestro primer contrato es un grifo!
+contract Faucet {
+
+  // Regala éter a quien lo pida
+  function withdraw(uint withdraw_amount) public {
+
+      // Limita la cantidad de retiro
+      require(withdraw_amount <= 100000000000000000);
+
+      // Envía el monto a la dirección que lo solicitó
+      msg.sender.transfer(withdraw_amount);
+    }
+
+  // Acepta cualquier monto como ingreso
+  function () external payable {}
+
+}
+----
+
+Para obtener el código binario del despliegue, ejecutaríamos el comando `solc --bin Faucet.sol`. Si, en cambio, solo nos interesara el código binario de ejecución, ejecutaríamos el comando pass:[<code>solc --bin-runtime <span class="keep-together">Faucet.sol</span></code>].
+
+Si comparamos la salida de estos comandos, veremos que el código binario de ejecución, es un subconjunto del código binario de despliegue. En otras palabras, el código binario de ejecución está completamente contenido dentro del código binario del despliegue.(((range="endofrange", startref="ix_13evm-asciidoc8")))(((range="endofrange", startref="ix_13evm-asciidoc7")))
+
+[[disassembling_the_bytecode]]
+==== Desensamblaje del Código Binario
+
+((("EVM (Ethereum Virtual Machine)","desensamblando código binario", id="ix_13evm-asciidoc9", range="startofrange")))((("código binario de la EVM","desensamblaje", id="ix_13evm-asciidoc10", range="startofrange")))Desensamblar el código binario de la EVM es una excelente manera de comprender cómo opera Solidity en su alto nivel de lenguaje sobre la EVM. Hay algunos desensambladores que podemos utilizar para hacer esto:
+
+- https://github.com/comaeio/porosity[_Porosity_] es un popular descompilador de código abierto.
+- https://github.com/trailofbits/ethersplay[_Ethersplay_] es un complemento de la EVM para "Binary Ninja"; un desensamblador.
+- https://github.com/trailofbits/ida-evm[_IDA-Evm_] es un complemento de la EVM para "IDA", otro desensamblador.
+
+En esta sección, utilizaremos el "plug-in" Ethersplay para Binary Ninja y para comenzar con la <<Faucet_disassembled>>. Después de obtener el código binario de ejecución de _Faucet.sol_, podemos introducirlo en Binary Ninja (después de cargar el plug-in de Ethersplay) para ver cómo se ven las instrucciones de la EVM.
+
+[[Faucet_disassembled]]
+.Desensamblaje del código binario de ejecución de Faucet
+image::images/Faucet_disassembled.png["Faucet.sol código binario de ejecución desensamblado"]
+
+Cuando enviamos una transacción a un contrato inteligente compatible con el protocolo ABI (que, podemos asumir, que todos los contratos lo son), la transacción primero interactúa con el _despechador_ de ese contrato inteligente. El despachador lee en el campo +data+ de la transacción y envía la parte relevante a la función apropiada. Podemos ver un ejemplo de un despachador al comienzo de nuestro código binario de ejecución de _Faucet.sol_ desensamblado. Después de la instrucción familiar +MSTORE+, vemos las siguientes instrucciones:
+
+[[faucet_instructions]]
+----
+PUSH1 0x4
+CALLDATASIZE
+LT
+PUSH1 0x3f
+JUMPI
+----
+
+Como hemos visto, +PUSH1 0x4+ coloca a +0x4+ en la parte superior de la pila, que de lo contrario estará vacía. +CALLDATASIZE+ obtiene el tamaño en bytes de los datos enviados con la transacción (conocido como _calldata_) y coloca ese número en la pila. Una vez ejecutadas estas operaciones, la pila se ve así:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+| <tamaño de "calldata" de la transacción>
+|+0x4+
+|======================
+
+La siguiente instrucción es +LT+, que es la abreviatura en inglés de "menor que". La instrucción +LT+ comprueba si el elemento superior de la pila es menor que el siguiente elemento de la pila. En nuestro caso, se comprueba si el resultado de +CALLDATASIZE+ es o no inferior a 4 bytes.
+
+¿Por qué la EVM necesita verificar que los datos de invocación de la transacción deben tener al menos 4 bytes? Debido a cómo funcionan los identificadores de funciones. Cada función está identificada por los primeros 4 bytes de su valor hash Keccak-256. Al colocar el nombre de la función junto con sus argumentos necesarios, en una función hash +keccak256+, podemos deducir su identificador de función. En nuestro caso tenemos:
+
+[[faucet_function_identifier]]
+```
+keccak256("withdraw(uint256)") = 0x2e1a7d4d...
+```
+
+Por lo tanto, el identificador de función para la función +withdraw(uint256)+ es +0x2e1a7d4d+, ya que estos son los primeros 4 bytes del hash resultante. Un identificador de función siempre tiene 4 bytes de longitud, por lo que si el campo +data+ completo de la transacción enviada al contrato tiene menos de 4 bytes, entonces no hay ninguna función con la que la transacción pueda comunicarse, a menos que se defina una _función "fallback"_. Debido a que implementamos tal función "fallback" en _Faucet.sol_, la EVM salta a esta función cuando la longitud de los datos de la invocación es inferior a 4 bytes.
+
+La instrucción +LT+ saca los dos valores superiores de la pila y, si el campo +data+ de la transacción tiene menos de 4 bytes, se coloca como resultado al número +1+ en ella. De lo contrario, empuja +0+ a la pila. En nuestro ejemplo, supondremos que el campo +data+ de la transacción enviada a nuestro contrato _tuviera_ menos de 4 bytes.
+
+La instrucción +PUSH1 0x3f+ empuja el byte +0x3f+ a la pila. Después de esta instrucción, la pila se ve así:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+|+0x3f+
+|+1+
+|======================
+
+La siguiente instrucción es +JUMPI+, que significa "saltar si". Funciona así:
+
+[[faucet_jump_instruction_text]]
+----
+jumpi(label, cond) // Ejecuta un salto ("jump") a la posición "label" si la condición "cond" es verdadera
+----
+
+En nuestro caso, +label+ es +0x3f+, que es donde vive nuestra función fallback en nuestro contrato inteligente. El argumento +cond+ es +1+, que fue el resultado de la instrucción +LT+ anterior. Para expresar toda esta secuencia de instrucciones en palabras, el contrato simplemente salta a la función fallback si los datos de la transacción tienen menos de 4 bytes.
+
+A +0x3f+, solo le sigue una instrucción +STOP+, porque aunque declaramos una función fallback, la mantuvimos vacía. Como puede verse en la <<Faucet_jumpi_instruction>>, si no hubiéramos implementado una función fallback, el contrato arrojaría una excepción en su lugar.
+
+[[Faucet_jumpi_instruction]]
+.Instrucción JUMPI que conduce a la función fallback
+image::images/Faucet_jumpi_instruction.png["Instrucción JUMPI que conduce a la función fallback"]
+
+Examinemos el bloque central del despachador. Suponiendo que hubiésemos recibido una "calldata" _mayor_ de 4 bytes de longitud, la instrucción +JUMPI+ no hubiera saltado a la función fallback. En su lugar, la ejecución del código procedería con las siguientes instrucciones:
+
+[[faucet_instructions2]]
+----
+PUSH1 0x0
+CALLDATALOAD
+PUSH29 0x1000000...
+SWAP1
+DIV
+PUSH4 0xffffffff
+AND
+DUP1
+PUSH4 0x2e1a7d4d
+EQ
+PUSH1 0x41
+JUMPI
+----
+
+La instrucción +PUSH1 0x0+ empuja el número +0+ a la pila, que ahora estría vacía de nuevo. +CALLDATALOAD+ acepta como argumento un índice dentro de los datos de calldata enviados al contrato inteligente y lee 32 bytes a partir de ese índice, así:
+
+[[faucet_calldataload_instruction_text]]
+----
+calldataload(p) //toma 32 bytes de la data de "calldata" comenzando por el byte que está en la posición p
+----
+
+Dado que +0+ fue el índice que se le pasó desde el comando +PUSH1 0x0+, entonces +CALLDATALOAD+ lee 32 bytes de los datos de calldata comenzando desde el byte 0, y luego los empuja a la parte superior de la pila (después de sacar el elemento original +0x0+). Después de la instrucción ++PUSH29 0x1000000++ ..., la pila resulta en el siguiente estado:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+|++0x1000000++... (29 bytes de longitud)
+| <32 bytes de "calldata" empezando por el byte 0>
+|======================
+
+La instrucción +SWAP1+ cambia el elemento superior de la pila con el elemento __i__- ésimo después. En este caso, intercambia ++0x1000000++ ... con calldata. La nueva pila es:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+| <32 bytes de "calldata" empezando por el byte 0>
+|++0x1000000++... (29 bytes de longitud)
+|======================
+
+La siguiente instrucción es +DIV+, que funciona de la siguiente manera:
+
+[[faucet_div_instruction_text]]
+----
+div(x, y) // división entera x / y
+----
+
+En este caso, +x+ = 32 bytes de datos de invocación que comienzan en el byte 0, y +y+ = ++0x100000000++ ... (29 bytes en total). ¿Podríamos pensar por qué el despachador está haciendo una división? Aquí hay una pista: hemos leído 32 bytes de datos de "calldata" anteriormente, comenzando en el índice 0. Los primeros 4 bytes de esos datos de llamada son el identificador de función.
+
+
+El valor ++0x100000000++ ... que empujamos anteriormente tiene 29 bytes de longitud, y consta de un +1+ al principio, seguido de todos los demás ++0++s. Dividir nuestros 32 bytes de data de invocación por este valor nos dejará solo los _4 bytes más altos_ de nuestra data de invocación, comenzando en el índice 0. Estos 4 bytes, (los primeros 4 bytes en "calldata" que comienzan en el índice 0), son el identificador de la función, y así es como la EVM extrae este valor.
+
+Si esta parte no resulta del todo clara, pensemoslo así: en base decimal: 1234000/1000 = 1234. En base hexadecimal (16), esto no es diferente. En vez de que cada lugar sea un múltiplo de 10, tenemos un múltiplo de 16. Al igual que dividir entre 10^3^ (1000), en nuestro ejemplo más pequeño se mantuvieron solo los dígitos superiores, dividiendo nuestro valor de base 16 de 32 bytes entre 16^29^ estamos haciendo lo mismo.
+
+El resultado de la instrucción +DIV+ (el identificador de función), se envía a la pila, y nuestra pila ahora es:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+| <identificador de función enviado en +data+>
+|======================
+
+Dado que las instrucciones +PUSH4 0xffffffff+ y +AND+ son redundantes, podemos ignorarlas por completo, ya que la pila seguirá siendo la misma una vez que estas se hayan ejecutado. La instrucción +DUP1+ duplica el primer elemento de la pila, que es el identificador de función. La siguiente instrucción, +PUSH4 0x2e1a7d4d+, empuja el identificador de función precalculado de la función pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>] a la pila. El estado de la pila es ahora:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+|+0x2e1a7d4d+
+| <identificador de función enviado en +data+>
+| <identificador de función enviado en +data+>
+|======================
+
+La siguiente instrucción, +EQ+, saca los dos elementos superiores de la pila y los compara. Aquí es donde el despachador hace su trabajo principal: compara si el identificador de función enviado en el campo +msg.data+ de la transacción coincide con el de pass:[<code><span class="keep-together">withdraw</span>(uint256)</code>]. Si son iguales, +EQ+ empujará el número +1+ a la pila, que finalmente se usará para saltar a la función fallback. De lo contrario, +EQ+ empuja el número +0+ a la pila.
+
+Suponiendo que la transacción enviada a nuestro contrato comenzó con el identificador de función para +withdraw(uint256)+, nuestra pila se ha convertido en:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+|+1+
+| <identificador de función enviado en +data+> (ahora conocido como +0x2e1a7d4d+)
+|======================
+
+A continuación, tenemos +PUSH1 0x41+, que es la dirección en la que la función +withdraw(uint256)+ reside en el contrato. Después de esta instrucción, la pila se ve así:
+
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Pila
+|+0x41+
+|+1+
+|identificador de función enviado en +msg.data+
+|======================
+
+La instrucción +JUMPI+ es la siguiente, y una vez más acepta los dos elementos superiores de la pila como argumentos. En este caso, tenemos +jumpi(0x41, 1)+, que le ordena a la EVM que ejecute el salto a la ubicación de la función +withdraw(uint256)+, y que puede proceder con la ejecución del código de esa función.(((range="endofrange", startref="ix_13evm-asciidoc10")))(((range="endofrange", startref="ix_13evm-asciidoc9")))
+
+[[turing_completeness_and_gas]]
+=== Completitud de Turing y el Gas
+
+((("EVM (Ethereum Virtual Machine)","completitud de Turing y el Gas")))((("completitud de Turing","y la EVM")))Como ya hemos mencionado, en términos simples, un sistema o un lenguaje de programación es _Turing completo_ si puede ejecutar cualquier programa. Sin embargo, esta capacidad viene con una advertencia muy importante: algunos programas tardan una eternidad en ejecutarse. Un aspecto importante de esto es que no podemos advertir, con solo mirar un programa, si este tardará una eternidad en ejecutarse o no. Tenemos que seguir adelante con la ejecución del programa y esperar a que termine para averiguarlo. ((("problema de la parada")))Por supuesto, si va a tardar una eternidad en ejecutarse, tendremos que esperar una eternidad para averiguarlo. A esto se le llama el _problema de la parada_ y sería un gran problema para Ethereum si no se abordara.
+
+Debido al problema de la parada, la computadora global de Ethereum corre el riesgo de que se le pida que ejecute un programa que nunca se detenga. Esto podría ser por accidente o por malicia. Ya hemos discutido que Ethereum actúa como una máquina de una sola secuencia de procesos, sin ningún planificador, por lo que si se atasca en un bucle infinito, esto significaría que la máquina se vuelve inutilizable.
+
+Sin embargo, gracias al concepto del gas, tenemos una solución: si después de ejecutar una pre-especificada máxima cantidad de cómputos, la ejecución aún no se ha completado, la ejecución del programa es interrumpida por la EVM. Esto convierte a la EVM en una máquina __quasi__&#x2013;Turing-completa: puede ejecutar cualquier programa que le suministremos, pero únicamente si el programa finaliza dentro de una particular cantidad de cómputos. Ése límite no está determinado en Ethereum&#x2014;podemos pagar para incrementarlo hasta un cierto máximo (llamado el "límite de gas por bloque"), y todos pueden llegar al acuerdo de incrementar ese máximo conforme pase el tiempo. Sin embargo, en cualquier momento, va a haber un límite establecido y las transacciones que consuman demasiado gas mientras se ejecutan se van a pass:[<span class="keep-together">detener</span>].
+
+En las siguientes secciones, veremos el gas y examinaremos en detalle cómo funciona.
+
+[[gas]]
+=== Gas
+
+((("EVM (Ethereum Virtual Machine)","gas y", id="ix_13evm-asciidoc11", range="startofrange")))((("gas","EVM y", id="ix_13evm-asciidoc12", range="startofrange")))El _gas_ es la unidad que se usa para medir la cantidad de recursos de cómputo y almacenamiento en Ethereum, requeridos para ejecutar acciones en su cadena de bloques. A diferencia de Bitcoin, cuyas tarifas de transacción solo tienen en cuenta el tamaño de una transacción en kilo-bytes, Ethereum debe tener en cuenta cada paso computacional realizado por las transacciones y la ejecución del código de contratos inteligentes.
+
+Cada operación realizada por una transacción o contrato cuesta una cantidad determinada de unidades de gas. Algunos ejemplos, que podemos encontrar en el Ethereum Yellow Paper son:
+
+* Sumar dos números cuesta 3 unidades de gas
+* Calcular un valor hash Keccak-256 cuesta 30 unidades de gas + 6 unidades de gas por cada 256 bits de datos que se procesan
+* Enviar una transacción cuesta 21.000 unidades de gas
+
+El gas es un componente crucial de Ethereum y cumple una doble función: como amortiguador entre el precio (volátil) de Ethereum y la recompensa a los mineros por el trabajo que realizan, y como defensa contra los ataques de denegación de servicio. Para evitar bucles infinitos accidentales o maliciosos u otro desperdicio computacional en la red, el iniciador de toda transacción debe establecer un límite a la cantidad de cómputos que él está dispuesto a pagar. De este modo, el sistema de gas desincentiva a los atacantes para que no envíen transacciones tipo "spam", ya que deben pagar proporcionalmente por los recursos tanto informáticos, de de ancho de banda, como de almacenamiento que consuman.
+
+[[gas_accounting_execution]]
+==== Contabilidad de las Unidades de Gas Durante la Ejecución
+((("EVM (Ethereum Virtual Machine)","contabilidad del gas durante la ejecución")))((("gas","contabilidad durante la ejecución")))Cuando se necesita una EVM para completar una transacción, en primera instancia se le da un suministro de gas igual a la cantidad especificada por el límite de gas en la transacción. Cada código operacional que se ejecuta tiene un costo en unidades de gas, por lo que el suministro de gas a la EVM se reduce a medida que la EVM avanza en la ejecución del programa. Antes de cada operación, la EVM verifica que haya suficiente gas para pagar la ejecución de tal operación. Si no hay suficiente gas, la ejecución se detiene y la transacción se revierte por completo.
+
+Si la EVM llega al final de su ejecución con éxito, sin quedarse sin gas, la cantidad de unidades de gas utilizadas son pagadas al minero como una comisión de la transacción, convertidas a éter en función del precio del gas especificado en la transacción:
+
+----
+comisiones de mineros = unidades utilizadas de gas * precio del gas
+----
+
+
+El gas remanente en el suministro de gas se reembolsa al remitente, nuevamente convirtiéndolo a éter en función del precio del gas especificado en la transacción:
+
+----
+unidades de gas remanente = limite de unidades de gas - unidades de gas utilizado
+éter reembolsado = unidades de gas remanente * precio del gas
+----
+
+Si la transacción &#x201c;se queda sin gas&#x201d; durante la ejecución, la operación es inmediatamente finalizada, al levantarse una excepción de &#x201c;sin gas&#x201d;. La transacción es revertida y todos los cambios al estado son revertidos.
+
+Aunque la transacción no tuvo éxito, al remitente se le cobrará una comisión de transacción, ya que los mineros ya han realizado el trabajo computacional hasta ese momento y deben ser compensados por hacerlo.
+
+==== Consideraciones Sobre la Contabilidad del Gas
+
+((("EVM (Ethereum Virtual Machine)","consideraciones sobre la contabilidad del gas")))((("gas","consideraciones sobre la contabilidad")))Los costos en gas relativos de las diversas operaciones que puede realizar la EVM han sido cuidadosamente elegidos para proteger mejor la cadena de bloques de Ethereum de los ataques. Puede ver una tabla detallada de los costos en gas para diferentes códigos operacionales de la EVM en la <<evm_opcodes_table>>.
+
+Las operaciones más intensivas en cuanto a cómputos cuestan más gas. Por ejemplo, ejecutar la función +SHA3+ es 10 veces más caro (30 gas) que la operación +ADD+ (3 gas). Más importante aún, algunas operaciones, como +EXP+, requieren un pago adicional según el tamaño del operando. También hay un costo de gas por usar la memoria de la EVM y por salvar datos en el almacenamiento de un contrato, en la cadena de bloques.
+
+La importancia de hacer coincidir el costo del gas con el costo de los recursos en el mundo real se demostró en 2016 cuando un atacante descubrió y aprovechó un desajuste en los costos. El ataque generó transacciones que eran muy costosas desde el punto de vista computacional, e hicieron que la red principal de Ethereum casi se detuviera. Este desajuste se resolvió mediante una bifurcación (cuyo nombre en código fue "Tangerine Whistle") que modificó los costos relativos del gas.
+
+==== Gas Utilizado (o "gas cost") versus Precio del Gas
+((("EVM (Ethereum Virtual Machine)","costo en gas vs. precio del gas")))((("gas","costo vs. precio")))((("costo en gas, precio del gas vs.")))Mientras que el _costo_ en unidades de gas es una medida de cálculo y almacenamiento utilizada en la EVM, el gas en sí también tiene un _precio_ medido en éter. Al realizar una transacción, el remitente especifica el precio del gas que está dispuesto a pagar (en éter) por cada unidad de gas, lo que permite al mercado decidir la relación entre el precio del éter y el costo de las operaciones de cómputo (medido en unidades de gas). :
+
+----
+comisiones de la transacción = total de unidades de gas usado * precio del gas pagado (en éter)
+----
+
+Al construir un nuevo bloque, los mineros en la red Ethereum pueden elegir entre transacciones pendientes seleccionando aquellas que ofrecen pagar un precio de gas más alto. Por lo tanto, ofrecer un precio de gas más alto incentivará a los mineros a incluir nuestras transacciones y confirmarlas más rápido.
+
+En la práctica, el remitente de una transacción establecerá un límite de superior de unidades de gas o igual a la cantidad de gas que se espera utilizar. Si el límite de gas se establece por encima de la cantidad de gas consumido, el remitente recibirá un reembolso de la cantidad excedente, ya que los mineros solo son compensados por el trabajo que realmente realizan.
+
+Es importante tener claro la distinción entre el _costo en gas_ y el _precio del gas_. Recuérdese:
+
+* El costo en gas es la cantidad de unidades de gas necesarias para realizar una operación en particular.
+
+* El precio del gas es la cantidad de éter que se está dispuesto a pagar por cada unidad de gas cuando enviamos nuestra transacción a la red Ethereum.
+
+[TIP]
+====
+Si bien el gas tiene un precio, no se puede "poseer" ni "gastar". El gas existe solo dentro de la EVM, como un recuento de cuánto trabajo computacional se está realizando. Al remitente se le cobra una tarifa de transacción en éter, que luego se convierte en gas para la contabilidad de la EVM y luego vuelve a éter como una comisión de la transacción que se paga a los mineros.
+====
+
+
+===== Costos en Gas Negativos
+
+((("gas","costos negativos")))Ethereum fomenta la eliminación de las variables y de las cuentas de almacenamiento usadas, reembolsando parte del gas usado durante la ejecución del contrato.
+
+Hay dos operaciones en la EVM con costos en gas negativos:
+
+* Eliminar un contrato (+SELFDESTRUCT+) vale un reembolso de 24.000 unidades de gas.
+* Cambiar una dirección de almacenamiento de un valor distinto de cero a cero (+SSTORE[x] = 0+) vale un reembolso de 15.000 unidades de gas.
+
+Para evitar la explotación del mecanismo de reembolso, el reembolso máximo para una transacción se establece en la mitad de la cantidad total del gas utilizado (redondeado hacia abajo).
+
+==== Límite de Gas por Bloque
+
+((("límite de gas por bloque")))((("EVM (Ethereum Virtual Machine)","límite de gas por bloque")))((("gas","límite de gas por bloque")))El límite de gas por bloque es la cantidad máxima de unidades de gas que se pueden consumir todas las transacciones que se incluyen en un bloque y limita la cantidad de transacciones que caben en dicho bloque.
+
+Por ejemplo, digamos que tenemos 5 transacciones cuyos límites de gas se han establecido en 30.000, 30.000, 40.000, 50.000 y 50.000. Si el límite de gas por bloque fuera de 180.000, entonces cuatro de esas transacciones pueden caber en un bloque, mientras que la quinta tendrá que esperar un bloque futuro. Como se mencionó anteriormente, los mineros deciden qué transacciones incluir en un bloque. Es probable que diferentes mineros seleccionen diferentes combinaciones, principalmente porque reciben transacciones de la red en un orden diferente.
+
+Si un minero intenta incluir una transacción que requiere más gas que el límite actual de gas por bloque, el bloque será rechazado por la red. La mayoría de los clientes de Ethereum evitarán que se realice una transacción de este tipo mediante una advertencia del tipo "la transacción supera el límite de gas por bloque". El límite de gas por bloque en la red principal de Ethereum es de 8 millones de unidades de gas en el momento de escribir este libro, de acuerdo con https://etherscan.io, lo que significa que alrededor de 380 transacciones básicas (en las que cada una de las cuales consume 21,000 unidades de gas) podrían caber en un bloque.
+
+===== ¿Quién decide cuál es el límite de gas en un bloque?
+
+Los mineros de la red deciden colectivamente el límite de gas por bloque. Las personas que desean minar en la red Ethereum utilizan un programa de minería, como Ethminer, que se conecta a un cliente Geth o Parity de Ethereum. El protocolo Ethereum tiene un mecanismo incorporado en el que los mineros pueden votar sobre el límite de gas para que la capacidad se pueda aumentar o disminuir en los bloques posteriores. El minero de un bloque puede votar para ajustar el límite de gas del bloque en un factor de 1 / 1.024 (0,0976%) en cualquier dirección. El resultado de esto es un tamaño de bloque ajustable en función de las necesidades de la red en ese momento. Este mecanismo se combina con una estrategia de minería predeterminada en la que los mineros votan por un límite de gas que es de al menos 4,7 millones de unidades de gas, pero que tiene como objetivo un valor del 150% del promedio del uso total reciente de gas por bloque (usando una media móvil exponencial de 1.024 bloques).(((range="endofrange", startref="ix_13evm-asciidoc12")))(((range="endofrange", startref="ix_13evm-asciidoc11")))
+
+=== Conclusiones
+
+En este capítulo hemos explorado la máquina virtual de Ethereum, rastreando la ejecución de varios contratos inteligentes y analizando cómo la EVM ejecuta el código a nivel binario. También analizamos el gas, el mecanismo de contabilidad de la EVM, y vimos cómo resuelve el problema de la parada de ejecución y protege a Ethereum de los ataques de denegación de servicio. A continuación, en el <<consensus>>, veremos el mecanismo utilizado por Ethereum para lograr un consenso descentralizado.(((range="endofrange", startref="ix_13evm-asciidoc0")))

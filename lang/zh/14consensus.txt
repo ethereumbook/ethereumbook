@@ -1,0 +1,86 @@
+[[共识]]
+==共识
+
+(((“ consensus”，id =“ ix_14consensus-asciidoc0”，range =“ startofrange”)) 在本书中，我们一直在讨论“共识规则”，即每个人都必须同意的规则&#x201d;&#x2014，才能在分散式系统中运行。在计算机科学中，术语_共识_早于区块链，并且涉及更广泛的同步分布式系统中状态的问题，从而使分布式系统中的不同参与者都（最终）都同意一个系统范围的状态。这被称为“达成共识”。
+
+当涉及分布式记录保存和验证的核心功能时，需要保证从状态更新中获得的信息是正确。仅仅依靠信任来确保信息的正确性可能会成为问题。这种普遍性的挑战在分步式网络中尤其明显，因为没有中央实体来决定什么是正确的。缺乏中央决策实体是区块链平台的主要吸引力之一，因为由此产生的抵抗审查的能力以及对授权信息访问权限的缺乏依赖。但是，这些好处是要付出代价的：没有受信任的仲裁员，任何分歧，欺骗或区别都需要使用其他手段加以调和。共识算法是用于协调安全性和分布性的机制。
+
+在区块链中，共识是系统的关键属性。简而言之，资金有危险！因此，在区块链的背景下，_consensus_是关于能够达到一个共同的状态，同时保持去中心化。换句话说，共识旨在产生一个没有统治者的严格规则系统。没有单个人，组织或团体的可以：[“决策&#x201d;;] 相反，权力和控制分散在广泛的参与者网络中，他们的个人利益通过遵守规则和诚实行事来实现。
+
+所有开放式公共区块链的核心原则是具有在对抗条件下，无需集中控制就能在分布式网络上达成共识的能力。为了应对这一挑战并保持去中心化的价值，社区继续尝试不同的共识模型。本章探讨了这些共识模型及其对以太坊等支持智能合约的区块链的预期影响。
+
+[注意]
+====
+While consensus algorithms are an important part of how blockchains work, they operate at a foundational layer, far below the abstraction of smart contracts. In other words, most of the details of consensus are hidden from the writers of smart contracts. You don't need to know how they work to use Ethereum, any more than you need to know how routing works to use the internet.
+====
+
+===通过工作量证明达成共识
+
+((("consensus","via proof of work")))((("proof of work (PoW)","consensus via")))The creator of the original blockchain, Bitcoin, invented a _consensus algorithm_ called _proof of work_ (PoW). Arguably, PoW is the most important invention underpinning Bitcoin. The colloquial term for PoW is "mining," which creates a misunderstanding about the primary purpose of consensus. Often people assume that the purpose of mining is the creation of new currency, since the purpose of real-world mining is the extraction of precious metals or other resources. Rather, the real purpose of mining (and all other consensus models) is to _secure the blockchain_, while keeping control over the system decentralized and diffused across as many participants as possible. The reward of newly minted currency is an incentive to those who contribute to the security of the system: a means to an end. In that sense, the reward is the means and decentralized security is the end. In PoW consensus there is also a corresponding "punishment," which is the cost of energy required to participate in mining. If participants do not follow the rules and earn the reward, they risk the funds they have already spent on electricity to mine. Thus, PoW consensus is a careful balance of risk and reward that drives participants to behave honestly out of self-interest.
+
+Ethereum is currently a PoW blockchain, in that it uses a PoW algorithm with the same basic incentive system for the same basic goal: securing the blockchain while decentralizing control. Ethereum's PoW algorithm is slightly different than Bitcoin's and is called _Ethash_. We will examine the function and design characteristics of the algorithm in <<ethash>>.
+
+===通过权益证明（PoS）达成共识
+
+((("consensus","via proof of stake")))((("proof of stake (PoS)","consensus via")))Historically, proof of work was not the first consensus algorithm proposed. Preceding the introduction of proof of work, many researchers had proposed variations of consensus algorithms based on financial stake, now called _proof of stake_ (PoS). In some respects, proof of work was invented as an alternative to proof of stake. Following the success of Bitcoin, many blockchains have emulated proof of work. Yet the explosion of research into consensus algorithms has also resurrected proof of stake, significantly advancing the state of the technology. From the beginning, Ethereum's founders were hoping to eventually migrate its consensus algorithm to proof of stake. In fact, there is a deliberate handicap on Ethereum's proof of work called the _difficulty bomb_, intended to gradually make proof-of-work mining of Ethereum more and more difficult, thereby forcing the transition to proof of stake.
+
+At the time of publication of this book, Ethereum is still using proof of work, but the ongoing research toward a proof-of-stake alternative is nearing completion. Ethereum's planned PoS algorithm is called _Casper_. The introduction of Casper as a replacement for Ethash has been postponed several times over the past two years, necessitating interventions to defuse the difficulty bomb and postpone its forced obsolescence of proof of work.
+
+In general, a PoS algorithm works as follows. The blockchain keeps track of a set of validators, and anyone who holds the blockchain's base cryptocurrency (in Ethereum's case, ether) can become a validator by sending a special type of transaction that locks up their ether into a deposit. The validators take turns proposing and voting on the next valid block, and the weight of each validator's vote depends on the size of its deposit (i.e., stake). Importantly, a validator risks losing their deposit if the block they staked it on is rejected by the majority of validators. Conversely, validators earn a small reward, proportional to their deposited stake, for every block that is accepted by the majority. Thus, PoS forces validators to act honestly and follow the consensus rules, by a system of reward and punishment. The major difference between PoS and PoW is that the punishment in PoS is intrinsic to the blockchain (e.g., loss of staked ether), whereas in PoW the punishment is extrinsic (e.g., loss of funds spent on pass:[<span class="keep-together">electricity</span>]).
+
+[[ethash]]
+=== Ethash：以太坊的工作量证明算法
+
+((("Buterin, Vitalik","and Dagger algorithm")))((("consensus","Ethash as Ethereum PoW algorithm")))((("Dagger-Hashimoto algorithm")))((("Ethash")))((("proof of work (PoW)","Ethash as Ethereum PoW algorithm")))Ethash is the Ethereum PoW algorithm. It uses an evolution of the Dagger–Hashimoto algorithm, which is a combination of Vitalik Buterin's Dagger algorithm and Thaddeus Dryja's Hashimoto algorithm. ((("DAG (directed acyclic graph)")))((("directed acyclic graph (DAG)")))Ethash is dependent on the generation and analysis of a large dataset, known as a _directed acyclic graph_ (or, more simply, &#x201c;the DAG&#x201d;). The DAG had an initial size of about 1 GB and will continue to slowly and linearly grow in size, being updated once every epoch (30,000 blocks, or roughly 125 hours).
+
+The purpose of the DAG is to make the Ethash PoW algorithm dependent on maintaining a large, frequently accessed data structure. ((("application-specific integrated circuits (ASIC)")))((("ASIC (application-specific integrated circuits)")))((("graphics processing unit (GPU), mining and")))This in turn is intended to make Ethash "ASIC resistant," which means that it is more difficult to make _application-specific integrated circuits_ (ASIC) mining equipment that is orders of magnitude faster than a fast _graphics processing unit_ (GPU). Ethereum's founders wanted to avoid centralization in PoW mining, where those with access to specialized silicon fabrication factories and big budgets could dominate the mining infrastructure and undermine the security of the consensus algorithm.
+
+Use of consumer-level GPUs for carrying out the PoW on the Ethereum network means that more people around the world can participate in the mining process. The more independent miners there are the more decentralized the mining power is, which means we can avoid a situation like in Bitcoin, where much of the mining power is concentrated in the hands of a few large industrial mining operations. The downside of the use of GPUs for mining is that it precipitated a worldwide shortage GPUs in 2017, causing their price to skyrocket and an outcry from gamers. This led to purchase restrictions at retailers, limiting buyers to one or two GPUs per customer.
+
+Until recently, the threat of ASIC miners on the Ethereum network was largely nonexistent. Using ASICs for Ethereum requires the design, manufacture, and distribution of highly customized hardware. Producing them requires considerable investment of time and money. The Ethereum developers' long-expressed plans to move to a PoS consensus algorithm likely kept ASIC suppliers away from targeting the Ethereum network for a long time. As soon as Ethereum moves to PoS, ASICs designed for the PoW algorithm will be rendered useless—that is, unless miners can use them to mine other cryptocurrencies instead. The latter possibility is now a reality with a range of other Ethash-based consensus coins available, such as PIRL and Ubiq, and Ethereum Classic has pledged to remain a PoW blockchain for the foreseeable future. This means that we will likely see ASIC mining begin to become a force on the Ethereum network while is it still operating on PoW consensus.
+
+=== Casper：以太坊的权益证明算法
+
+((("Casper")))((("consensus","Casper as Ethereum PoS algorithm")))((("proof of stake (PoS)","Casper as Ethereum PoS algorithm")))Casper is the proposed name for Ethereum's PoS consensus algorithm. It is still under active research and development and is not implemented on the Ethereum blockchain at the time of publication of this book. ((("Casper CBC")))((("Casper FFG")))Casper is being developed in two competing "flavors":
+
+* Casper FFG：“友好的最终决定性工具”
+* Casper CBC: "The Friendly GHOST/Correct-by-Construction"
+
+Initially, Casper FFG was proposed as a hybrid PoW/PoS algorithm to be implemented as a transition to a more permanent "pure PoS" algorithm. ((("Buterin, Vitalik","and Casper")))But in June 2018, Vitalik Buterin, who was leading the research work on Casper FFG, decided to "scrap" the hybrid model in favor of a pure PoS algorithm. Now, Casper FFG and Casper CBC are both being developed in parallel. As Vitalik explains:
+
+____
+The main tradeoff between FFG and CBC is that CBC seems to have nicer theoretical properties, but FFG seems to be easier to implement.
+____
+
+如果想了解有关Casper项目的历史，正在进行的研究和未来计划的更多信息，请访问以下链接：
+
+* http://bit.ly/2RO5HAl[Ethereum Casper（权益证明）]
+* http://bit.ly/2FlBojb[History of Casper, Part 1]
+* http://bit.ly/2QyHiic[History of Casper, Part 2]
+* http://bit.ly/2JWWFyt[History of Casper, Part 3]
+* http://bit.ly/2FsaExI[History of Casper, Part 4]
+* http://bit.ly/2PPhhOv[History of Casper, Part 5]
+
+===共识原则
+
+((("consensus","principles of")))The principles and assumptions of consensus algorithms can be more clearly understood by asking a few key questions:
+
+*谁可以改变过去，如何改变？ （这也称为_immutability_。）
+*谁可以改变未来，将如何改变？ （这也称为_finality_。）
+*进行此类改变的费用是多少？
+*需要进行此类更改的权力有多分散？
+*谁会知道情况是否已更改，他们是怎么知道？
+
+共识算法正在迅速发展，将试图以更加创新的方式回答这些问题。
+
+===争议与竞争
+
+((("consensus","controversy and competition")))At this point you might be wondering: Why do we need so many different consensus algorithms? Which one works better? The answer to the latter question is at the center of the most exciting area of research in distributed systems of the past decade. It all boils down to what you consider "better&#x201d;&#x2014;which in the context of computer science is about assumptions, goals, and the unavoidable trade-offs.
+
+It is likely that no  algorithm can optimize across all dimensions of the problem of decentralized consensus. When someone suggests that one consensus algorithm is "better" than the others, you should start asking questions that clarify: Better at what? Immutability, finality, decentralization, cost? There is no clear answer to these questions, at least not yet. Furthermore, the design of consensus algorithms is at the center of a multi-billion-dollar industry and generates enormous controversy and heated arguments. In the end, there might not be a "correct" answer, just as there might be different answers for different applications.
+
+整个区块链行业是一个巨大的实验，巨量资金将会投注到这场实验中，在对抗性条件下进行测试。最终，历史将回答争议。
+
+===结论
+
+在本书编写完成时，以太坊的共识算法仍在不断发展。随着Casper和其他相关技术的成熟并部署在以太坊上，我们在未来的版本中会添加更多详细信息。本章代表我们这次旅程的结束，完成_掌握以太坊_。其他参考材料见附录。感谢您阅读本书，并恭喜您成功完成！(((range="endofrange", startref="ix_14consensus-asciidoc0")))

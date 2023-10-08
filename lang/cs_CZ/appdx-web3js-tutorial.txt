@@ -1,0 +1,249 @@
+[appendix]
+[[web3js_tutorial]]
+== web3.js tutorial
+
+=== Popis
+((("web3.js","tutorial", id="ix_appdx-web3js-tutorial-asciidoc0", range="startofrange")))Tento tutoriál je založen na web3@1.0.0-beta.29 web3.js. Je zamýšlen jako úvod do web3.js.
+
+JavaScript knihovna web3.js je kolekce modulů, které obsahují specifické funkce pro ekosystém Etherea, spolu s JavaScript rozhraním API kompatibilním s Ethereem, které implementuje obecnou specifikaci JSON RPC.
+
+Chcete-li spustit tento skript, nemusíte spouštět svůj vlastní místní uzel, protože používá https://infura.io[Infura služby].
+
+=== Základní interakce web3.js kontraktu neblokovaným (Async) způsobem
+
+((("web3.js","contract basic interaction in nonblocked (Async) fashion")))Zkontrolujte, zda máte platnou verzi +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+Pokud jste ještě neudělali, inicializujte +npm+:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+</pre>
+++++
+
+Instalace základních závislostí:
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm i command-line-args</strong>
+$ <strong>npm i web3</strong>
+$ <strong>npm i node-rest-client-promise</strong>
+</pre>
+++++
+
+Tím se aktualizuje váš konfigurační soubor _package.json_ o vaše nové závislosti.
+
+==== Provádění skriptu Node.js
+
+((("web3.js","node.js script execution")))Základní vykonávání:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js</strong>
+</pre>
+++++
+
+Použijte svůj vlastní token Infura (registrujte na https://infura.io/[] a uložte api-klíč do místního souboru s názvem __infura_token__):
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  --infuraFileToken /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+nebo:
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+Tím bude soubor čten s vlastním tokenem a předán jako parametr aktuálního příkazu na příkazové řádce.
+
+=== Prohlížení ukázkového skriptu
+
+((("web3.js","reviewing demo script")))Dále se podívejme na náš ukázkový skript, _web3-contract-basic-interaction_.
+
+Použijeme objekt +Web3+ k získání základního poskytovatele web3:
+
+[source,solidity]
+----
+var web3 = new Web3(infura_host);
+----
+
+Poté můžeme komunikovat s web3 a vyzkoušet některé základní funkce. Uvidíme verzi protokolu:
+
+[source,solidity]
+----
+web3.eth.getProtocolVersion().then(function(protocolVersion) {
+      console.log(`Protocol Version: ${protocolVersion}`);
+  })
+----
+
+Nyní se podívejme na aktuální cenu plynu:
+
+[source,solidity]
+----
+web3.eth.getGasPrice().then(function(gasPrice) {
+      console.log(`Gas Price: ${gasPrice}`);
+  })
+----
+
+Jaký je poslední vytěžený blok v aktuální bločence?
+
+[source,solidity]
+----
+web3.eth.getBlockNumber().then(function(blockNumber) {
+      console.log(`Block Number: ${blockNumber}`);
+  })
+----
+
+=== Interakce kontraktu
+
+((("web3.js","contract interaction", id="ix_appdx-web3js-tutorial-asciidoc1", range="startofrange")))Nyní vyzkoušejme některé základní interakce s kontraktem. Pro tyto příklady použijeme https://bit.ly/2MPZZLx[+WETH9_+ kontrakt] na testovací síti Kovan.
+
+[role="pagebreak-before"]
+Nejprve inicializujme adresu našeho kontraktu:
+
+[source,solidity]
+----
+var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
+----
+
+Pak se můžeme podívat na jeho zůstatek:
+
+[source,solidity]
+----
+web3.eth.getBalance(our_contract_address).then(function(balance) {
+      console.log(`Balance of ${our_contract_address}: ${balance}`);
+})
+----
+
+a podívejte se na jeho bajtkód:
+
+[source,solidity]
+----
+web3.eth.getCode(our_contract_address).then(function(code) {
+      console.log(code);
+})
+----
+
+Dále připravíme naše prostředí pro interakci s API Etherscan průzkumníka.
+
+Inicializujte URL našeho kontraktu v API Etherscan prohlížeče pro bločenku Kovan:
+
+[source,solidity]
+----
+var etherscan_url =
+  "https://kovan.etherscan.io/api?module=contract&action=getabi&
+  address=${our_contract_address}"
+----
+
+A inicializujme REST klienta pro interakci s API Etherscan:
+
+[source,solidity]
+----
+var client = require('node-rest-client-promise').Client();
+----
+
+a získat klienta promise:
+
+[source,solidity]
+----
+client.getPromise(etherscan_url)
+----
+
+Jakmile dostaneme platného klienta promise, můžeme získat ABI našeho kontraktu z API Etherscan:
+
+[source,solidity]
+----
+.then((client_promise) => {
+  our_contract_abi = JSON.parse(client_promise.data.result);
+----
+
+A nyní můžeme vytvořit náš objekt kontraktu jako příslib k pozdější konzumaci:
+
+[source,solidity]
+----
+  return new Promise((resolve, reject) => {
+      var our_contract = new web3.eth.Contract(our_contract_abi,
+                                               our_contract_address);
+      try {
+        // Pokud všechno půjde dobře
+        resolve(our_contract);
+      } catch (ex) {
+        // Pokud se něco pokazí
+        reject(ex);
+      }
+    });
+})
+----
+
+Pokud se náš kontrakt promise vrátí úspěšně, můžeme s ním začít komunikovat:
+
+[source,solidity]
+----
+.then((our_contract) => {
+----
+
+Podívejme se na naši adresu kontraktu:
+
+[source,solidity]
+----
+console.log(`Our Contract address:
+            ${our_contract._address}`);
+----
+
+nebo alternativně:
+
+[source,solidity]
+----
+console.log(`Our Contract address in another way:
+            ${our_contract.options.address}`);
+----
+
+Nyní se podívejme na ABI našeho kontraktu:
+
+[source,solidity]
+----
+console.log("Our contract abi: " +
+            JSON.stringify(our_contract.options.jsonInterface));
+----
+
+Celkovou zásobu plynu našeho kontraktu vidíme pomocí zpětného volání:
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call(function(err, totalSupply) {
+    if (!err) {
+        console.log(`Total Supply with a callback:  ${totalSupply}`);
+    } else {
+        console.log(err);
+    }
+});
+----
+
+Nebo můžeme použít vrácený promise místo předávání zpětného volání:(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc1")))
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call().then(function(totalSupply){
+    console.log(`Total Supply with a promise:  ${totalSupply}`);
+}).catch(function(err) {
+    console.log(err);
+});
+----
+
+=== Asynchronní provoz s čekáním
+
+((("await construct")))((("web3.js","asynchronous operation with await")))Nyní, když jste viděli základní tutoriál, můžete vyzkoušet stejné interakce pomocí asynchronního +await+ konstruktu. Zkontrolujte _web3-contract-basic-interaction-async-await.js_ skript na http://bit.ly/2ABrFkl[_code/web3js_] a porovnejte ho s tímto tutoriálem, abyste viděli, jak se liší. Async-await se snáze čte, protože způsobuje, že se asynchronní interakce chová spíše jako sekvence blokovaných volání.(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc0")))

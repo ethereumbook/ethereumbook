@@ -1,0 +1,249 @@
+[附录]
+[[web3js_tutorial]]
+== web3.js教程
+
+===说明
+((("web3.js","tutorial", id="ix_appdx-web3js-tutorial-asciidoc0", range="startofrange")))本教程基于web3@1.0.0-beta.29 web3.js 。作为对web3.js的一个介绍教程。
+
+web3.js JavaScript软件库是一个模块集合，这些模块包含针对以太坊生态系统的特定功能，以及实现通用JSON RPC规范的与以太坊兼容的JavaScript API。
+
+要运行此脚本，您无需运行自己的本地节点，可以使用https://infura.io [Infura services]。
+
+=== web3.js以非阻塞（异步）方式进行合同基本操作
+
+((("web3.js","contract basic interaction in nonblocked (Async) fashion")))）检查你是否安装有效的+ npm +版本：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm -v</strong>
+5.6.0
+</pre>
+++++
+
+如果还没有，请初始化+ npm +：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm init</strong>
+</pre>
+++++
+
+安装基本的软件配置库：
+
+++++
+<pre data-type="programlisting">
+$ <strong>npm i command-line-args</strong>
+$ <strong>npm i web3</strong>
+$ <strong>npm i node-rest-client-promise</strong>
+</pre>
+++++
+
+这将把新的软件配置项更新到_package.json_配置文件中。
+
+==== Node.js脚本的执行
+
+((("web3.js","node.js script execution")))基本执行：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js</strong>
+</pre>
+++++
+
+使用您自己的Infura令牌（在https://infura.io/ []注册，并将api-key存储在名为__infura_token__的本地文件中）：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  --infuraFileToken /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+或者：
+
+++++
+<pre data-type="programlisting">
+$ <strong>node code/web3js/web3-contract-basic-interaction.js \
+  /path/to/file/with/infura_token</strong>
+</pre>
+++++
+
+这将使用你自己的令牌读取文件，并将其作为命令行参数传递给实际命令。
+
+===查看演示脚本
+
+((("web3.js","reviewing demo script")))接下来，让我们审查我们的演示脚本_web3-contract-basic-interaction_。
+
+我们使用+ Web3 +对象创建一个基本的web3服务提供对象：
+
+[source,solidity]
+----
+var web3 = new Web3(infura_host);
+----
+
+然后，我们可以与web3通讯并尝试一些基本功能。让我们看看协议版本：
+
+[source,solidity]
+----
+web3.eth.getProtocolVersion().then(function(protocolVersion) {
+      console.log(`Protocol Version: ${protocolVersion}`);
+  })
+----
+
+现在让我们看一下当前的燃料gas价格：
+
+[source,solidity]
+----
+web3.eth.getGasPrice().then(function(gasPrice) {
+      console.log(`Gas Price: ${gasPrice}`);
+  })
+----
+
+当前链中最后一个被开采的区块编号是什么？
+
+[source,solidity]
+----
+web3.eth.getBlockNumber().then(function(blockNumber) {
+      console.log(`Block Number: ${blockNumber}`);
+  })
+----
+
+===合约的使用
+
+((("web3.js","contract interaction", id="ix_appdx-web3js-tutorial-asciidoc1", range="startofrange")))现在让我们学习一些智能合约的基本使用方法。对于这些示例，我们将在Kovan测试网上使用https://bit.ly/2MPZZLx[+WETH9_+ contract]。
+
+[role =“ pagebreak-before”]
+首先，让我们初始化合约地址：
+
+[source,solidity]
+----
+var our_contract_address = "0xd0A1E359811322d97991E03f863a0C30C2cF029C";
+----
+
+然后，我们可以查看其帐号余额：
+
+[source,solidity]
+----
+web3.eth.getBalance(our_contract_address).then(function(balance) {
+      console.log(`Balance of ${our_contract_address}: ${balance}`);
+})
+----
+
+并查看其二进制代码：
+
+[source,solidity]
+----
+web3.eth.getCode(our_contract_address).then(function(code) {
+      console.log(code);
+})
+----
+
+接下来，我们将准备与Etherscan Explorer API进行通讯的环境。
+
+让我们在Evanscan Explorer API中为Kovan测试链初始化一个合约URL：
+
+[source,solidity]
+----
+var etherscan_url =
+  "https://kovan.etherscan.io/api?module=contract&action=getabi&
+  address=${our_contract_address}"
+----
+
+让我们初始化一个REST客户端以与Etherscan API进行通讯：
+
+[source,solidity]
+----
+var client = require('node-rest-client-promise').Client();
+----
+
+并得到客户端的promise对象：
+
+[source,solidity]
+----
+client.getPromise(etherscan_url)
+----
+
+获得有效的客户端的promise后，我们可以从Etherscan API获得合约的ABI：
+
+[source,solidity]
+----
+.then((client_promise) => {
+  our_contract_abi = JSON.parse(client_promise.data.result);
+----
+
+现在，我们可以创建一个promise合约对象以便之后使用：
+
+[source,solidity]
+----
+  return new Promise((resolve, reject) => {
+      var our_contract = new web3.eth.Contract(our_contract_abi,
+                                               our_contract_address);
+      try {
+        // If all goes well
+        resolve(our_contract);
+      } catch (ex) {
+        // If something goes wrong
+        reject(ex);
+      }
+    });
+})
+----
+
+如果我们的合约的promise成功返回，我们可以开始调用它的函数：
+
+[source,solidity]
+----
+.then((our_contract) => {
+----
+
+让我们看看我们合约的地址：
+
+[source,solidity]
+----
+console.log(`Our Contract address:
+            ${our_contract._address}`);
+----
+
+或者：
+
+[source,solidity]
+----
+console.log(`Our Contract address in another way:
+            ${our_contract.options.address}`);
+----
+
+现在让我们查询一下合约的ABI：
+
+[source,solidity]
+----
+console.log("Our contract abi: " +
+            JSON.stringify(our_contract.options.jsonInterface));
+----
+
+我们可以使用回调查看智能合约中的通证总量：
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call(function(err, totalSupply) {
+    if (!err) {
+        console.log(`Total Supply with a callback:  ${totalSupply}`);
+    } else {
+        console.log(err);
+    }
+});
+----
+
+或者我们可以使用返回的Promise而不是传入回调函数：(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc1")))
+
+[source,solidity]
+----
+our_contract.methods.totalSupply().call().then(function(totalSupply){
+    console.log(`Total Supply with a promise:  ${totalSupply}`);
+}).catch(function(err) {
+    console.log(err);
+});
+----
+
+===使用Await命令完成的异步操作
+
+((("await construct")))((("web3.js","asynchronous operation with await")))现在，你已经看过基本教程，可以使用异步+ await +结构尝试完成相同的操作。查看http://bit.ly/2ABrFkl[_code/web3js_]中的_web3-contract-basic-interaction-async-await.js_脚本，并将其与本教程进行比较，以了解它们之间的区别。异步等待操作的命令更易于阅读，因为它使异步操作的行为更像是一系列阻塞调用。(((range="endofrange", startref="ix_appdx-web3js-tutorial-asciidoc0")))
