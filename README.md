@@ -47,3 +47,4 @@ If you are interested in translating this book, please join our team of voluntee
 - Yeni örnek eklendi: Solidity Basics
 - Yeni örnek eklendi: Solidity Basics
 - Yeni örnek eklendi: Solidity Basics
+- Yeni örnek eklendi: Solidity Basics
