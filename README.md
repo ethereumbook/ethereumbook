@@ -46,3 +46,4 @@ This "Free Culture" compliant license was approved by our publisher O'Reilly Med
 If you are interested in translating this book, please join our team of volunteers at: https://www.transifex.com/aantonop/ethereumbook
 - Yeni örnek eklendi: Solidity Basics
 - Yeni örnek eklendi: Solidity Basics
+- Yeni örnek eklendi: Solidity Basics
