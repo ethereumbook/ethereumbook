@@ -89,7 +89,7 @@ The founders worked for years to build and refine their vision. And on July 30, 
 
 Ethereum’s development was planned over four distinct stages, with major changes occurring at each stage. A stage may include subreleases, known as *hard forks*, that change functionality in a way that is not backward compatible.
 
-The four main development stages are codenamed Frontier, Homestead, Metropolis, and Serenity. At the time of writing, we are in the last stage: Serenity. The Serenity stage has been further broken down into five substages codenamed The Merge, The Surge, The Scourge, The Verge, The Purge, and The Splurge.
+The four main development stages are codenamed Frontier, Homestead, Metropolis, and Serenity. At the time of writing, we are in the last stage: Serenity. The Serenity stage has been further broken down into six substages codenamed The Merge, The Surge, The Scourge, The Verge, The Purge, and The Splurge.
 
 Let’s now dive into the four development stages and describe their main purposes:
 
