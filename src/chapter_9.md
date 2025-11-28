@@ -141,7 +141,7 @@ Let’s look at how it plays out:
 By the time this cycle ends, the attacker has already exploited Contract B by leveraging the outdated data from Contract A and then lets the callback and original call in Contract A complete as normal. The process is illustrated in Figure 9-1.
 Figure 9-1. Read-only reentrancy
 
-![Read-only reentrancy](images/ch1/maet_0901.png)
+![Read-only reentrancy](images/ch9/maet_0901.png)
 
 **Figure 1-1.** Read-only reentrancy
 
