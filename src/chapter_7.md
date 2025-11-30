@@ -1004,7 +1004,7 @@ npm i ethers
 
 Next, we need the USDT contract’s ABI. You can grab it from [Etherscan](https://oreil.ly/LoWH4), right below the contract source code (see Figure 7-1), and save it in your project folder.
 
-![Etherscan’s USDT ABI section](images/ch1/maet_0701.png)
+![Etherscan’s USDT ABI section](images/ch7/maet_0701.png)
 
 **Figure 7-1.** Etherscan’s USDT ABI section
 
