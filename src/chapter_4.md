@@ -1058,7 +1058,7 @@ Then, the prover needs to compute the KZG proof for all evaluations that they wa
 
 ![Prover computes KZG proofs](images/ch4/maet_0416.png)
 
-Figure 4-16. The prover computes the KZG proof of different evaluations of the polynomials and sends it to the verifie
+Figure 4-16. The prover computes the KZG proof of different evaluations of the polynomials and sends it to the verifier
 
 Now, it's the verifier's turn. To make sure that the prover is honest, the verifier needs to compute the elliptic curve pairing check using the information that the prover has previously sent, along with the trusted setup, as you can see in Figure 4-17.
 
