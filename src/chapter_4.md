@@ -897,7 +897,7 @@ If we take the verifier equation and write it to the pairing group, basically co
 [q(s)(s – z)]ₜ = [p(s) – y]ₜ
 ```
 
-where `T` is a different elliptic curve.
+where `T` is a a multiplicative subgroup of a finite field extension.
 
 You can just see that this equation is the exact same equation we calculated before:
 
