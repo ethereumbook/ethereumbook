@@ -571,9 +571,9 @@ That's the data payload for our transaction, invoking the `withdraw` function an
 
 ## Special Transaction: Contract Creation
 
-One special case that we should mention is a transaction that creates a new contract on the blockchain, deploying it for future use. *Contract-creation transactions* are sent to a special destination address called the *zero address*; the `to` field in a contract-registration transaction contains the address `0x0`. This address represents neither an EOA (there is no corresponding private–public key pair) nor a contract. It can never spend ether or initiate a transaction. It is only used as a destination, with the special meaning "create this contract."
+One special case that we should mention is a transaction that creates a new contract on the blockchain, deploying it for future use. *Contract-creation transactions* are identified by an empty `to` field (null). When the `to` field is empty, the Ethereum protocol interprets this as a request to deploy a new contract, with the bytecode provided in the `data` field.
 
-While the zero address is intended only for contract creation, it sometimes receives payments from various addresses. There are two explanations for this: either this is by accident, resulting in the loss of ether, or it is an intentional *ether burn* (deliberately destroying ether by sending it to an address from which it can never be spent). However, if you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
+Note that the *zero address* (`0x0000000000000000000000000000000000000000`) is a distinct concept: it is a valid 20-byte address that can receive ether. Sending a transaction to the zero address does not create a contract, it simply transfers ether to that address like any other transaction. The zero address sometimes receives payments from various addresses. There are two explanations for this: either this is by accident, resulting in the loss of ether, or it is an intentional *ether burn* (deliberately destroying ether by sending it to an address from which it can never be spent). However, if you want to do an intentional ether burn, you should make your intention clear to the network and use the specially designated burn address instead:
 
 ```
 0x000000000000000000000000000000000000dEaD
@@ -586,7 +586,7 @@ While the zero address is intended only for contract creation, it sometimes rece
 
 A contract-creation transaction need only contain a data payload that contains the compiled bytecode that will create the contract. The only effect of this transaction is to create the contract. You can include an ether amount in the `value` field if you want to set the new contract up with a starting balance, but that is entirely optional. If you send a value (ether) to the contract-creation address without a data payload (no contract), then the effect is the same as sending to a burn address—there is no contract to credit, so the ether is lost.
 
-As an example, we can create the `Faucet.sol` contract used in Chapter 2 by manually creating a transaction to the zero address with the contract in the data payload. The contract needs to be compiled into a bytecode representation. This can be done with the Solidity compiler:
+As an example, we can create the `Faucet.sol` contract used in Chapter 2 by manually creating a transaction with an empty `to` field and the contract bytecode in the data payload. The contract needs to be compiled into a bytecode representation. This can be done with the Solidity compiler:
 
 ```bash
 $ solc --bin Faucet.sol
