@@ -715,8 +715,7 @@ A variety of wallets and DApp browsers are available as plug-ins or extensions o
 
 **MetaMask**
 
-// TODO: add chapter 2 reference link here
-[MetaMask](https://metamask.io), introduced in [Chapter 2](add-link), is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera, and Brave Browser.
+[MetaMask](https://metamask.io), introduced in [Chapter 2](https://masteringethereum.xyz/chapter_2.html#getting-started-with-metamask), is a versatile browser-based wallet, RPC client, and basic contract explorer. It is available on Chrome, Firefox, Opera, and Brave Browser.
 
 **Phantom**
 
