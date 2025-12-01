@@ -178,7 +178,7 @@ Figure 12-3. Complete DApp architecture
 
 So far, we've explored the basic concepts behind a DApp. Now, it's time to roll up our sleeves and build a DApp ourselves.
 
-You can find lots of tutorials online to help you build your first DApp on Ethereum from scratch, but we really recommend [SpeedRunEthereum](https://oreil.ly/Onygc). It's the most effective way to learn quickly and immediately start building cool stuff. To increase your knowledge of building DApps on Ethereum, we suggest that you complete all the challenges you can find on Speed Run Ethereum and join the [BuidlGuidl community](https://buidlguidl.com).
+You can find lots of tutorials online to help you build your first DApp on Ethereum from scratch, but we really recommend [Speedrun Ethereum](https://oreil.ly/Onygc). It's the most effective way to learn quickly and immediately start building cool stuff. To increase your knowledge of building DApps on Ethereum, we suggest that you complete all the challenges you can find on Speedrun Ethereum and join the [BuidlGuidl community](https://buidlguidl.com).
 
 In this section, we're going to build a very basic decentralized application, a sort of "Hello World" DApp. You don't need any previous experience; all you need is a computer and an internet connection.
 
