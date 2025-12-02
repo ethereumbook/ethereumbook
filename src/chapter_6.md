@@ -868,6 +868,7 @@ The following example demonstrates the complete low-level process for creating a
 ```javascript
 // npm install ethers@6
 import { ethers } from "ethers";
+const RLP = require('@ethereumjs/rlp');
 
 // Replace with your own RPC and private key
 const rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com"; // or mainnet, etc.
@@ -903,30 +904,31 @@ async function createAndSendRawEip1559Tx() {
   ];
 
   // RLP-encode the unsigned fields
-  const encodedUnsigned = ethers.RLP.encode(unsignedFields); // returns "0x..."
+  const encodedUnsigned = RLP.encode(unsignedFields); // returns "0x..."
 
   // Prepend the transaction type byte (0x02)
-  const typedUnsigned = "0x02" + encodedUnsigned.slice(2);
+  const txType = Buffer.from('02', 'hex');
+  const fullTx = Buffer.concat([txType, encodedUnsigned]);
+
 
   // This is the signing hash
-  const signingHash = ethers.keccak256(typedUnsigned);
+  const signingHash = ethers.keccak256(fullTx);
 
-  // Sign the hash (ethers v6 style)
-  const signingKey = wallet.signingKey;
-  const sig = signingKey.sign(signingHash); 
-  // sig = { r: "0x...", s: "0x...", v: 27 or 28, recoveryParam: 0 or 1 }
+  // Sign the hash
+  const signingKey = new ethers.SigningKey(wallet.privateKey);
+  const signature = signingKey.sign(ethers.getBytes(signingHash));
 
   // For typed transactions we use yParity (0 or 1) instead of legacy v
   const signedFields = [
     ...unsignedFields,
-    sig.recoveryParam, // yParity
+    sig.v - 27, // yParity (0 or 1)
     sig.r,
     sig.s
   ];
 
-  const encodedSigned = ethers.RLP.encode(signedFields);
+  const encodedSigned = RLP.encode(signedFields);
 
-  const rawTransaction = `0x02${encodedSigned.slice(2)}`;
+  const rawTransaction = '0x02' + Buffer.from(encodedSigned).toString('hex');
 
   console.log("Raw transaction hex:\n", rawTransaction);
 
