@@ -893,9 +893,9 @@ async function createAndSendRawEip1559Tx() {
   const unsignedFields = [
     ethers.toBeHex(chainId),
     ethers.toBeHex(nonce),
+    ethers.toBeHex(gasLimit),            // gasLimit
     ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
     ethers.toBeHex(maxFeePerGas),        // maxFeePerGas
-    ethers.toBeHex(gasLimit),            // gasLimit
     recipient,                           // to
     ethers.toBeHex(value),               // value
     data,                               // data
