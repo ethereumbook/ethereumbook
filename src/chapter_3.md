@@ -496,7 +496,7 @@ Great! Now that you have a local copy of Lighthouse, you can compile an executab
 
 ```bash
 $ cd lighthouse
-$ git checkout stable\
+$ git checkout stable
 $ make
 ```
 
@@ -531,10 +531,11 @@ If you see something like this, everything is running fine:
 $ cd ethereum-node2
 $ cd consensus
 $ lighthouse bn \
+    --network mainnet \
 	--checkpoint-sync-url https://mainnet.checkpoint.sigp.io \
 	--execution-endpoint http://localhost:8551 \
 	--execution-jwt ../jwt.hex \
-	--genesis-beacon-api-url=https://beaconstate.info
+	--http
 ```
 
 And you’re done! You should see both the execution and consensus client start logging lots of data on the terminal.
