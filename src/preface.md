@@ -140,7 +140,7 @@ Follow Alessandro on [GitHub](https://github.com/alessandromazza98)
 
 Connect with Alessandro on [LinkedIn](https://www.linkedin.com/in/alessandro-mazza-a8b181320)
 
-Follow Alessandro on [Twitter/X (Italian profile)](https://x.com/crypto_ita2)
+Follow Alessandro on [Twitter/X (Italian profile)](https://x.com/alessandromazza)
 
 Follow Alessandro on [Twitter/X (English profile)](https://x.com/alemaz98)
 
