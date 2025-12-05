@@ -861,6 +861,87 @@ Transaction Receipt:  TransactionReceipt {
 }
 ```
 
+### Low-Level Manual Construction of an EIP-1559 Raw Transaction
+
+The following example demonstrates the complete low-level process for creating and signing an EIP-1559 (type 0x02) transaction by manually building the field list, RLP-encoding it, and signing the typed payload. This approach reveals exactly what happens inside `wallet.signTransaction`.
+
+```javascript
+// npm install ethers@6
+import { ethers } from "ethers";
+const RLP = require('@ethereumjs/rlp');
+
+// Replace with your own RPC and private key
+const rpcUrl = "https://ethereum-sepolia-rpc.publicnode.com"; // or mainnet, etc.
+const provider = new ethers.JsonRpcProvider(rpcUrl);
+const privateKey = "0xYOUR_PRIVATE_KEY_HERE";
+const wallet = new ethers.Wallet(privateKey, provider);
+
+const recipient = "0xRECIPENT_ADDRESS"; // example address
+
+async function createAndSendRawEip1559Tx() {
+  const chainId = await provider.getChainId(); // This is a RPC call
+  const nonce = await provider.getTransactionCount(wallet.address); // This is a RPC call
+
+  // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData)
+  const maxPriorityFeePerGas = ethers.parseUnits("2", "gwei");   // tip
+  const maxFeePerGas = ethers.parseUnits("30", "gwei");         // fee cap (base fee + tip)
+  const gasLimit = 21000n;
+  const value = ethers.parseEther("0.01"); // 0.01 ETH
+  const data = "0x"; // or contract calldata
+  const accessList = []; // [] or proper access list for EIP-2930 style savings
+
+  // Unsigned fields in strict order for Transaction Type 2
+  const unsignedFields = [
+    ethers.toBeHex(chainId),              // chainId
+    ethers.toBeHex(nonce),                // nonce
+    ethers.toBeHex(gasLimit),             // gasLimit
+    ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
+    ethers.toBeHex(maxFeePerGas),         // maxFeePerGas
+    recipient,                            // to
+    ethers.toBeHex(value),                // value
+    data,                                 // data
+    accessList                            // accessList
+  ];
+
+  // RLP-encode the unsigned fields
+  const encodedUnsigned = RLP.encode(unsignedFields);
+
+  // Prepend the transaction type byte (0x02)
+  const txType = Buffer.from('02', 'hex');
+  const fullTx = Buffer.concat([txType, encodedUnsigned]);
+
+  // This is the signing hash
+  const signingHash = ethers.keccak256(fullTx);
+
+  // Sign the hash
+  const signingKey = new ethers.SigningKey(wallet.privateKey);
+  const signature = signingKey.sign(ethers.getBytes(signingHash));
+
+  // For typed transactions we use yParity (0 or 1) instead of legacy v
+  const signedFields = [
+    ...unsignedFields,
+    sig.v - 27, // yParity (0 or 1)
+    sig.r,
+    sig.s
+  ];
+
+  const encodedSigned = RLP.encode(signedFields);
+
+  const rawTransaction = '0x02' + Buffer.from(encodedSigned).toString('hex');
+
+  console.log("Raw transaction hex:\n", rawTransaction);
+
+  // Send the raw transaction
+  const txHash = await provider.send("eth_sendRawTransaction", [rawTransaction]);
+  console.log("Transaction sent! Hash:", txHash);
+
+  const receipt = await provider.waitForTransaction(txHash);
+  console.log("Mined in block", receipt.blockNumber);
+}
+
+createAndSendRawEip1559Tx().catch(console.error);
+```
+
 ## Deserializing the Transaction
 
 Now that we have created and sent a transaction to the Ethereum network from scratch, we can follow the inverse process and try to rebuild each field of the transaction, starting with the signed raw transaction we get from the previous example. This will help you understand how each field of the transaction is actually included in the transaction itself—you just need to extract it in the correct way.
