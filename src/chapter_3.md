@@ -358,7 +358,7 @@ $ cd .. # this command is used to go back in the ethereum-node1 folder
 $ cd execution
 $ ./go-ethereum/build/bin/geth --mainnet \
 	--http \
-	--http.api eth,net,engine,admin \
+	--http.api eth,net,engine,admin,web3 \
 	--authrpc.jwtsecret=../jwt.hex
 ```
 
