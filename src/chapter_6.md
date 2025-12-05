@@ -882,7 +882,7 @@ async function createAndSendRawEip1559Tx() {
   const chainId = await provider.getChainId(); // This is a RPC call
   const nonce = await provider.getTransactionCount(wallet.address); // This is a RPC call
 
-  // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData
+  // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData)
   const maxPriorityFeePerGas = ethers.parseUnits("2", "gwei");   // tip
   const maxFeePerGas = ethers.parseUnits("30", "gwei");         // fee cap (base fee + tip)
   const gasLimit = 21000n;
@@ -892,24 +892,23 @@ async function createAndSendRawEip1559Tx() {
 
   // Unsigned fields in strict order for Transaction Type 2
   const unsignedFields = [
-    ethers.toBeHex(chainId),
-    ethers.toBeHex(nonce),
-    ethers.toBeHex(gasLimit),            // gasLimit
+    ethers.toBeHex(chainId),              // chainId
+    ethers.toBeHex(nonce),                // nonce
+    ethers.toBeHex(gasLimit),             // gasLimit
     ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
-    ethers.toBeHex(maxFeePerGas),        // maxFeePerGas
-    recipient,                           // to
-    ethers.toBeHex(value),               // value
-    data,                               // data
-    accessList                           // accessList
+    ethers.toBeHex(maxFeePerGas),         // maxFeePerGas
+    recipient,                            // to
+    ethers.toBeHex(value),                // value
+    data,                                 // data
+    accessList                            // accessList
   ];
 
   // RLP-encode the unsigned fields
-  const encodedUnsigned = RLP.encode(unsignedFields); // returns "0x..."
+  const encodedUnsigned = RLP.encode(unsignedFields);
 
   // Prepend the transaction type byte (0x02)
   const txType = Buffer.from('02', 'hex');
   const fullTx = Buffer.concat([txType, encodedUnsigned]);
-
 
   // This is the signing hash
   const signingHash = ethers.keccak256(fullTx);
