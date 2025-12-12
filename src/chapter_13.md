@@ -94,18 +94,18 @@ The constant product formula *x × y = k* produces a hyperbolic curve that has a
 ```
 Token Y (e.g., USDC)
     │
-200 ┤
+200 ┤·
     │ ·
-    │   ·
-150 ┤     ·
-    │       ·
+    │  ·
+150 ┤   ·
+    │    ·
+    │     ·
+100 ┤       ·    ← x × y = k (hyperbola)
     │         ·
-100 ┤           ·  ← x × y = k (hyperbola)
-    │             ·
-    │               ··
- 50 ┤                  ···
-    │                      ·····
-    │                            ···············
+    │           ··
+ 50 ┤              ···
+    │                  ······
+    │                          ·················
   0 ┼────────────────────────────────────────────→ Token X (e.g., ETH)
     0        50       100       150       200
 ```
@@ -118,7 +118,9 @@ Consider a pool with 100 ETH and 200 USDC (k = 20,000):
 
 The formula for calculating output is:
 
-$$\Delta y = \frac{y \times \Delta x}{x + \Delta x}$$
+```
+Δy = (y × Δx) / (x + Δx)
+```
 
 Where *Δx* is the input amount and *Δy* is the output amount. As *Δx* approaches infinity, *Δy* approaches *y* (the total reserve) but never reaches it.
 
