@@ -1,5 +1,7 @@
 # Mastering Ethereum: 2nd Edition
 
+This book is intended for developers who want to understand Ethereum and smart contract development.
+
 This is the second edition of the book "Mastering Ethereum". You can access the book in the following ways:
 
 - [Buy the book on Amazon](https://www.amazon.com/_/dp/1098168429?smid=ATVPDKIKX0DER&_encoding=UTF8&tag=oreilly20-20)
