@@ -72,7 +72,63 @@ This formula is a simplified way to understand how pools work. By providing liqu
 
 This openness also presents a significant challenge for DEXs. Since anyone can create a blockchain and launch a DEX, there are now more than one hundred DEXs (likely many more) across various blockchains. This abundance fragments liquidity, making swaps—where users exchange one cryptocurrency for another—less efficient than they would be on platforms with consolidated liquidity. This fragmentation can lead to higher *slippage*, which is the difference between the expected price of a trade and the actual price at which the trade is executed. High slippage occurs when there is insufficient liquidity, causing trades to be executed at less favorable prices than anticipated.
 
-> **Note**  
+#### Why the Constant Product Formula Works
+
+The elegance of the *x × y = k* formula lies in its mathematical shape: a hyperbola. This isn't just a coincidence—it's a deliberate design choice that protects liquidity pools from being completely drained.
+
+**The Problem with Linear Pricing**
+
+Imagine if a DEX used a simple linear pricing formula instead, where swapping 1 ETH always gives you exactly 2 USDC regardless of how much liquidity remains. This creates a catastrophic vulnerability:
+
+1. An attacker could swap all their USDC for ETH, completely draining the ETH from the pool
+2. The pool would now hold 0 ETH and all USDC
+3. Since prices don't adjust based on remaining liquidity, the attacker could then reverse the attack
+4. With a series of trades, the entire pool could be drained to zero on both sides
+
+This is why fixed-price or linear curves are fundamentally unsuitable for AMMs—they allow complete pool drainage.
+
+**The Hyperbola Solution**
+
+The constant product formula *x × y = k* produces a hyperbolic curve that has a critical property: it never touches either axis. As you try to buy more and more of one token, the price increases exponentially, making it mathematically impossible to drain either token to zero.
+
+```
+Token Y (e.g., USDC)
+    │
+200 ┤·
+    │ ·
+    │  ·
+150 ┤   ·
+    │    ·
+    │     ·
+100 ┤       ·    ← x × y = k (hyperbola)
+    │         ·
+    │           ··
+ 50 ┤              ···
+    │                  ······
+    │                          ·················
+  0 ┼────────────────────────────────────────────→ Token X (e.g., ETH)
+    0        50       100       150       200
+```
+
+Consider a pool with 100 ETH and 200 USDC (k = 20,000):
+
+- **Swapping 1 ETH for USDC**: You receive approximately 1.98 USDC (close to the 1:2 ratio)
+- **Swapping 50 ETH for USDC**: You receive only 66.67 USDC (not 100 as a linear model would suggest)
+- **Trying to get all 200 USDC**: You would need to provide infinite ETH
+
+The formula for calculating output is:
+
+```
+Δy = (y × Δx) / (x + Δx)
+```
+
+Where *Δx* is the input amount and *Δy* is the output amount. As *Δx* approaches infinity, *Δy* approaches *y* (the total reserve) but never reaches it.
+
+This asymptotic behavior is what makes AMMs secure. The larger the trade relative to the pool size, the worse the exchange rate becomes. This creates *slippage*—the difference between the expected price and the actual execution price—which naturally discourages trades that would significantly deplete the pool.
+
+The hyperbolic curve ensures that liquidity pools are self-protecting: the scarcer a token becomes, the more expensive it gets, creating an economic barrier that prevents complete drainage. This elegant mathematical property is what made Uniswap's simple formula revolutionary in enabling trustless, permissionless trading.
+
+> **Note**
 >
 > Uniswap, which is arguably one of the most significant projects in the current DeFi landscape, was inspired by a 2016 Reddit post by Vitalik Buterin. Hayden Adams, who reportedly had no prior coding experience, took a year to develop Uniswap V1 using the Vyper programming language.
 
