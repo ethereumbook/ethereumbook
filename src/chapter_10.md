@@ -348,7 +348,7 @@ The console output informed us that the deploy script ran successfully. If we ta
 
 ```
    Transaction: 0xd01e3a90e1f2ee60112658e92f4ebf04c24df67d2ec1315cfb79d145729d15ec
-    Contract created: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+    Contract created: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
     Gas used: 941861
     Block Number: 1
     Block Hash: 0x748b6058dea932317cacf45bb63be82f253554f359b97ace224e35979a92b00a
@@ -358,7 +358,7 @@ The console output informed us that the deploy script ran successfully. If we ta
 Our METoken was successfully deployed at the following address:
 
 ```
-0x5FbDB2315678afecb367f032d93F642f64180aa3
+0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
 ```
 
 Alternatively, we can deploy our token using forge’s `create` console command:
