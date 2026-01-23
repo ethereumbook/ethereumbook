@@ -371,6 +371,66 @@ Figure 12-11. Contract state after transaction
 
 You can play around with this and see how your contract behaves based on your inputs and actions.
 
+### Deploying Your Contract to a Live Blockchain
+
+Now that you've experimented with your contracts, it's time to deploy them to a real blockchain before publishing your dApp to the world. Up until now, running `yarn deploy` has only deployed your contracts to your local testnet, which no one else can access, meaning your dApp wouldn't work for anyone but you.
+
+The first step is to generate a deployer account - i.e. the on-chain account that will submit the transaction to deploy your contracts.
+
+```bash
+$ yarn generate
+```
+
+You'll be prompted for an optional password. If everything goes well, you should see output similar to this:
+
+```bash
+👛 Generating new Wallet
+
+✔ Enter a password to encrypt your private key:
+✔ Confirm password:
+
+📄 Encrypted Private Key saved to packages/hardhat/.env file
+🪄 Generated wallet address: 0x3a08bC7AF33bfED880C41A90FeE0D2776C98e3BF
+
+⚠️ Make sure to remember your password! You'll need it to decrypt the private key.
+```
+
+Next, you need to fund your newly generated account with some ETH on the target blockchain. To view your account details and current balance, run:
+
+```bash
+$ yarn account
+```
+
+Now you're ready to deploy your contract to Ethereum by running:
+
+```bash
+$ yarn deploy --network mainnet
+```
+
+To complete the setup, update the `scaffold.config.ts` file to point to the deployed network (Ethereum in our example). Change:
+
+```bash
+targetNetworks: [chains.hardhat],
+```
+
+to:
+
+```bash
+targetNetworks: [chains.mainnet],
+```
+
+Your frontend will now connect to the contracts you've deployed on Ethereum mainnet.
+
+Optionally, you can verify your contracts on Etherscan with:
+
+```bash
+$ yarn verify --network mainnet
+```
+
+> **Note**  
+>
+> Verifying a contract on Etherscan allows anyone to view and read your contract's source code on Ethereum's most popular block explorer, confirming that it matches the actual deployed bytecode.
+
 ### Deploying to Vercel
 
 When you're satisfied with your decentralized application, you can publish it to a production environment such as Vercel. Vercel is a really useful frontend-as-a-service tool that lets you easily deploy your application to the internet. You can also attach a custom domain that you have bought so that people can reach your DApp just by typing the domain name.
