@@ -654,7 +654,8 @@ $ curl -X POST -H "Content-Type: application/json" --data \
 The response, 0x1B1717FC7, tells us that the current gas price is 7.27 gwei (gigawei or billion wei). If, like us, you don’t think in hexadecimal, you can convert it to decimal on the command line with a little Bash-fu:
 
 ```bash
-$ echo $((0x1B1717FC7))7271972807
+$ echo $((0x1B1717FC7))
+7271972807
 ```
 
 The full JSON-RPC API can be investigated on the [Ethereum wiki](https://oreil.ly/lO2Z0).
