@@ -284,7 +284,8 @@ Great! Now that you have a local copy of Geth, you can compile an executable for
 
 ```bash
 $ cd go-ethereum
-$ git checkout v1.14.3$ make geth
+$ git checkout v1.14.3
+$ make geth
 ```
 
 If all goes well, you will see the Go compiler building each component until it produces the Geth executable:
