@@ -879,7 +879,8 @@ const wallet = new ethers.Wallet(privateKey, provider);
 const recipient = "0xRECIPENT_ADDRESS"; // example address
 
 async function createAndSendRawEip1559Tx() {
-  const chainId = await provider.getChainId(); // This is a RPC call
+  const network = await provider.getNetwork(); // This is a RPC call
+  const chainId = network.chainId;
   const nonce = await provider.getTransactionCount(wallet.address); // This is a RPC call
 
   // Example parameters — adjust as needed (or use provider.estimateGas + getFeeData)
@@ -892,13 +893,13 @@ async function createAndSendRawEip1559Tx() {
 
   // Unsigned fields in strict order for Transaction Type 2
   const unsignedFields = [
-    ethers.toBeHex(chainId),              // chainId
-    ethers.toBeHex(nonce),                // nonce
-    ethers.toBeHex(gasLimit),             // gasLimit
-    ethers.toBeHex(maxPriorityFeePerGas), // maxPriorityFeePerGas
-    ethers.toBeHex(maxFeePerGas),         // maxFeePerGas
+    chainId,                              // chainId
+    nonce,                                // nonce
+    maxPriorityFeePerGas,                 // maxPriorityFeePerGas
+    maxFeePerGas,                         // maxFeePerGas
+    gasLimit,                             // gasLimit
     recipient,                            // to
-    ethers.toBeHex(value),                // value
+    value,                                // value
     data,                                 // data
     accessList                            // accessList
   ];
@@ -920,9 +921,9 @@ async function createAndSendRawEip1559Tx() {
   // For typed transactions we use yParity (0 or 1) instead of legacy v
   const signedFields = [
     ...unsignedFields,
-    sig.v - 27, // yParity (0 or 1)
-    sig.r,
-    sig.s
+    signature.v - 27, // yParity (0 or 1)
+    signature.r,
+    signature.s
   ];
 
   const encodedSigned = RLP.encode(signedFields);
