@@ -66,7 +66,7 @@ Reentrancy can be tricky to grasp without a practical example. Take a look at th
 15        }
 16      (bool res, ) = address(msg.sender).call{value: _amt}("");
 17        require(res, "Transfer failed");
-18      balances[msg.sender] = 0;
+18      balances[msg.sender] -= _amt;
 19        lastWithdrawTime[msg.sender] = block.timestamp;
 20    }
 21 }
