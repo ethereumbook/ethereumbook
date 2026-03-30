@@ -822,7 +822,7 @@ Can the prover, without knowing the secret `s`, find a different polynomial `q(x
 
 Assume they can, so there is a polynomial `r(x) = p(x) – q(x)` not constant of degree `n`. Since `q(x) != p(x)`, that means that `r(x)` has at most `n` zeros—that is, `r(x) = 0` in at most `n` positions. This is a fundamental property of algebra. You can easily verify that it holds true for all the basic geometric shapes you studied in school: lines (polynomials of degree 1) have one zero, parabolas (polynomials of degree 2) have at most two, and so on.
 
-The only way the prover can achieve `q(s) = p(s)` is by making `r(x) = p(x) + q(x) = 0` in as many places as possible. But they can choose up to `n` zeros, as we said previously.
+The only way the prover can achieve `q(s) = p(s)` is by making `r(x) = p(x) - q(x) = 0` in as many places as possible. But they can choose up to `n` zeros, as we said previously.
 
 Since the prover doesn't know `s`, it's extremely unlikely that they will be able to guess it. In fact, `n` (order of the polynomial) << `p` (order of elliptic curves).
 
