@@ -787,6 +787,7 @@ In this section, we'll create a raw transaction and sign it, using the `ethers.j
 // Run with: node eip1559_tx.js
 import { ethers } from "ethers";
 
+async function signAndSend() {
 // Create provider with your RPC endpoint
 const provider = new ethers.JsonRpcProvider("https://ethereum-sepolia-rpc.publicnode.com");
 
@@ -814,8 +815,7 @@ console.log("RLP-Encoded Tx (Unsigned): " + unsignedTx);
 const txHash = ethers.keccak256(unsignedTx);
 console.log("Tx Hash (Unsigned): " + txHash);
 
-// Sign the transaction
-async function signAndSend() {
+
   // Sign the transaction with the wallet
   const signedTx = await wallet.signTransaction(txData);
   console.log("Signed Raw Transaction: " + signedTx);
