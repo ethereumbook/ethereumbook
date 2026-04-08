@@ -78,12 +78,11 @@ The elegance of the *x × y = k* formula lies in its mathematical shape: a hyper
 
 **The Problem with Linear Pricing**
 
-Imagine if a DEX used a simple linear pricing formula instead, where swapping 1 ETH always gives you exactly 2 USDC regardless of how much liquidity remains. This creates a catastrophic vulnerability:
+Imagine if a DEX used a simple linear (constant) pricing formula instead, where swapping 1 ETH always gives you exactly 2 USDC regardless of how much liquidity remains. This creates a very bad trading environment: whenever that fixed rate differs from the price on the rest of the market, arbitrageurs have an incentive to trade against the pool until one side of the reserves is exhausted:
 
-1. An attacker could swap all their USDC for ETH, completely draining the ETH from the pool
-2. The pool would now hold 0 ETH and all USDC
-3. Since prices don't adjust based on remaining liquidity, the attacker could then reverse the attack
-4. With a series of trades, the entire pool could be drained to zero on both sides
+1. If the pool underprices ETH relative to the market (as in our 2 USDC per ETH example when ETH trades far higher elsewhere), anyone can keep swapping USDC for ETH until the pool’s ETH is effectively gone.
+2. If instead the pool overprices ETH, traders sell ETH into the pool and drain USDC the same way.
+3. The pool does not rebalance itself from trade flow alone: reserves stay skewed toward one token until one asset is depleted, because the quoted price never adjusts to remaining liquidity.
 
 This is why fixed-price or linear curves are fundamentally unsuitable for AMMs—they allow complete pool drainage.
 
