@@ -66,7 +66,7 @@ Reentrancy can be tricky to grasp without a practical example. Take a look at th
 15        }
 16      (bool res, ) = address(msg.sender).call{value: _amt}("");
 17        require(res, "Transfer failed");
-18      balances[msg.sender] -= _amt; // suppose 0.7.x where underflow is possible
+18      balances[msg.sender] -= _amt; // assume Solidity <0.8: underflow wraps (exploitable); Solidity >=0.8: reverts here
 19        lastWithdrawTime[msg.sender] = block.timestamp;
 20    }
 21 }
