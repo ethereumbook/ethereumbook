@@ -50,21 +50,21 @@ Reentrancy can be tricky to grasp without a practical example. Take a look at th
 
 ```solidity
 1 contract EtherStore {
-2      uint256 public withdrawalLimit = 1 ether;
+2      int256 public withdrawalLimit = 1 ether;
 3      mapping(address => uint256) public lastWithdrawTime;
-4    mapping(address => uint256) balances;
+4    mapping(address => int256) balances;
 5
 6    function depositFunds() public payable{
-7      balances[msg.sender] += msg.value;
+7      balances[msg.sender] += int256(msg.value);
 8    }
 9
 10    function withdrawFunds() public {
 11        require(block.timestamp >= lastWithdrawTime[msg.sender] + 1 weeks);
-12        uint256 _amt = balances[msg.sender];
+12        int256 _amt = balances[msg.sender];
 13        if(_amt > withdrawalLimit){
 14            _amt = withdrawalLimit;
 15        }
-16      (bool res, ) = address(msg.sender).call{value: _amt}("");
+16      (bool res, ) = address(msg.sender).call{value: uint256(_amt)}("");
 17        require(res, "Transfer failed");
 18      balances[msg.sender] -= _amt;
 19        lastWithdrawTime[msg.sender] = block.timestamp;
