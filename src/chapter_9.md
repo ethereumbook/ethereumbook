@@ -734,8 +734,8 @@ We will now see a precision-loss vulnerability commonly exploited in the wild, u
 10        return _asset.balanceOf(address(this));
 11    }
 12    function deposit(address receiver, uint256 assets) public {
-13        SafeERC20.safeTransferFrom(_asset, msg.sender, address(this), assets);
-14        uint256 shares = _convertToShares(assets, Math.Rounding.Down);
+13        uint256 shares = _convertToShares(assets, Math.Rounding.Down);
+14        SafeERC20.safeTransferFrom(_asset, msg.sender, address(this), assets);
 15        _mint(receiver, shares);
 16        emit Deposit(msg.sender, receiver, assets, shares);
 17    }
