@@ -564,7 +564,7 @@ A pure function is one that neither reads nor writes any variables in storage. I
 
 **view**
 
-A function marked as a view promises not to modify any state. The compiler does not enforce the `view` modifier; it only produces a warning when it can be applied.
+A function marked as a view does not modify any state. The compiler does not force the use of the `view` modifier; it only produces a warning when it can be applied.
 
 **payable**
 
