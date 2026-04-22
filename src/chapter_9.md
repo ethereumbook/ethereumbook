@@ -74,7 +74,7 @@ Reentrancy can be tricky to grasp without a practical example. Take a look at th
 
 This contract has two public functions, `depositFunds` and `withdrawFunds`. The `depositFunds` function simply increments the sender’s balance. The `withdrawFunds` function allows the sender to withdraw their balance. This function is intended to succeed only if a withdrawal has not occurred in the last week.
 
-The vulnerability is in line 17, where the contract sends the user their requested amount of ether. Consider an attacker who has created the contract in Example 9-2.
+The vulnerability is in line 16, where the contract sends the user their requested amount of ether. Consider an attacker who has created the contract in Example 9-2.
 
 **Example 9-2. Attack.sol: a contract used to exploit the reentrancy vulnerability in the EtherStore contract**
 
