@@ -139,7 +139,6 @@ Let’s look at how it plays out:
 3. While still in the fallback, the attacker’s contract calls a different protocol, Contract B, which is connected to Contract A and depends on the data it provides.
 4. Contract B, unaware of any issues, reads data from Contract A. However, the state of Contract A is outdated because it hasn’t finished updating yet.
 By the time this cycle ends, the attacker has already exploited Contract B by leveraging the outdated data from Contract A and then lets the callback and original call in Contract A complete as normal. The process is illustrated in Figure 9-1.
-Figure 9-1. Read-only reentrancy
 
 ![Read-only reentrancy](images/ch9/maet_0901.png)
 
