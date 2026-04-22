@@ -250,7 +250,7 @@ The `CALL` and `DELEGATECALL` opcodes are useful for allowing Ethereum developer
 
 #### The vulnerability
 
-As a result of the context-preserving nature of `DELEGATECALL`, building vulnerability-free custom libraries is not as easy as you might think. The code in libraries themselves can be secure and vulnerability free; however, when it is run in the context of another application, new vulnerabilities can arise. Let’s see a fairly complex example of this, using Fibonacci numbers. Consider the library in Example 9-3, which can generate the Fibonacci sequence and sequences of similar form. (Note: this code was modified from [*https://oreil.ly/EHjOb**https://oreil.ly/EHjOb*](https://oreil.ly/EHjOb).)
+As a result of the context-preserving nature of `DELEGATECALL`, building vulnerability-free custom libraries is not as easy as you might think. The code in libraries themselves can be secure and vulnerability free; however, when it is run in the context of another application, new vulnerabilities can arise. Let’s see a fairly complex example of this, using Fibonacci numbers. Consider the library in Example 9-3, which can generate the Fibonacci sequence and sequences of similar form. (Note: this code was modified from [*https://oreil.ly/EHjOb*](https://oreil.ly/EHjOb).)
 
 **Example 9-3. FibonacciLib: a faulty implementation of a custom library**
 
