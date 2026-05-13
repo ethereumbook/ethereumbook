@@ -82,7 +82,7 @@ SIGNEXTEND //Extend the length of a two's complement signed integer
 SHA3       //Compute the Keccak-256 hash of a block of memory
 ```
 
-Note that all arithmetic is performed modulo 2256 (unless otherwise noted) and that the zeroth power of zero, 00, is taken to be 1.
+Note that all arithmetic is performed modulo 2^256 (unless otherwise noted) and that the zeroth power of zero, 0^0, is taken to be 1.
 
 ### Stack operations
 
@@ -354,7 +354,7 @@ Figure 14-6. The EVM stack follows a LIFO order of operations
 
 ### Memory
 
-The EVM memory is a byte-addressable data structure: essentially a very long array of bytes. In fact, every byte in the memory is accessible using a 32-byte (256-bit) key, which means it can contain up to 2256 bytes. It's volatile—that is, it's deleted after the execution ends—and it's always initialized to 0.
+The EVM memory is a byte-addressable data structure: essentially a very long array of bytes. In fact, every byte in the memory is accessible using a 32-byte (256-bit) key, which means it can contain up to 2^256 bytes. It's volatile—that is, it's deleted after the execution ends—and it's always initialized to 0.
 
 Even though it's possible to read and write single bytes to and from the memory, most operations require reading or writing bigger chunks of data, usually 32-byte chunks, as shown in Figure 14-7.
 
