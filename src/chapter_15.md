@@ -674,3 +674,4 @@ For further reading, we recommend:
 - [Gasper paper](https://oreil.ly/1BoMt)
 - [Upgrading Ethereum](https://oreil.ly/Jzh-9) by Ben Edgington
 - ["Decentralization Is Good or Not? Defending Consensus in Ethereum 2.0"](https://oreil.ly/VNC1Q)
+- [OpenChainBench L1 Finality](https://openchainbench.com/benchmarks/l1-finality) — live wall-clock finality measurements across Ethereum and 10 other chains (Solana, Bitcoin, SUI, Stellar, BNB, Avalanche, TRON, and more), refreshed every 10 seconds
