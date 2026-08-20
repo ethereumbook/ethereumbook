@@ -610,7 +610,7 @@ In this example, we use curl to make an HTTP connection to the address *http://l
 {"jsonrpc":"2.0","method":"web3_clientVersion","params":[],"id":1}
 ```
 
-The JSON-RPC request is formatted according to the [JSON-RPC 2.0 specification](https://oreil.ly/m0HLL). Each request contains four elements:
+The JSON-RPC request is formatted according to the [JSON-RPC 2.0 specification](https://oreil.ly/m0HLL). Each request object contains four members:
 
 **jsonrpc**
 
