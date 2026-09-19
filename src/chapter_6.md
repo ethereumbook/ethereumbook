@@ -200,7 +200,7 @@ The *nonce* is one of the most important and least understood components of a tr
 
 > Nonce: A scalar value equal to the number of transactions sent from this address or, in the case of accounts with associated code, the number of contract-creations made by this account.
 
-Strictly speaking, the nonce is an attribute of the originating address—that is, it only has meaning in the context of the sending address. However, the nonce is not stored explicitly as part of an account's state on the blockchain. Instead, it is calculated dynamically by counting the number of confirmed transactions that have originated from an address.
+Strictly speaking, the nonce is an attribute of the originating address—that is, it only has meaning in the context of the sending address. However, The nonce is stored explicitly as part of the account’s state. For an externally owned account, it increments whenever a transaction from that account is included in the blockchain, even if execution reverts. EIP-7702 authorization processing can also increment it.
 
 There are two scenarios where the existence of a transaction-counting nonce is important: the usability feature of transactions being included in the order of creation and the vital feature of transaction-duplication protection. Let's look at an example scenario for each of these:
 
