@@ -50,7 +50,7 @@ Rabby is often a good choice for new users as it is designed for simplicity and 
 
 **Phantom**
 
-Phantom is a wallet that can connect only to Ethereum, among other non-EVM chains.
+Phantom is a wallet that supports Ethereum, other EVM and non-EVM networks.
 
 ## Control and Responsibility
 
