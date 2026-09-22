@@ -997,7 +997,7 @@ The recipient address.
 
 **`0x5af3107a4000`**
 
-The value in wei sent from the sender to the recipient: 1014 in decimal. It translates to 0.0001 ether.
+The value in wei sent from the sender to the recipient: 10^14 in decimal. It translates to 0.0001 ether.
 
 **`0x`**
 
