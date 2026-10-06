@@ -933,17 +933,17 @@ We’ve addressed potential signature manipulation, but what if the data being s
 For the sake of simplicity, let’s suppose that amounts take 8 bits (two hex digits) and addresses take 12 bits (three hex digits). Let’s say the parameters are as follows:
 
 ```solidity
-_amount = [0x64, 0x64]
 _from = [0x001, 0x002]
 _to = [0x003, 0x003]
+_amount = [0x64, 0x64]
 ```
 
 When we use `abi.encodePacked`, it combines these values into `0x0010020030036464`. But here’s where things get tricky. If we move `0x002` from `_from` to `_to`, we still get the exact same output from `abi.encodePacked` as before:
 
 ```solidity
-_amount = [0x64, 0x64]
 _from = [0x001]
 _to = [0x002, 0x003, 0x003]
+_amount = [0x64, 0x64]
 ```
 
 Over this new set of values, `abi.encodePacked` would return the same output: `0x0010020030036464`. This means that user `0x002` can use the valid signature but change the input parameters `_from` and `_to`, tricking the contract into thinking that the only transfer to be performed is from `0x001` to `0x002`. The code used in the example does a terrible job at validating inputs, allowing for this problematic situation. Anyway, it shows how `encodePacked` should be avoided when generating signatures over dynamic data types such as arrays. In these cases, we should use `abi.encode`, which produces unambiguous output even when concatenating dynamic data, effectively preventing this type of attack.
