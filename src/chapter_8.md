@@ -112,8 +112,8 @@ The syntax for type conversion in Vyper is straightforward:
 ```
 # Converting between integer types
 small_value: uint8 = 42
-large_value: uint256 = convert(small_value, uint256)  # Safe upcast
-back_to_small: uint8 = convert(large_value, uint8)   # Bounds-checked downcast
+large_value: uint256 = convert(small_value, uint256)  # Safe upcast
+back_to_small: uint8 = convert(large_value, uint8)   # Bounds-checked downcast
 ```
 
 This explicit approach means that while Vyper code may be more verbose than Solidity when dealing with type conversions, it’s also much safer. There’s no possibility of accidentally truncating values or having unexpected overflow behavior because every conversion must be intentional and explicit. The `convert()` function will revert the transaction if the conversion would result in data loss or if the input value is outside the valid range for the target type.
@@ -172,11 +172,11 @@ Here’s a practical example showing how scoping works in modern Vyper:
 # This function can reference the state variable below
 @external
 def get_stored_value() -> uint256:
-    return self.stored_data  # References variable declared later
+    return self.stored_data  # References variable declared later
 # This function can call the function above
 @external
 def check_if_positive() -> bool:
-    return self.get_stored_value() > 0
+    return self.get_stored_value() > 0
 # State variable declaration - accessible by functions above
 stored_data: public(uint256)
 ```
@@ -238,9 +238,9 @@ Event declarations in Vyper look similar to struct declarations. For example, th
 
 ```
 event MyLog:
-    arg1: indexed(address)
-    arg2: uint256
-    message: indexed(bytes[100])
+    arg1: indexed(address)
+    arg2: uint256
+    message: indexed(bytes[100])
 ```
 
 You can have up to four indexed arguments (these become searchable topics) and any number of nonindexed arguments that become part of the event data. Indexed arguments are useful for filtering and searching events, while nonindexed arguments can contain larger amounts of data.
