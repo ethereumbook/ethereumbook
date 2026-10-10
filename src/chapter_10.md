@@ -174,16 +174,16 @@ Here’s what an ERC-20 interface specification looks like in Solidity:
 
 ```solidity
 contract ERC20 {
-   function totalSupply() public view returns (uint256 theTotalSupply);
-   function balanceOf(address _owner) public view returns (uint256 balance);
-   function transfer(address _to, uint256 _value) public returns (bool success);
-   function transferFrom(address _from, address _to, uint256 _value) public returns
-      (bool success);
-   function approve(address _spender, uint256 _value) public returns (bool success);
-   function allowance(address _owner, address _spender) public view returns
-      (uint256 remaining);
-   event Transfer(address indexed _from, address indexed _to, uint256 _value);
-   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+   function totalSupply() public view returns (uint256 theTotalSupply);
+   function balanceOf(address _owner) public view returns (uint256 balance);
+   function transfer(address _to, uint256 _value) public returns (bool success);
+   function transferFrom(address _from, address _to, uint256 _value) public returns
+      (bool success);
+   function approve(address _spender, uint256 _value) public returns (bool success);
+   function allowance(address _owner, address _spender) public view returns
+      (uint256 remaining);
+   event Transfer(address indexed _from, address indexed _to, uint256 _value);
+   event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 }
 ```
 
@@ -255,15 +255,15 @@ You should now have the following directory structure:
 METoken/
 ├── foundry.toml
 ├── lib
-│   └── forge-std
-│       └── ...
+│   └── forge-std
+│       └── ...
 ├── README.md
 ├── script
-│   └── Counter.s.sol
+│   └── Counter.s.sol
 ├── src
-│   └── Counter.sol
+│   └── Counter.sol
 └── test
-    └── Counter.t.sol
+    └── Counter.t.sol
 ```
 
 `Counter` is Foundry’s default example contract, which comes with its own test and deploy scripts. We will remove all its related files to make room for our token contract.
@@ -286,9 +286,9 @@ Next, let’s write our token contract. Create a new file, *METoken.sol*, and co
 pragma solidity 0.8.28;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract METoken is ERC20 {
-    constructor(uint256 initialSupply) ERC20("METoken", "MET") {
-        _mint(msg.sender, initialSupply);
-    }
+    constructor(uint256 initialSupply) ERC20("METoken", "MET") {
+        _mint(msg.sender, initialSupply);
+    }
 }
 ```
 
@@ -311,12 +311,12 @@ pragma solidity 0.8.28;
 import {Script, console} from "forge-std/Script.sol";
 import {METoken} from "../src/METoken.sol";
 contract METokenDeployer is Script {
-    METoken public _METoken;
-    function run() public {
-        vm.startBroadcast();
-        _METoken = new METoken(50_000_000e18);
-        vm.stopBroadcast();
-    }
+    METoken public _METoken;
+    function run() public {
+        vm.startBroadcast();
+        _METoken = new METoken(50_000_000e18);
+        vm.stopBroadcast();
+    }
 }
 ```
 
@@ -347,12 +347,12 @@ Script ran successfully.
 The console output informed us that the deploy script ran successfully. If we take a look at the terminal where we are running Anvil, we will notice a lot of activity, among which is our contract creation:
 
 ```
-   Transaction: 0xd01e3a90e1f2ee60112658e92f4ebf04c24df67d2ec1315cfb79d145729d15ec
-    Contract created: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-    Gas used: 941861
-    Block Number: 1
-    Block Hash: 0x748b6058dea932317cacf45bb63be82f253554f359b97ace224e35979a92b00a
-    Block Time: "Fri, 31 Jan 2025 19:10:42 +0000"
+   Transaction: 0xd01e3a90e1f2ee60112658e92f4ebf04c24df67d2ec1315cfb79d145729d15ec
+    Contract created: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+    Gas used: 941861
+    Block Number: 1
+    Block Hash: 0x748b6058dea932317cacf45bb63be82f253554f359b97ace224e35979a92b00a
+    Block Time: "Fri, 31 Jan 2025 19:10:42 +0000"
 ```
 
 Our METoken was successfully deployed at the following address:
@@ -383,28 +383,28 @@ pragma solidity 0.8.28;
 import {Script, console} from "forge-std/Script.sol";
 import {METoken} from "../src/METoken.sol";
 contract METokenInteraction is Script {
-    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
-    address alice = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
-    function run() public {
-        vm.startBroadcast();
-        uint256 ourBalance = _METoken.balanceOf(msg.sender);
-        console.log("Deployer initial balance:", ourBalance);
-        uint256 aliceBalance = _METoken.balanceOf(alice);
-        console.log("Alice initial balance:", aliceBalance);
-        uint256 amountToTransfer = 50e18;
-        bool success = _METoken.transfer(alice, amountToTransfer);
-        if (success) {
-            console.log("Transfer successful");
-        } else {
-            console.log("Transfer failed");
-            revert();
-        }
-        ourBalance = _METoken.balanceOf(msg.sender);
-        console.log("Deployer final balance:", ourBalance);
-        aliceBalance = _METoken.balanceOf(alice);
-        console.log("Alice final balance:", aliceBalance);
-        vm.stopBroadcast();
-    }
+    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    address alice = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+    function run() public {
+        vm.startBroadcast();
+        uint256 ourBalance = _METoken.balanceOf(msg.sender);
+        console.log("Deployer initial balance:", ourBalance);
+        uint256 aliceBalance = _METoken.balanceOf(alice);
+        console.log("Alice initial balance:", aliceBalance);
+        uint256 amountToTransfer = 50e18;
+        bool success = _METoken.transfer(alice, amountToTransfer);
+        if (success) {
+            console.log("Transfer successful");
+        } else {
+            console.log("Transfer failed");
+            revert();
+        }
+        ourBalance = _METoken.balanceOf(msg.sender);
+        console.log("Deployer final balance:", ourBalance);
+        aliceBalance = _METoken.balanceOf(alice);
+        console.log("Alice final balance:", aliceBalance);
+        vm.stopBroadcast();
+    }
 }
 ```
 
@@ -430,11 +430,11 @@ Once we run the script, the following will be printed in the console:
 Compiler run successful!
 Script ran successfully.
 == Logs ==
-  Deployer initial balance: 50000000000000000000000000
-  Alice initial balance: 0
-  Transfer successful
-  Deployer final balance: 49999950000000000000000000
-  Alice final balance: 50000000000000000000
+  Deployer initial balance: 50000000000000000000000000
+  Alice initial balance: 0
+  Transfer successful
+  Deployer final balance: 49999950000000000000000000
+  Alice final balance: 50000000000000000000
 ```
 
 In this script, we first log the current token balances of the deployer and Alice. Next, we transfer 50 tokens from the deployer to Alice and log the balances again. Keep in mind that 50 tokens are represented as 50e18 because our token has 18 decimals, hence the large number of zeros.
@@ -448,12 +448,12 @@ First, let’s deploy another contract into our test environment. For this examp
 ```solidity
 pragma solidity 0.8.28;
 contract NaiveFaucet {
-    receive() external payable {}
-    // Function to withdraw Ether from the contract
-    function withdraw(uint256 amount) public {
-        require(amount <= address(this).balance, "Insufficient balance in faucet");
-        payable(msg.sender).transfer(amount);
-    }
+    receive() external payable {}
+    // Function to withdraw Ether from the contract
+    function withdraw(uint256 amount) public {
+        require(amount <= address(this).balance, "Insufficient balance in faucet");
+        payable(msg.sender).transfer(amount);
+    }
 }
 ```
 
@@ -462,8 +462,8 @@ Our directory should look like this:
 ```
 METoken/
 +---- src
-|   +---- NaiveFaucet.sol
-|   +---- METoken.sol
+|   +---- NaiveFaucet.sol
+|   +---- METoken.sol
 ```
 
 Let’s compile and deploy the `NaiveFaucet` contract:
@@ -487,22 +487,22 @@ pragma solidity 0.8.28;
 import {Script, console} from "forge-std/Script.sol";
 import {METoken} from "../src/METoken.sol";
 contract METokenSend is Script {
-    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
-    address naiveFaucet = 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0;
-    function run() public {
-        vm.startBroadcast();
-        uint256 amountToSend = 100e18;
-        bool success = _METoken.transfer(naiveFaucet, amountToSend);
-        if (success) {
-            console.log("Transfer successful");
-        } else {
-            console.log("Transfer failed");
-            revert();
-        }
-        uint256 faucetBalance = _METoken.balanceOf(naiveFaucet);
-        console.log("Faucet balance:", faucetBalance);
-        vm.stopBroadcast();
-    }
+    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    address naiveFaucet = 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0;
+    function run() public {
+        vm.startBroadcast();
+        uint256 amountToSend = 100e18;
+        bool success = _METoken.transfer(naiveFaucet, amountToSend);
+        if (success) {
+            console.log("Transfer successful");
+        } else {
+            console.log("Transfer failed");
+            revert();
+        }
+        uint256 faucetBalance = _METoken.balanceOf(naiveFaucet);
+        console.log("Faucet balance:", faucetBalance);
+        vm.stopBroadcast();
+    }
 }
 ```
 
@@ -517,8 +517,8 @@ $ forge script script/METokenSend.s.sol --private-key <DEPLOYER_PRIVATE_KEY>
 Compiler run successful!
 Script ran successfully.
 == Logs ==
-  Transfer successful
-  Faucet balance: 100000000000000000000
+  Transfer successful
+  Faucet balance: 100000000000000000000
 ```
 
 Again, we need to use the deployer private key to make it work as that is the address that initiates the transfer.
@@ -545,17 +545,17 @@ Our new faucet contract, *METFaucet.sol*, will look like Example 10-2.
 pragma solidity 0.8.28;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract METFaucet {
-    IERC20 public _METoken;
-    address public _METOwner;
-    constructor(address _metokenAddress, address metOwner) {
-        _METoken = IERC20(_metokenAddress);
-        _METOwner = metOwner;
-    }
-    // Function to withdraw METoken from the contract
-    function withdraw(uint256 amount) public {
-        require(amount <= 10e18, "At most 10 MET");
-        require(_METoken.transferFrom(_METOwner, msg.sender, amount), "Transfer failed");
-    }
+    IERC20 public _METoken;
+    address public _METOwner;
+    constructor(address _metokenAddress, address metOwner) {
+        _METoken = IERC20(_metokenAddress);
+        _METOwner = metOwner;
+    }
+    // Function to withdraw METoken from the contract
+    function withdraw(uint256 amount) public {
+        require(amount <= 10e18, "At most 10 MET");
+        require(_METoken.transferFrom(_METOwner, msg.sender, amount), "Transfer failed");
+    }
 }
 ```
 
@@ -574,8 +574,8 @@ Since our faucet needs to be initialized with the correct addresses for `METoken
 // METFaucet constructor - provide the address of the METoken contract and
 // the owner address we will be approved to transferFrom
 constructor(address _metokenAddress, address metOwner) {
-    _METoken = IERC20(_metokenAddress);
-    _METOwner = metOwner;
+    _METoken = IERC20(_metokenAddress);
+    _METOwner = metOwner;
 }
 ```
 
@@ -608,19 +608,19 @@ pragma solidity 0.8.28;
 import {Script, console} from "forge-std/Script.sol";
 import {METoken} from "../src/METoken.sol";
 contract METApprove is Script {
-    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
-    address _METFaucet = 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9;
-    function run() public {
-        vm.startBroadcast();
-        bool success = _METoken.approve(_METFaucet, type(uint256).max);
-        if (success) {
-            console.log("Approve successful");
-        } else {
-            console.log("Approve failed");
-            revert();
-        }
-        vm.stopBroadcast();
-    }
+    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    address _METFaucet = 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9;
+    function run() public {
+        vm.startBroadcast();
+        bool success = _METoken.approve(_METFaucet, type(uint256).max);
+        if (success) {
+            console.log("Approve successful");
+        } else {
+            console.log("Approve failed");
+            revert();
+        }
+        vm.stopBroadcast();
+    }
 }
 ```
 
@@ -635,7 +635,7 @@ $ forge script script/METApprove.s.sol --broadcast --private-key <DEPLOYER_PRIVA
 Compiler run successful!
 Script ran successfully.
 == Logs ==
-  Approve successful
+  Approve successful
 ```
 
 Now, we can write a script to let a secondary address interact with the `METFaucet` contract to withdraw 10 MET tokens and log its balance before and after the operation. Let’s create a *METFaucetWithdraw.s.sol* script as in Example 10-3.
@@ -648,17 +648,17 @@ import {Script, console} from "forge-std/Script.sol";
 import {METoken} from "../src/METoken.sol";
 import {METFaucet} from "../src/METFaucet.sol";
 contract METFaucetWithdraw is Script {
-    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
-    METFaucet public _METFaucet = METFaucet(0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9);
-    function run() public {
-        vm.startBroadcast();
-       uint256 balanceBefore = _METoken.balanceOf(msg.sender);
-       console.log("Alice balance before:", balanceBefore);
-       _METFaucet.withdraw(10e18);
-       uint256 balanceAfter = _METoken.balanceOf(msg.sender);
-       console.log("Alice balance after:", balanceAfter);
-        vm.stopBroadcast();
-    }
+    METoken public _METoken = METoken(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
+    METFaucet public _METFaucet = METFaucet(0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9);
+    function run() public {
+        vm.startBroadcast();
+       uint256 balanceBefore = _METoken.balanceOf(msg.sender);
+       console.log("Alice balance before:", balanceBefore);
+       _METFaucet.withdraw(10e18);
+       uint256 balanceAfter = _METoken.balanceOf(msg.sender);
+       console.log("Alice balance after:", balanceAfter);
+        vm.stopBroadcast();
+    }
 }
 ```
 
@@ -673,8 +673,8 @@ $ forge script script/METFaucetWithdraw.s.sol --broadcast --private-key <ALICE_P
 Compiler run successful!
 Script ran successfully.
 == Logs ==
-  Alice balance before: 0
-  Alice balance after: 10000000000000000000
+  Alice balance before: 0
+  Alice balance after: 10000000000000000000
 ```
 
 As you can see from the results, we can use the `approve` and `transferFrom` workflow to authorize one contract to transfer tokens defined in another token. If properly used, ERC-20 tokens can be used by EOAs and other contracts. However, the burden of managing ERC-20 tokens correctly is pushed to the user interface. If a user incorrectly attempts to transfer ERC-20 tokens to a contract address and that contract is not equipped to receive ERC-20 tokens, the tokens will be lost.
@@ -707,12 +707,12 @@ To detect whether the destination address is a contract, the ERC-223 reference i
 
 ```solidity
 function isContract(address _addr) private view returns (bool is_contract) {
-  uint256 length;
-    assembly {
-       // retrieve the size of the code on target address; this needs assembly
-       length := extcodesize(_addr)
-    }
-    return (length>0);
+  uint256 length;
+    assembly {
+       // retrieve the size of the code on target address; this needs assembly
+       length := extcodesize(_addr)
+    }
+    return (length>0);
 }
 ```
 
@@ -725,18 +725,18 @@ The ERC-223 contract-interface specification is:
 
 ```solidity
 interface ERC223Token {
-  uint256 public totalSupply;
-  function balanceOf(address who) public view returns (uint256);
-  function name() public view returns (string _name);
-  function symbol() public view returns (string _symbol);
-  function decimals() public view returns (uint8 _decimals);
-  function totalSupply() public view returns (uint256 _supply);
-  function transfer(address to, uint256 value) public returns (bool success);
-  function transfer(address to, uint256 value, bytes data) public returns (bool success);
-  function transfer(address to, uint256 value, bytes data, string custom_fallback)
-      public returns (bool success);
-  event Transfer(address indexed from, address indexed to, uint256 value,
-                 bytes indexed data);
+  uint256 public totalSupply;
+  function balanceOf(address who) public view returns (uint256);
+  function name() public view returns (string _name);
+  function symbol() public view returns (string _symbol);
+  function decimals() public view returns (uint8 _decimals);
+  function totalSupply() public view returns (uint256 _supply);
+  function transfer(address to, uint256 value) public returns (bool success);
+  function transfer(address to, uint256 value, bytes data) public returns (bool success);
+  function transfer(address to, uint256 value, bytes data, string custom_fallback)
+      public returns (bool success);
+  event Transfer(address indexed from, address indexed to, uint256 value,
+                 bytes indexed data);
 }
 ```
 
@@ -756,28 +756,28 @@ The ERC-777 contract interface specification is:
 
 ```solidity
 interface ERC777Token {
-    function name() public view returns (string);
-    function symbol() public view returns (string);
-    function totalSupply() public view returns (uint256);
-    function granularity() public view returns (uint256);
-    function balanceOf(address owner) public view returns (uint256);
-    function send(address to, uint256 amount, bytes userData) public;
-    function authorizeOperator(address operator) public;
-    function revokeOperator(address operator) public;
-    function isOperatorFor(address operator, address tokenHolder)
-        public constant returns (bool);
-    function operatorSend(address from, address to, uint256 amount,
-                          bytes userData,bytes operatorData) public;
-    event Sent(address indexed operator, address indexed from,
-               address indexed to, uint256 amount, bytes userData,
-               bytes operatorData);
-    event Minted(address indexed operator, address indexed to,
-                 uint256 amount, bytes operatorData);
-    event Burned(address indexed operator, address indexed from,
-                 uint256 amount, bytes userData, bytes operatorData);
-    event AuthorizedOperator(address indexed operator,
-                             address indexed tokenHolder);
-    event RevokedOperator(address indexed operator, address indexed tokenHolder);
+    function name() public view returns (string);
+    function symbol() public view returns (string);
+    function totalSupply() public view returns (uint256);
+    function granularity() public view returns (uint256);
+    function balanceOf(address owner) public view returns (uint256);
+    function send(address to, uint256 amount, bytes userData) public;
+    function authorizeOperator(address operator) public;
+    function revokeOperator(address operator) public;
+    function isOperatorFor(address operator, address tokenHolder)
+        public constant returns (bool);
+    function operatorSend(address from, address to, uint256 amount,
+                          bytes userData,bytes operatorData) public;
+    event Sent(address indexed operator, address indexed from,
+               address indexed to, uint256 amount, bytes userData,
+               bytes operatorData);
+    event Minted(address indexed operator, address indexed to,
+                 uint256 amount, bytes operatorData);
+    event Burned(address indexed operator, address indexed from,
+                 uint256 amount, bytes userData, bytes operatorData);
+    event AuthorizedOperator(address indexed operator,
+                             address indexed tokenHolder);
+    event RevokedOperator(address indexed operator, address indexed tokenHolder);
 }
 ```
 
@@ -821,19 +821,19 @@ The ERC-721 contract interface specification is as follows:
 
 ```solidity
 interface ERC721 /* is ERC165 */ {
-    event Transfer(address indexed _from, address indexed _to, uint256 _deedId);
-    event Approval(address indexed _owner, address indexed _approved,
-                   uint256 _deedId);
-    event ApprovalForAll(address indexed _owner, address indexed _operator,
-                         bool _approved);
-    function balanceOf(address _owner) external view returns (uint256 _balance);
-    function ownerOf(uint256 _deedId) external view returns (address _owner);
-    function transfer(address _to, uint256 _deedId) external payable;
-    function transferFrom(address _from, address _to, uint256 _deedId)
-        external payable;
-    function approve(address _approved, uint256 _deedId) external payable;
-    function setApprovalForAll(address _operator, boolean _approved) payable;
-    function supportsInterface(bytes4 interfaceID) external view returns (bool);
+    event Transfer(address indexed _from, address indexed _to, uint256 _deedId);
+    event Approval(address indexed _owner, address indexed _approved,
+                   uint256 _deedId);
+    event ApprovalForAll(address indexed _owner, address indexed _operator,
+                         bool _approved);
+    function balanceOf(address _owner) external view returns (uint256 _balance);
+    function ownerOf(uint256 _deedId) external view returns (address _owner);
+    function transfer(address _to, uint256 _deedId) external payable;
+    function transferFrom(address _from, address _to, uint256 _deedId)
+        external payable;
+    function approve(address _approved, uint256 _deedId) external payable;
+    function setApprovalForAll(address _operator, boolean _approved) payable;
+    function supportsInterface(bytes4 interfaceID) external view returns (bool);
 }
 ```
 
@@ -849,41 +849,41 @@ The ERC-1155 contract interface specification is as follows:
 
 ```solidity
 interface IERC1155 /* is IERC165 */ {
-    event TransferSingle(address indexed operator, address indexed from, address indexed to,
+    event TransferSingle(address indexed operator, address indexed from, address indexed to,
 uint256 id, uint256 value);
-    event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256[] ids,
-        uint256[] values
-    );
-    event ApprovalForAll(address indexed account, address indexed operator, bool approved);
-    event URI(string value, uint256 indexed id);
-    function balanceOf(address account, uint256 id) external view returns (uint256);
-    function balanceOfBatch(
-        address[] calldata accounts,
-        uint256[] calldata ids
-    ) external view returns (uint256[] memory);
-    function setApprovalForAll(address operator, bool approved) external;
-    function isApprovedForAll(
-        address account,
-        address operator
-    ) external view returns (bool);
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external;
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
-    ) external;
+    event TransferBatch(
+        address indexed operator,
+        address indexed from,
+        address indexed to,
+        uint256[] ids,
+        uint256[] values
+    );
+    event ApprovalForAll(address indexed account, address indexed operator, bool approved);
+    event URI(string value, uint256 indexed id);
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+    function balanceOfBatch(
+        address[] calldata accounts,
+        uint256[] calldata ids
+    ) external view returns (uint256[] memory);
+    function setApprovalForAll(address operator, bool approved) external;
+    function isApprovedForAll(
+        address account,
+        address operator
+    ) external view returns (bool);
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) external;
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external;
 }
 ```
 
@@ -928,10 +928,10 @@ To implement EIP-165, a contract inherits from a base class, such as OpenZeppeli
 
 ```solidity
 contract MyContract is IMyContract, ERC165 {
-    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
-        return interfaceId == type(IMyContract).interfaceId ||
+    function supportsInterface(bytes4 interfaceId) public view override returns (bool) {
+        return interfaceId == type(IMyContract).interfaceId ||
 super.supportsInterface(interfaceId);
-    }
+    }
 }
 ```
 
@@ -939,18 +939,18 @@ To better grasp how EIP-165 works in practice, let’s look at ERC-1155, a versa
 
 ```solidity
 abstract contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI,
-    IERC1155Errors {
+    IERC1155Errors {
 [...]
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165,
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165,
 IERC165) returns (bool) {
-        return
-            interfaceId == type(IERC1155).interfaceId ||
-            interfaceId == type(IERC1155MetadataURI).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
+        return
+            interfaceId == type(IERC1155).interfaceId ||
+            interfaceId == type(IERC1155MetadataURI).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
 [...]
 }
 ```

