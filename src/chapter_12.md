@@ -103,7 +103,7 @@ contract MyWhitelistNFT is ERC721, Ownable {
     /**
      * @notice Whitelist mint function.
      */
-    function whitelistMint() payable {
+    function whitelistMint() external payable {
         // ... rest of the function
         
         // check if the user is whitelisted.
@@ -150,6 +150,7 @@ contract MyWhitelistNFT is ERC721, Ownable {
                
         // mint the NFT.
         _safeMint(msg.sender, nextTokenId);
+        nextTokenId++;
     }  
 }
 ```
