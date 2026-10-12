@@ -111,7 +111,10 @@ contract MyWhitelistNFT is ERC721, Ownable {
         
         // mint the NFT.
         _safeMint(msg.sender, nextTokenId);
-        nextTokenId++;
+       // reserve the token ID before calling the recipient contract.
+       uint256 tokenId = nextTokenId++;
+       // mint the NFT.
+       _safeMint(msg.sender, tokenId);
     }
 }
 ```
