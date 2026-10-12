@@ -148,9 +148,10 @@ contract MyWhitelistNFT is ERC721, Ownable {
         bool isValidLeaf = MerkleProof.verify(_merkleProof, merkleRoot, leaf);
         require(isValidLeaf, "Invalid Merkle Proof: Not whitelisted");
                
-        // mint the NFT.
-        _safeMint(msg.sender, nextTokenId);
-        nextTokenId++;
+       // reserve the token ID before calling the recipient contract.
+       uint256 tokenId = nextTokenId++;
+       // mint the NFT.
+       _safeMint(msg.sender, tokenId);
     }  
 }
 ```
