@@ -103,7 +103,7 @@ contract MyWhitelistNFT is ERC721, Ownable {
     /**
      * @notice Whitelist mint function.
      */
-    function whitelistMint() payable {
+    function whitelistMint() external payable {
         // ... rest of the function
         
         // check if the user is whitelisted.
@@ -111,7 +111,10 @@ contract MyWhitelistNFT is ERC721, Ownable {
         
         // mint the NFT.
         _safeMint(msg.sender, nextTokenId);
-        nextTokenId++;
+       // reserve the token ID before calling the recipient contract.
+       uint256 tokenId = nextTokenId++;
+       // mint the NFT.
+       _safeMint(msg.sender, tokenId);
     }
 }
 ```
@@ -148,8 +151,10 @@ contract MyWhitelistNFT is ERC721, Ownable {
         bool isValidLeaf = MerkleProof.verify(_merkleProof, merkleRoot, leaf);
         require(isValidLeaf, "Invalid Merkle Proof: Not whitelisted");
                
-        // mint the NFT.
-        _safeMint(msg.sender, nextTokenId);
+       // reserve the token ID before calling the recipient contract.
+       uint256 tokenId = nextTokenId++;
+       // mint the NFT.
+       _safeMint(msg.sender, tokenId);
     }  
 }
 ```
