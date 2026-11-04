@@ -537,3 +537,9 @@ Next, you wrote a `Faucet` contract in Solidity. You used the Remix IDE to compi
 It may not seem like much, but you've just successfully interacted with software that controls money on a decentralized world computer.
 
 We will do a lot more Solidity smart contract programming in Chapter 7 and learn about best practices and security considerations in Chapter 9.
+
+## Further Reading
+
+For further reading and developer documentation, we recommend:
+
+- [Ethereum Developer Documentation](https://ethereum.org/en/developers/) — Official tutorials, SDK references, testnet guides, and developer tooling documentation for building on Ethereum.
